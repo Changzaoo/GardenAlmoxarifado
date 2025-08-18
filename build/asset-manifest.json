@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/gardenalmoxarifado/static/css/main.83e29d85.css",
-    "main.js": "/gardenalmoxarifado/static/js/main.9124795a.js",
+    "main.js": "/gardenalmoxarifado/static/js/main.daf6fa60.js",
     "index.html": "/gardenalmoxarifado/index.html",
     "main.83e29d85.css.map": "/gardenalmoxarifado/static/css/main.83e29d85.css.map",
-    "main.9124795a.js.map": "/gardenalmoxarifado/static/js/main.9124795a.js.map"
+    "main.daf6fa60.js.map": "/gardenalmoxarifado/static/js/main.daf6fa60.js.map"
   },
   "entrypoints": [
     "static/css/main.83e29d85.css",
-    "static/js/main.9124795a.js"
+    "static/js/main.daf6fa60.js"
   ]
 }
