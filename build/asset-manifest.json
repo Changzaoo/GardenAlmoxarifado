@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/GardenAlmoxarifado/static/css/main.bb77068d.css",
+    "main.js": "/GardenAlmoxarifado/static/js/main.c8bd62f1.js",
+    "index.html": "/GardenAlmoxarifado/index.html",
+    "main.bb77068d.css.map": "/GardenAlmoxarifado/static/css/main.bb77068d.css.map",
+    "main.c8bd62f1.js.map": "/GardenAlmoxarifado/static/js/main.c8bd62f1.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.bb77068d.css",
+    "static/js/main.c8bd62f1.js"
+  ]
+}
