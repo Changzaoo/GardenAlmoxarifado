@@ -1,18 +1,14 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
-  "redirects": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/old-path",
-      "destination": "/new-path",
-      "permanent": true
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "build" }
     }
   ],
-  "headers": [
-    {
-      "source": "/service-worker.js",
-      "headers": [
-        { "key": "Content-Type", "value": "application/javascript" }
-      ]
-    }
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "index.html" }
   ]
 }
