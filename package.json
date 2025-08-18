@@ -14,8 +14,11 @@
   },
   "homepage": "https://changzaoo.github.io/gardenalmoxarifado",
   "scripts": {
+    "preinstall": "git config --global --add safe.directory /vercel/path0 && git submodule sync --recursive",
+  "install": "npm install --legacy-peer-deps",
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "npm run build && react-scripts build && cp _redirects build/",
+    "postbuild": "workbox generateSW workbox-config.js",
     "test": "react-scripts test",
     "deploy": "gh-pages -d build -r https://github.com/changzaoo/gardenalmoxarifado",
     "eject": "react-scripts eject"
