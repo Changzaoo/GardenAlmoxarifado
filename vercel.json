@@ -1,15 +1,18 @@
 {
-  "version": 2,
-  "routes": [
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "redirects": [
     {
-      "src": "/index.js",
-      "headers": { "Content-Type": "application/javascript" }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html",
-      "headers": { "Content-Type": "text/html" }
+      "source": "/old-path",
+      "destination": "/new-path",
+      "permanent": true
     }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "headers": [
+    {
+      "source": "/service-worker.js",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript" }
+      ]
+    }
+  ]
 }
