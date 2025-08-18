@@ -17,7 +17,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-  "deploy": "gh-pages -d build -r https://github.com/changzaoo/gardenalmoxarifado.git",
+    "deploy": "gh-pages -d build -r https://changzaoo.github.io/gardenalmoxarifado.git",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
