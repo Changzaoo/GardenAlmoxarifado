@@ -187,4 +187,4 @@ Para dúvidas ou problemas:
 
 ## Licença
 
-© 2024 Almoxarifado do Jardim - Sistema Proprietário
+© 2024 Almoxarifado do Jardim - Sistema Proprietário"# GardenAlmoxarifado" 
