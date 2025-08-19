@@ -4,29 +4,18 @@ import { obterDataAtual, obterHoraAtual } from '../../utils/dateUtils';
 import FerramentaSelector from './FerramentaSelector';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
-  const [novoEmprestimo, setNovoEmprestimo] = useState({
-    colaborador: '',
-    ferramentas: [],
-    dataRetirada: obterDataAtual(),
-    horaRetirada: obterHoraAtual()
-  });
-
+  // Adiciona ferramenta à lista
   const adicionarFerramenta = (ferramenta) => {
     if (!ferramenta || novoEmprestimo.ferramentas.includes(ferramenta)) return;
-
-    // Verificar se a ferramenta existe no inventário
-    const itemInventario = inventario.find(item => 
-      item.nome.toLowerCase() === ferramenta.toLowerCase() && item.disponivel > 0
-    );
-    
+    const itemInventario = inventario.find(item => item.nome.toLowerCase() === ferramenta.toLowerCase() && item.disponivel > 0);
     if (!itemInventario) return;
-
     setNovoEmprestimo(prev => ({
       ...prev,
       ferramentas: [...prev.ferramentas, itemInventario.nome]
     }));
   };
 
+  // Remove ferramenta da lista
   const removerFerramenta = (ferramenta) => {
     setNovoEmprestimo(prev => ({
       ...prev,
@@ -34,11 +23,16 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
     }));
   };
 
+  // Submete o novo empréstimo
   const handleSubmit = () => {
     if (!novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0) return;
-
-    const emprestimoAdicionado = adicionarEmprestimo(novoEmprestimo, atualizarDisponibilidade);
-    
+    const novo = {
+      ...novoEmprestimo,
+      status: 'emprestado',
+      dataDevolucao: null,
+      horaDevolucao: null
+    };
+    const emprestimoAdicionado = adicionarEmprestimo(novo, atualizarDisponibilidade);
     if (emprestimoAdicionado) {
       setNovoEmprestimo({
         colaborador: '',
@@ -48,12 +42,17 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
       });
     }
   };
+  const [novoEmprestimo, setNovoEmprestimo] = useState({
+    colaborador: '',
+    ferramentas: [],
+    dataRetirada: obterDataAtual(),
+    horaRetirada: obterHoraAtual()
+  });
 
   const ferramentasDisponiveis = inventario.filter(item => item.disponivel > 0);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Novo Empréstimo</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -77,13 +76,11 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
             onChange={(e) => setNovoEmprestimo({...novoEmprestimo, horaRetirada: e.target.value})}
             className="form-input w-full"
           />
-          
           <FerramentaSelector 
             ferramentasDisponiveis={ferramentasDisponiveis}
             onAdicionarFerramenta={adicionarFerramenta}
           />
         </div>
-
         <div>
           <h3 className="font-medium text-gray-700 mb-2">Ferramentas Selecionadas:</h3>
           <div className="border border-gray-200 rounded-lg p-3 min-h-32 max-h-40 overflow-y-auto">
@@ -105,7 +102,6 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
               </div>
             )}
           </div>
-          
           <button
             onClick={handleSubmit}
             disabled={!novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0}
@@ -118,6 +114,6 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
       </div>
     </div>
   );
-};
+}
 
 export default NovoEmprestimo;

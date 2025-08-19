@@ -62,6 +62,16 @@ const LoginForm = ({
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="lembrar"
+              checked={loginData.lembrar || false}
+              onChange={e => setLoginData({ ...loginData, lembrar: e.target.checked })}
+            />
+            <label htmlFor="lembrar" className="text-sm text-gray-700 cursor-pointer">Manter-se conectado</label>
+          </div>
+
           {loginError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
               {loginError}
@@ -76,6 +86,7 @@ const LoginForm = ({
           </button>
         </div>
 
+        {/* Footer or legal info only, no test users, cookies, or login tips */}
         <div className="mt-6 text-center text-xs text-gray-500">
           <p>Sistema protegido por autenticação</p>
           <p className="mt-1">© 2024 Almoxarifado do Jardim</p>

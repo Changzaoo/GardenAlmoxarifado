@@ -56,7 +56,22 @@ const ListaInventario = ({ inventario, emprestimos, removerItem }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {inventarioFiltrado
-          .sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome))
+          .sort((a, b) => {
+            // Busca o último empréstimo de cada item
+            const ultimoEmprestimoA = emprestimos
+              .filter(e => e.ferramentas.includes(a.nome))
+              .sort((e1, e2) => new Date(e2.dataRetirada) - new Date(e1.dataRetirada))[0];
+            const ultimoEmprestimoB = emprestimos
+              .filter(e => e.ferramentas.includes(b.nome))
+              .sort((e1, e2) => new Date(e2.dataRetirada) - new Date(e1.dataRetirada))[0];
+            const dataA = ultimoEmprestimoA ? new Date(ultimoEmprestimoA.dataRetirada) : new Date(0);
+            const dataB = ultimoEmprestimoB ? new Date(ultimoEmprestimoB.dataRetirada) : new Date(0);
+            // Ordena por empréstimo mais recente
+            if (dataA > dataB) return -1;
+            if (dataA < dataB) return 1;
+            // Se igual, ordena por categoria e nome
+            return a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome);
+          })
           .map(item => (
             <ItemCard 
               key={item.id} 

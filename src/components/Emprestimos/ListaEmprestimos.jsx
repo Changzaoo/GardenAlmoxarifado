@@ -10,12 +10,17 @@ const ListaEmprestimos = ({
 }) => {
   const [filtroEmprestimos, setFiltroEmprestimos] = useState('');
 
-  const emprestimosFiltrados = Array.isArray(emprestimos)
-    ? emprestimos.filter(emp =>
-        emp.colaborador.toLowerCase().includes(filtroEmprestimos.toLowerCase()) ||
-        emp.ferramentas.some(f => f.toLowerCase().includes(filtroEmprestimos.toLowerCase()))
-      )
-    : [];
+  const emprestimosFiltrados = emprestimos
+    .filter(emp =>
+      emp.colaborador.toLowerCase().includes(filtroEmprestimos.toLowerCase()) ||
+      emp.ferramentas.some(f => f.toLowerCase().includes(filtroEmprestimos.toLowerCase()))
+    )
+    .sort((a, b) => {
+      // Ordena por data/hora de retirada mais recente
+      const dataA = new Date(a.dataRetirada + 'T' + (a.horaRetirada || '00:00'));
+      const dataB = new Date(b.dataRetirada + 'T' + (b.horaRetirada || '00:00'));
+      return dataB - dataA;
+    });
 
   const handleDevolverFerramentas = (id) => {
     devolverFerramentas(id, atualizarDisponibilidade);

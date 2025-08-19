@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) => {
   const [buscaFerramenta, setBuscaFerramenta] = useState('');
@@ -32,9 +32,27 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
   };
 
   return (
-    <div className="flex gap-2 relative">
-      {/* Campo de busca com autocompletar */}
-      <div className="flex-1 relative">
+    <div className="flex flex-col gap-4 relative">
+      {/* Select tradicional como alternativa */}
+      <select
+        value={ferramentaSelecionada}
+        onChange={(e) => {
+          setFerramentaSelecionada(e.target.value);
+          setBuscaFerramenta(e.target.value);
+          setSugestoesVisiveis(false);
+        }}
+        className="form-select min-w-48 mb-2"
+      >
+        <option value="">Selecione uma ferramenta...</option>
+        {ferramentasDisponiveis.map(item => (
+          <option key={item.id} value={item.nome}>
+            {item.nome} ({item.disponivel})
+          </option>
+        ))}
+      </select>
+
+      {/* Campo de busca com autocompletar - agora maior e abaixo do select, com botão à direita */}
+      <div className="w-full relative flex items-center gap-2">
         <input
           type="text"
           placeholder="Digite o nome da ferramenta..."
@@ -52,9 +70,16 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
               adicionarFerramenta();
             }
           }}
-          className="form-input"
+          className="form-input w-full text-lg py-3"
         />
-        
+        <button
+          onClick={adicionarFerramenta}
+          disabled={!buscaFerramenta && !ferramentaSelecionada}
+          className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+          style={{ minWidth: '2.5rem' }}
+        >
+          <ArrowRight className="w-5 h-5" />
+        </button>
         {/* Dropdown de sugestões */}
         {sugestoesVisiveis && (
           <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
@@ -78,32 +103,6 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
           </div>
         )}
       </div>
-
-      {/* Select tradicional como alternativa */}
-      <select
-        value={ferramentaSelecionada}
-        onChange={(e) => {
-          setFerramentaSelecionada(e.target.value);
-          setBuscaFerramenta(e.target.value);
-          setSugestoesVisiveis(false);
-        }}
-        className="form-select min-w-48"
-      >
-        <option value="">Ou selecione...</option>
-        {ferramentasDisponiveis.map(item => (
-          <option key={item.id} value={item.nome}>
-            {item.nome.length > 30 ? `${item.nome.substring(0, 30)}...` : item.nome} ({item.disponivel})
-          </option>
-        ))}
-      </select>
-
-      <button
-        onClick={adicionarFerramenta}
-        disabled={!buscaFerramenta && !ferramentaSelecionada}
-        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
     </div>
   );
 };
