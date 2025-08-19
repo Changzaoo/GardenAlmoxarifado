@@ -1,26 +1,37 @@
 {
   "name": "almoxarifado-jardim",
   "version": "1.0.0",
-    "private": true,
-  "homepage": "https://changzaoo.github.io/gardenalmoxarifado",
+  "private": true,
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "react-scripts build && cp build/index.html build/404.html"
   },
   "dependencies": {
+    "babel-loader": "^10.0.0",
+    "crypto-js": "^4.2.0",
+    "css-loader": "^7.1.2",
+    "file-loader": "^6.2.0",
+    "firebase": "^12.1.0",
+    "lucide-react": "^0.264.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "lucide-react": "^0.264.0"
+    "style-loader": "^4.0.0"
   },
   "devDependencies": {
     "gh-pages": "^6.1.0"
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
-    "development": ["last 1 chrome version"]
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version"
+    ]
   }
 }
