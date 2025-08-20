@@ -21,7 +21,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "npm install schema-utils@4.0.1 --no-save && GENERATE_SOURCEMAP=false react-scripts build",
+    "build": "npm install schema-utils@3.3.0 webpack@5.88.2 --no-save && GENERATE_SOURCEMAP=false CI=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -44,6 +44,7 @@
     ]
   },
   "overrides": {
-    "schema-utils": "4.0.1"
+    "schema-utils": "3.3.0",
+    "webpack": "5.88.2"
   }
 }
