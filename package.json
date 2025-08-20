@@ -17,6 +17,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d build -r https://changzaoo.github.io/gardenalmoxarifado.git",
     "eject": "react-scripts eject"
   },
