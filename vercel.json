@@ -1,16 +1,8 @@
 {
-  "version": 2,
-  "routes": [
-    {
-      "src": "/service-worker.js",
-      "headers": {
-        "Content-Type": "application/javascript",
-        "Service-Worker-Allowed": "/"
-      }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+  "functions": {
+    "pages/api/**/*.js": {
+      "runtime": "nodejs18.x"
     }
-  ]
+  },
+  "buildCommand": "npm install --legacy-peer-deps && npm run build"
 }
