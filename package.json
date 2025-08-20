@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "engines": {
-  "node": "18.x"
+    "node": "20.x"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -16,7 +16,9 @@
     "firebase": "^12.1.0",
     "lucide-react": "^0.460.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "schema-utils": "^4.3.2",
+    "terser-webpack-plugin": "^5.3.14"
   },
   "browserslist": {
     "production": [
@@ -30,8 +32,6 @@
   },
   "devDependencies": {
     "react-dev-utils": "^12.0.1",
-    "react-scripts": "^5.0.1",
-    "schema-utils": "3.3.0",
-    "terser-webpack-plugin": "5.3.10"
+    "react-scripts": "^5.0.1"
   }
 }
