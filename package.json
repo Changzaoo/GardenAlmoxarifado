@@ -15,13 +15,12 @@
   "homepage": "https://changzaoo.github.io/gardenalmoxarifado",
   "scripts": {
     "start": "react-scripts start",
-    "prebuild": "chmod +x node_modules/.bin/react-scripts",
-    "build": "CI=false react-scripts build",
+    "build": "react-scripts build",
+    "build:prod": "set \"GENERATE_SOURCEMAP=false\" && react-scripts build",
     "test": "react-scripts test",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build -r https://changzaoo.github.io/gardenalmoxarifado.git",
-    "eject": "react-scripts eject",
-    "postinstall": "npm ls lucide-react"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
