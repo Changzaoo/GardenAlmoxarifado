@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "build": "npx react-scripts build",
+    "start": "npx react-scripts start",
+    "test": "npx react-scripts test",
+    "eject": "npx react-scripts eject"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.0",
