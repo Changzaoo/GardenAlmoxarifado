@@ -1,16 +1,16 @@
 {
   "version": 2,
-  "routes": [
-    {
-      "src": "/service-worker.js",
-      "headers": {
-        "Content-Type": "application/javascript",
-        "Service-Worker-Allowed": "/"
-      }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+  "functions": {
+    "pages/api/**/*.js": {
+      "runtime": "nodejs18.x"
     }
-  ]
+  },
+  "build": {
+    "env": {
+      "CI": "false",
+      "NODE_OPTIONS": "--openssl-legacy-provider"
+    }
+  },
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "npm run build"
 }
