@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
+import { useTheme } from '../AlmoxarifadoJardim';
 
 const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) => {
+  const { classes } = useTheme();
   const [buscaFerramenta, setBuscaFerramenta] = useState('');
   const [ferramentaSelecionada, setFerramentaSelecionada] = useState('');
   const [sugestoesVisiveis, setSugestoesVisiveis] = useState(false);
@@ -41,7 +43,7 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
           setBuscaFerramenta(e.target.value);
           setSugestoesVisiveis(false);
         }}
-        className="form-select min-w-48 mb-2"
+        className={`${classes.formSelect} min-w-48 mb-2`}
       >
         <option value="">Selecione uma ferramenta...</option>
         {ferramentasDisponiveis.map(item => (
@@ -70,33 +72,44 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
               adicionarFerramenta();
             }
           }}
-          className="form-input w-full text-lg py-3"
+          className={`${classes.input} w-full text-lg py-3 focus:ring-2 focus:border-transparent`}
+          style={{ '--tw-ring-color': '#bd9967' }}
         />
         <button
           onClick={adicionarFerramenta}
           disabled={!buscaFerramenta && !ferramentaSelecionada}
-          className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-          style={{ minWidth: '2.5rem' }}
+          className={`px-3 py-2 rounded-lg text-white transition-colors duration-200 ${
+            !buscaFerramenta && !ferramentaSelecionada
+              ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
+              : 'hover:opacity-90'
+          }`}
+          style={{ 
+            minWidth: '2.5rem',
+            backgroundColor: (!buscaFerramenta && !ferramentaSelecionada) ? undefined : '#3b82f6'
+          }}
         >
           <ArrowRight className="w-5 h-5" />
         </button>
+        
         {/* Dropdown de sugestões */}
         {sugestoesVisiveis && (
-          <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+          <div className={`absolute top-full left-0 right-0 ${classes.card} shadow-lg z-10 max-h-48 overflow-y-auto border-0`}>
             {filtrarFerramentas(buscaFerramenta).map(item => (
               <button
                 key={item.id}
                 onClick={() => selecionarFerramenta(item.nome)}
-                className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                className={`w-full text-left px-3 py-2 hover:${classes.containerSecondary} ${classes.divider} last:border-b-0 transition-colors duration-200`}
               >
-                <div className="font-medium text-sm">{item.nome}</div>
-                <div className="text-xs text-gray-500">
+                <div className={`font-medium text-sm ${classes.textPrimary}`}>
+                  {item.nome}
+                </div>
+                <div className={`text-xs ${classes.textMuted}`}>
                   {item.categoria} • Disponível: {item.disponivel}
                 </div>
               </button>
             ))}
             {filtrarFerramentas(buscaFerramenta).length === 0 && buscaFerramenta && (
-              <div className="px-3 py-2 text-gray-500 text-sm">
+              <div className={`px-3 py-2 text-sm ${classes.textMuted}`}>
                 Nenhuma ferramenta encontrada
               </div>
             )}

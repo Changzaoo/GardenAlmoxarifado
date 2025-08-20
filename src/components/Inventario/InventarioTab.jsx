@@ -1,25 +1,17 @@
-// InventarioTab.jsx - Substitua o conteúdo atual por este:
-
 import React from 'react';
+import { useTheme } from '../AlmoxarifadoJardim';
 import NovoItem from './NovoItem';
 import ListaInventario from './ListaInventario';
 import { useAuth } from '../../hooks/useAuth';
 
-const InventarioTab = ({
-  inventario,
-  emprestimos,
-  adicionarItem,
-  removerItem
-}) => {
+const InventarioTab = ({ inventario, emprestimos, adicionarItem, removerItem }) => {
   const { usuario } = useAuth();
-  const isFuncionario = usuario?.nivel === 1; // NÍVEL 1 = FUNCIONÁRIO
-  
+  const { classes } = useTheme();
+  const isFuncionario = usuario?.nivel === 1;
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${classes.backgroundPrimary}`}> 
       {!isFuncionario && (
-        <NovoItem
-          adicionarItem={adicionarItem}
-        />
+        <NovoItem adicionarItem={adicionarItem} />
       )}
       <ListaInventario
         inventario={inventario}

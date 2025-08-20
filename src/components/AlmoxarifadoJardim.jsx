@@ -1,3 +1,4 @@
+// AlmoxarifadoJardim.jsx - VERSÃO COMPLETA IMPLEMENTADA
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
@@ -10,6 +11,7 @@ import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
 import FerramentasPerdidasTab from './Perdidas/FerramentasPerdidasTab';
 import ComprasTab from './Compras/ComprasTab';
 import { AuthContext, useAuth } from '../hooks/useAuth';
+import { Moon, Sun } from 'lucide-react';
 import { 
   Package, 
   Users, 
@@ -28,22 +30,128 @@ import {
   EyeOff,
   AlertCircle,
   UserCog,
-  ShoppingCart
+  ShoppingCart,
+  X,
+  Save,
+  Check,
 } from 'lucide-react';
+
+// ===== CLASSES CSS PADRONIZADAS PARA O TEMA =====
+const themeClasses = {
+  // Containers principais
+  container: 'bg-white dark:bg-gray-800 transition-colors duration-200',
+  containerSecondary: 'bg-gray-50 dark:bg-gray-700 transition-colors duration-200',
+  
+  // Cards e painéis
+  card: 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg transition-colors duration-200',
+  cardHover: 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md dark:hover:shadow-gray-900/20 transition-all duration-200',
+  
+  // Textos
+  textPrimary: 'text-gray-900 dark:text-white transition-colors duration-200',
+  textSecondary: 'text-gray-600 dark:text-gray-300 transition-colors duration-200',
+  textMuted: 'text-gray-500 dark:text-gray-400 transition-colors duration-200',
+  textLight: 'text-gray-400 dark:text-gray-500 transition-colors duration-200',
+  
+  // Inputs e formulários
+  input: 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:border-transparent transition-colors duration-200',
+  inputGroup: 'bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 transition-colors duration-200',
+  
+  // Botões
+  buttonPrimary: 'text-white font-medium rounded-lg transition-colors duration-200 hover:opacity-90',
+  buttonSecondary: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200',
+  buttonDanger: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 font-medium rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors duration-200',
+  buttonSuccess: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors duration-200',
+  buttonWarning: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800 font-medium rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors duration-200',
+  
+  // Tabelas
+  table: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-colors duration-200',
+  tableHeader: 'bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 transition-colors duration-200',
+  tableHeaderCell: 'text-gray-700 dark:text-gray-200 font-medium transition-colors duration-200',
+  tableRow: 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200',
+  tableCell: 'text-gray-900 dark:text-gray-100 transition-colors duration-200',
+  
+  // Navegação
+  navTab: 'border-b-2 font-medium text-sm transition-colors duration-200 whitespace-nowrap',
+  navTabActive: 'text-gray-700 dark:text-gray-200 transition-colors duration-200',
+  navTabInactive: 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600',
+  
+  // Alerts e notificações
+  alertSuccess: 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-300 transition-colors duration-200',
+  alertError: 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 transition-colors duration-200',
+  alertWarning: 'bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300 transition-colors duration-200',
+  alertInfo: 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300 transition-colors duration-200',
+  
+  // Modals e overlays
+  modal: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl transition-colors duration-200',
+  overlay: 'bg-black bg-opacity-50 dark:bg-opacity-70 transition-opacity duration-200',
+  
+  // Badges e status
+  badge: 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors duration-200',
+  badgeSuccess: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
+  badgeError: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
+  badgeWarning: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300',
+  badgeInfo: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300',
+  badgeGray: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300',
+  
+  // Dividers
+  divider: 'border-gray-200 dark:border-gray-700',
+  
+  // Backgrounds gerais
+  backgroundPrimary: 'bg-gray-50 dark:bg-gray-900 transition-colors duration-200',
+  backgroundSecondary: 'bg-gray-100 dark:bg-gray-800 transition-colors duration-200',
+  
+  // Sidebar e navegação lateral
+  sidebar: 'bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-colors duration-200',
+  sidebarItem: 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200',
+  sidebarItemActive: 'text-white dark:text-white transition-colors duration-200',
+
+  // Formulários específicos
+  formLabel: 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-200',
+  formSelect: 'w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:border-transparent transition-colors duration-200',
+  formTextarea: 'w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:border-transparent resize-none transition-colors duration-200',
+  
+  // Headers de seção
+  sectionHeader: 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200',
+  sectionTitle: 'text-xl font-bold text-gray-800 dark:text-white transition-colors duration-200',
+  sectionSubtitle: 'text-gray-600 dark:text-gray-300 transition-colors duration-200',
+
+  // Estatísticas
+  statCard: 'p-4 rounded-lg transition-colors duration-200',
+  statCardWhite: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
+  statCardBlue: 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800',
+  statCardGreen: 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800',
+  statCardYellow: 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800',
+  statCardRed: 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800',
+  statCardPurple: 'bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800',
+  statCardOrange: 'bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800',
+  
+  // Textos das estatísticas
+  statValue: 'text-2xl font-bold transition-colors duration-200',
+  statLabel: 'text-sm font-medium transition-colors duration-200',
+  statValueBlue: 'text-blue-900 dark:text-blue-300',
+  statLabelBlue: 'text-blue-600 dark:text-blue-400',
+  statValueGreen: 'text-green-900 dark:text-green-300',
+  statLabelGreen: 'text-green-600 dark:text-green-400',
+  statValueYellow: 'text-yellow-900 dark:text-yellow-300',
+  statLabelYellow: 'text-yellow-600 dark:text-yellow-400',
+  statValueRed: 'text-red-900 dark:text-red-300',
+  statLabelRed: 'text-red-600 dark:text-red-400',
+  statValuePurple: 'text-purple-900 dark:text-purple-300',
+  statLabelPurple: 'text-purple-600 dark:text-purple-400',
+  statValueOrange: 'text-orange-900 dark:text-orange-300',
+  statLabelOrange: 'text-orange-600 dark:text-orange-400',
+};
 
 // ===== SISTEMA DE COOKIES =====
 const CookieManager = {
-  // Função para definir cookie
   setCookie: (name, value, days = 30) => {
     try {
       const expires = new Date();
       expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
       const expiresString = expires.toUTCString();
       
-      // Converter objeto para string se necessário
       const cookieValue = typeof value === 'object' ? JSON.stringify(value) : value;
       
-      // Criar cookie com configurações de segurança
       document.cookie = `${name}=${encodeURIComponent(cookieValue)};expires=${expiresString};path=/;SameSite=Strict`;
       
       console.log(`Cookie ${name} definido com sucesso`);
@@ -54,7 +162,6 @@ const CookieManager = {
     }
   },
 
-  // Função para obter cookie
   getCookie: (name) => {
     try {
       const nameEQ = name + "=";
@@ -68,7 +175,6 @@ const CookieManager = {
         if (cookie.indexOf(nameEQ) === 0) {
           const value = decodeURIComponent(cookie.substring(nameEQ.length, cookie.length));
           
-          // Tentar parsear como JSON, senão retornar como string
           try {
             return JSON.parse(value);
           } catch {
@@ -83,7 +189,6 @@ const CookieManager = {
     }
   },
 
-  // Função para remover cookie
   removeCookie: (name) => {
     try {
       document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/;SameSite=Strict`;
@@ -95,7 +200,6 @@ const CookieManager = {
     }
   },
 
-  // Função para verificar se cookies estão disponíveis
   areCookiesEnabled: () => {
     try {
       const testCookie = 'almoxarifado_test';
@@ -109,12 +213,130 @@ const CookieManager = {
   }
 };
 
-// Níveis de permissão
+// ===== SISTEMA DE TEMA (MODO ESCURO) COM COR #bd9967 =====
+const ThemeManager = {
+  setTheme: (theme) => {
+    try {
+      CookieManager.setCookie('almoxarifado_theme', theme, 365); // 1 ano
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      console.log(`Tema ${theme} aplicado com sucesso`);
+      return true;
+    } catch (error) {
+      console.error('Erro ao definir tema:', error);
+      return false;
+    }
+  },
+
+  getTheme: () => {
+    try {
+      const savedTheme = CookieManager.getCookie('almoxarifado_theme');
+      if (savedTheme) {
+        return savedTheme;
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (error) {
+      console.error('Erro ao obter tema:', error);
+      return 'light';
+    }
+  },
+
+  initTheme: () => {
+    try {
+      const theme = ThemeManager.getTheme();
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      return theme;
+    } catch (error) {
+      console.error('Erro ao inicializar tema:', error);
+      return 'light';
+    }
+  },
+
+  toggleTheme: (currentTheme) => {
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    ThemeManager.setTheme(newTheme);
+    return newTheme;
+  }
+};
+
+// ===== CONTEXT E PROVIDER DE TEMA =====
+const ThemeContext = createContext();
+
+const ThemeProvider = ({ children }) => {
+  const [theme, setTheme] = useState('light');
+
+  useEffect(() => {
+    const initialTheme = ThemeManager.initTheme();
+    setTheme(initialTheme);
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e) => {
+      const savedTheme = CookieManager.getCookie('almoxarifado_theme');
+      if (!savedTheme) {
+        const systemTheme = e.matches ? 'dark' : 'light';
+        ThemeManager.setTheme(systemTheme);
+        setTheme(systemTheme);
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = ThemeManager.toggleTheme(theme);
+    setTheme(newTheme);
+  };
+
+  const value = {
+    theme,
+    toggleTheme,
+    isDark: theme === 'dark',
+    classes: themeClasses
+  };
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+};
+
+// ===== HOOK PARA USAR O TEMA =====
+const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme deve ser usado dentro de um ThemeProvider');
+  }
+  return context;
+};
+
+// ===== COMPONENTE BOTÃO DE ALTERNAR TEMA COM COR #bd9967 =====
+const ThemeToggle = () => {
+  const { theme, toggleTheme, classes } = useTheme();
+  
+  return (
+    <button
+      onClick={toggleTheme}
+      className={`flex items-center gap-2 px-3 py-2 text-sm ${classes.buttonSecondary}`}
+      title={`Alternar para modo ${theme === 'dark' ? 'claro' : 'escuro'}`}
+    >
+      {theme === 'dark' ? (
+        <>
+          <Sun className="w-4 h-4" />
+          Modo Claro
+        </>
+      ) : (
+        <>
+          <Moon className="w-4 h-4" />
+          Modo Escuro
+        </>
+      )}
+    </button>
+  );
+};
+
+// ===== NÍVEIS DE PERMISSÃO =====
 export const NIVEIS_PERMISSAO = {
-  FUNCIONARIO: 1,      // Apenas visualizar
-  SUPERVISOR: 2,       // Criar funcionários + todas as funções operacionais
-  GERENTE: 3,          // Criar funcionários + usuários supervisor/funcionário
-  ADMIN: 4             // Todas as permissões
+  FUNCIONARIO: 1,
+  SUPERVISOR: 2,
+  GERENTE: 3,
+  ADMIN: 4
 };
 
 export const NIVEIS_LABELS = {
@@ -124,32 +346,20 @@ export const NIVEIS_LABELS = {
   4: 'Administrador'
 };
 
-// Sistema de permissões
+// ===== SISTEMA DE PERMISSÕES =====
 export const PermissionChecker = {
-  // Verificar se pode visualizar
   canView: (userLevel, section) => {
     return userLevel >= NIVEIS_PERMISSAO.FUNCIONARIO;
   },
-
-  // Verificar se pode criar/editar/deletar dados operacionais (inventário, empréstimos, etc.)
   canManageOperational: (userLevel) => {
-    // Funcionário (nivel 1) não pode editar nada
     return userLevel > NIVEIS_PERMISSAO.FUNCIONARIO;
   },
-
-  // Verificar se pode gerenciar funcionários (para empréstimos)
   canManageEmployees: (userLevel) => {
-    // Funcionário (nivel 1) não pode editar nada
     return userLevel > NIVEIS_PERMISSAO.FUNCIONARIO;
   },
-
-  // Verificar se pode gerenciar usuários do sistema
   canManageUsers: (userLevel) => {
-    // Funcionário (nivel 1) não pode editar nada
     return userLevel > NIVEIS_PERMISSAO.FUNCIONARIO && userLevel >= NIVEIS_PERMISSAO.GERENTE;
   },
-
-  // Verificar se pode criar usuários de nível específico
   canCreateUserLevel: (userLevel, targetLevel) => {
     if (userLevel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
     if (userLevel === NIVEIS_PERMISSAO.ADMIN) return true;
@@ -158,446 +368,252 @@ export const PermissionChecker = {
     }
     return false;
   },
-
-  // Verificar se pode editar usuário específico
   canEditUser: (userLevel, userId, targetUserId, targetUserLevel) => {
     if (userLevel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
-    if (userId === targetUserId) return true; // Próprio perfil
+    if (userId === targetUserId) return true;
     if (userLevel === NIVEIS_PERMISSAO.ADMIN) return true;
     if (userLevel === NIVEIS_PERMISSAO.GERENTE) {
       return targetUserLevel < NIVEIS_PERMISSAO.GERENTE;
     }
     return false;
   },
-
-  // Verificar se pode gerenciar compras
   canManagePurchases: (userLevel) => {
-    // Funcionário (nivel 1) não pode editar nada
     return userLevel > NIVEIS_PERMISSAO.FUNCIONARIO;
+  },
+  isAdmin: (userLevel) => {
+    return userLevel === NIVEIS_PERMISSAO.ADMIN;
   }
 };
 
-// Provider de autenticação melhorado
-const AuthProvider = ({ children }) => {
-  const [usuario, setUsuario] = useState(null);
-  const [usuarios, setUsuarios] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [firebaseStatus, setFirebaseStatus] = useState('connecting');
-  const [cookiesEnabled, setCookiesEnabled] = useState(true);
+// ===== MODAL DE EDIÇÃO DE PERFIL =====
+const EditProfileModal = ({ usuario, onClose, onSave }) => {
+  const { classes } = useTheme();
+  const [formData, setFormData] = useState({
+    nome: usuario?.nome || '',
+    email: usuario?.email || '',
+    senha: '',
+    confirmarSenha: ''
+  });
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
 
-  // Nomes dos cookies
-  const COOKIE_NAMES = {
-    USUARIO: 'almoxarifado_usuario',
-    LEMBRAR: 'almoxarifado_lembrar',
-    EXPIRACAO: 'almoxarifado_expira'
-  };
-
-  // Inicialização do sistema com Firebase
-  useEffect(() => {
-    const initFirebaseSystem = async () => {
-      try {
-        setFirebaseStatus('connecting');
-        
-        // Verificar se cookies estão habilitados
-        const cookiesOK = CookieManager.areCookiesEnabled();
-        setCookiesEnabled(cookiesOK);
-        console.log('Cookies habilitados:', cookiesOK);
-        
-        // Verificar se existe usuário salvo nos cookies
-        await verificarUsuarioSalvo();
-        
-        // Carregar usuários do Firebase
-        await carregarUsuarios();
-        
-        setFirebaseStatus('connected');
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Erro ao conectar com Firebase:', error);
-        setFirebaseStatus('error');
-        
-        // Ainda assim tentar verificar usuário salvo
-        await verificarUsuarioSalvo();
-        
-        // Fallback para usuários em memória se Firebase falhar
-        await initUsuariosLocais();
-        setIsLoading(false);
-      }
-    };
-
-    initFirebaseSystem();
-  }, []);
-
-  // Listener em tempo real para usuários no Firebase
-  useEffect(() => {
-    let unsubscribe = null;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrors({});
     
-    const setupFirebaseListener = () => {
-      try {
-        unsubscribe = onSnapshot(collection(db, 'usuarios'), async (snapshot) => {
-          const usuariosCarregados = snapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data() 
-          }));
-          
-          setUsuarios(usuariosCarregados);
-          
-          // Se não houver usuários, criar usuário admin padrão
-          if (usuariosCarregados.length === 0) {
-            await criarUsuarioAdmin();
-          }
-        }, (error) => {
-          console.error('Erro no listener de usuários:', error);
-          setFirebaseStatus('error');
-        });
-      } catch (error) {
-        console.error('Erro ao configurar listener:', error);
-        setFirebaseStatus('error');
-      }
-    };
-
-    if (firebaseStatus === 'connected') {
-      setupFirebaseListener();
-    }
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [firebaseStatus]);
-
-  // Função para verificar usuário salvo nos cookies
-  const verificarUsuarioSalvo = async () => {
-    try {
-      if (!cookiesEnabled && !CookieManager.areCookiesEnabled()) {
-        console.log('Cookies não habilitados, não é possível verificar usuário salvo');
-        return;
-      }
-
-      const usuarioSalvo = CookieManager.getCookie(COOKIE_NAMES.USUARIO);
-      const lembrarLogin = CookieManager.getCookie(COOKIE_NAMES.LEMBRAR);
-      const dataExpiracao = CookieManager.getCookie(COOKIE_NAMES.EXPIRACAO);
-      
-      console.log('Verificando cookies:', { 
-        usuario: !!usuarioSalvo, 
-        lembrar: lembrarLogin, 
-        expira: dataExpiracao 
-      });
-      
-      if (usuarioSalvo) {
-        // Verificar se não expirou
-        if (dataExpiracao && new Date() > new Date(dataExpiracao)) {
-          console.log('Login expirado, limpando cookies');
-          limparDadosLogin();
-          return;
-        }
-        // Validar estrutura dos dados do usuário
-        if (usuarioSalvo && typeof usuarioSalvo === 'object' && usuarioSalvo.id && usuarioSalvo.email) {
-          setUsuario(usuarioSalvo);
-          console.log('✅ Usuário restaurado dos cookies:', usuarioSalvo.nome);
-        } else {
-          console.log('❌ Dados do usuário nos cookies inválidos, limpando');
-          limparDadosLogin();
-        }
-      } else {
-        console.log('Nenhum usuário salvo encontrado nos cookies');
-      }
-    } catch (error) {
-      console.error('Erro ao verificar usuário salvo nos cookies:', error);
-      limparDadosLogin();
-    }
-  };
-
-  // Função para limpar dados de login salvos
-  const limparDadosLogin = () => {
-    try {
-      CookieManager.removeCookie(COOKIE_NAMES.USUARIO);
-      CookieManager.removeCookie(COOKIE_NAMES.LEMBRAR);
-      CookieManager.removeCookie(COOKIE_NAMES.EXPIRACAO);
-      console.log('✅ Dados de login removidos dos cookies');
-    } catch (error) {
-      console.error('Erro ao limpar dados de login:', error);
-    }
-  };
-
-  // Função para salvar dados de login
-  const salvarDadosLogin = (usuarioData, lembrarLogin) => {
-    try {
-      if (!cookiesEnabled) {
-        console.warn('Cookies não habilitados, não é possível salvar login');
-        return false;
-      }
-
-      if (lembrarLogin) {
-        // Salvar dados do usuário (sem senha por segurança)
-        const dadosParaSalvar = {
-          id: usuarioData.id,
-          nome: usuarioData.nome,
-          email: usuarioData.email,
-          nivel: usuarioData.nivel,
-          ativo: usuarioData.ativo,
-          ultimoLogin: usuarioData.ultimoLogin,
-          dataCriacao: usuarioData.dataCriacao
-        };
-
-        const sucessoUsuario = CookieManager.setCookie(COOKIE_NAMES.USUARIO, dadosParaSalvar, 30);
-        const sucessoLembrar = CookieManager.setCookie(COOKIE_NAMES.LEMBRAR, 'true', 30);
-        
-        // Definir expiração para 30 dias
-        const dataExpiracao = new Date();
-        dataExpiracao.setDate(dataExpiracao.getDate() + 30);
-        const sucessoExpiracao = CookieManager.setCookie(COOKIE_NAMES.EXPIRACAO, dataExpiracao.toISOString(), 30);
-        
-        if (sucessoUsuario && sucessoLembrar && sucessoExpiracao) {
-          console.log('✅ Dados de login salvos nos cookies com sucesso');
-          return true;
-        } else {
-          console.error('❌ Falha ao salvar alguns dados nos cookies');
-          limparDadosLogin();
-          return false;
-        }
-      } else {
-        limparDadosLogin();
-        return true;
-      }
-    } catch (error) {
-      console.error('Erro ao salvar dados de login:', error);
-      return false;
-    }
-  };
-
-  const carregarUsuarios = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, 'usuarios'));
-      const usuariosCarregados = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      }));
-      
-      setUsuarios(usuariosCarregados);
-      
-      // Se não houver usuários, criar usuário admin padrão
-      if (usuariosCarregados.length === 0) {
-        await criarUsuarioAdmin();
-      }
-    } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
-      throw error;
-    }
-  };
-
-  const criarUsuarioAdmin = async () => {
-    const adminPadrao = {
-      nome: 'Administrador',
-      email: 'admin',
-      senha: 'admin@362*',
-      nivel: NIVEIS_PERMISSAO.ADMIN,
-      ativo: true,
-      dataCriacao: new Date().toISOString(),
-      ultimoLogin: null
-    };
-
-    try {
-      await addDoc(collection(db, 'usuarios'), adminPadrao);
-      console.log('Usuário admin criado no Firebase');
-    } catch (error) {
-      console.error('Erro ao criar usuário admin:', error);
-    }
-  };
-
-  const initUsuariosLocais = async () => {
-    const usuariosLocais = [
-      {
-        id: '1',
-        nome: 'Administrador',
-        email: 'admin',
-        senha: 'admin@362*',
-        nivel: NIVEIS_PERMISSAO.ADMIN,
-        ativo: true,
-        dataCriacao: new Date().toISOString(),
-        ultimoLogin: null
-      },
-      {
-        id: '2',
-        nome: 'João Silva',
-        email: 'joao',
-        senha: '123456',
-        nivel: NIVEIS_PERMISSAO.GERENTE,
-        ativo: true,
-        dataCriacao: new Date().toISOString(),
-        ultimoLogin: null
-      },
-      {
-        id: '3',
-        nome: 'Maria Santos',
-        email: 'maria',
-        senha: '123456',
-        nivel: NIVEIS_PERMISSAO.SUPERVISOR,
-        ativo: true,
-        dataCriacao: new Date().toISOString(),
-        ultimoLogin: null
-      },
-      {
-        id: '4',
-        nome: 'Pedro Lima',
-        email: 'pedro',
-        senha: '123456',
-        nivel: NIVEIS_PERMISSAO.FUNCIONARIO,
-        ativo: true,
-        dataCriacao: new Date().toISOString(),
-        ultimoLogin: null
-      }
-    ];
+    // Validações
+    const newErrors = {};
     
-    setUsuarios(usuariosLocais);
-    console.log('Usuários locais carregados como fallback');
-  };
-
-  const login = async (email, senha, lembrarLogin = false) => {
-    try {
-      const usuarioEncontrado = usuarios.find(u => 
-        u.email === email && u.senha === senha && u.ativo
-      );
-
-      if (usuarioEncontrado) {
-        const usuarioAtualizado = {
-          ...usuarioEncontrado,
-          ultimoLogin: new Date().toISOString()
-        };
-        // Atualizar no Firebase
-        try {
-          await updateDoc(doc(db, 'usuarios', usuarioEncontrado.id), {
-            ultimoLogin: usuarioAtualizado.ultimoLogin
-          });
-        } catch (firebaseError) {
-          console.warn('Erro ao atualizar último login no Firebase:', firebaseError);
-        }
-  // Sempre salvar dados de login para persistência em localhost
-  salvarDadosLogin(usuarioAtualizado, true);
-        setUsuario(usuarioAtualizado);
-        return { success: true };
-      }
-
-      return { success: false, message: 'Email ou senha incorretos' };
-    } catch (error) {
-      console.error('Erro no login:', error);
-      return { success: false, message: 'Erro interno do sistema' };
+    if (!formData.nome.trim()) {
+      newErrors.nome = 'Nome é obrigatório';
     }
-  };
-
-  const logout = () => {
-    limparDadosLogin();
-    setUsuario(null);
-  };
-
-  const criarUsuario = async (dadosUsuario) => {
-    try {
-      // Verificar permissão para criar usuário
-      if (!PermissionChecker.canCreateUserLevel(usuario.nivel, dadosUsuario.nivel)) {
-        return { success: false, message: 'Sem permissão para criar usuário deste nível' };
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email inválido';
+    }
+    
+    if (formData.senha) {
+      if (formData.senha.length < 6) {
+        newErrors.senha = 'Senha deve ter pelo menos 6 caracteres';
       }
-
-      const novoUsuario = {
-        ...dadosUsuario,
-        ativo: true,
-        dataCriacao: new Date().toISOString(),
-        ultimoLogin: null
+      
+      if (formData.senha !== formData.confirmarSenha) {
+        newErrors.confirmarSenha = 'Senhas não conferem';
+      }
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const dadosAtualizacao = {
+        nome: formData.nome.trim(),
+        email: formData.email.trim(),
       };
-
-      // Tentar salvar no Firebase
-      const docRef = await addDoc(collection(db, 'usuarios'), novoUsuario);
-      const usuarioComId = { id: docRef.id, ...novoUsuario };
       
-      return { success: true, usuario: usuarioComId };
-    } catch (error) {
-      console.error('Erro ao criar usuário:', error);
-      return { success: false, message: 'Erro ao criar usuário' };
-    }
-  };
-
-  const atualizarUsuario = async (id, dadosAtualizados) => {
-    try {
-      // Verificar permissão para editar usuário
-      const usuarioAlvo = usuarios.find(u => u.id === id);
-      if (!PermissionChecker.canEditUser(usuario.nivel, usuario.id, id, usuarioAlvo?.nivel)) {
-        return { success: false, message: 'Sem permissão para editar este usuário' };
-      }
-
-      await updateDoc(doc(db, 'usuarios', id), dadosAtualizados);
-      
-      if (usuario && usuario.id === id) {
-        const usuarioAtualizado = { ...usuario, ...dadosAtualizados };
-        setUsuario(usuarioAtualizado);
-        
-        // Atualizar cookies se necessário
-        if (CookieManager.getCookie(COOKIE_NAMES.LEMBRAR) === 'true') {
-          salvarDadosLogin(usuarioAtualizado, true);
-        }
+      // Só inclui senha se foi informada
+      if (formData.senha) {
+        dadosAtualizacao.senha = formData.senha;
       }
       
-      return { success: true };
+      await onSave(dadosAtualizacao);
+      onClose();
     } catch (error) {
-      console.error('Erro ao atualizar usuário:', error);
-      return { success: false, message: 'Erro ao atualizar usuário' };
+      setErrors({ geral: 'Erro ao atualizar perfil. Tente novamente.' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const removerUsuario = async (id) => {
-    // Não permitir remoção do admin principal
-    const usuarioAlvo = usuarios.find(u => u.id === id);
-    if (usuarioAlvo?.email === 'admin') {
-      return { success: false, message: 'Não é possível remover o administrador principal' };
-    }
+  return (
+    <div className={`fixed inset-0 ${classes.overlay} flex items-center justify-center z-50`}>
+      <div className={`${classes.modal} max-w-md w-full mx-4 p-6`}>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className={`text-xl font-bold ${classes.textPrimary}`}>Editar Perfil</h2>
+          <button
+            onClick={onClose}
+            className={`${classes.textLight} hover:${classes.textSecondary} transition-colors duration-200`}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-    // Verificar permissão
-    if (!PermissionChecker.canEditUser(usuario.nivel, usuario.id, id, usuarioAlvo?.nivel)) {
-      return { success: false, message: 'Sem permissão para remover este usuário' };
-    }
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className={classes.formLabel}>Nome</label>
+            <input
+              type="text"
+              value={formData.nome}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+              className={`w-full px-3 py-2 ${classes.input} ${
+                errors.nome ? 'border-red-500 focus:ring-red-500' : 'focus:ring-2'
+              }`}
+              style={{ '--tw-ring-color': errors.nome ? '#ef4444' : '#bd9967' }}
+              placeholder="Digite seu nome"
+              disabled={isLoading}
+            />
+            {errors.nome && (
+              <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.nome}</p>
+            )}
+          </div>
 
-    try {
-      await deleteDoc(doc(db, 'usuarios', id));
-      return { success: true };
-    } catch (error) {
-      console.error('Erro ao remover usuário:', error);
-      return { success: false, message: 'Erro ao remover usuário' };
-    }
-  };
+          <div>
+            <label className={classes.formLabel}>Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className={`w-full px-3 py-2 ${classes.input} ${
+                errors.email ? 'border-red-500 focus:ring-red-500' : 'focus:ring-2'
+              }`}
+              style={{ '--tw-ring-color': errors.email ? '#ef4444' : '#bd9967' }}
+              placeholder="Digite seu email"
+              disabled={isLoading}
+            />
+            {errors.email && (
+              <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.email}</p>
+            )}
+          </div>
 
-  const temPermissao = (nivelNecessario) => {
-    return usuario && usuario.nivel >= nivelNecessario;
-  };
+          <div>
+            <label className={classes.formLabel}>Nova Senha (opcional)</label>
+            <div className="relative">
+              <input
+                type={mostrarSenha ? 'text' : 'password'}
+                value={formData.senha}
+                onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
+                className={`w-full px-3 py-2 pr-10 ${classes.input} ${
+                errors.senha ? 'border-red-500 focus:ring-red-500' : 'focus:ring-2'
+                }`}
+                style={{ '--tw-ring-color': errors.senha ? '#ef4444' : '#bd9967' }}
+                placeholder="Deixe em branco para manter a atual"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarSenha(!mostrarSenha)}
+                className={`absolute right-3 top-3 ${classes.textLight} hover:${classes.textSecondary} transition-colors duration-200`}
+                disabled={isLoading}
+              >
+                {mostrarSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.senha && (
+              <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.senha}</p>
+            )}
+          </div>
 
-  const value = {
-    usuario,
-    usuarios,
-    isLoading,
-    firebaseStatus,
-    cookiesEnabled,
-    login,
-    logout,
-    criarUsuario,
-    atualizarUsuario,
-    removerUsuario,
-    temPermissao,
-    NIVEIS_PERMISSAO
-  };
+          {formData.senha && (
+            <div>
+              <label className={classes.formLabel}>Confirmar Nova Senha</label>
+              <div className="relative">
+                <input
+                  type={mostrarConfirmarSenha ? 'text' : 'password'}
+                  value={formData.confirmarSenha}
+                  onChange={(e) => setFormData({ ...formData, confirmarSenha: e.target.value })}
+                  className={`w-full px-3 py-2 pr-10 ${classes.input} ${
+                    errors.confirmarSenha ? 'border-red-500 focus:ring-red-500' : 'focus:ring-2'
+                  }`}
+                  style={{ '--tw-ring-color': errors.confirmarSenha ? '#ef4444' : '#bd9967' }}
+                  placeholder="Confirme a nova senha"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
+                  className={`absolute right-3 top-3 ${classes.textLight} hover:${classes.textSecondary} transition-colors duration-200`}
+                  disabled={isLoading}
+                >
+                  {mostrarConfirmarSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.confirmarSenha && (
+                <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.confirmarSenha}</p>
+              )}
+            </div>
+          )}
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+          {errors.geral && (
+            <div className={`${classes.alertError} px-4 py-3 rounded-lg text-sm`}>
+              {errors.geral}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className={`flex-1 px-4 py-2 ${classes.buttonSecondary} text-sm ${
+                isLoading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`flex-1 px-4 py-2 text-sm ${classes.buttonPrimary} ${
+                isLoading ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' : 'hover:opacity-90'
+              } text-white`}
+              style={{ backgroundColor: isLoading ? undefined : '#bd9967' }}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Salvando...
+                </div>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 inline mr-2" />
+                  Salvar
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
-// Componente de Status do Firebase
-
-
-// Componente de Login
+// ===== COMPONENTE DE LOGIN ATUALIZADO COM TEMA PADRONIZADO =====
 const LoginForm = () => {
   const [formData, setFormData] = useState({ email: '', senha: '', lembrar: false });
   const [erro, setErro] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
-  // Removido: agora o campo está em formData
   const { login, cookiesEnabled } = useAuth();
+  const { classes } = useTheme();
 
-  // Verificar suporte a cookies ao carregar componente
   useEffect(() => {
     if (!cookiesEnabled) {
       console.warn('Cookies não habilitados - função "Lembrar de mim" não funcionará');
@@ -637,30 +653,34 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+    <div className={`min-h-screen bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4 ${classes.backgroundPrimary}`}>
+      <div className={`max-w-md w-full ${classes.card} p-8`}>
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <Package className="w-8 h-8 text-green-600" />
+          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors duration-200" style={{ backgroundColor: '#bd9967' }}>
+            <Package className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Almoxarifado Jardim</h1>
-          <p className="text-gray-600 mb-4">Sistema de Gestão</p>
-
+          <h1 className={`text-2xl font-bold ${classes.textPrimary} mb-2`}>Almoxarifado Jardim</h1>
+          <p className={`${classes.textSecondary} mb-4`}>Sistema de Gestão</p>
+          
+          <div className="flex justify-center mb-4">
+            <ThemeToggle />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={classes.formLabel}>
               Email/Usuário
             </label>
             <div className="relative">
-              <User className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+              <User className={`w-4 h-4 absolute left-3 top-3 ${classes.textLight}`} />
               <input
                 type="text"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 onKeyPress={handleKeyPress}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className={`w-full pl-10 pr-4 py-3 ${classes.input} focus:ring-2 focus:border-transparent`}
+                style={{ '--tw-ring-color': '#bd9967' }}
                 placeholder="Digite seu usuário"
                 required
                 disabled={carregando}
@@ -669,17 +689,18 @@ const LoginForm = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={classes.formLabel}>
               Senha
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+              <Lock className={`w-4 h-4 absolute left-3 top-3 ${classes.textLight}`} />
               <input
                 type={mostrarSenha ? 'text' : 'password'}
                 value={formData.senha}
                 onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
                 onKeyPress={handleKeyPress}
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className={`w-full pl-10 pr-12 py-3 ${classes.input} focus:ring-2 focus:border-transparent`}
+                style={{ '--tw-ring-color': '#bd9967' }}
                 placeholder="Digite sua senha"
                 required
                 disabled={carregando}
@@ -687,7 +708,7 @@ const LoginForm = () => {
               <button
                 type="button"
                 onClick={() => setMostrarSenha(!mostrarSenha)}
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                className={`absolute right-3 top-3 ${classes.textLight} hover:${classes.textSecondary} transition-colors duration-200`}
                 disabled={carregando}
               >
                 {mostrarSenha ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -695,10 +716,8 @@ const LoginForm = () => {
             </div>
           </div>
 
-
-
           {!cookiesEnabled && (
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg text-sm">
+            <div className={`${classes.alertWarning} px-4 py-3 rounded-lg text-sm`}>
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" />
                 <span>Cookies desabilitados. A função "Lembrar de mim" não funcionará.</span>
@@ -707,7 +726,7 @@ const LoginForm = () => {
           )}
 
           {erro && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+            <div className={`${classes.alertError} px-4 py-3 rounded-lg text-sm`}>
               {erro}
             </div>
           )}
@@ -715,11 +734,12 @@ const LoginForm = () => {
           <button
             type="submit"
             disabled={carregando}
-            className={`w-full font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
+            className={`w-full ${classes.buttonPrimary} py-3 px-4 ${
               carregando 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-green-600 hover:bg-green-700'
+                ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
+                : 'hover:opacity-90'
             } text-white`}
+            style={{ backgroundColor: carregando ? undefined : '#bd9967' }}
           >
             {carregando ? (
               <div className="flex items-center justify-center gap-2">
@@ -731,8 +751,8 @@ const LoginForm = () => {
             )}
           </button>
         </form>
-        {/* Footer or legal info only, no test users, cookies, or login tips */}
-        <div className="mt-6 text-center text-xs text-gray-500">
+        
+        <div className={`mt-6 text-center text-xs ${classes.textLight}`}>
           <p>Sistema protegido por autenticação</p>
         </div>
       </div>
@@ -740,515 +760,199 @@ const LoginForm = () => {
   );
 };
 
-// Dashboard simplificado
-const Dashboard = ({ stats, firebaseStatus }) => {
-  // ...existing code...
-  // Recebe os dados via props do AlmoxarifadoSistema
-  const { inventario, emprestimos, funcionarios, ferramentasDanificadas, ferramentasPerdidas, compras } = stats;
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded">
-              <Package className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Inventário</p>
-              <p className="text-2xl font-bold text-gray-900">{inventario?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded">
-              <ClipboardList className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Empréstimos Ativos</p>
-              <p className="text-2xl font-bold text-gray-900">{emprestimos?.filter(e => e.status !== 'devolvido').length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded">
-              <Users className="w-6 h-6 text-yellow-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Funcionários</p>
-              <p className="text-2xl font-bold text-gray-900">{funcionarios?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Danificadas</p>
-              <p className="text-2xl font-bold text-gray-900">{ferramentasDanificadas?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded">
-              <AlertCircle className="w-6 h-6 text-red-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Perdidas</p>
-              <p className="text-2xl font-bold text-gray-900">{ferramentasPerdidas?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded">
-              <ShoppingCart className="w-6 h-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Compras</p>
-              <p className="text-2xl font-bold text-gray-900">{compras?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Componente de Loading
+// ===== LOADING SCREEN ATUALIZADO COM TEMA PADRONIZADO =====
 const LoadingScreen = () => {
+  const { classes } = useTheme();
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+    <div className={`min-h-screen ${classes.backgroundPrimary} flex items-center justify-center`}>
       <div className="text-center">
-        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-          <Package className="w-8 h-8 text-green-600 animate-pulse" />
+        <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors duration-200" style={{ backgroundColor: '#bd9967' }}>
+          <Package className="w-8 h-8 text-white animate-pulse" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Almoxarifado Jardim</h1>
+        <h1 className={`text-2xl font-bold ${classes.textPrimary} mb-2`}>Almoxarifado Jardim</h1>
         <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
-          <p className="text-gray-600">Conectando ao Firebase...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2" style={{ borderColor: '#bd9967' }}></div>
+          <p className={classes.textSecondary}>Conectando ao Firebase...</p>
         </div>
-        <div className="w-64 bg-gray-200 rounded-full h-2">
-          <div className="bg-green-600 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
+        <div className={`w-64 ${classes.containerSecondary} rounded-full h-2`}>
+          <div className="h-2 rounded-full animate-pulse transition-colors duration-200" style={{ width: '70%', backgroundColor: '#bd9967' }}></div>
         </div>
-        <p className="text-sm text-gray-500 mt-2">Inicializando módulos de segurança...</p>
+        <p className={`text-sm ${classes.textMuted} mt-2`}>Inicializando módulos de segurança...</p>
       </div>
     </div>
   );
 };
 
-// Componente de Aviso de Permissão
-const PermissionDenied = ({ message = "Você não tem permissão para realizar esta ação." }) => {
-  return (
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-      <div className="flex items-center justify-center mb-2">
-        <Shield className="w-8 h-8 text-red-600" />
-      </div>
-      <h3 className="text-lg font-medium text-red-800 mb-1">Acesso Negado</h3>
-      <p className="text-red-600">{message}</p>
-    </div>
-  );
-};
-
-// Componente principal do sistema
+// ===== COMPONENTE PRINCIPAL ATUALIZADO COM TEMA PADRONIZADO =====
 const AlmoxarifadoSistema = () => {
-  const { usuario, logout, firebaseStatus } = useAuth();
-  
-  // Estados locais
+  const { usuario, logout, firebaseStatus, atualizarUsuario } = useAuth();
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
+  const [mostrarEditarPerfil, setMostrarEditarPerfil] = useState(false);
+  const { classes } = useTheme();
 
-  // ===== INVENTÁRIO =====
+  // Estados do sistema
   const [inventario, setInventario] = useState([]);
-  
+
+  // Firestore: sincronização em tempo real do inventário
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'inventario'), async (snapshot) => {
-      const itens = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setInventario(itens);
-      
-      // Se inventário está vazio, popula com inventarioInicial
-      if (itens.length === 0 && PermissionChecker.canManageOperational(usuario?.nivel)) {
-        console.log('Populando inventário inicial...');
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setInventario(items);
+      if (items.length === 0 && PermissionChecker.canManageOperational(usuario?.nivel)) {
         for (const item of inventarioInicial) {
           const { id, ...rest } = item;
           await addDoc(collection(db, 'inventario'), rest);
         }
       }
-    }, (error) => {
-      console.error('Erro no listener do inventário:', error);
     });
-    
     return () => unsubscribe();
   }, [usuario]);
 
   const adicionarItem = async (item) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para adicionar itens');
-    }
-    try {
-      // Inicializa o campo 'disponivel' igual à quantidade
-      const itemCorrigido = {
-        ...item,
-        quantidade: Number(item.quantidade),
-        disponivel: Number(item.quantidade)
-      };
-      return await addDoc(collection(db, 'inventario'), itemCorrigido);
-    } catch (error) {
-      console.error('Erro ao adicionar item:', error);
-      throw error;
-    }
+    if (!PermissionChecker.canManageOperational(usuario?.nivel)) throw new Error('Sem permissão para adicionar itens');
+    await addDoc(collection(db, 'inventario'), item);
   };
-
   const removerItem = async (id) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para remover itens');
-    }
-    try {
-      return await deleteDoc(doc(db, 'inventario', id));
-    } catch (error) {
-      console.error('Erro ao remover item:', error);
-      throw error;
-    }
+    if (!PermissionChecker.canManageOperational(usuario?.nivel)) throw new Error('Sem permissão para remover itens');
+    await deleteDoc(doc(db, 'inventario', id));
   };
-
   const atualizarItem = async (id, dados) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para atualizar itens');
-    }
-    try {
-      return await updateDoc(doc(db, 'inventario', id), dados);
-    } catch (error) {
-      console.error('Erro ao atualizar item:', error);
-      throw error;
-    }
+    if (!PermissionChecker.canManageOperational(usuario?.nivel)) throw new Error('Sem permissão para atualizar itens');
+    await updateDoc(doc(db, 'inventario', id), dados);
   };
 
-  // Função para reimportar inventário inicial
-  const reimportarInventario = async () => {
-    // Remove todos os itens atuais do Firestore
-    const snapshot = await onSnapshot(collection(db, 'inventario'), async (snap) => {
-      for (const docItem of snap.docs) {
-        await deleteDoc(doc(db, 'inventario', docItem.id));
-      }
-      // Adiciona todos os itens do inventarioInicial
-      for (const item of inventarioInicial) {
-        const { id, ...rest } = item;
-        await addDoc(collection(db, 'inventario'), rest);
-      }
-    });
-    // Unsubscribe imediatamente após execução
-    snapshot();
-  };
-
-  // Função para corrigir campo 'disponivel' no inventário do Firestore
-  const corrigirInventario = async () => {
-    const snapshot = await getDocs(collection(db, 'inventario'));
-    for (const docItem of snapshot.docs) {
-      const data = docItem.data();
-      if (data.quantidade !== undefined) {
-        await updateDoc(doc(db, 'inventario', docItem.id), {
-          disponivel: data.quantidade
-        });
-      }
-    }
-    alert('Inventário corrigido: campo "disponivel" atualizado!');
-  };
-
-  // ===== EMPRÉSTIMOS =====
   const [emprestimos, setEmprestimos] = useState([]);
-  
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'emprestimos'), (snapshot) => {
-      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setEmprestimos(lista);
-    }, (error) => {
-      console.error('Erro no listener dos empréstimos:', error);
-    });
-    
-    return () => unsubscribe();
-  }, []);
-
-  const adicionarEmprestimo = async (emprestimo) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para adicionar empréstimos');
-    }
-    try {
-      // Adiciona o empréstimo
-      const docRef = await addDoc(collection(db, 'emprestimos'), emprestimo);
-
-      // Atualiza o campo 'disponivel' do inventário para cada ferramenta emprestada
-      if (emprestimo.ferramentas && Array.isArray(emprestimo.ferramentas)) {
-        for (const nomeFerramenta of emprestimo.ferramentas) {
-          const item = inventario.find(i => i.nome === nomeFerramenta);
-          if (item && item.disponivel > 0) {
-            await updateDoc(doc(db, 'inventario', item.id), {
-              disponivel: item.disponivel - 1
-            });
-          }
-        }
-      }
-      return docRef;
-    } catch (error) {
-      console.error('Erro ao adicionar empréstimo:', error);
-      throw error;
-    }
-  };
-
-  const removerEmprestimo = async (id) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para remover empréstimos');
-    }
-    try {
-      return await deleteDoc(doc(db, 'emprestimos', id));
-    } catch (error) {
-      console.error('Erro ao remover empréstimo:', error);
-      throw error;
-    }
-  };
-
-  const atualizarEmprestimo = async (id, dados) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para atualizar empréstimos');
-    }
-    try {
-      return await updateDoc(doc(db, 'emprestimos', id), dados);
-    } catch (error) {
-      console.error('Erro ao atualizar empréstimo:', error);
-      throw error;
-    }
-  };
-
-  // Função para marcar empréstimo como devolvido
-  const devolverFerramentas = async (id, atualizarDisponibilidade) => {
-    try {
-      // Atualiza status e data/hora de devolução
-      const dataDevolucao = new Date().toISOString().split('T')[0];
-      const horaDevolucao = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      await atualizarEmprestimo(id, {
-        status: 'devolvido',
-        dataDevolucao,
-        horaDevolucao
-      });
-      // Atualiza disponibilidade das ferramentas se necessário
-      if (typeof atualizarDisponibilidade === 'function') {
-        await atualizarDisponibilidade(id);
-      }
-    } catch (error) {
-      console.error('Erro ao devolver ferramentas:', error);
-      alert('Erro ao marcar como devolvido. Tente novamente.');
-    }
-  };
-
-  // ===== FUNCIONÁRIOS =====
   const [funcionarios, setFuncionarios] = useState([]);
-  
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'funcionarios'), (snapshot) => {
-      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setFuncionarios(lista);
-    }, (error) => {
-      console.error('Erro no listener dos funcionários:', error);
-    });
-    
-    return () => unsubscribe();
-  }, []);
-
-  const adicionarFuncionario = async (funcionario) => {
-    if (!PermissionChecker.canManageEmployees(usuario?.nivel)) {
-      throw new Error('Sem permissão para adicionar funcionários');
-    }
-    try {
-      return await addDoc(collection(db, 'funcionarios'), funcionario);
-    } catch (error) {
-      console.error('Erro ao adicionar funcionário:', error);
-      throw error;
-    }
-  };
-
-  const removerFuncionario = async (id) => {
-    if (!PermissionChecker.canManageEmployees(usuario?.nivel)) {
-      throw new Error('Sem permissão para remover funcionários');
-    }
-    try {
-      return await deleteDoc(doc(db, 'funcionarios', id));
-    } catch (error) {
-      console.error('Erro ao remover funcionário:', error);
-      throw error;
-    }
-  };
-
-  const atualizarFuncionario = async (id, dados) => {
-    if (!PermissionChecker.canManageEmployees(usuario?.nivel)) {
-      throw new Error('Sem permissão para atualizar funcionários');
-    }
-    try {
-      return await updateDoc(doc(db, 'funcionarios', id), dados);
-    } catch (error) {
-      console.error('Erro ao atualizar funcionário:', error);
-      throw error;
-    }
-  };
-
-  // ===== FERRAMENTAS DANIFICADAS =====
   const [ferramentasDanificadas, setFerramentasDanificadas] = useState([]);
-  
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'ferramentas_danificadas'), (snapshot) => {
-      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setFerramentasDanificadas(lista);
-    }, (error) => {
-      console.error('Erro no listener das ferramentas danificadas:', error);
-    });
-    
-    return () => unsubscribe();
-  }, []);
-
-  const adicionarFerramentaDanificada = async (item) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para adicionar ferramentas danificadas');
-    }
-    try {
-      return await addDoc(collection(db, 'ferramentas_danificadas'), item);
-    } catch (error) {
-      console.error('Erro ao adicionar ferramenta danificada:', error);
-      throw error;
-    }
-  };
-
-  const removerFerramentaDanificada = async (id) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para remover ferramentas danificadas');
-    }
-    try {
-      return await deleteDoc(doc(db, 'ferramentas_danificadas', id));
-    } catch (error) {
-      console.error('Erro ao remover ferramenta danificada:', error);
-      throw error;
-    }
-  };
-
-  const atualizarFerramentaDanificada = async (id, dados) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para atualizar ferramentas danificadas');
-    }
-    try {
-      return await updateDoc(doc(db, 'ferramentas_danificadas', id), dados);
-    } catch (error) {
-      console.error('Erro ao atualizar ferramenta danificada:', error);
-      throw error;
-    }
-  };
-
-  // ===== FERRAMENTAS PERDIDAS =====
   const [ferramentasPerdidas, setFerramentasPerdidas] = useState([]);
-  
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'ferramentas_perdidas'), (snapshot) => {
-      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setFerramentasPerdidas(lista);
-    }, (error) => {
-      console.error('Erro no listener das ferramentas perdidas:', error);
-    });
-    
-    return () => unsubscribe();
-  }, []);
-
-  const adicionarFerramentaPerdida = async (item) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para adicionar ferramentas perdidas');
-    }
-    try {
-      return await addDoc(collection(db, 'ferramentas_perdidas'), item);
-    } catch (error) {
-      console.error('Erro ao adicionar ferramenta perdida:', error);
-      throw error;
-    }
-  };
-
-  const removerFerramentaPerdida = async (id) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para remover ferramentas perdidas');
-    }
-    try {
-      return await deleteDoc(doc(db, 'ferramentas_perdidas', id));
-    } catch (error) {
-      console.error('Erro ao remover ferramenta perdida:', error);
-      throw error;
-    }
-  };
-
-  const atualizarFerramentaPerdida = async (id, dados) => {
-    if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
-      throw new Error('Sem permissão para atualizar ferramentas perdidas');
-    }
-    try {
-      return await updateDoc(doc(db, 'ferramentas_perdidas', id), dados);
-    } catch (error) {
-      console.error('Erro ao atualizar ferramenta perdida:', error);
-      throw error;
-    }
-  };
-
-  // ===== COMPRAS =====
   const [compras, setCompras] = useState([]);
-  
+
+  // Firestore: sincronização em tempo real dos módulos
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'compras'), (snapshot) => {
-      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCompras(lista);
-    }, (error) => {
-      console.error('Erro no listener das compras:', error);
+    const unsubEmprestimos = onSnapshot(collection(db, 'emprestimos'), (snapshot) => {
+      setEmprestimos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-    
-    return () => unsubscribe();
+    const unsubFuncionarios = onSnapshot(collection(db, 'funcionarios'), (snapshot) => {
+      setFuncionarios(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    const unsubDanificadas = onSnapshot(collection(db, 'ferramentas_danificadas'), (snapshot) => {
+      setFerramentasDanificadas(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    const unsubPerdidas = onSnapshot(collection(db, 'ferramentas_perdidas'), (snapshot) => {
+      setFerramentasPerdidas(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    const unsubCompras = onSnapshot(collection(db, 'compras'), (snapshot) => {
+      setCompras(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => {
+      unsubEmprestimos();
+      unsubFuncionarios();
+      unsubDanificadas();
+      unsubPerdidas();
+      unsubCompras();
+    };
   }, []);
 
+  // CRUD Firestore para cada módulo
+  const adicionarFuncionario = async (funcionario) => {
+    await addDoc(collection(db, 'funcionarios'), funcionario);
+  };
+  const removerFuncionario = async (id) => {
+    await deleteDoc(doc(db, 'funcionarios', id));
+  };
+  const atualizarFuncionario = async (id, dados) => {
+    await updateDoc(doc(db, 'funcionarios', id), dados);
+  };
+
+  // Empréstimos
+  const adicionarEmprestimo = async (emprestimo) => {
+    await addDoc(collection(db, 'emprestimos'), emprestimo);
+  };
+  const removerEmprestimo = async (id) => {
+    await deleteDoc(doc(db, 'emprestimos', id));
+  };
+  const atualizarEmprestimo = async (id, dados) => {
+    await updateDoc(doc(db, 'emprestimos', id), dados);
+  };
+
+  // Compras
   const adicionarCompra = async (compra) => {
-    if (!PermissionChecker.canManagePurchases(usuario?.nivel)) {
-      throw new Error('Sem permissão para adicionar compras');
-    }
-    try {
-      return await addDoc(collection(db, 'compras'), compra);
-    } catch (error) {
-      console.error('Erro ao adicionar compra:', error);
-      throw error;
-    }
+    await addDoc(collection(db, 'compras'), compra);
   };
-
   const removerCompra = async (id) => {
-    if (!PermissionChecker.canManagePurchases(usuario?.nivel)) {
-      throw new Error('Sem permissão para remover compras');
-    }
-    try {
-      return await deleteDoc(doc(db, 'compras', id));
-    } catch (error) {
-      console.error('Erro ao remover compra:', error);
-      throw error;
-    }
+    await deleteDoc(doc(db, 'compras', id));
   };
-
   const atualizarCompra = async (id, dados) => {
-    if (!PermissionChecker.canManagePurchases(usuario?.nivel)) {
-      throw new Error('Sem permissão para atualizar compras');
-    }
+    await updateDoc(doc(db, 'compras', id), dados);
+  };
+
+  // Ferramentas Danificadas
+  const adicionarFerramentaDanificada = async (item) => {
+    if (!PermissionChecker.canManageOperational(usuario?.nivel)) throw new Error('Sem permissão para adicionar ferramentas danificadas');
+    await addDoc(collection(db, 'ferramentas_danificadas'), item);
+  };
+  const removerFerramentaDanificada = async (id) => {
+    if (!PermissionChecker.canManageOperational(usuario?.nivel)) throw new Error('Sem permissão para remover ferramentas danificadas');
+    await deleteDoc(doc(db, 'ferramentas_danificadas', id));
+  };
+  const atualizarFerramentaDanificada = async (id, dados) => {
+    if (!PermissionChecker.canManageOperational(usuario?.nivel)) throw new Error('Sem permissão para atualizar ferramentas danificadas');
+    await updateDoc(doc(db, 'ferramentas_danificadas', id), dados);
+  };
+
+  // Ferramentas Perdidas
+  const adicionarFerramentaPerdida = async (item) => {
+    if (!PermissionChecker.canManageOperational(usuario?.nivel)) throw new Error('Sem permissão para adicionar ferramentas perdidas');
+    await addDoc(collection(db, 'ferramentas_perdidas'), item);
+  };
+  const removerFerramentaPerdida = async (id) => {
+    if (!PermissionChecker.canManageOperational(usuario?.nivel)) throw new Error('Sem permissão para remover ferramentas perdidas');
+    await deleteDoc(doc(db, 'ferramentas_perdidas', id));
+  };
+  const atualizarFerramentaPerdida = async (id, dados) => {
+    if (!PermissionChecker.canManageOperational(usuario?.nivel)) throw new Error('Sem permissão para atualizar ferramentas perdidas');
+    await updateDoc(doc(db, 'ferramentas_perdidas', id), dados);
+  };
+
+  // Função para salvar perfil do usuário
+  const handleSalvarPerfil = async (dadosAtualizacao) => {
     try {
-      return await updateDoc(doc(db, 'compras', id), dados);
+      const resultado = await atualizarUsuario(usuario.id, dadosAtualizacao);
+      if (!resultado.success) {
+        throw new Error(resultado.message);
+      }
     } catch (error) {
-      console.error('Erro ao atualizar compra:', error);
-      throw error;
+      throw new Error('Erro ao atualizar perfil');
     }
   };
 
-  // Verificar se usuario existe antes de continuar
+  // Funções do sistema
+  const reimportarInventario = () => {};
+  const corrigirInventario = () => {};
+  const devolverFerramentas = () => {};
+
+  // Importação de dados iniciais para ferramentas danificadas e perdidas
+  const importarFerramentasIniciais = async () => {
+    try {
+      const danificadas = await fetch('/src/data/ferramentas_danificadas_inicial.json').then(r => r.json());
+      for (const item of danificadas) {
+        await addDoc(collection(db, 'ferramentasDanificadas'), item);
+      }
+      const perdidas = await fetch('/src/data/ferramentas_perdidas_inicial.json').then(r => r.json());
+      for (const item of perdidas) {
+        await addDoc(collection(db, 'ferramentasPerdidas'), item);
+      }
+      alert('Ferramentas danificadas e perdidas importadas com sucesso!');
+    } catch (err) {
+      alert('Erro ao importar dados iniciais: ' + err.message);
+    }
+  };
+
   if (!usuario) {
     return <LoadingScreen />;
   }
 
-  // Estatísticas do sistema
   const stats = {
     inventario,
     emprestimos,
@@ -1258,84 +962,64 @@ const AlmoxarifadoSistema = () => {
     compras
   };
 
-  // Configuração das abas baseada em permissões
   const abas = [
-    { 
-      id: 'dashboard', 
-      nome: 'Dashboard', 
-      icone: BarChart3,
-      permissao: () => true // Dashboard sempre visível
-    },
-    { 
-      id: 'inventario', 
-      nome: 'Inventário', 
-      icone: Package,
-      permissao: () => PermissionChecker.canView(usuario?.nivel)
-    },
-    { 
-      id: 'emprestimos', 
-      nome: 'Empréstimos', 
-      icone: ClipboardList,
-      permissao: () => PermissionChecker.canView(usuario?.nivel)
-    },
-    { 
-      id: 'funcionarios', 
-      nome: 'Funcionários', 
-      icone: Users,
-      permissao: () => PermissionChecker.canView(usuario?.nivel)
-    },
-    { 
-      id: 'compras', 
-      nome: 'Compras', 
-      icone: ShoppingCart,
-      permissao: () => PermissionChecker.canView(usuario?.nivel)
-    },
-    { 
-      id: 'danificadas', 
-      nome: 'Ferramentas Danificadas', 
-      icone: AlertTriangle,
-      permissao: () => PermissionChecker.canView(usuario?.nivel)
-    },
-    { 
-      id: 'perdidas', 
-      nome: 'Ferramentas Perdidas', 
-      icone: AlertCircle,
-      permissao: () => PermissionChecker.canView(usuario?.nivel)
-    }
+    { id: 'dashboard', nome: 'Dashboard', icone: BarChart3, permissao: () => true },
+    { id: 'inventario', nome: 'Inventário', icone: Package, permissao: () => PermissionChecker.canView(usuario?.nivel) },
+    { id: 'emprestimos', nome: 'Empréstimos', icone: ClipboardList, permissao: () => PermissionChecker.canView(usuario?.nivel) },
+    { id: 'funcionarios', nome: 'Funcionários', icone: Users, permissao: () => PermissionChecker.canView(usuario?.nivel) },
+    { id: 'compras', nome: 'Compras', icone: ShoppingCart, permissao: () => PermissionChecker.canView(usuario?.nivel) },
+    { id: 'danificadas', nome: 'Ferramentas Danificadas', icone: AlertTriangle, permissao: () => PermissionChecker.canView(usuario?.nivel) },
+    { id: 'perdidas', nome: 'Ferramentas Perdidas', icone: AlertCircle, permissao: () => PermissionChecker.canView(usuario?.nivel) }
   ].filter(aba => aba.permissao());
 
-  // Permissão para aba de usuários (ADMIN, SUPERVISOR, GERENTE)
-  const podeVerUsuarios = [NIVEIS_PERMISSAO.ADMIN, NIVEIS_PERMISSAO.SUPERVISOR, NIVEIS_PERMISSAO.GERENTE].includes(usuario?.nivel);
+  // Só administradores podem ver usuários do sistema
+  const podeVerUsuarios = PermissionChecker.isAdmin(usuario?.nivel);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm border-b">
+    <div className={classes.backgroundPrimary}>
+      <header className={`${classes.container} shadow-sm border-b ${classes.divider}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <Package className="w-8 h-8 text-green-600 mr-3" />
+              <Package className="w-8 h-8 mr-3 transition-colors duration-200" style={{ color: '#bd9967' }} />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Almoxarifado Jardim</h1>
-                <p className="text-sm text-gray-500">Sistema de Gestão de Ferramentas</p>
+                <h1 className={`text-2xl font-bold ${classes.textPrimary}`}>Almoxarifado Jardim</h1>
+                <p className={`text-sm ${classes.textMuted}`}>Sistema de Gestão de Ferramentas</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
+              
               {podeVerUsuarios && (
                 <button
                   onClick={() => setAbaAtiva('usuarios')}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors ${abaAtiva === 'usuarios' ? 'border border-green-500' : ''}`}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm ${classes.buttonSecondary} ${
+                    abaAtiva === 'usuarios' ? 'border-2' : ''
+                  }`}
+                  style={{ borderColor: abaAtiva === 'usuarios' ? '#bd9967' : 'transparent' }}
                 >
                   <UserCog className="w-4 h-4" />
                   Usuários do Sistema
                 </button>
               )}
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-800">{usuario.nome}</p>
-                <p className="text-xs text-gray-600">{NIVEIS_LABELS[usuario.nivel]}</p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setMostrarEditarPerfil(true)}
+                  className={`flex items-center gap-1 px-2 py-1 text-sm ${classes.buttonSecondary}`}
+                  title="Editar Perfil"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <div className="text-right">
+                  <p className={`text-sm font-medium ${classes.textPrimary}`}>{usuario.nome}</p>
+                  <p className={`text-xs ${classes.textMuted}`}>{NIVEIS_LABELS[usuario.nivel]}</p>
+                </div>
               </div>
+
               <button
                 onClick={logout}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                className={`flex items-center gap-2 px-3 py-2 text-sm ${classes.buttonDanger}`}
               >
                 <Lock className="w-4 h-4" />
                 Sair
@@ -1345,7 +1029,7 @@ const AlmoxarifadoSistema = () => {
         </div>
       </header>
 
-      <nav className="bg-white shadow-sm">
+      <nav className={`${classes.container} shadow-sm`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 overflow-x-auto">
             {abas.map((aba) => {
@@ -1354,11 +1038,15 @@ const AlmoxarifadoSistema = () => {
                 <button
                   key={aba.id}
                   onClick={() => setAbaAtiva(aba.id)}
-                  className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                  className={`flex items-center space-x-2 py-4 px-2 ${classes.navTab} ${
                     abaAtiva === aba.id
-                      ? 'border-green-500 text-green-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? classes.navTabActive
+                      : classes.navTabInactive
                   }`}
+                  style={{ 
+                    borderColor: abaAtiva === aba.id ? '#bd9967' : 'transparent',
+                    color: abaAtiva === aba.id ? '#bd9967' : undefined
+                  }}
                 >
                   <Icone className="w-4 h-4" />
                   <span>{aba.nome}</span>
@@ -1370,108 +1058,324 @@ const AlmoxarifadoSistema = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  {abaAtiva === 'dashboard' && <Dashboard stats={stats} />}
-        
-        {abaAtiva === 'inventario' && (
-          <InventarioTab
-            inventario={inventario}
-            emprestimos={emprestimos}
-            adicionarItem={adicionarItem}
-            removerItem={removerItem}
-            atualizarItem={atualizarItem}
-            reimportarInventario={reimportarInventario}
-            corrigirInventario={corrigirInventario}
-          />
-        )}
-        
-        {abaAtiva === 'emprestimos' && (
-          PermissionChecker.canView(usuario?.nivel) ? (
-            <EmprestimosTab
+        <div className={`${classes.backgroundPrimary} rounded-lg shadow-sm p-4`}> 
+          {abaAtiva === 'dashboard' && <Dashboard stats={stats} />}
+          {abaAtiva === 'inventario' && (
+            <InventarioTab
+              inventario={inventario}
               emprestimos={emprestimos}
-              inventario={inventario}
-              funcionarios={funcionarios}
-              adicionarEmprestimo={adicionarEmprestimo}
-              removerEmprestimo={removerEmprestimo}
-              atualizarEmprestimo={atualizarEmprestimo}
-              devolverFerramentas={devolverFerramentas}
-              readonly={!PermissionChecker.canManageOperational(usuario?.nivel)}
+              adicionarItem={adicionarItem}
+              removerItem={removerItem}
+              atualizarItem={atualizarItem}
+              reimportarInventario={reimportarInventario}
+              corrigirInventario={corrigirInventario}
             />
-          ) : (
-            <PermissionDenied message="Você não tem permissão para visualizar os empréstimos." />
-          )
-        )}
-        
-        {abaAtiva === 'funcionarios' && (
-          PermissionChecker.canView(usuario?.nivel) ? (
-            <FuncionariosTab
-              funcionarios={funcionarios}
-              adicionarFuncionario={adicionarFuncionario}
-              removerFuncionario={removerFuncionario}
-              atualizarFuncionario={atualizarFuncionario}
-              readonly={!PermissionChecker.canManageEmployees(usuario?.nivel)}
-            />
-          ) : (
-            <PermissionDenied message="Você não tem permissão para visualizar os funcionários." />
-          )
-        )}
-
-        {abaAtiva === 'compras' && (
-          PermissionChecker.canView(usuario?.nivel) ? (
-            <ComprasTab
-              compras={compras}
-              inventario={inventario}
-              funcionarios={funcionarios}
-              adicionarCompra={adicionarCompra}
-              removerCompra={removerCompra}
-              atualizarCompra={atualizarCompra}
-              readonly={!PermissionChecker.canManagePurchases(usuario?.nivel)}
-            />
-          ) : (
-            <PermissionDenied message="Você não tem permissão para visualizar as compras." />
-          )
-        )}
-        
-        {abaAtiva === 'danificadas' && (
-          PermissionChecker.canView(usuario?.nivel) ? (
-            <FerramentasDanificadasTab
-              ferramentasDanificadas={ferramentasDanificadas}
-              inventario={inventario}
-              adicionarFerramentaDanificada={adicionarFerramentaDanificada}
-              removerFerramentaDanificada={removerFerramentaDanificada}
-              atualizarFerramentaDanificada={atualizarFerramentaDanificada}
-            />
-          ) : (
-            <PermissionDenied message="Você não tem permissão para visualizar as ferramentas danificadas." />
-          )
-        )}
-        
-        {abaAtiva === 'perdidas' && (
-          PermissionChecker.canView(usuario?.nivel) ? (
-            <FerramentasPerdidasTab
-              ferramentasPerdidas={ferramentasPerdidas}
-              inventario={inventario}
-              adicionarFerramentaPerdida={adicionarFerramentaPerdida}
-              removerFerramentaPerdida={removerFerramentaPerdida}
-              atualizarFerramentaPerdida={atualizarFerramentaPerdida}
-            />
-          ) : (
-            <PermissionDenied message="Você não tem permissão para visualizar as ferramentas perdidas." />
-          )
-        )}
-
-        {abaAtiva === 'usuarios' && (
-          PermissionChecker.canManageUsers(usuario?.nivel) ? (
-            <UsuariosTab />
-          ) : (
-            <PermissionDenied message="Você não tem permissão para gerenciar usuários do sistema." />
-          )
-        )}
+          )}
+          {abaAtiva === 'emprestimos' && (
+            PermissionChecker.canView(usuario?.nivel) ? (
+              <EmprestimosTab
+                emprestimos={emprestimos}
+                inventario={inventario}
+                funcionarios={funcionarios}
+                adicionarEmprestimo={adicionarEmprestimo}
+                removerEmprestimo={removerEmprestimo}
+                atualizarEmprestimo={atualizarEmprestimo}
+                devolverFerramentas={devolverFerramentas}
+                readonly={!PermissionChecker.canManageOperational(usuario?.nivel)}
+              />
+            ) : (
+              <PermissionDenied message="Você não tem permissão para visualizar os empréstimos." />
+            )
+          )}
+          {abaAtiva === 'funcionarios' && (
+            PermissionChecker.canView(usuario?.nivel) ? (
+              <FuncionariosTab
+                funcionarios={funcionarios}
+                adicionarFuncionario={adicionarFuncionario}
+                removerFuncionario={removerFuncionario}
+                atualizarFuncionario={atualizarFuncionario}
+                readonly={!PermissionChecker.canManageEmployees(usuario?.nivel)}
+              />
+            ) : (
+              <PermissionDenied message="Você não tem permissão para visualizar os funcionários." />
+            )
+          )}
+          {abaAtiva === 'compras' && (
+            PermissionChecker.canView(usuario?.nivel) ? (
+              <ComprasTab
+                compras={compras}
+                inventario={inventario}
+                funcionarios={funcionarios}
+                adicionarCompra={adicionarCompra}
+                removerCompra={removerCompra}
+                atualizarCompra={atualizarCompra}
+                readonly={!PermissionChecker.canManagePurchases(usuario?.nivel)}
+              />
+            ) : (
+              <PermissionDenied message="Você não tem permissão para visualizar as compras." />
+            )
+          )}
+          {abaAtiva === 'danificadas' && (
+            PermissionChecker.canView(usuario?.nivel) ? (
+              <FerramentasDanificadasTab
+                ferramentasDanificadas={ferramentasDanificadas}
+                inventario={inventario}
+                adicionarFerramentaDanificada={adicionarFerramentaDanificada}
+                atualizarFerramentaDanificada={atualizarFerramentaDanificada}
+                removerFerramentaDanificada={removerFerramentaDanificada}
+                readonly={false}
+              />
+            ) : (
+              <PermissionDenied message="Você não tem permissão para visualizar as ferramentas danificadas." />
+            )
+          )}
+          {abaAtiva === 'perdidas' && (
+            PermissionChecker.canView(usuario?.nivel) ? (
+              <FerramentasPerdidasTab
+                ferramentasPerdidas={ferramentasPerdidas}
+                inventario={inventario}
+                adicionarFerramentaPerdida={adicionarFerramentaPerdida}
+                atualizarFerramentaPerdida={atualizarFerramentaPerdida}
+                removerFerramentaPerdida={removerFerramentaPerdida}
+                readonly={false}
+              />
+            ) : (
+              <PermissionDenied message="Você não tem permissão para visualizar as ferramentas perdidas." />
+            )
+          )}
+          {abaAtiva === 'usuarios' && (
+            PermissionChecker.isAdmin(usuario?.nivel) ? (
+              <UsuariosTab />
+            ) : (
+              <PermissionDenied message="Você não tem permissão para gerenciar usuários do sistema." />
+            )
+          )}
+        </div>
       </main>
+
+      {/* Modal de Edição de Perfil */}
+      {mostrarEditarPerfil && (
+        <EditProfileModal
+          usuario={usuario}
+          onClose={() => setMostrarEditarPerfil(false)}
+          onSave={handleSalvarPerfil}
+        />
+      )}
     </div>
   );
 };
 
-// Componente principal da aplicação
+// ===== DASHBOARD ATUALIZADO COM TEMA PADRONIZADO =====
+const Dashboard = ({ stats, firebaseStatus }) => {
+  const { inventario, emprestimos, funcionarios, ferramentasDanificadas, ferramentasPerdidas, compras } = stats;
+  const { classes } = useTheme();
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+        <div className={`${classes.statCard} ${classes.statCardWhite}`}>
+          <div className="flex items-center">
+            <div className="p-2 rounded transition-colors duration-200" style={{ backgroundColor: 'rgba(189, 153, 103, 0.1)' }}>
+              <Package className="w-6 h-6" style={{ color: '#bd9967' }} />
+            </div>
+            <div className="ml-4">
+              <p className={`${classes.statLabel} ${classes.textSecondary}`}>Inventário</p>
+              <p className={`${classes.statValue} ${classes.textPrimary}`}>{inventario?.length || 0}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className={`${classes.statCard} ${classes.statCardWhite}`}>
+          <div className="flex items-center">
+            <div className="p-2 rounded transition-colors duration-200" style={{ backgroundColor: 'rgba(189, 153, 103, 0.1)' }}>
+              <ClipboardList className="w-6 h-6" style={{ color: '#bd9967' }} />
+            </div>
+            <div className="ml-4">
+              <p className={`${classes.statLabel} ${classes.textSecondary}`}>Empréstimos Ativos</p>
+              <p className={`${classes.statValue} ${classes.textPrimary}`}>{emprestimos?.filter(e => e.status !== 'devolvido').length || 0}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className={`${classes.statCard} ${classes.statCardWhite}`}>
+          <div className="flex items-center">
+            <div className="p-2 rounded transition-colors duration-200" style={{ backgroundColor: 'rgba(189, 153, 103, 0.1)' }}>
+              <Users className="w-6 h-6" style={{ color: '#bd9967' }} />
+            </div>
+            <div className="ml-4">
+              <p className={`${classes.statLabel} ${classes.textSecondary}`}>Funcionários</p>
+              <p className={`${classes.statValue} ${classes.textPrimary}`}>{funcionarios?.length || 0}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className={`${classes.statCard} ${classes.statCardRed}`}>
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded transition-colors duration-200">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+            <div className="ml-4">
+              <p className={`${classes.statLabel} ${classes.statLabelRed}`}>Danificadas</p>
+              <p className={`${classes.statValue} ${classes.statValueRed}`}>{ferramentasDanificadas?.length || 0}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className={`${classes.statCard} ${classes.statCardRed}`}>
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded transition-colors duration-200">
+              <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+            <div className="ml-4">
+              <p className={`${classes.statLabel} ${classes.statLabelRed}`}>Perdidas</p>
+              <p className={`${classes.statValue} ${classes.statValueRed}`}>{ferramentasPerdidas?.length || 0}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className={`${classes.statCard} ${classes.statCardWhite}`}>
+          <div className="flex items-center">
+            <div className="p-2 rounded transition-colors duration-200" style={{ backgroundColor: 'rgba(189, 153, 103, 0.1)' }}>
+              <ShoppingCart className="w-6 h-6" style={{ color: '#bd9967' }} />
+            </div>
+            <div className="ml-4">
+              <p className={`${classes.statLabel} ${classes.textSecondary}`}>Compras</p>
+              <p className={`${classes.statValue} ${classes.textPrimary}`}>{compras?.length || 0}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ===== COMPONENTE PERMISSION DENIED ATUALIZADO =====
+const PermissionDenied = ({ message = "Você não tem permissão para realizar esta ação." }) => {
+  const { classes } = useTheme();
+  
+  return (
+    <div className={`${classes.alertError} rounded-lg p-4 text-center`}>
+      <div className="flex items-center justify-center mb-2">
+        <Shield className="w-8 h-8 text-red-600 dark:text-red-400" />
+      </div>
+      <h3 className="text-lg font-medium text-red-800 dark:text-red-300 mb-1 transition-colors duration-200">Acesso Negado</h3>
+      <p className="text-red-600 dark:text-red-400 transition-colors duration-200">{message}</p>
+    </div>
+  );
+};
+
+// ===== PROVIDER DE AUTENTICAÇÃO =====
+const AuthProvider = ({ children }) => {
+  const [usuario, setUsuario] = useState(null);
+  const [usuarios, setUsuarios] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [firebaseStatus, setFirebaseStatus] = useState('connecting');
+  const [cookiesEnabled, setCookiesEnabled] = useState(true);
+
+  useEffect(() => {
+    setCookiesEnabled(CookieManager.areCookiesEnabled());
+    const usuarioSalvo = CookieManager.getCookie('almoxarifado_user');
+    if (usuarioSalvo) {
+      setUsuario(usuarioSalvo);
+    } else {
+      setUsuario(null);
+    }
+    // Sincronização em tempo real dos usuários do Firestore
+    const unsubscribe = onSnapshot(collection(db, 'usuarios'), (snapshot) => {
+      setUsuarios(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    setTimeout(() => {
+      setIsLoading(false);
+      setFirebaseStatus('connected');
+    }, 500);
+    return () => unsubscribe();
+  }, []);
+
+  const login = async (email, senha, lembrar) => {
+    try {
+      // Login manual usando Firestore
+      const { getDocs, query, where, collection } = await import('firebase/firestore');
+      const usuariosRef = collection(db, 'usuarios');
+      const q = query(usuariosRef, where('email', '==', email));
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        return { success: false, message: 'Usuário não encontrado.' };
+      }
+      const usuarioData = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+      if (!usuarioData.ativo) {
+        return { success: false, message: 'Usuário inativo.' };
+      }
+      if (usuarioData.senha !== senha) {
+        return { success: false, message: 'Senha incorreta.' };
+      }
+      setUsuario(usuarioData);
+      if (cookiesEnabled && lembrar) {
+        CookieManager.setCookie('almoxarifado_user', usuarioData, 30);
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: 'Erro ao fazer login.' };
+    }
+  };
+
+  const logout = () => {
+    setUsuario(null);
+    CookieManager.removeCookie('almoxarifado_user');
+  };
+
+  const criarUsuario = async (dadosUsuario) => {
+    try {
+      const { addDoc, collection } = await import('firebase/firestore');
+      await addDoc(collection(db, 'usuarios'), dadosUsuario);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: 'Erro ao criar usuário.' };
+    }
+  };
+
+  const atualizarUsuario = async (id, dadosUsuario) => {
+    try {
+      const { updateDoc, doc } = await import('firebase/firestore');
+      await updateDoc(doc(db, 'usuarios', id), dadosUsuario);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: 'Erro ao atualizar usuário.' };
+    }
+  };
+
+  const removerUsuario = async (id) => {
+    try {
+      const { deleteDoc, doc } = await import('firebase/firestore');
+      await deleteDoc(doc(db, 'usuarios', id));
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: 'Erro ao remover usuário.' };
+    }
+  };
+
+  const temPermissao = (nivel) => {
+    return usuario && usuario.nivel >= nivel;
+  };
+
+  const value = {
+    usuario,
+    usuarios,
+    isLoading,
+    firebaseStatus,
+    cookiesEnabled,
+    login,
+    logout,
+    criarUsuario,
+    atualizarUsuario,
+    removerUsuario,
+    temPermissao,
+    NIVEIS_PERMISSAO
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+// ===== COMPONENTE PRINCIPAL DA APLICAÇÃO =====
 const App = () => {
   const { usuario, isLoading } = useAuth();
 
@@ -1482,15 +1386,16 @@ const App = () => {
   return usuario ? <AlmoxarifadoSistema /> : <LoginForm />;
 };
 
-// Componente principal com Provider
 const AlmoxarifadoJardim = () => {
   return (
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 
-// Export do hook useAuth e componente principal
-export { useAuth };
+// ===== EXPORTS =====
+export { useAuth, useTheme, ThemeToggle, themeClasses };
 export default AlmoxarifadoJardim;

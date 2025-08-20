@@ -1,73 +1,55 @@
 import React, { useState } from 'react';
+import { useTheme } from '../AlmoxarifadoJardim';
 import { useAuth } from '../../hooks/useAuth';
-import { Search, Plus, Calendar, User, MapPin, DollarSign, FileText, AlertCircle } from 'lucide-react';
+import { Search, Plus, Calendar, User, AlertTriangle, FileText } from 'lucide-react';
 
-const FerramentasPerdidasTab = ({ 
-  ferramentasPerdidas, 
-  inventario, 
-  adicionarFerramentaPerdida, 
+const FerramentasPerdidasTab = ({
+  ferramentasPerdidas = [],
+  inventario,
+  adicionarFerramentaPerdida,
   atualizarFerramentaPerdida,
   removerFerramentaPerdida,
   readonly
 }) => {
+  const { classes } = useTheme();
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
+
   const [novaFerramenta, setNovaFerramenta] = useState({
     nomeItem: '',
     categoria: '',
-    descricaoPerda: '',
     responsavel: '',
-    localUltimaVez: '',
-    dataPerdida: new Date().toISOString().split('T')[0],
-    valorEstimado: '',
-    statusBusca: 'buscando',
-    observacoes: '',
-    prioridade: 'media'
+    dataOcorrencia: new Date().toISOString().split('T')[0],
+    motivoPerda: '',
+    observacoes: ''
   });
-
   const [filtro, setFiltro] = useState('');
-  const [filtroStatus, setFiltroStatus] = useState('todos');
   const [modalAberto, setModalAberto] = useState(false);
+  const [idParaExcluir, setIdParaExcluir] = useState(null);
 
   const ferramentasFiltradas = ferramentasPerdidas.filter(item => {
-    const matchFiltro = 
+    const matchFiltro =
       item.nomeItem.toLowerCase().includes(filtro.toLowerCase()) ||
-      item.descricaoPerda.toLowerCase().includes(filtro.toLowerCase()) ||
-      item.responsavel.toLowerCase().includes(filtro.toLowerCase()) ||
-      item.localUltimaVez.toLowerCase().includes(filtro.toLowerCase());
-    
-    const matchStatus = filtroStatus === 'todos' || item.statusBusca === filtroStatus;
-    
-    return matchFiltro && matchStatus;
+      (item.motivoPerda || '').toLowerCase().includes(filtro.toLowerCase()) ||
+      (item.responsavel || '').toLowerCase().includes(filtro.toLowerCase());
+    return matchFiltro;
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!novaFerramenta.nomeItem || !novaFerramenta.descricaoPerda) {
-      alert('Preencha pelo menos o nome da ferramenta e descrição da perda!');
+    if (!novaFerramenta.nomeItem || !novaFerramenta.motivoPerda) {
+      alert('Preencha o nome da ferramenta e o motivo da perda!');
       return;
     }
-
-    const dadosCompletos = {
-      ...novaFerramenta,
-      valorEstimado: novaFerramenta.valorEstimado ? parseFloat(novaFerramenta.valorEstimado) : 0
-    };
-
-    const sucesso = await adicionarFerramentaPerdida(dadosCompletos);
-    
+    const sucesso = await adicionarFerramentaPerdida(novaFerramenta);
     if (sucesso) {
       setNovaFerramenta({
         nomeItem: '',
         categoria: '',
-        descricaoPerda: '',
         responsavel: '',
-        localUltimaVez: '',
-        dataPerdida: new Date().toISOString().split('T')[0],
-        valorEstimado: '',
-        statusBusca: 'buscando',
-        observacoes: '',
-        prioridade: 'media'
+        dataOcorrencia: new Date().toISOString().split('T')[0],
+        motivoPerda: '',
+        observacoes: ''
       });
       setModalAberto(false);
       alert('Ferramenta perdida registrada com sucesso!');
@@ -76,73 +58,22 @@ const FerramentasPerdidasTab = ({
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'buscando': return 'bg-yellow-100 text-yellow-800';
-      case 'encontrada': return 'bg-green-100 text-green-800';
-      case 'perdida_definitiva': return 'bg-red-100 text-red-800';
-      case 'substituida': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'buscando': return 'Buscando';
-      case 'encontrada': return 'Encontrada';
-      case 'perdida_definitiva': return 'Perda Definitiva';
-      case 'substituida': return 'Substituída';
-      default: return status;
-    }
-  };
-
-  const getPrioridadeColor = (prioridade) => {
-    switch (prioridade) {
-      case 'baixa': return 'bg-green-100 text-green-800';
-      case 'media': return 'bg-yellow-100 text-yellow-800';
-      case 'alta': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const calcularEstatisticas = () => {
-    const total = ferramentasPerdidas.length;
-    const buscando = ferramentasPerdidas.filter(f => f.statusBusca === 'buscando').length;
-    const encontradas = ferramentasPerdidas.filter(f => f.statusBusca === 'encontrada').length;
-    const perdidasDefinitivas = ferramentasPerdidas.filter(f => f.statusBusca === 'perdida_definitiva').length;
-    const substituidas = ferramentasPerdidas.filter(f => f.statusBusca === 'substituida').length;
-    const valorTotalPerdido = ferramentasPerdidas
-      .filter(f => f.statusBusca === 'perdida_definitiva')
-      .reduce((total, f) => total + (f.valorEstimado || 0), 0);
-    return {
-      total,
-      buscando,
-      encontradas,
-      perdidasDefinitivas,
-      substituidas,
-      valorTotalPerdido
-    };
-  };
-
-  const estatisticas = calcularEstatisticas();
-
   return (
-    <div className="space-y-6">
-      {/* Header com botão */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className={`space-y-6 ${classes.backgroundPrimary}`}>
+      <div className={classes.sectionHeader}>
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <AlertCircle className="w-6 h-6 text-red-600" />
+            <h2 className={`${classes.sectionTitle} flex items-center gap-2`}>
+              <AlertTriangle className="w-6 h-6" style={{ color: '#bd9967' }} />
               Ferramentas Perdidas
             </h2>
-            <p className="text-gray-600 mt-1">Controle e rastreamento de ferramentas perdidas</p>
+            <p className={classes.sectionSubtitle}>Controle e rastreamento de ferramentas perdidas</p>
           </div>
-          
           {!isFuncionario && !readonly && (
             <button
               onClick={() => setModalAberto(true)}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              className={`${classes.buttonPrimary} px-4 py-2 flex items-center gap-2`}
+              style={{ backgroundColor: '#bd9967' }}
             >
               <Plus className="w-4 h-4" />
               Registrar Perda
@@ -150,151 +81,77 @@ const FerramentasPerdidasTab = ({
           )}
         </div>
 
-        {/* Estatísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          <div className="bg-gray-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-gray-600">{estatisticas.total}</div>
-            <div className="text-sm text-gray-500">Total</div>
-          </div>
-          <div className="bg-yellow-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-yellow-600">{estatisticas.buscando}</div>
-            <div className="text-sm text-yellow-600">Buscando</div>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-green-600">{estatisticas.encontradas}</div>
-            <div className="text-sm text-green-600">Encontradas</div>
-          </div>
-          <div className="bg-red-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-red-600">{estatisticas.perdidasDefinitivas}</div>
-            <div className="text-sm text-red-600">Perdidas</div>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-blue-600">{estatisticas.substituidas}</div>
-            <div className="text-sm text-blue-600">Substituídas</div>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-lg text-center">
-            <div className="text-lg font-bold text-orange-600">
-              R$ {estatisticas.valorTotalPerdido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <div className="text-sm text-orange-600">Valor Perdido</div>
-          </div>
-        </div>
-
-        {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+            <Search className={`w-4 h-4 absolute left-3 top-3 ${classes.textLight}`} />
             <input
               type="text"
-              placeholder="Buscar por ferramenta, descrição, responsável ou local..."
+              placeholder="Buscar por ferramenta, motivo ou responsável..."
               value={filtro}
-              onChange={(e) => setFiltro(e.target.value)}
-              className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={e => setFiltro(e.target.value)}
+              className={`pl-10 w-full px-3 py-2 ${classes.input} focus:ring-2 focus:border-transparent`}
+              style={{ '--tw-ring-color': '#bd9967' }}
             />
           </div>
-          
-          <select
-            value={filtroStatus}
-            onChange={(e) => setFiltroStatus(e.target.value)}
-            className="w-full md:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="todos">Todos os Status</option>
-            <option value="buscando">Buscando</option>
-            <option value="encontrada">Encontrada</option>
-            <option value="perdida_definitiva">Perda Definitiva</option>
-            <option value="substituida">Substituída</option>
-          </select>
         </div>
       </div>
 
-      {/* Lista de ferramentas perdidas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {ferramentasFiltradas.map(item => (
-          <div key={item.id} className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-red-500">
+          <div key={item.id} className={`${classes.card} p-6 border-l-4`} style={{ borderLeftColor: '#bd9967' }}>
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
-                <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
+                <h3 className={`font-bold text-lg ${classes.textPrimary} flex items-center gap-2`}>
+                  <AlertTriangle className="w-5 h-5" style={{ color: '#bd9967' }} />
                   {item.nomeItem}
                 </h3>
                 {item.categoria && (
-                  <p className="text-gray-500 text-sm">{item.categoria}</p>
+                  <p className={`text-sm ${classes.textMuted}`}>{item.categoria}</p>
                 )}
               </div>
-              
               <div className="flex flex-col gap-2 items-end">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.statusBusca)}`}>
-                  {getStatusText(item.statusBusca)}
+                <span className={`px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300`}>
+                  Perdida
                 </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPrioridadeColor(item.prioridade)}`}>
-                  Prioridade {item.prioridade.charAt(0).toUpperCase() + item.prioridade.slice(1)}
-                </span>
-                {/* Status editing dropdown */}
                 {!readonly && (
-                  <select
-                    className="form-select mt-2 text-xs"
-                    value={item.statusBusca}
-                    onChange={e => atualizarFerramentaPerdida(item.id, { statusBusca: e.target.value })}
+                  <button
+                    className={`p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors duration-200 mt-2`}
+                    title="Excluir ferramenta perdida"
+                    onClick={() => setIdParaExcluir(item.id)}
                   >
-                    <option value="buscando">Buscando</option>
-                    <option value="encontrada">Encontrada</option>
-                    <option value="perdida_definitiva">Perda Definitiva</option>
-                    <option value="substituida">Substituída</option>
-                  </select>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m2 0v14a2 2 0 01-2 2H8a2 2 0 01-2-2V6m5 10v-6" />
+                    </svg>
+                  </button>
                 )}
               </div>
             </div>
-
             <div className="space-y-3 text-sm">
-              <div className="bg-red-50 p-3 rounded-lg">
-                <div className="flex items-center gap-2 font-medium text-red-800 mb-1">
+              <div className={`${classes.alertWarning} p-3 rounded-lg`}>
+                <div className="flex items-center gap-2 font-medium mb-1">
                   <FileText className="w-4 h-4" />
-                  Descrição da Perda
+                  Descrição
                 </div>
-                <p className="text-red-700">{item.descricaoPerda}</p>
+                <p className={classes.textPrimary}>{item.motivoPerda}</p>
               </div>
-
               <div className="grid grid-cols-1 gap-2">
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className={`flex items-center gap-2 ${classes.textSecondary}`}>
                   <User className="w-4 h-4" />
                   <span><strong>Responsável:</strong> {item.responsavel}</span>
                 </div>
-                
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className={`flex items-center gap-2 ${classes.textSecondary}`}>
                   <Calendar className="w-4 h-4" />
-                  <span><strong>Data da Perda:</strong> {new Date(item.dataPerdida).toLocaleDateString('pt-BR')}</span>
+                  <span><strong>Data da Ocorrência:</strong> {new Date(item.dataOcorrencia).toLocaleDateString('pt-BR')}</span>
                 </div>
-                
-                {item.localUltimaVez && (
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    <span><strong>Último local visto:</strong> {item.localUltimaVez}</span>
-                  </div>
-                )}
               </div>
-
-              {item.valorEstimado > 0 && (
-                <div className="bg-orange-50 p-2 rounded flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-orange-600" />
-                  <span className="text-orange-800">
-                    <strong>Valor Estimado:</strong> 
-                    <span className="ml-1">
-                      R$ {item.valorEstimado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                  </span>
-                </div>
-              )}
-
               {item.observacoes && (
-                <div className="bg-gray-50 p-2 rounded">
-                  <strong className="text-gray-700">Observações:</strong>
-                  <p className="text-gray-600 mt-1">{item.observacoes}</p>
+                <div className={`${classes.containerSecondary} p-2 rounded`}>
+                  <strong className={classes.textPrimary}>Observações:</strong>
+                  <p className={`${classes.textSecondary} mt-1`}>{item.observacoes}</p>
                 </div>
               )}
-
-              {/* Tempo desde a perda */}
-              <div className="text-xs text-gray-400 border-t pt-2">
-                Perdida há {Math.floor((new Date() - new Date(item.dataPerdida)) / (1000 * 60 * 60 * 24))} dias
+              <div className={`text-xs ${classes.textMuted} border-t pt-2`}>
+                Ocorrido há {Math.floor((new Date() - new Date(item.dataOcorrencia)) / (1000 * 60 * 60 * 24))} dias
               </div>
             </div>
           </div>
@@ -302,16 +159,16 @@ const FerramentasPerdidasTab = ({
       </div>
 
       {ferramentasFiltradas.length === 0 && (
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <Search className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500 text-lg">
-            {filtro || filtroStatus !== 'todos' 
-              ? 'Nenhuma ferramenta perdida encontrada' 
+        <div className={`${classes.card} p-8 text-center`}>
+          <Search className="w-16 h-16 mx-auto mb-4" style={{ color: '#bd9967' }} />
+          <p className={`text-lg ${classes.textSecondary}`}>
+            {filtro
+              ? 'Nenhuma ferramenta perdida encontrada'
               : 'Nenhuma ferramenta perdida registrada'
             }
           </p>
-          <p className="text-gray-400 text-sm mt-2">
-            {filtro || filtroStatus !== 'todos'
+          <p className={`text-sm ${classes.textMuted} mt-2`}>
+            {filtro
               ? 'Tente alterar os filtros de busca'
               : 'Clique em "Registrar Perda" para adicionar uma ocorrência'
             }
@@ -319,157 +176,143 @@ const FerramentasPerdidasTab = ({
         </div>
       )}
 
+      {/* Modal de confirmação de exclusão */}
+      {idParaExcluir && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`${classes.modal} max-w-md w-full p-6`}>
+            <h3 className={`text-lg font-bold ${classes.textPrimary} mb-4 flex items-center gap-2`}>
+              <AlertTriangle className="w-5 h-5" style={{ color: '#bd9967' }} />
+              Confirmar exclusão
+            </h3>
+            <p className={`mb-4 ${classes.textSecondary}`}>Tem certeza que deseja excluir este registro de ferramenta perdida? Esta ação não pode ser desfeita.</p>
+            <div className="flex gap-3">
+              <button
+                className={`flex-1 ${classes.buttonDanger} py-2 px-4`}
+                onClick={async () => {
+                  await removerFerramentaPerdida(idParaExcluir);
+                  setIdParaExcluir(null);
+                }}
+              >
+                Excluir
+              </button>
+              <button
+                className={`flex-1 ${classes.buttonSecondary} py-2 px-4`}
+                onClick={() => setIdParaExcluir(null)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Nova Ferramenta Perdida */}
       {modalAberto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className={`${classes.modal} max-w-3xl w-full max-h-[90vh] overflow-y-auto`}>
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <Search className="w-5 h-5 text-red-600" />
+                <h3 className={`text-lg font-bold ${classes.textPrimary} flex items-center gap-2`}>
+                  <AlertTriangle className="w-5 h-5" style={{ color: '#bd9967' }} />
                   Registrar Ferramenta Perdida
                 </h3>
                 <button
                   onClick={() => setModalAberto(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className={`${classes.textLight} hover:${classes.textSecondary}`}
                 >
                   ✕
                 </button>
               </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nome da Ferramenta *
-                    </label>
+                    <label className={classes.formLabel}>Nome da Ferramenta *</label>
                     <input
                       type="text"
                       value={novaFerramenta.nomeItem}
-                      onChange={(e) => setNovaFerramenta({...novaFerramenta, nomeItem: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Martelo Tramontina 25mm"
-                      list="inventario-list"
+                      onChange={e => setNovaFerramenta({ ...novaFerramenta, nomeItem: e.target.value })}
+                      className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
+                      style={{ '--tw-ring-color': '#bd9967' }}
                       required
                     />
-                    <datalist id="inventario-list">
-                      {inventario.map(item => (
-                        <option key={item.id} value={item.nome} />
-                      ))}
-                    </datalist>
                   </div>
-                  
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Categoria
-                    </label>
+                    <label className={classes.formLabel}>Categoria</label>
                     <input
                       type="text"
                       value={novaFerramenta.categoria}
-                      onChange={(e) => setNovaFerramenta({...novaFerramenta, categoria: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Ex: Ferramenta Manual"
+                      onChange={e => setNovaFerramenta({ ...novaFerramenta, categoria: e.target.value })}
+                      className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
+                      style={{ '--tw-ring-color': '#bd9967' }}
                     />
                   </div>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Último Local Visto
-                  </label>
-                  <input
-                    type="text"
-                    value={novaFerramenta.localUltimaVez}
-                    onChange={(e) => setNovaFerramenta({...novaFerramenta, localUltimaVez: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ex: Obra da Rua A, Almoxarifado, Canteiro 3..."
+                  <label className={classes.formLabel}>Detalhes *</label>
+                  <textarea
+                    value={novaFerramenta.motivoPerda}
+                    onChange={e => setNovaFerramenta({ ...novaFerramenta, motivoPerda: e.target.value })}
+                    className={`w-full ${classes.formTextarea} focus:ring-2 focus:border-transparent`}
+                    style={{ '--tw-ring-color': '#bd9967' }}
+                    rows={3}
+                    required
                   />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Valor Estimado (R$)
-                    </label>
+                    <label className={classes.formLabel}>Responsável</label>
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={novaFerramenta.valorEstimado}
-                      onChange={(e) => setNovaFerramenta({...novaFerramenta, valorEstimado: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0,00"
+                      type="text"
+                      value={novaFerramenta.responsavel}
+                      onChange={e => setNovaFerramenta({ ...novaFerramenta, responsavel: e.target.value })}
+                      className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
+                      style={{ '--tw-ring-color': '#bd9967' }}
                     />
                   </div>
-                  
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Status da Busca
-                    </label>
-                    <select
-                      value={novaFerramenta.statusBusca}
-                      onChange={(e) => setNovaFerramenta({...novaFerramenta, statusBusca: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="buscando">Buscando</option>
-                      <option value="encontrada">Encontrada</option>
-                      <option value="perdida_definitiva">Perda Definitiva</option>
-                      <option value="substituida">Substituída</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Prioridade
-                    </label>
-                    <select
-                      value={novaFerramenta.prioridade}
-                      onChange={(e) => setNovaFerramenta({...novaFerramenta, prioridade: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="baixa">Baixa</option>
-                      <option value="media">Média</option>
-                      <option value="alta">Alta</option>
-                    </select>
+                    <label className={classes.formLabel}>Data da Ocorrência</label>
+                    <input
+                      type="date"
+                      value={novaFerramenta.dataOcorrencia}
+                      onChange={e => setNovaFerramenta({ ...novaFerramenta, dataOcorrencia: e.target.value })}
+                      className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
+                      style={{ '--tw-ring-color': '#bd9967' }}
+                    />
                   </div>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Observações e Ações Tomadas
-                  </label>
+                  <label className={classes.formLabel}>Observações</label>
                   <textarea
                     value={novaFerramenta.observacoes}
-                    onChange={(e) => setNovaFerramenta({...novaFerramenta, observacoes: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
-                    placeholder="Ex: Já foi feita busca no almoxarifado, verificado com outros funcionários..."
+                    onChange={e => setNovaFerramenta({ ...novaFerramenta, observacoes: e.target.value })}
+                    className={`w-full ${classes.formTextarea} focus:ring-2 focus:border-transparent`}
+                    style={{ '--tw-ring-color': '#bd9967' }}
+                    rows={2}
                   />
                 </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 text-blue-800 mb-2">
-                    <AlertCircle className="w-4 h-4" />
-                    <span className="font-medium">Dicas para recuperação:</span>
+                <div className={`p-4 rounded-lg ${classes.alertInfo}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="font-medium">Dicas para registro:</span>
                   </div>
-                  <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• Verifique os locais de trabalho recentes</li>
-                    <li>• Consulte outros funcionários da equipe</li>
-                    <li>• Confira veículos e equipamentos utilizados</li>
-                    <li>• Examine áreas de armazenamento temporário</li>
+                  <ul className="text-sm space-y-1">
+                    <li>• Descreva com detalhes o motivo da perda</li>
+                    <li>• Informe o responsável e a data da ocorrência</li>
+                    <li>• Adicione observações relevantes</li>
                   </ul>
                 </div>
-
                 <div className="flex gap-3 pt-4">
-                  <button 
+                  <button
                     type="submit"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                    className={`flex-1 ${classes.buttonPrimary} py-2 px-4`}
+                    style={{ backgroundColor: '#bd9967' }}
                   >
                     Registrar Ferramenta Perdida
                   </button>
                   <button
                     type="button"
                     onClick={() => setModalAberto(false)}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg transition-colors"
+                    className={`flex-1 ${classes.buttonSecondary} py-2 px-4`}
                   >
                     Cancelar
                   </button>
@@ -479,7 +322,7 @@ const FerramentasPerdidasTab = ({
           </div>
         </div>
       )}
-  </div>
+    </div>
   );
 };
 

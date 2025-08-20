@@ -1,0 +1,24 @@
+[
+  {
+    "nomeItem": "Tesoura de poda grande",
+    "categoria": "Ferramentas",
+    "descricaoProblema": "Lâmina quebrada",
+    "responsavel": "João Silva",
+    "dataOcorrencia": "2025-08-01",
+    "custoReparo": "35.00",
+    "statusReparo": "aguardando",
+    "observacoes": "Quebrou durante uso intenso",
+    "prioridade": "media"
+  },
+  {
+    "nomeItem": "Ancinho rastelo de plástico verde",
+    "categoria": "Ferramentas",
+    "descricaoProblema": "Dente faltando",
+    "responsavel": "Maria Souza",
+    "dataOcorrencia": "2025-07-28",
+    "custoReparo": "10.00",
+    "statusReparo": "em andamento",
+    "observacoes": "Dente caiu durante limpeza",
+    "prioridade": "baixa"
+  }
+]

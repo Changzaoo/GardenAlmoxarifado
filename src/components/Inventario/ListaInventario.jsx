@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
+import { useTheme } from '../AlmoxarifadoJardim';
 import ItemCard from './ItemCard';
 
 const ListaInventario = ({ inventario, emprestimos, removerItem }) => {
+  const { classes } = useTheme();
   const [filtroInventario, setFiltroInventario] = useState('');
 
   const inventarioFiltrado = inventario.filter(item =>
@@ -15,24 +17,29 @@ const ListaInventario = ({ inventario, emprestimos, removerItem }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className={`${classes.card} p-6`}>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Inventário Completo</h2>
+        <h2 className={`text-xl font-bold ${classes.textPrimary}`}>
+          Inventário Completo
+        </h2>
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <Search className={`w-4 h-4 absolute left-3 top-3 ${classes.textLight}`} />
           <input
             type="text"
             placeholder="Buscar por item ou categoria..."
             value={filtroInventario}
             onChange={(e) => setFiltroInventario(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className={`pl-10 pr-4 py-2 ${classes.input} focus:ring-2 focus:border-transparent`}
+            style={{ '--tw-ring-color': '#bd9967' }}
           />
         </div>
       </div>
 
       {/* Resumo por Categoria */}
       <div className="mb-6">
-        <h3 className="font-medium text-gray-700 mb-3">Resumo por Categoria</h3>
+        <h3 className={`font-medium mb-3 ${classes.textSecondary}`}>
+          Resumo por Categoria
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {['Ferramentas', 'Equipamentos', 'EPI', 'Outros'].map(categoria => {
             const itensCategoria = inventarioFiltrado.filter(item => item.categoria === categoria);
@@ -41,9 +48,11 @@ const ListaInventario = ({ inventario, emprestimos, removerItem }) => {
             const emUso = totalItens - disponiveis;
             
             return (
-              <div key={categoria} className="bg-gray-50 p-3 rounded-lg">
-                <div className="font-medium text-gray-800">{categoria}</div>
-                <div className="text-sm text-gray-600">
+              <div key={categoria} className={`${classes.containerSecondary} p-3 rounded-lg`}>
+                <div className={`font-medium ${classes.textPrimary}`}>
+                  {categoria}
+                </div>
+                <div className={`text-sm ${classes.textSecondary}`}>
                   <div>Total: {totalItens}</div>
                   <div>Disponível: {disponiveis}</div>
                   <div>Em uso: {emUso}</div>
