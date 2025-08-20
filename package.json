@@ -2,12 +2,9 @@
   "name": "almoxarifado-jardim",
   "version": "1.0.0",
   "private": true,
-  "engines": {
-    "node": "20.x"
-  },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "npm install lucide-react --force && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -17,8 +14,7 @@
     "lucide-react": "^0.460.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "schema-utils": "^4.3.2",
-    "terser-webpack-plugin": "^5.3.14"
+    "react-scripts": "5.0.1"
   },
   "browserslist": {
     "production": [
@@ -29,9 +25,5 @@
     "development": [
       "last 1 chrome version"
     ]
-  },
-  "devDependencies": {
-    "react-dev-utils": "^12.0.1",
-    "react-scripts": "^5.0.1"
   }
 }
