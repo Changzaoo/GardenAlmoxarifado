@@ -4,8 +4,7 @@
   "private": true,
   "homepage": ".",
   "engines": {
-    "node": "22.x",
-    "npm": ">=10.0.0"
+    "node": "22.x"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -22,7 +21,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "GENERATE_SOURCEMAP=false react-scripts build",
+    "build": "npm install schema-utils@4.0.1 --no-save && GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -44,12 +43,7 @@
       "last 1 safari version"
     ]
   },
-  "resolutions": {
-    "schema-utils": "^4.2.0",
-    "webpack": "^5.88.2"
-  },
   "overrides": {
-    "schema-utils": "^4.2.0",
-    "webpack": "^5.88.2"
+    "schema-utils": "4.0.1"
   }
 }
