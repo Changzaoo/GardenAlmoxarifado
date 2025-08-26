@@ -35,12 +35,12 @@ code {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #bd9967;
+  background: #c1c1c1;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a68856;
+  background: #a8a8a8;
 }
 
 /* Animações personalizadas */
@@ -61,24 +61,16 @@ code {
 
 /* Estilos para formulários */
 .form-input {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200;
-  --tw-ring-color: #bd9967;
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200;
 }
 
 .form-select {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent appearance-none bg-white transition-all duration-200;
-  --tw-ring-color: #bd9967;
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none bg-white transition-all duration-200;
 }
 
 /* Botões personalizados */
 .btn-primary {
-  background-color: #bd9967;
-  @apply text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 font-medium;
-  --tw-ring-color: #bd9967;
-}
-
-.btn-primary:hover {
-  background-color: #a68856;
+  @apply bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 font-medium;
 }
 
 .btn-secondary {
@@ -104,8 +96,7 @@ code {
 }
 
 .status-badge.emprestado {
-  background-color: rgba(189, 153, 103, 0.1);
-  color: #bd9967;
+  @apply bg-yellow-100 text-yellow-800;
 }
 
 .status-badge.devolvido {
@@ -113,83 +104,11 @@ code {
 }
 
 .status-badge.disponivel {
-  background-color: rgba(189, 153, 103, 0.1);
-  color: #bd9967;
+  @apply bg-blue-100 text-blue-800;
 }
 
 .status-badge.indisponivel {
   @apply bg-red-100 text-red-800;
-}
-
-/* Modo escuro */
-.dark {
-  color-scheme: dark;
-}
-
-* {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 200ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Scrollbars no modo escuro */
-.dark ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: #374151;
-  border-radius: 4px;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #bd9967;
-  border-radius: 4px;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #a68856;
-}
-
-.dark ::selection {
-  background: #bd9967;
-  color: white;
-}
-
-/* Inputs no modo escuro */
-.dark .form-input {
-  @apply border-gray-600 bg-gray-700 text-white;
-  --tw-ring-color: #bd9967;
-}
-
-.dark .form-select {
-  @apply border-gray-600 bg-gray-700 text-white;
-  --tw-ring-color: #bd9967;
-}
-
-/* Botões no modo escuro */
-.dark .btn-primary {
-  background-color: #bd9967;
-}
-
-.dark .btn-primary:hover {
-  background-color: #a68856;
-}
-
-.dark .btn-secondary {
-  @apply bg-gray-700 text-gray-300 hover:bg-gray-600;
-}
-
-/* Status badges no modo escuro */
-.dark .status-badge.emprestado {
-  background-color: rgba(189, 153, 103, 0.2);
-  color: #d4c4a8;
-}
-
-.dark .status-badge.disponivel {
-  background-color: rgba(189, 153, 103, 0.2);
-  color: #d4c4a8;
 }
 
 /* Tabelas responsivas */
@@ -209,23 +128,9 @@ code {
   @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
 }
 
-/* Tabelas no modo escuro */
-.dark .table-responsive table {
-  @apply divide-gray-700;
-}
-
-.dark .table-responsive th {
-  @apply bg-gray-800 text-gray-300;
-}
-
-.dark .table-responsive td {
-  @apply text-gray-100;
-}
-
 /* Indicadores de carregamento */
 .loading-spinner {
-  @apply inline-block animate-spin rounded-full h-4 w-4 border-b-2;
-  border-color: #bd9967;
+  @apply inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-current;
 }
 
 /* Tooltips */
@@ -242,11 +147,6 @@ code {
 
 .tooltip:hover .tooltiptext {
   @apply visible;
-}
-
-/* Tooltips no modo escuro */
-.dark .tooltip .tooltiptext {
-  background-color: #bd9967;
 }
 
 /* Responsividade para mobile */
@@ -279,185 +179,11 @@ code {
   @apply transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer;
 }
 
-/* Gradientes customizados com #bd9967 */
+/* Gradientes customizados */
 .gradient-primary {
-  background: linear-gradient(135deg, #bd9967 0%, #a68856 100%);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
 }
 
 .gradient-secondary {
-  background: linear-gradient(135deg, #bd9967 0%, #8f7749 100%);
-}
-
-/* Classes utilitárias personalizadas para a cor #bd9967 */
-.text-primary {
-  color: #bd9967;
-}
-
-.bg-primary {
-  background-color: #bd9967;
-}
-
-.border-primary {
-  border-color: #bd9967;
-}
-
-.hover-text-primary:hover {
-  color: #bd9967;
-}
-
-.hover-bg-primary:hover {
-  background-color: #bd9967;
-}
-
-.hover-border-primary:hover {
-  border-color: #bd9967;
-}
-
-/* Versões mais escuras para hover */
-.hover-bg-primary-dark:hover {
-  background-color: #a68856;
-}
-
-.hover-text-primary-dark:hover {
-  color: #a68856;
-}
-
-.hover-border-primary-dark:hover {
-  border-color: #a68856;
-}
-
-/* Focus states com a cor primária */
-.focus-primary:focus {
-  outline: 2px solid #bd9967;
-  outline-offset: 2px;
-}
-
-.focus-ring-primary:focus {
-  --tw-ring-color: #bd9967;
-}
-
-/* Backgrounds com opacidade */
-.bg-primary-light {
-  background-color: rgba(189, 153, 103, 0.1);
-}
-
-.bg-primary-medium {
-  background-color: rgba(189, 153, 103, 0.2);
-}
-
-.bg-primary-dark {
-  background-color: rgba(189, 153, 103, 0.3);
-}
-
-/* Para modo escuro */
-.dark .bg-primary-light {
-  background-color: rgba(189, 153, 103, 0.15);
-}
-
-.dark .bg-primary-medium {
-  background-color: rgba(189, 153, 103, 0.25);
-}
-
-.dark .bg-primary-dark {
-  background-color: rgba(189, 153, 103, 0.35);
-}
-
-/* Animações com a cor primária */
-@keyframes pulse-primary {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.animate-pulse-primary {
-  animation: pulse-primary 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Spinner com cor primária */
-@keyframes spin-primary {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-primary {
-  animation: spin-primary 1s linear infinite;
-  border-color: #bd9967;
-  border-top-color: transparent;
-}
-
-/* Estilos específicos para componentes */
-.nav-link-active {
-  color: #bd9967;
-  border-bottom-color: #bd9967;
-}
-
-.tab-active {
-  color: #bd9967;
-  border-color: #bd9967;
-}
-
-/* Cards com destaque */
-.card-primary {
-  border-left: 4px solid #bd9967;
-}
-
-.dark .card-primary {
-  border-left-color: #bd9967;
-}
-
-/* Alertas e notificações */
-.alert-primary {
-  background-color: rgba(189, 153, 103, 0.1);
-  border-color: #bd9967;
-  color: #8f7749;
-}
-
-.dark .alert-primary {
-  background-color: rgba(189, 153, 103, 0.2);
-  color: #d4c4a8;
-}
-
-/* Progress bars */
-.progress-primary {
-  background-color: #bd9967;
-}
-
-.progress-primary-bg {
-  background-color: rgba(189, 153, 103, 0.2);
-}
-
-/* Checkbox e radio buttons customizados */
-.checkbox-primary:checked {
-  background-color: #bd9967;
-  border-color: #bd9967;
-}
-
-.radio-primary:checked {
-  background-color: #bd9967;
-  border-color: #bd9967;
-}
-
-/* Links */
-.link-primary {
-  color: #bd9967;
-  text-decoration: underline;
-}
-
-.link-primary:hover {
-  color: #a68856;
-}
-
-.dark .link-primary {
-  color: #d4c4a8;
-}
-
-.dark .link-primary:hover {
-  color: #bd9967;
+  background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
 }

@@ -16,11 +16,29 @@ const firebaseConfig = {
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 
-// Inicializar Firestore
+// Inicializar Firestore com configurações otimizadas
 export const db = getFirestore(app);
 
-// Inicializar Auth (para futuro uso)
+// Inicializar Auth
 export const auth = getAuth(app);
+
+// Configurar persistência offline e cache
+const initFirestore = async () => {
+  try {
+    await db.enablePersistence({
+      synchronizeTabs: true
+    });
+  } catch (err) {
+    if (err.code === 'failed-precondition') {
+      console.warn('Múltiplas abas abertas, persistência desabilitada');
+    } else if (err.code === 'unimplemented') {
+      console.warn('Navegador não suporta persistência');
+    }
+  }
+};
+
+// Inicializar persistência
+initFirestore();
 
 // Para desenvolvimento local (opcional)
 if (process.env.NODE_ENV === 'development' && !db._settings?.host?.includes('firestore.googleapis.com')) {

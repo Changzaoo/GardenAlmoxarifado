@@ -41,14 +41,3 @@ module.exports = {
   },
   plugins: [],
 }
-
-module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
-  darkMode: 'class', // ← IMPORTANTE!
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}

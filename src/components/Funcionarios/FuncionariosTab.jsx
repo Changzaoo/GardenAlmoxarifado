@@ -1,25 +1,16 @@
 import React, { useState } from 'react';
-import { useTheme } from '../AlmoxarifadoJardim';
 import { useAuth } from '../../hooks/useAuth';
-import { Users, Trash2, Plus, Edit, Search } from 'lucide-react';
+import { Users, Trash2, Plus, Edit } from 'lucide-react';
 
 const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
   const [loading, setLoading] = useState(false);
   const [editando, setEditando] = useState(null);
   const [formEdit, setFormEdit] = useState({ nome: '', cargo: '', telefone: '' });
-  const [erro, setErro] = useState('');
-  const [filtro, setFiltro] = useState('');
+  const [modalConfirmacao, setModalConfirmacao] = useState(false);
+  const [funcionarioParaExcluir, setFuncionarioParaExcluir] = useState(null);
   const { usuario } = useAuth();
-  const { classes } = useTheme();
-  
   const isFuncionario = usuario?.nivel === 'funcionario';
-
-  const funcionariosFiltrados = funcionarios.filter(func =>
-    func.nome.toLowerCase().includes(filtro.toLowerCase()) ||
-    func.cargo.toLowerCase().includes(filtro.toLowerCase()) ||
-    func.telefone.includes(filtro)
-  );
 
   const handleEditar = (func) => {
     setEditando(func);
@@ -28,276 +19,171 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
 
   const handleAdicionar = async (e) => {
     e.preventDefault();
-    setErro('');
     setLoading(true);
-    try {
-      await adicionarFuncionario(novoFuncionario);
-      setNovoFuncionario({ nome: '', cargo: '', telefone: '' });
-    } catch (err) {
-      setErro(err.message || 'Erro ao adicionar funcionário');
-    }
+    await adicionarFuncionario(novoFuncionario);
+    setNovoFuncionario({ nome: '', cargo: '', telefone: '' });
     setLoading(false);
   };
 
   const handleSalvarEdicao = async () => {
     setLoading(true);
-    try {
-      await atualizarFuncionario(editando.id, formEdit);
-      setEditando(null);
-      setErro('');
-    } catch (err) {
-      setErro(err.message || 'Erro ao atualizar funcionário');
-    }
+    await atualizarFuncionario(editando.id, formEdit);
+    setEditando(null);
     setLoading(false);
   };
 
-  const handleRemover = async (id) => {
-    if (!window.confirm('Tem certeza que deseja remover este funcionário?')) return;
-    
-    setLoading(true);
+  const confirmarExclusao = (funcionario) => {
+    setFuncionarioParaExcluir(funcionario);
+    setModalConfirmacao(true);
+  };
+
+  const handleRemover = async () => {
     try {
-      await removerFuncionario(id);
-      setErro('');
-    } catch (err) {
-      setErro(err.message || 'Erro ao remover funcionário');
+      setLoading(true);
+      await removerFuncionario(funcionarioParaExcluir.id);
+      setModalConfirmacao(false);
+      setFuncionarioParaExcluir(null);
+    } catch (error) {
+      alert('Erro ao excluir funcionário: ' + error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className={`space-y-6 ${classes.backgroundPrimary}`}>
-      {/* Header */}
-      <div className={classes.sectionHeader}>
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className={`${classes.sectionTitle} flex items-center gap-2`}>
-              <Users className="w-6 h-6" style={{ color: '#bd9967' }} />
-              Funcionários
-            </h2>
-            <p className={classes.sectionSubtitle}>Gestão de funcionários do almoxarifado</p>
-          </div>
-        </div>
-
-        {/* Filtro */}
-        <div className="relative mb-6">
-          <Search className={`w-4 h-4 absolute left-3 top-3 ${classes.textLight}`} />
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      {!isFuncionario && !readonly && (
+        <form onSubmit={handleAdicionar} className="flex gap-2 mb-6">
           <input
             type="text"
-            placeholder="Buscar por nome, cargo ou telefone..."
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value)}
-            className={`pl-10 w-full px-3 py-2 ${classes.input} focus:ring-2 focus:border-transparent`}
-            style={{ '--tw-ring-color': '#bd9967' }}
+            placeholder="Nome"
+            value={novoFuncionario.nome}
+            onChange={e => setNovoFuncionario({ ...novoFuncionario, nome: e.target.value })}
+            className="form-input px-3 py-2 rounded border"
+            required
           />
-        </div>
-
-        {/* Formulário de adição */}
-        {!isFuncionario && !readonly && (
-          <form onSubmit={handleAdicionar} className={`${classes.card} p-4 mb-6`}>
-            <h3 className={`text-lg font-medium ${classes.textPrimary} mb-4`}>Adicionar Novo Funcionário</h3>
-            
-            {erro && (
-              <div className={`${classes.alertError} p-3 rounded-lg mb-4`}>
-                {erro}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className={classes.formLabel}>Nome *</label>
-                <input
-                  type="text"
-                  placeholder="Nome completo"
-                  value={novoFuncionario.nome}
-                  onChange={e => setNovoFuncionario({ ...novoFuncionario, nome: e.target.value })}
-                  className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
-                  style={{ '--tw-ring-color': '#bd9967' }}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className={classes.formLabel}>Cargo *</label>
-                <input
-                  type="text"
-                  placeholder="Cargo/função"
-                  value={novoFuncionario.cargo}
-                  onChange={e => setNovoFuncionario({ ...novoFuncionario, cargo: e.target.value })}
-                  className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
-                  style={{ '--tw-ring-color': '#bd9967' }}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className={classes.formLabel}>Telefone *</label>
-                <input
-                  type="text"
-                  placeholder="(00) 00000-0000"
-                  value={novoFuncionario.telefone}
-                  onChange={e => {
-                    const onlyNums = e.target.value.replace(/[^0-9]/g, '');
-                    setNovoFuncionario({ ...novoFuncionario, telefone: onlyNums });
-                  }}
-                  className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
-                  style={{ '--tw-ring-color': '#bd9967' }}
-                  required
-                  maxLength={15}
-                />
-              </div>
-            </div>
-
-            <button 
-              type="submit" 
-              className={`${classes.buttonPrimary} flex items-center gap-2 px-4 py-2`}
-              style={{ backgroundColor: '#bd9967' }}
-              disabled={loading}
-            >
-              <Plus className="w-4 h-4" />
-              {loading ? 'Adicionando...' : 'Adicionar Funcionário'}
-            </button>
-          </form>
-        )}
-      </div>
-
-      {/* Tabela de funcionários */}
-      <div className={classes.table}>
-        <table className="w-full">
-          <thead className={classes.tableHeader}>
-            <tr>
-              <th className={`text-left py-3 px-4 ${classes.tableHeaderCell}`}>Nome</th>
-              <th className={`text-left py-3 px-4 ${classes.tableHeaderCell}`}>Cargo</th>
-              <th className={`text-left py-3 px-4 ${classes.tableHeaderCell}`}>Telefone</th>
-              {!isFuncionario && !readonly && (
-                <th className={`text-left py-3 px-4 ${classes.tableHeaderCell}`}>Ações</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {funcionariosFiltrados.map((func) => (
-              <tr key={func.id} className={classes.tableRow}>
-                <td className={`py-3 px-4 ${classes.tableCell}`}>
-                  <div className="font-medium">{func.nome}</div>
-                </td>
-                <td className={`py-3 px-4 ${classes.tableCell}`}>
-                  <div className={classes.textSecondary}>{func.cargo}</div>
-                </td>
-                <td className={`py-3 px-4 ${classes.tableCell}`}>
-                  <div className={classes.textSecondary}>
-                    {func.telefone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
-                  </div>
-                </td>
+          <input
+            type="text"
+            placeholder="Cargo"
+            value={novoFuncionario.cargo}
+            onChange={e => setNovoFuncionario({ ...novoFuncionario, cargo: e.target.value })}
+            className="form-input px-3 py-2 rounded border"
+            required
+          />
+          <input
+            type="text"
+            placeholder="Telefone"
+            value={novoFuncionario.telefone}
+            onChange={e => {
+              const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+              setNovoFuncionario({ ...novoFuncionario, telefone: onlyNums });
+            }}
+            className="form-input px-3 py-2 rounded border"
+            required
+            maxLength={15}
+          />
+          <button type="submit" className="btn-primary flex items-center gap-2 px-4 py-2 rounded bg-green-600 text-white" disabled={loading}>
+            <Plus className="w-4 h-4" /> Adicionar
+          </button>
+        </form>
+      )}
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead>
+          <tr>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cargo</th>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telefone</th>
+            <th className="px-4 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {funcionarios.map((func) => (
+            <tr key={func.id} className="bg-white">
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{func.nome}</td>
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{func.cargo}</td>
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{func.telefone}</td>
+              <td className="px-4 py-2 flex gap-2">
                 {!isFuncionario && !readonly && (
-                  <td className="py-3 px-4">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditar(func)}
-                        className={`p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors duration-200`}
-                        title="Editar funcionário"
-                      >
-                        <Edit className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </button>
-                      <button
-                        onClick={() => handleRemover(func.id)}
-                        className={`p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors duration-200`}
-                        title="Remover funcionário"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                      </button>
-                    </div>
-                  </td>
+                  <>
+                    <button onClick={() => handleEditar(func)} className="text-blue-600 hover:text-blue-800">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => confirmarExclusao(func)} className="text-red-600 hover:text-red-800">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {funcionariosFiltrados.length === 0 && (
-          <div className={`p-8 text-center ${classes.tableCell}`}>
-            <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#bd9967' }} />
-            <p className={classes.textSecondary}>
-              {filtro ? 'Nenhum funcionário encontrado' : 'Nenhum funcionário cadastrado'}
-            </p>
-            <p className={`text-sm ${classes.textMuted} mt-2`}>
-              {filtro ? 'Tente alterar o termo de busca' : 'Adicione o primeiro funcionário usando o formulário acima'}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Modal de edição */}
-      {editando && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className={`${classes.modal} max-w-md w-full p-6`}>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className={`text-lg font-bold ${classes.textPrimary}`}>Editar Funcionário</h3>
-              <button
-                onClick={() => setEditando(null)}
-                className={`${classes.textLight} hover:${classes.textSecondary}`}
-              >
-                ✕
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {!isFuncionario && editando && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Editar Funcionário</h3>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Nome"
+                value={formEdit.nome}
+                onChange={e => setFormEdit({ ...formEdit, nome: e.target.value })}
+                className="form-input w-full"
+              />
+              <input
+                type="text"
+                placeholder="Cargo"
+                value={formEdit.cargo}
+                onChange={e => setFormEdit({ ...formEdit, cargo: e.target.value })}
+                className="form-input w-full"
+              />
+              <input
+                type="text"
+                placeholder="Telefone"
+                value={formEdit.telefone}
+                onChange={e => setFormEdit({ ...formEdit, telefone: e.target.value.replace(/[^0-9]/g, '') })}
+                className="form-input w-full"
+                maxLength={15}
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button onClick={() => setEditando(null)} className="px-4 py-2 bg-gray-100 rounded-lg">Cancelar</button>
+              <button onClick={handleSalvarEdicao} className="px-4 py-2 bg-blue-600 text-white rounded-lg" disabled={loading}>
+                Salvar
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            {erro && (
-              <div className={`${classes.alertError} p-3 rounded-lg mb-4`}>
-                {erro}
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <label className={classes.formLabel}>Nome *</label>
-                <input
-                  type="text"
-                  value={formEdit.nome}
-                  onChange={e => setFormEdit({ ...formEdit, nome: e.target.value })}
-                  className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
-                  style={{ '--tw-ring-color': '#bd9967' }}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className={classes.formLabel}>Cargo *</label>
-                <input
-                  type="text"
-                  value={formEdit.cargo}
-                  onChange={e => setFormEdit({ ...formEdit, cargo: e.target.value })}
-                  className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
-                  style={{ '--tw-ring-color': '#bd9967' }}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className={classes.formLabel}>Telefone *</label>
-                <input
-                  type="text"
-                  value={formEdit.telefone}
-                  onChange={e => setFormEdit({ ...formEdit, telefone: e.target.value.replace(/[^0-9]/g, '') })}
-                  className={`w-full ${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
-                  style={{ '--tw-ring-color': '#bd9967' }}
-                  required
-                  maxLength={15}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
+      {/* Modal de Confirmação de Exclusão */}
+      {modalConfirmacao && funcionarioParaExcluir && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Confirmar Exclusão
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Tem certeza que deseja excluir o funcionário "{funcionarioParaExcluir.nome}"?
+              Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex justify-end space-x-3">
               <button
-                onClick={() => setEditando(null)}
-                className={`${classes.buttonSecondary} px-4 py-2`}
+                onClick={() => {
+                  setModalConfirmacao(false);
+                  setFuncionarioParaExcluir(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                disabled={loading}
               >
                 Cancelar
               </button>
               <button
-                onClick={handleSalvarEdicao}
-                className={`${classes.buttonPrimary} px-4 py-2`}
-                style={{ backgroundColor: '#bd9967' }}
+                onClick={handleRemover}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700"
                 disabled={loading}
               >
-                {loading ? 'Salvando...' : 'Salvar Alterações'}
+                {loading ? 'Excluindo...' : 'Excluir'}
               </button>
             </div>
           </div>

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useTheme } from '../AlmoxarifadoJardim';
 import { Plus, Search, Edit, Trash2, ShoppingCart, X } from 'lucide-react';
 
 const STATUS_COMPRAS = {
@@ -19,11 +18,11 @@ const STATUS_LABELS = {
 };
 
 const STATUS_COLORS = {
-  solicitado: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300',
-  aprovado: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
-  pedido_enviado: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300',
-  recebido: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300',
-  cancelado: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+  solicitado: 'bg-blue-100 text-blue-800',
+  aprovado: 'bg-green-100 text-green-800',
+  pedido_enviado: 'bg-yellow-100 text-yellow-800',
+  recebido: 'bg-purple-100 text-purple-800',
+  cancelado: 'bg-red-100 text-red-800'
 };
 
 // Prioridades da compra
@@ -42,10 +41,10 @@ const PRIORIDADE_LABELS = {
 };
 
 const PRIORIDADE_COLORS = {
-  baixa: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300',
-  media: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300',
-  alta: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300',
-  urgente: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+  baixa: 'bg-gray-100 text-gray-800',
+  media: 'bg-blue-100 text-blue-800',
+  alta: 'bg-orange-100 text-orange-800',
+  urgente: 'bg-red-100 text-red-800'
 };
 
 const ComprasTab = ({ 
@@ -57,14 +56,13 @@ const ComprasTab = ({
   atualizarCompra,
   readonly = false 
 }) => {
-  const { classes } = useTheme();
   const [filtro, setFiltro] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('todos');
   const [prioridadeFiltro, setPrioridadeFiltro] = useState('todas');
   const [modalAberto, setModalAberto] = useState(false);
+  const [modalConfirmacao, setModalConfirmacao] = useState(false);
+  const [compraParaExcluir, setCompraParaExcluir] = useState(null);
   const [compraEditando, setCompraEditando] = useState(null);
-  const [confirmarExclusaoId, setConfirmarExclusaoId] = useState(null);
-  const [erroExclusao, setErroExclusao] = useState('');
   const [novaCompra, setNovaCompra] = useState({
     descricao: '',
     quantidade: 1,
@@ -122,8 +120,8 @@ const ComprasTab = ({
         quantidade: Number(novaCompra.quantidade),
         valorUnitario: parseFloat(novaCompra.valorUnitario || 0),
         valorTotal: Number(novaCompra.quantidade) * parseFloat(novaCompra.valorUnitario || 0),
-        dataSolicitacao: compraEditando ? compraEditando.dataSolicitacao : new Date().toISOString().split('T')[0],
-        dataAtualizacao: new Date().toISOString().split('T')[0]
+        dataSolicitacao: compraEditando ? compraEditando.dataSolicitacao : new Date(),
+        dataAtualizacao: new Date()
       };
 
       if (compraEditando) {
@@ -139,28 +137,21 @@ const ComprasTab = ({
     }
   };
 
-  // Função para iniciar confirmação
-  const pedirConfirmacaoExclusao = (id) => {
-    setConfirmarExclusaoId(id);
-    setErroExclusao('');
+  // Função para excluir compra
+  const confirmarExclusao = (compra) => {
+    setCompraParaExcluir(compra);
+    setModalConfirmacao(true);
   };
 
-  // Função para confirmar exclusão
-  const confirmarExclusaoCompra = async () => {
-    if (!confirmarExclusaoId) return;
-    setErroExclusao('');
+  const excluirCompra = async () => {
     try {
-      await removerCompra(confirmarExclusaoId);
-      setConfirmarExclusaoId(null);
+      await removerCompra(compraParaExcluir.id);
+      setModalConfirmacao(false);
+      setCompraParaExcluir(null);
     } catch (error) {
-      setErroExclusao(error.message || 'Erro ao excluir compra');
+      // TODO: Substituir por um toast ou notificação mais elegante
+      alert('Erro ao excluir compra: ' + error.message);
     }
-  };
-
-  // Função para cancelar exclusão
-  const cancelarExclusaoCompra = () => {
-    setConfirmarExclusaoId(null);
-    setErroExclusao('');
   };
 
   // Função para atualizar status
@@ -168,16 +159,16 @@ const ComprasTab = ({
     try {
       const dadosAtualizacao = {
         status: novoStatus,
-        dataAtualizacao: new Date().toISOString().split('T')[0]
+        dataAtualizacao: new Date()
       };
 
       // Adicionar data específica para alguns status
       if (novoStatus === STATUS_COMPRAS.APROVADO) {
-        dadosAtualizacao.dataAprovacao = new Date().toISOString().split('T')[0];
+        dadosAtualizacao.dataAprovacao = new Date();
       } else if (novoStatus === STATUS_COMPRAS.PEDIDO_ENVIADO) {
-        dadosAtualizacao.dataPedido = new Date().toISOString().split('T')[0];
+        dadosAtualizacao.dataPedido = new Date();
       } else if (novoStatus === STATUS_COMPRAS.RECEBIDO) {
-        dadosAtualizacao.dataRecebimento = new Date().toISOString().split('T')[0];
+        dadosAtualizacao.dataRecebimento = new Date();
       }
 
       await atualizarCompra(id, dadosAtualizacao);
@@ -201,18 +192,13 @@ const ComprasTab = ({
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className={`text-2xl font-bold ${classes.textPrimary}`}>
-            Gestão de Compras
-          </h2>
-          <p className={classes.textSecondary}>
-            Gerenciar solicitações e pedidos de compra
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900">Gestão de Compras</h2>
+          <p className="text-gray-600">Gerenciar solicitações e pedidos de compra</p>
         </div>
         {!readonly && (
           <button
             onClick={abrirModalNova}
-            className={`flex items-center gap-2 px-4 py-2 ${classes.buttonPrimary} text-white`}
-            style={{ backgroundColor: '#bd9967' }}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nova Solicitação
@@ -222,58 +208,56 @@ const ComprasTab = ({
 
       {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className={`${classes.statCard} ${classes.statCardWhite}`}>
+        <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex items-center">
-            <ShoppingCart className="w-8 h-8" style={{ color: '#bd9967' }} />
+            <ShoppingCart className="w-8 h-8 text-purple-600" />
             <div className="ml-3">
-              <p className={`text-sm font-medium ${classes.textSecondary}`}>Total</p>
-              <p className={`text-xl font-bold ${classes.textPrimary}`}>{estatisticas.total}</p>
+              <p className="text-sm font-medium text-gray-600">Total</p>
+              <p className="text-xl font-bold text-gray-900">{estatisticas.total}</p>
             </div>
           </div>
         </div>
-        <div className={`${classes.statCard} ${classes.statCardBlue}`}>
-          <p className={`text-sm font-medium ${classes.statLabelBlue}`}>Solicitado</p>
-          <p className={`text-xl font-bold ${classes.statValueBlue}`}>{estatisticas.solicitado}</p>
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <p className="text-sm font-medium text-blue-600">Solicitado</p>
+          <p className="text-xl font-bold text-blue-900">{estatisticas.solicitado}</p>
         </div>
-        <div className={`${classes.statCard} ${classes.statCardGreen}`}>
-          <p className={`text-sm font-medium ${classes.statLabelGreen}`}>Aprovado</p>
-          <p className={`text-xl font-bold ${classes.statValueGreen}`}>{estatisticas.aprovado}</p>
+        <div className="bg-green-50 p-4 rounded-lg">
+          <p className="text-sm font-medium text-green-600">Aprovado</p>
+          <p className="text-xl font-bold text-green-900">{estatisticas.aprovado}</p>
         </div>
-        <div className={`${classes.statCard} ${classes.statCardYellow}`}>
-          <p className={`text-sm font-medium ${classes.statLabelYellow}`}>Enviado</p>
-          <p className={`text-xl font-bold ${classes.statValueYellow}`}>{estatisticas.enviado}</p>
+        <div className="bg-yellow-50 p-4 rounded-lg">
+          <p className="text-sm font-medium text-yellow-600">Enviado</p>
+          <p className="text-xl font-bold text-yellow-900">{estatisticas.enviado}</p>
         </div>
-        <div className={`${classes.statCard} ${classes.statCardPurple}`}>
-          <p className={`text-sm font-medium ${classes.statLabelPurple}`}>Recebido</p>
-          <p className={`text-xl font-bold ${classes.statValuePurple}`}>{estatisticas.recebido}</p>
+        <div className="bg-purple-50 p-4 rounded-lg">
+          <p className="text-sm font-medium text-purple-600">Recebido</p>
+          <p className="text-xl font-bold text-purple-900">{estatisticas.recebido}</p>
         </div>
-        <div className={`${classes.statCard} ${classes.statCardWhite}`}>
-          <p className={`text-sm font-medium ${classes.textSecondary}`}>Valor Total</p>
-          <p className={`text-lg font-bold ${classes.textPrimary}`}>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <p className="text-sm font-medium text-gray-600">Valor Total</p>
+          <p className="text-lg font-bold text-gray-900">
             R$ {estatisticas.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className={`${classes.card} p-4 space-y-4`}>
+      <div className="bg-white p-4 rounded-lg shadow space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className={`w-4 h-4 absolute left-3 top-3 ${classes.textLight}`} />
+            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
             <input
               type="text"
               placeholder="Pesquisar compras..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 ${classes.input} focus:ring-2 focus:border-transparent`}
-              style={{ '--tw-ring-color': '#bd9967' }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
           <select
             value={statusFiltro}
             onChange={(e) => setStatusFiltro(e.target.value)}
-            className={`px-3 py-2 ${classes.formSelect} focus:ring-2 focus:border-transparent`}
-            style={{ '--tw-ring-color': '#bd9967' }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
             <option value="todos">Todos os status</option>
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -283,85 +267,84 @@ const ComprasTab = ({
           <select
             value={prioridadeFiltro}
             onChange={(e) => setPrioridadeFiltro(e.target.value)}
-            className={`px-3 py-2 ${classes.formSelect} focus:ring-2 focus:border-transparent`}
-            style={{ '--tw-ring-color': '#bd9967' }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
             <option value="todas">Todas as prioridades</option>
             {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
-          <div className={`text-sm ${classes.textSecondary} flex items-center`}>
+          <div className="text-sm text-gray-600 flex items-center">
             Mostrando {comprasFiltradas.length} de {compras.length} compras
           </div>
         </div>
       </div>
 
       {/* Lista de Compras */}
-      <div className={`${classes.table} overflow-hidden`}>
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         {comprasFiltradas.length === 0 ? (
-          <div className={`p-8 text-center ${classes.textMuted}`}>
-            <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <div className="p-8 text-center text-gray-500">
+            <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
             <p>Nenhuma compra encontrada.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className={classes.tableHeader}>
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${classes.tableHeaderCell}`}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Item
                   </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${classes.tableHeaderCell}`}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Quantidade
                   </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${classes.tableHeaderCell}`}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Valor
                   </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${classes.tableHeaderCell}`}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Fornecedor
                   </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${classes.tableHeaderCell}`}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${classes.tableHeaderCell}`}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Prioridade
                   </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${classes.tableHeaderCell}`}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Data
                   </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${classes.tableHeaderCell}`}>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {comprasFiltradas.map((compra) => (
-                  <tr key={compra.id} className={classes.tableRow}>
+                  <tr key={compra.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className={`text-sm font-medium ${classes.tableCell}`}>
+                        <div className="text-sm font-medium text-gray-900">
                           {compra.descricao}
                         </div>
                         {compra.solicitante && (
-                          <div className={`text-sm ${classes.textMuted}`}>
+                          <div className="text-sm text-gray-500">
                             Solicitante: {compra.solicitante}
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${classes.tableCell}`}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {compra.quantidade}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`text-sm ${classes.tableCell}`}>
+                      <div className="text-sm text-gray-900">
                         R$ {(compra.valorUnitario || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
-                      <div className={`text-sm ${classes.textMuted}`}>
+                      <div className="text-sm text-gray-500">
                         Total: R$ {(compra.valorTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${classes.tableCell}`}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {compra.fornecedor || 'Não informado'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -369,7 +352,7 @@ const ComprasTab = ({
                         value={compra.status}
                         onChange={(e) => atualizarStatus(compra.id, e.target.value)}
                         disabled={readonly}
-                        className={`text-xs font-medium px-2.5 py-0.5 rounded-full border-0 ${STATUS_COLORS[compra.status]} ${readonly ? 'cursor-not-allowed' : 'cursor-pointer'} ${classes.formSelect}`}
+                        className={`text-xs font-medium px-2.5 py-0.5 rounded-full border-0 ${STATUS_COLORS[compra.status]} ${readonly ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         {Object.entries(STATUS_LABELS).map(([value, label]) => (
                           <option key={value} value={value}>{label}</option>
@@ -381,10 +364,10 @@ const ComprasTab = ({
                         {PRIORIDADE_LABELS[compra.prioridade]}
                       </span>
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${classes.textMuted}`}>
-                      <div>Sol: {compra.dataSolicitacao}</div>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div>Sol: {compra.dataSolicitacao?.toDate ? compra.dataSolicitacao.toDate().toLocaleDateString('pt-BR') : compra.dataSolicitacao}</div>
                       {compra.dataRecebimento && (
-                        <div>Rec: {compra.dataRecebimento}</div>
+                        <div>Rec: {compra.dataRecebimento?.toDate ? compra.dataRecebimento.toDate().toLocaleDateString('pt-BR') : compra.dataRecebimento}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -392,14 +375,14 @@ const ComprasTab = ({
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => abrirModalEdicao(compra)}
-                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-200 transition-colors duration-200"
+                            className="text-indigo-600 hover:text-indigo-900"
                             title="Editar"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => pedirConfirmacaoExclusao(compra.id)}
-                            className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 transition-colors duration-200"
+                            onClick={() => confirmarExclusao(compra)}
+                            className="text-red-600 hover:text-red-900"
                             title="Excluir"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -415,53 +398,17 @@ const ComprasTab = ({
         )}
       </div>
 
-      {/* Modal de confirmação de exclusão */}
-      {confirmarExclusaoId && (
-        <div className={`fixed inset-0 ${classes.overlay} flex items-center justify-center z-50`}>
-          <div className={`${classes.modal} p-6 w-full max-w-sm mx-4 flex flex-col items-center`}>
-            <h3 className={`text-lg font-medium ${classes.textPrimary} mb-4 flex items-center justify-center gap-2`}>
-              <Trash2 className="w-6 h-6 text-red-400" />
-              Confirmar Exclusão
-            </h3>
-            <p className={`mb-4 text-center ${classes.textSecondary}`}>
-              Tem certeza que deseja excluir esta compra?
-            </p>
-            {erroExclusao && (
-              <div className={`${classes.alertError} px-4 py-2 rounded mb-2 text-center`}>
-                {erroExclusao}
-              </div>
-            )}
-            <div className="flex flex-col items-center gap-2 w-full mt-2">
-              <div className="flex justify-center gap-2 w-full">
-                <button 
-                  onClick={cancelarExclusaoCompra} 
-                  className={`px-4 py-2 ${classes.buttonSecondary}`}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={confirmarExclusaoCompra} 
-                  className={`px-4 py-2 ${classes.buttonDanger}`}
-                >
-                  Excluir
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Modal de Nova/Editar Compra */}
       {modalAberto && (
-        <div className={`fixed inset-0 ${classes.overlay} flex items-center justify-center z-50`}>
-          <div className={`${classes.modal} p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-lg font-medium ${classes.textPrimary}`}>
+              <h3 className="text-lg font-medium text-gray-900">
                 {compraEditando ? 'Editar Compra' : 'Nova Solicitação de Compra'}
               </h3>
               <button
                 onClick={() => setModalAberto(false)}
-                className={`${classes.textLight} hover:${classes.textSecondary} transition-colors duration-200`}
+                className="text-gray-400 hover:text-gray-600"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -469,21 +416,20 @@ const ComprasTab = ({
             <form onSubmit={salvarCompra} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className={classes.formLabel}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Descrição do Item *
                   </label>
                   <input
                     type="text"
                     value={novaCompra.descricao}
                     onChange={(e) => setNovaCompra({ ...novaCompra, descricao: e.target.value })}
-                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:border-transparent`}
-                    style={{ '--tw-ring-color': '#bd9967' }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Ex: Furadeira elétrica 1/2"
                     required
                   />
                 </div>
                 <div>
-                  <label className={classes.formLabel}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Quantidade *
                   </label>
                   <input
@@ -491,13 +437,12 @@ const ComprasTab = ({
                     min="1"
                     value={novaCompra.quantidade}
                     onChange={(e) => setNovaCompra({ ...novaCompra, quantidade: e.target.value })}
-                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:border-transparent`}
-                    style={{ '--tw-ring-color': '#bd9967' }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     required
                   />
                 </div>
                 <div>
-                  <label className={classes.formLabel}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Valor Unitário (R$)
                   </label>
                   <input
@@ -506,33 +451,30 @@ const ComprasTab = ({
                     min="0"
                     value={novaCompra.valorUnitario}
                     onChange={(e) => setNovaCompra({ ...novaCompra, valorUnitario: e.target.value })}
-                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:border-transparent`}
-                    style={{ '--tw-ring-color': '#bd9967' }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="0.00"
                   />
                 </div>
                 <div>
-                  <label className={classes.formLabel}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Fornecedor
                   </label>
                   <input
                     type="text"
                     value={novaCompra.fornecedor}
                     onChange={(e) => setNovaCompra({ ...novaCompra, fornecedor: e.target.value })}
-                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:border-transparent`}
-                    style={{ '--tw-ring-color': '#bd9967' }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Nome do fornecedor"
                   />
                 </div>
                 <div>
-                  <label className={classes.formLabel}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Prioridade *
                   </label>
                   <select
                     value={novaCompra.prioridade}
                     onChange={(e) => setNovaCompra({ ...novaCompra, prioridade: e.target.value })}
-                    className={`w-full px-3 py-2 ${classes.formSelect} focus:ring-2 focus:border-transparent`}
-                    style={{ '--tw-ring-color': '#bd9967' }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     required
                   >
                     {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
@@ -541,28 +483,26 @@ const ComprasTab = ({
                   </select>
                 </div>
                 <div>
-                  <label className={classes.formLabel}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Solicitante
                   </label>
                   <input
                     type="text"
                     value={novaCompra.solicitante}
                     onChange={(e) => setNovaCompra({ ...novaCompra, solicitante: e.target.value })}
-                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:border-transparent`}
-                    style={{ '--tw-ring-color': '#bd9967' }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Nome do solicitante"
                   />
                 </div>
                 {compraEditando && (
                   <div>
-                    <label className={classes.formLabel}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Status
                     </label>
                     <select
                       value={novaCompra.status}
                       onChange={(e) => setNovaCompra({ ...novaCompra, status: e.target.value })}
-                      className={`w-full px-3 py-2 ${classes.formSelect} focus:ring-2 focus:border-transparent`}
-                      style={{ '--tw-ring-color': '#bd9967' }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       {Object.entries(STATUS_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>{label}</option>
@@ -571,25 +511,24 @@ const ComprasTab = ({
                   </div>
                 )}
                 <div className="md:col-span-2">
-                  <label className={classes.formLabel}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Observações
                   </label>
                   <textarea
                     value={novaCompra.observacoes}
                     onChange={(e) => setNovaCompra({ ...novaCompra, observacoes: e.target.value })}
                     rows={3}
-                    className={`w-full px-3 py-2 ${classes.formTextarea} focus:ring-2 focus:border-transparent`}
-                    style={{ '--tw-ring-color': '#bd9967' }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Observações adicionais..."
                   />
                 </div>
               </div>
               {/* Valor total calculado */}
               {novaCompra.quantidade && novaCompra.valorUnitario && (
-                <div className={`${classes.containerSecondary} p-4 rounded-lg`}>
+                <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className={`text-sm font-medium ${classes.textSecondary}`}>Valor Total:</span>
-                    <span className={`text-lg font-bold ${classes.textPrimary}`}>
+                    <span className="text-sm font-medium text-gray-700">Valor Total:</span>
+                    <span className="text-lg font-bold text-gray-900">
                       R$ {(Number(novaCompra.quantidade) * parseFloat(novaCompra.valorUnitario)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -599,19 +538,50 @@ const ComprasTab = ({
                 <button
                   type="button"
                   onClick={() => setModalAberto(false)}
-                  className={`px-4 py-2 text-sm font-medium ${classes.buttonSecondary}`}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className={`px-4 py-2 text-sm font-medium ${classes.buttonPrimary} text-white`}
-                  style={{ backgroundColor: '#bd9967' }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700"
                 >
                   {compraEditando ? 'Atualizar' : 'Solicitar'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {modalConfirmacao && compraParaExcluir && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Confirmar Exclusão
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Tem certeza que deseja excluir a compra "{compraParaExcluir.descricao}"?
+              Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setModalConfirmacao(false);
+                  setCompraParaExcluir(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={excluirCompra}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700"
+              >
+                Excluir
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,0 +1,150 @@
+import React, { useState } from 'react';
+import { updateDoc, doc } from 'firebase/firestore';
+import { db } from '../../firebaseConfig';
+import { CheckCircle, XCircle } from 'lucide-react';
+
+const AprovarTransferencia = ({ transferencia, onClose }) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleAprovar = async () => {
+    setLoading(true);
+    try {
+      // Buscar o empréstimo atual para garantir que ainda existe
+      const emprestimoRef = doc(db, 'emprestimos', transferencia.emprestimoId);
+      
+      // Atualizar somente o funcionário no empréstimo
+      await updateDoc(emprestimoRef, {
+        funcionarioId: transferencia.funcionarioDestinoId,
+        colaborador: transferencia.funcionarioDestino
+      });
+
+      // Marcar a transferência como aceita
+      const transferenciaRef = doc(db, 'transferencias', transferencia.id);
+      await updateDoc(transferenciaRef, {
+        status: 'aceita',
+        dataAceite: new Date().toISOString(),
+        detalhesAceite: {
+          data: new Date().toISOString(),
+          funcionarioId: transferencia.funcionarioDestinoId,
+          funcionario: transferencia.funcionarioDestino
+        }
+      });
+
+      alert('Transferência aceita com sucesso!');
+      onClose();
+    } catch (error) {
+      console.error('Erro ao aceitar transferência:', error);
+      alert('Erro ao aceitar transferência. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecusar = async () => {
+    setLoading(true);
+    try {
+      // Apenas atualizar a transferência como recusada
+      const transferenciaRef = doc(db, 'transferencias', transferencia.id);
+      await updateDoc(transferenciaRef, {
+        status: 'recusada',
+        dataRecusa: new Date().toISOString(),
+        detalhesRecusa: {
+          data: new Date().toISOString(),
+          funcionarioId: transferencia.funcionarioDestinoId,
+          funcionario: transferencia.funcionarioDestino
+        }
+      });
+
+      alert('Transferência recusada.');
+      onClose();
+    } catch (error) {
+      console.error('Erro ao recusar transferência:', error);
+      alert('Erro ao recusar transferência. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+        <h3 className="text-xl font-medium text-gray-900 mb-4">Aprovar Recebimento de Ferramentas</h3>
+        
+        <div className="space-y-6">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <ArrowRight className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">
+                  {transferencia.funcionarioOrigem} está transferindo:
+                </p>
+                <p className="text-sm text-gray-500">
+                  Solicitado em {new Date(transferencia.dataSolicitacao).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {transferencia.ferramentas.map((ferramenta, idx) => (
+                <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200">
+                  <ToolCase className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <span className="text-gray-900 font-medium">
+                      {ferramenta.nome}
+                    </span>
+                    {ferramenta.quantidade > 1 && 
+                      <span className="ml-2 text-sm text-gray-500">
+                        Quantidade: {ferramenta.quantidade}
+                      </span>
+                    }
+                    {ferramenta.codigo && 
+                      <span className="ml-2 text-sm text-gray-500">
+                        (Código: {ferramenta.codigo})
+                      </span>
+                    }
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={handleAprovar}
+              disabled={loading}
+              className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <CheckCircle className="w-5 h-5" />
+              {loading ? 'Processando...' : 'Aceitar Transferência'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRecusar}
+              disabled={loading}
+              className="w-full px-4 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <XCircle className="w-5 h-5" />
+              {loading ? 'Processando...' : 'Recusar Transferência'}
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  );
+};
+
+export default AprovarTransferencia;

@@ -1,19 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { useTheme } from '../AlmoxarifadoJardim';
 import { obterDataAtual, obterHoraAtual } from '../../utils/dateUtils';
 import FerramentaSelector from './FerramentaSelector';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebaseConfig';
+import { NIVEIS_PERMISSAO } from '../AlmoxarifadoJardim';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
-  const { classes } = useTheme();
-  const [novoEmprestimo, setNovoEmprestimo] = useState({
-    colaborador: '',
-    ferramentas: [],
-    dataRetirada: obterDataAtual(),
-    horaRetirada: obterHoraAtual()
-  });
+  const [funcionarios, setFuncionarios] = useState([]);
 
-  const ferramentasDisponiveis = inventario.filter(item => item.disponivel > 0);
+  // Carregar funcionários
+  useEffect(() => {
+    const q = query(
+      collection(db, 'usuarios'),
+      where('nivel', '==', NIVEIS_PERMISSAO.FUNCIONARIO)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const funcionariosData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setFuncionarios(funcionariosData);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Adiciona ferramenta à lista
   const adicionarFerramenta = (ferramenta) => {
@@ -36,12 +48,28 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
 
   // Submete o novo empréstimo
   const handleSubmit = () => {
-    if (!novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0) return;
+    if (!novoEmprestimo.colaborador) {
+      alert('Por favor, selecione um funcionário');
+      return;
+    }
+    
+    if (novoEmprestimo.ferramentas.length === 0) {
+      alert('Por favor, selecione pelo menos uma ferramenta');
+      return;
+    }
+
+    const funcionarioSelecionado = funcionarios.find(f => f.nome === novoEmprestimo.colaborador);
+    if (!funcionarioSelecionado) {
+      alert('Funcionário não encontrado');
+      return;
+    }
+
     const novo = {
       ...novoEmprestimo,
       status: 'emprestado',
       dataDevolucao: null,
-      horaDevolucao: null
+      horaDevolucao: null,
+      funcionarioId: funcionarioSelecionado.id // Armazenar o ID do funcionário também
     };
     const emprestimoAdicionado = adicionarEmprestimo(novo, atualizarDisponibilidade);
     if (emprestimoAdicionado) {
@@ -53,34 +81,45 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
       });
     }
   };
+  const [novoEmprestimo, setNovoEmprestimo] = useState({
+    colaborador: '',
+    ferramentas: [],
+    dataRetirada: obterDataAtual(),
+    horaRetirada: obterHoraAtual()
+  });
+
+  const ferramentasDisponiveis = inventario.filter(item => item.disponivel > 0);
 
   return (
-    <div className={`${classes.card} p-6`}>
+    <div className="bg-white rounded-lg shadow-lg p-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Nome do colaborador"
+            <select
               value={novoEmprestimo.colaborador}
               onChange={(e) => setNovoEmprestimo({...novoEmprestimo, colaborador: e.target.value})}
-              className={`${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
-              style={{ '--tw-ring-color': '#bd9967' }}
-            />
+              className="form-select w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-500"
+              required
+            >
+              <option value="">Selecione o funcionário</option>
+              {funcionarios.map((funcionario) => (
+                <option key={funcionario.id} value={funcionario.nome}>
+                  {funcionario.nome}
+                </option>
+              ))}
+            </select>
             <input
               type="date"
               value={novoEmprestimo.dataRetirada}
               onChange={(e) => setNovoEmprestimo({...novoEmprestimo, dataRetirada: e.target.value})}
-              className={`${classes.input} px-3 py-2 focus:ring-2 focus:border-transparent`}
-              style={{ '--tw-ring-color': '#bd9967' }}
+              className="form-input"
             />
           </div>
           <input
             type="time"
             value={novoEmprestimo.horaRetirada}
             onChange={(e) => setNovoEmprestimo({...novoEmprestimo, horaRetirada: e.target.value})}
-            className={`${classes.input} w-full px-3 py-2 focus:ring-2 focus:border-transparent`}
-            style={{ '--tw-ring-color': '#bd9967' }}
+            className="form-input w-full"
           />
           <FerramentaSelector 
             ferramentasDisponiveis={ferramentasDisponiveis}
@@ -88,24 +127,18 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
           />
         </div>
         <div>
-          <h3 className={`font-medium mb-2 ${classes.textSecondary}`}>
-            Ferramentas Selecionadas:
-          </h3>
-          <div className={`${classes.card} p-3 min-h-32 max-h-40 overflow-y-auto border-0`}>
+          <h3 className="font-medium text-gray-700 mb-2">Ferramentas Selecionadas:</h3>
+          <div className="border border-gray-200 rounded-lg p-3 min-h-32 max-h-40 overflow-y-auto">
             {novoEmprestimo.ferramentas.length === 0 ? (
-              <p className={`text-sm ${classes.textLight}`}>
-                Nenhuma ferramenta selecionada
-              </p>
+              <p className="text-gray-400 text-sm">Nenhuma ferramenta selecionada</p>
             ) : (
               <div className="space-y-2">
                 {novoEmprestimo.ferramentas.map((ferramenta, index) => (
-                  <div key={index} className={`flex justify-between items-center ${classes.containerSecondary} p-2 rounded`}>
-                    <span className={`text-sm ${classes.textPrimary}`}>
-                      {ferramenta}
-                    </span>
+                  <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span className="text-sm">{ferramenta}</span>
                     <button
                       onClick={() => removerFerramenta(ferramenta)}
-                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 transition-colors duration-200"
+                      className="text-red-500 hover:text-red-700 p-1"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -117,16 +150,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
           <button
             onClick={handleSubmit}
             disabled={!novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0}
-            className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium text-white transition-colors duration-200 ${
-              !novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0
-                ? 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed'
-                : 'hover:opacity-90'
-            }`}
-            style={{ 
-              backgroundColor: (!novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0) 
-                ? undefined 
-                : '#bd9967' 
-            }}
+            className="mt-4 w-full btn-primary flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
             Registrar Empréstimo
