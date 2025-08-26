@@ -4,6 +4,8 @@ import { ToastProvider } from './ToastProvider';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
 import { TarefasProvider } from './Tarefas/TarefasProvider';
+import PWAUpdateAvailable from './PWAUpdateAvailable';
+import { useNotifications } from '../hooks/useNotifications';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { Menu as MenuIcon, X } from 'lucide-react';
 import InventarioTab from './Inventario/InventarioTab';
@@ -1661,10 +1663,14 @@ const App = () => {
 
 // Componente principal com Provider
 const AlmoxarifadoJardim = () => {
+  // Inicializar hook de notificações
+  useNotifications();
+  
   return (
     <AuthProvider>
       <ToastProvider>
         <App />
+        <PWAUpdateAvailable />
       </ToastProvider>
     </AuthProvider>
   );
