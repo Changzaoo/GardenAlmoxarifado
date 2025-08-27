@@ -4,7 +4,7 @@ import { formatarData } from '../../utils/dateUtils';
 import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
 
 const ListaEmprestimos = ({ 
-  emprestimos, 
+  emprestimos = [], 
   devolverFerramentas, 
   removerEmprestimo,
   atualizarDisponibilidade 
@@ -13,15 +13,20 @@ const ListaEmprestimos = ({
   const [showDevolucaoModal, setShowDevolucaoModal] = useState(false);
   const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
 
-  const emprestimosFiltrados = emprestimos
-    .filter(emp =>
-      emp.colaborador.toLowerCase().includes(filtroEmprestimos.toLowerCase()) ||
-      emp.ferramentas.some(f => f.toLowerCase().includes(filtroEmprestimos.toLowerCase()))
-    )
+  const emprestimosFiltrados = (emprestimos || [])
+    .filter(emp => {
+      if (!emp) return false;
+      const funcionario = (emp.colaborador || '').toLowerCase();
+      const ferramentas = Array.isArray(emp.ferramentas) ? emp.ferramentas : [];
+      const filtro = filtroEmprestimos.toLowerCase();
+      
+      return funcionario.includes(filtro) ||
+             ferramentas.some(f => (f.nome || '').toLowerCase().includes(filtro));
+    })
     .sort((a, b) => {
-      // Ordena por data/hora de retirada mais recente
-      const dataA = new Date(a.dataRetirada + 'T' + (a.horaRetirada || '00:00'));
-      const dataB = new Date(b.dataRetirada + 'T' + (b.horaRetirada || '00:00'));
+      // Ordena por data/hora de empréstimo mais recente
+      const dataA = a?.dataEmprestimo ? new Date(a.dataEmprestimo) : new Date();
+      const dataB = b?.dataEmprestimo ? new Date(b.dataEmprestimo) : new Date();
       return dataB - dataA;
     });
 
@@ -70,35 +75,32 @@ const ListaEmprestimos = ({
             </tr>
           </thead>
           <tbody>
-            {emprestimosFiltrados.sort((a, b) => b.id - a.id).map(emprestimo => (
-              <tr key={emprestimo.id} className="border-b hover:bg-gray-50">
-                <td className="py-3 px-2 font-mono text-sm">#{emprestimo.id}</td>
-                <td className="py-3 px-2 font-medium">{emprestimo.colaborador}</td>
+            {emprestimosFiltrados.map(emprestimo => (
+              <tr key={emprestimo?.id || Math.random()} className="border-b hover:bg-gray-50">
+                <td className="py-3 px-2 font-mono text-sm">#{emprestimo?.id || '-'}</td>
+                <td className="py-3 px-2 font-medium">{emprestimo?.colaborador || '-'}</td>
                 <td className="py-3 px-2">
                   <div className="max-w-xs">
-                    {emprestimo.ferramentas.length > 2 ? (
-                      <div className="text-sm">
-                        <div>{emprestimo.ferramentas.slice(0, 2).join(', ')}</div>
-                        <div className="text-gray-500">
-                          +{emprestimo.ferramentas.length - 2} outras
-                        </div>
+                    {Array.isArray(emprestimo?.ferramentas) && emprestimo.ferramentas.map((ferramenta, idx) => (
+                      <div key={idx} className="text-sm flex items-center gap-2 mb-1">
+                        <span className="font-medium">{ferramenta.nome}</span>
+                        <span className="text-gray-500">
+                          ({ferramenta.quantidade} {ferramenta.quantidade > 1 ? 'unidades' : 'unidade'})
+                        </span>
                       </div>
-                    ) : (
-                      <div className="text-sm">
-                        {emprestimo.ferramentas.join(', ')}
-                      </div>
+                    ))}
+                    {(!emprestimo?.ferramentas || !Array.isArray(emprestimo?.ferramentas) || emprestimo.ferramentas.length === 0) && (
+                      <div className="text-sm text-gray-500">Sem ferramentas</div>
                     )}
                   </div>
                 </td>
                 <td className="py-3 px-2 text-sm">
-                  <div>{formatarData(emprestimo.dataRetirada)}</div>
-                  <div className="text-gray-500">{emprestimo.horaRetirada}</div>
+                  <div>{formatarData(emprestimo.dataEmprestimo)}</div>
                 </td>
                 <td className="py-3 px-2 text-sm">
                   {emprestimo.dataDevolucao ? (
                     <div>
                       <div>{formatarData(emprestimo.dataDevolucao)}</div>
-                      <div className="text-gray-500">{emprestimo.horaDevolucao}</div>
                       {emprestimo.devolvidoPorTerceiros && (
                         <div className="text-xs text-orange-600 mt-1">
                           Devolvido por terceiros
