@@ -4,7 +4,9 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'fireb
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from './ThemeProvider';
 import { useIsMobile } from '../hooks/useIsMobile';
+import useVersionCheck from '../hooks/useVersionCheck';
 import { darkModeClasses } from '../styles/darkMode';
+import NewVersionModal from './NewVersionModal';
 import { NIVEIS_PERMISSAO, PermissionChecker } from '../constants/permissoes';
 import { inventarioInicial } from '../data/inventarioInicial';
 import PermissionDenied from './common/PermissionDenied';
@@ -44,6 +46,7 @@ const AlmoxarifadoSistema = () => {
   const { usuario = null, logout = () => {}, firebaseStatus = {} } = useAuth() || {};
   const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
+  const { newVersion, showModal, handleUpdate, handleClose } = useVersionCheck();
   
   // Estados locais
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
@@ -286,6 +289,15 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
       </main>
+
+      {/* Modal de Nova Versão */}
+      {showModal && (
+        <NewVersionModal
+          version={newVersion}
+          onUpdate={handleUpdate}
+          onClose={handleClose}
+        />
+      )}
     </div>
   );
 };

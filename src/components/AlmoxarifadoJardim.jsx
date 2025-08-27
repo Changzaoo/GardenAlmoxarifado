@@ -1045,8 +1045,14 @@ const AlmoxarifadoSistema = () => {
       throw new Error('Sem permissão para adicionar empréstimos');
     }
     try {
-      // Adiciona o empréstimo
-      const docRef = await addDoc(collection(db, 'emprestimos'), emprestimo);
+      // Adiciona o empréstimo com data formatada
+      const emprestimoData = {
+        ...emprestimo,
+        dataEmprestimo: new Date().toISOString(),
+        colaborador: emprestimo.nomeFuncionario,
+        nomeFerramentas: emprestimo.ferramentas.map(f => f.nome)
+      };
+      const docRef = await addDoc(collection(db, 'emprestimos'), emprestimoData);
 
       // Atualiza o campo 'disponivel' do inventário para cada ferramenta emprestada
       if (emprestimo.ferramentas && Array.isArray(emprestimo.ferramentas)) {
@@ -1094,13 +1100,10 @@ const AlmoxarifadoSistema = () => {
   const devolverFerramentas = async (id, atualizarDisponibilidade, devolvidoPorTerceiros = false) => {
     try {
       // Atualiza status e data/hora de devolução
-      const dataDevolucao = new Date().toISOString().split('T')[0];
-      const horaDevolucao = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       await atualizarEmprestimo(id, {
         status: 'devolvido',
-        dataDevolucao,
-        horaDevolucao,
-        devolvidoPorTerceiros // Adiciona flag de devolução por terceiros
+        dataDevolucao: new Date().toISOString(),
+        devolvidoPorTerceiros
       });
       // Atualiza disponibilidade das ferramentas se necessário
       if (typeof atualizarDisponibilidade === 'function') {

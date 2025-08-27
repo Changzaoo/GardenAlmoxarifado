@@ -5,8 +5,10 @@
 export const formatarData = (data) => {
   if (!data) return '-';
   try {
-    return new Date(data).toLocaleDateString('pt-BR');
+    const dataObj = typeof data === 'string' ? new Date(data.replace(/-/g, '/')) : new Date(data);
+    return dataObj.toLocaleDateString('pt-BR');
   } catch (error) {
+    console.error('Erro ao formatar data:', data, error);
     return '-';
   }
 };
@@ -16,15 +18,15 @@ export const formatarHora = (hora) => {
   return hora;
 };
 
-export const formatarDataHora = (data, hora) => {
-  const dataFormatada = formatarData(data);
-  const horaFormatada = formatarHora(hora);
-  
-  if (dataFormatada === '-' || horaFormatada === '-') {
+export const formatarDataHora = (data) => {
+  if (!data) return '-';
+  try {
+    const dataObj = new Date(data);
+    return `${dataObj.toLocaleDateString('pt-BR')} às ${dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  } catch (error) {
+    console.error('Erro ao formatar data e hora:', data, error);
     return '-';
   }
-  
-  return `${dataFormatada} às ${horaFormatada}`;
 };
 
 export const obterDataAtual = () => {

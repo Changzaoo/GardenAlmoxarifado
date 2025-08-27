@@ -6,11 +6,13 @@ import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../ThemeProvider';
+import { useToast } from '../ToastProvider';
 import { encryptData } from '../../utils/crypto';
 
 const UserProfileModal = ({ isOpen, onClose, userId }) => {
   const { usuario, atualizarUsuario } = useAuth();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
   const fileInputRef = useRef();
@@ -63,16 +65,24 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
       const photoURL = await getDownloadURL(storageRef);
       
       // Encriptar a URL da foto antes de salvar
-      const encryptedPhotoData = encryptData({ photoURL });
-      
+      // Atualizar o documento com a nova URL da foto
       await updateDoc(doc(db, 'usuarios', usuario.id), {
-        photoURL: encryptedPhotoData
+        photoURL // Salvamos a URL diretamente, sem encriptação
       });
       
-      await atualizarUsuario();
+      // Atualizar o estado do usuário no contexto
+      await atualizarUsuario(usuario.id, { photoURL });
+      
+      // Mostrar mensagem de sucesso
+      showToast('Foto de perfil atualizada com sucesso!', 'success');
+      
+      // Limpar o preview
       setPreview(null);
     } catch (error) {
       console.error('Erro ao fazer upload da foto:', error);
+      showToast('Erro ao atualizar a foto de perfil. Tente novamente.', 'error');
+      // Limpar o preview em caso de erro
+      setPreview(null);
     } finally {
       setLoading(false);
     }
@@ -131,8 +141,8 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
       await atualizarUsuario();
       setEditMode(false);
       
-      // Opcional: feedback visual de sucesso
-      alert('Perfil atualizado com sucesso!');
+      // Mostrar mensagem de sucesso com temporizador de 5 segundos
+      showToast('Perfil atualizado com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
       alert(error.message || 'Erro ao atualizar perfil');
@@ -227,6 +237,16 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
             onChange={(e) => {
               const file = e.target.files[0];
               if (file) {
+                // Validar o tamanho do arquivo (máximo 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                  showToast('A foto deve ter no máximo 5MB', 'error');
+                  return;
+                }
+                // Validar o tipo do arquivo
+                if (!file.type.startsWith('image/')) {
+                  showToast('Por favor, selecione uma imagem válida', 'error');
+                  return;
+                }
                 setPreview(URL.createObjectURL(file));
                 handleFileUpload(file);
               }

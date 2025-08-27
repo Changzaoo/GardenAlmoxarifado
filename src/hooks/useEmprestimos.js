@@ -12,8 +12,24 @@ export const useEmprestimos = () => {
 
     const carregarEmprestimos = () => {
       try {
+        console.log('Iniciando carregamento de empréstimos...');
         unsubscribe = emprestimosCollection.onSnapshot((lista) => {
-          setEmprestimos(lista);
+          console.log('Empréstimos carregados (brutos):', lista);
+          if (Array.isArray(lista)) {
+            // Garantir que cada item tenha as propriedades necessárias
+            const emprestimosValidos = lista.filter(emp => {
+              const valido = emp && emp.id && (emp.nomeFuncionario || emp.colaborador);
+              if (!valido) {
+                console.warn('Empréstimo inválido encontrado:', emp);
+              }
+              return valido;
+            });
+            console.log('Empréstimos válidos:', emprestimosValidos);
+            setEmprestimos(emprestimosValidos);
+          } else {
+            console.error('Lista de empréstimos não é um array:', lista);
+            setEmprestimos([]);
+          }
         });
       } catch (error) {
         console.error('Erro ao carregar empréstimos:', error);
@@ -30,8 +46,7 @@ export const useEmprestimos = () => {
     try {
       const id = await emprestimosCollection.add({
         ...novoEmprestimo,
-        dataRetirada: new Date().toISOString().split('T')[0],
-        horaRetirada: new Date().toLocaleTimeString(),
+        dataEmprestimo: new Date().toISOString(),
         status: 'emprestado'
       });
       return { id, ...novoEmprestimo };
@@ -50,8 +65,7 @@ export const useEmprestimos = () => {
       await emprestimosCollection.update(emprestimoId, {
         ...emprestimo,
         status: 'devolvido',
-        dataDevolucao: new Date().toISOString().split('T')[0],
-        horaDevolucao: new Date().toLocaleTimeString()
+        dataDevolucao: new Date().toISOString()
       });
 
       if (callback) callback();
@@ -84,8 +98,7 @@ export const useEmprestimos = () => {
         ...emprestimo,
         devolvidoPorTerceiros: true,
         status: 'devolvido',
-        dataDevolucao: new Date().toISOString().split('T')[0],
-        horaDevolucao: new Date().toLocaleTimeString()
+        dataDevolucao: new Date().toISOString()
       });
       return true;
     } catch (error) {

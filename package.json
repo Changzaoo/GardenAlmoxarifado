@@ -8,6 +8,7 @@
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "crypto-js": "^4.2.0",
+    "date-fns": "^4.1.0",
     "firebase": "^12.1.0",
     "lucide-react": "^0.540.0",
     "react": "^18.2.0",

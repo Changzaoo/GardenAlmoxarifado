@@ -5,9 +5,11 @@ import FerramentaSelector from './FerramentaSelector';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { NIVEIS_PERMISSAO } from '../AlmoxarifadoJardim';
+import SugestoesEmprestimo from './SugestoesEmprestimo';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
   const [funcionarios, setFuncionarios] = useState([]);
+  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState('');
 
   // Carregar funcionários
   useEffect(() => {
@@ -101,9 +103,11 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
     const novo = {
       ...novoEmprestimo,
       status: 'emprestado',
+      dataEmprestimo: new Date().toISOString(),
       dataDevolucao: null,
-      horaDevolucao: null,
       funcionarioId: funcionarioSelecionado.id,
+      nomeFuncionario: funcionarioSelecionado.nome,
+      nomeFerramentas: novoEmprestimo.ferramentas.map(f => f.nome),
       // Mapeia as ferramentas para incluir apenas nome e quantidade
       ferramentas: novoEmprestimo.ferramentas.map(f => ({
         nome: f.nome,
@@ -114,17 +118,13 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
     if (emprestimoAdicionado) {
       setNovoEmprestimo({
         colaborador: '',
-        ferramentas: [],
-        dataRetirada: obterDataAtual(),
-        horaRetirada: obterHoraAtual()
+        ferramentas: []
       });
     }
   };
   const [novoEmprestimo, setNovoEmprestimo] = useState({
     colaborador: '',
-    ferramentas: [],
-    dataRetirada: obterDataAtual(),
-    horaRetirada: obterHoraAtual()
+    ferramentas: []
   });
 
   const ferramentasDisponiveis = inventario.filter(item => item.disponivel > 0);
@@ -136,7 +136,11 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <select
               value={novoEmprestimo.colaborador}
-              onChange={(e) => setNovoEmprestimo({...novoEmprestimo, colaborador: e.target.value})}
+              onChange={(e) => {
+                const valor = e.target.value;
+                setNovoEmprestimo({...novoEmprestimo, colaborador: valor});
+                setFuncionarioSelecionado(valor);
+              }}
               className="form-select w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-500"
               required
             >
@@ -147,19 +151,12 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                 </option>
               ))}
             </select>
-            <input
-              type="date"
-              value={novoEmprestimo.dataRetirada}
-              onChange={(e) => setNovoEmprestimo({...novoEmprestimo, dataRetirada: e.target.value})}
-              className="form-input"
-            />
-          </div>
-          <input
-            type="time"
-            value={novoEmprestimo.horaRetirada}
-            onChange={(e) => setNovoEmprestimo({...novoEmprestimo, horaRetirada: e.target.value})}
-            className="form-input w-full"
-          />
+
+            {/* Componente de Sugestões */}
+            {funcionarioSelecionado && (
+              <SugestoesEmprestimo funcionarioSelecionado={funcionarioSelecionado} />
+            )}
+            </div>
           <FerramentaSelector 
             ferramentasDisponiveis={ferramentasDisponiveis}
             onAdicionarFerramenta={adicionarFerramenta}

@@ -28,6 +28,18 @@ const VARIANTS = {
 const Toast = ({ message, variant = 'success', onClose }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [isLeaving, setIsLeaving] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLeaving(true);
+      setTimeout(() => {
+        setIsVisible(false);
+        onClose?.();
+      }, 300); // Tempo para a animação de saída
+    }, 5000); // 5 segundos
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
   
   const variantStyle = VARIANTS[variant];
   const Icon = variantStyle.icon;
@@ -49,6 +61,8 @@ const Toast = ({ message, variant = 'success', onClose }) => {
   return (
     <div className={`
       fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg border shadow-lg
+      transform transition-all duration-300 ease-in-out
+      ${isLeaving ? 'opacity-0 translate-x-2' : 'opacity-100 translate-x-0'}
       transition-all duration-300 transform
       ${isLeaving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}
       ${variantStyle.bgColor} ${variantStyle.textColor} ${variantStyle.borderColor}

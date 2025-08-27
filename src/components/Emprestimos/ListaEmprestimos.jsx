@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, CheckCircle, Clock, Trash2 } from 'lucide-react';
-import { formatarData } from '../../utils/dateUtils';
+import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
 
 const ListaEmprestimos = ({ 
@@ -16,12 +16,12 @@ const ListaEmprestimos = ({
   const emprestimosFiltrados = (emprestimos || [])
     .filter(emp => {
       if (!emp) return false;
-      const funcionario = (emp.colaborador || '').toLowerCase();
-      const ferramentas = Array.isArray(emp.ferramentas) ? emp.ferramentas : [];
+      const funcionario = (emp.nomeFuncionario || emp.colaborador || '').toLowerCase();
+      const ferramentas = emp.nomeFerramentas || [];
       const filtro = filtroEmprestimos.toLowerCase();
       
       return funcionario.includes(filtro) ||
-             ferramentas.some(f => (f.nome || '').toLowerCase().includes(filtro));
+             ferramentas.some(f => f.toLowerCase().includes(filtro));
     })
     .sort((a, b) => {
       // Ordena por data/hora de empréstimo mais recente
@@ -48,7 +48,6 @@ const ListaEmprestimos = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Histórico de Empréstimos</h2>
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
           <input
@@ -65,7 +64,6 @@ const ListaEmprestimos = ({
         <table className="w-full">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-3 px-2">ID</th>
               <th className="text-left py-3 px-2">Colaborador</th>
               <th className="text-left py-3 px-2">Ferramentas</th>
               <th className="text-left py-3 px-2">Retirada</th>
@@ -76,31 +74,31 @@ const ListaEmprestimos = ({
           </thead>
           <tbody>
             {emprestimosFiltrados.map(emprestimo => (
-              <tr key={emprestimo?.id || Math.random()} className="border-b hover:bg-gray-50">
-                <td className="py-3 px-2 font-mono text-sm">#{emprestimo?.id || '-'}</td>
-                <td className="py-3 px-2 font-medium">{emprestimo?.colaborador || '-'}</td>
+              <tr key={emprestimo.id} className="border-b hover:bg-gray-50">
+                <td className="py-3 px-2 font-medium">{emprestimo.nomeFuncionario || emprestimo.colaborador || '-'}</td>
                 <td className="py-3 px-2">
                   <div className="max-w-xs">
-                    {Array.isArray(emprestimo?.ferramentas) && emprestimo.ferramentas.map((ferramenta, idx) => (
-                      <div key={idx} className="text-sm flex items-center gap-2 mb-1">
-                        <span className="font-medium">{ferramenta.nome}</span>
-                        <span className="text-gray-500">
-                          ({ferramenta.quantidade} {ferramenta.quantidade > 1 ? 'unidades' : 'unidade'})
-                        </span>
-                      </div>
-                    ))}
-                    {(!emprestimo?.ferramentas || !Array.isArray(emprestimo?.ferramentas) || emprestimo.ferramentas.length === 0) && (
+                    {Array.isArray(emprestimo?.ferramentas) ? (
+                      emprestimo.ferramentas.map((ferramenta, idx) => (
+                        <div key={idx} className="text-sm flex items-center gap-2 mb-1">
+                          <span className="font-medium">{ferramenta.nome}</span>
+                          {ferramenta.quantidade > 1 && (
+                            <span className="text-gray-500">({ferramenta.quantidade} unidades)</span>
+                          )}
+                        </div>
+                      ))
+                    ) : (
                       <div className="text-sm text-gray-500">Sem ferramentas</div>
                     )}
                   </div>
                 </td>
                 <td className="py-3 px-2 text-sm">
-                  <div>{formatarData(emprestimo.dataEmprestimo)}</div>
+                  {formatarDataHora(emprestimo.dataEmprestimo)}
                 </td>
                 <td className="py-3 px-2 text-sm">
                   {emprestimo.dataDevolucao ? (
                     <div>
-                      <div>{formatarData(emprestimo.dataDevolucao)}</div>
+                      <div>{formatarDataHora(emprestimo.dataDevolucao)}</div>
                       {emprestimo.devolvidoPorTerceiros && (
                         <div className="text-xs text-orange-600 mt-1">
                           Devolvido por terceiros

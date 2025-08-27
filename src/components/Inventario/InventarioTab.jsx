@@ -5,7 +5,7 @@ import NovoItem from './NovoItem';
 import ListaInventario from './ListaInventario';
 import { useAuth } from '../../hooks/useAuth';
 
-export const InventarioTab = ({
+const InventarioTab = ({
   inventario,
   emprestimos,
   adicionarItem,
