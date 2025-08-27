@@ -20,10 +20,10 @@ export const TarefasProvider = ({ children }) => {
       // Supervisores veem todas as tarefas
       q = query(collection(db, 'tarefas'));
     } else {
-      // Funcionários veem apenas suas tarefas
+      // Funcionários veem apenas suas tarefas e as tarefas onde são responsáveis
       q = query(
         collection(db, 'tarefas'),
-        where('responsaveis', 'array-contains', usuario.id)
+        where('responsaveis', 'array-contains', usuario.nome)
       );
     }
 

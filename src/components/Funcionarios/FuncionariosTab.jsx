@@ -1,34 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Users, Trash2, Plus, Edit } from 'lucide-react';
+import { Users, Trash2, Plus, Edit, Camera, Upload } from 'lucide-react';
+import { storage } from '../../firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
   const [loading, setLoading] = useState(false);
   const [editando, setEditando] = useState(null);
-  const [formEdit, setFormEdit] = useState({ nome: '', cargo: '', telefone: '' });
+  const [formEdit, setFormEdit] = useState({ nome: '', cargo: '', telefone: '', photoURL: '' });
   const [modalConfirmacao, setModalConfirmacao] = useState(false);
   const [funcionarioParaExcluir, setFuncionarioParaExcluir] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const fileInputRef = useRef();
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
 
+  const handleFileChange = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      try {
+        setLoading(true);
+        const storageRef = ref(storage, `funcionarios/${editando?.id || Date.now()}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const photoURL = await getDownloadURL(snapshot.ref);
+        setFormEdit(prev => ({ ...prev, photoURL }));
+        
+        // Se estiver editando um funcionário existente, atualiza imediatamente
+        if (editando) {
+          await atualizarFuncionario(editando.id, { ...formEdit, photoURL });
+        }
+      } catch (error) {
+        console.error('Erro ao fazer upload da imagem:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const handleEditar = (func) => {
     setEditando(func);
-    setFormEdit({ nome: func.nome, cargo: func.cargo, telefone: func.telefone });
+    setFormEdit({ nome: func.nome, cargo: func.cargo, telefone: func.telefone, photoURL: func.photoURL });
+    setPreview(func.photoURL);
   };
 
   const handleAdicionar = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await adicionarFuncionario(novoFuncionario);
+    await adicionarFuncionario({
+      ...novoFuncionario,
+      photoURL: formEdit.photoURL // Inclui a foto se foi adicionada
+    });
     setNovoFuncionario({ nome: '', cargo: '', telefone: '' });
+    setFormEdit(prev => ({ ...prev, photoURL: '' }));
+    setPreview(null);
     setLoading(false);
   };
 
   const handleSalvarEdicao = async () => {
     setLoading(true);
-    await atualizarFuncionario(editando.id, formEdit);
+    await atualizarFuncionario(editando.id, {
+      ...formEdit,
+      photoURL: formEdit.photoURL || editando.photoURL // Mantém a foto existente se não foi alterada
+    });
     setEditando(null);
+    setPreview(null);
     setLoading(false);
   };
 
@@ -51,7 +93,7 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       {!isFuncionario && !readonly && (
         <form onSubmit={handleAdicionar} className="flex gap-2 mb-6">
           <input
@@ -90,6 +132,7 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
       <table className="min-w-full divide-y divide-gray-200">
         <thead>
           <tr>
+            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Foto</th>
             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cargo</th>
             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telefone</th>
@@ -98,10 +141,23 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
         </thead>
         <tbody>
           {funcionarios.map((func) => (
-            <tr key={func.id} className="bg-white">
-              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{func.nome}</td>
-              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{func.cargo}</td>
-              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{func.telefone}</td>
+            <tr key={func.id} className="bg-white dark:bg-gray-800">
+              <td className="px-4 py-2 whitespace-nowrap">
+                {func.photoURL ? (
+                  <img 
+                    src={func.photoURL} 
+                    alt={func.nome} 
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-gray-500" />
+                  </div>
+                )}
+              </td>
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{func.nome}</td>
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{func.cargo}</td>
+              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{func.telefone}</td>
               <td className="px-4 py-2 flex gap-2">
                 {!isFuncionario && !readonly && (
                   <>
@@ -121,8 +177,39 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
       {!isFuncionario && editando && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Editar Funcionário</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Editar Funcionário</h3>
             <div className="space-y-4">
+              <div className="flex justify-center mb-4">
+                <div className="relative">
+                  {preview ? (
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
+                      <Users className="w-12 h-12 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 right-0 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50"
+                    >
+                      <Upload className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </div>
+              </div>
               <input
                 type="text"
                 placeholder="Nome"

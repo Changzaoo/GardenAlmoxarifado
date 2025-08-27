@@ -42,8 +42,8 @@ const NovaTarefa = ({ adicionarTarefa, funcionarios = [] }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-lg font-semibold mb-4">Nova Tarefa</h2>
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+      <h2 className="text-lg font-semibold dark:text-white mb-4">Nova Tarefa</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>

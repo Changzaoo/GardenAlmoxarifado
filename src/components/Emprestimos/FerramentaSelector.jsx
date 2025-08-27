@@ -5,6 +5,7 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
   const [buscaFerramenta, setBuscaFerramenta] = useState('');
   const [ferramentaSelecionada, setFerramentaSelecionada] = useState('');
   const [sugestoesVisiveis, setSugestoesVisiveis] = useState(false);
+  const quantidadeRef = React.useRef();
 
   const filtrarFerramentas = (texto) => {
     if (!texto) return [];
@@ -24,10 +25,22 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
   const adicionarFerramenta = () => {
     const ferramenta = ferramentaSelecionada || buscaFerramenta;
     if (ferramenta) {
-      onAdicionarFerramenta(ferramenta);
-      setFerramentaSelecionada('');
-      setBuscaFerramenta('');
-      setSugestoesVisiveis(false);
+      const itemInventario = ferramentasDisponiveis.find(
+        item => item.nome.toLowerCase() === ferramenta.toLowerCase()
+      );
+      
+      if (itemInventario) {
+        const quantidade = parseInt(quantidadeRef.current?.value || '1');
+        if (quantidade <= itemInventario.disponivel) {
+          onAdicionarFerramenta(itemInventario.nome, quantidade);
+          setFerramentaSelecionada('');
+          setBuscaFerramenta('');
+          setSugestoesVisiveis(false);
+          if (quantidadeRef.current) quantidadeRef.current.value = '1';
+        } else {
+          alert(`Apenas ${itemInventario.disponivel} unidade(s) disponível(is) de ${ferramenta}`);
+        }
+      }
     }
   };
 
@@ -72,17 +85,32 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
           }}
           className="form-input w-full text-lg py-3"
         />
-        <button
-          onClick={adicionarFerramenta}
-          disabled={!buscaFerramenta && !ferramentaSelecionada}
-          className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-          style={{ minWidth: '2.5rem' }}
-        >
-          <ArrowRight className="w-5 h-5" />
-        </button>
+        <div className="flex gap-2">
+          <select
+            defaultValue={1}
+            ref={quantidadeRef}
+            onChange={(e) => {
+              const quantidade = parseInt(e.target.value);
+              if (isNaN(quantidade) || quantidade < 1) e.target.value = '1';
+            }}
+            className="form-select w-20 text-lg py-3"
+          >
+            {[...Array(10)].map((_, i) => (
+              <option key={i + 1} value={i + 1}>{i + 1}</option>
+            ))}
+          </select>
+          <button
+            onClick={adicionarFerramenta}
+            disabled={!buscaFerramenta && !ferramentaSelecionada}
+            className="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            style={{ minWidth: '2.5rem' }}
+          >
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
         {/* Dropdown de sugestões */}
         {sugestoesVisiveis && (
-          <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
             {filtrarFerramentas(buscaFerramenta).map(item => (
               <button
                 key={item.id}

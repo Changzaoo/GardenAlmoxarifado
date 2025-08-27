@@ -27,14 +27,27 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
     return () => unsubscribe();
   }, []);
 
-  // Adiciona ferramenta à lista
-  const adicionarFerramenta = (ferramenta) => {
-    if (!ferramenta || novoEmprestimo.ferramentas.includes(ferramenta)) return;
+  // Adiciona ferramenta à lista com quantidade
+  const adicionarFerramenta = (ferramenta, quantidade = 1) => {
+    if (!ferramenta) return;
     const itemInventario = inventario.find(item => item.nome.toLowerCase() === ferramenta.toLowerCase() && item.disponivel > 0);
     if (!itemInventario) return;
+
+    // Verifica se a ferramenta já existe na lista
+    const ferramentaExistente = novoEmprestimo.ferramentas.find(f => f.nome === itemInventario.nome);
+    if (ferramentaExistente) return;
+
+    if (quantidade > itemInventario.disponivel) {
+      quantidade = itemInventario.disponivel;
+    }
+
     setNovoEmprestimo(prev => ({
       ...prev,
-      ferramentas: [...prev.ferramentas, itemInventario.nome]
+      ferramentas: [...prev.ferramentas, {
+        nome: itemInventario.nome,
+        quantidade: quantidade,
+        disponivel: itemInventario.disponivel
+      }]
     }));
   };
 
@@ -42,7 +55,19 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
   const removerFerramenta = (ferramenta) => {
     setNovoEmprestimo(prev => ({
       ...prev,
-      ferramentas: prev.ferramentas.filter(f => f !== ferramenta)
+      ferramentas: prev.ferramentas.filter(f => f.nome !== ferramenta)
+    }));
+  };
+
+  // Atualiza a quantidade de uma ferramenta
+  const atualizarQuantidade = (nome, quantidade) => {
+    setNovoEmprestimo(prev => ({
+      ...prev,
+      ferramentas: prev.ferramentas.map(f => 
+        f.nome === nome 
+          ? { ...f, quantidade: parseInt(quantidade) }
+          : f
+      )
     }));
   };
 
@@ -64,12 +89,26 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
       return;
     }
 
+    // Verifica se as quantidades são válidas
+    for (const ferramenta of novoEmprestimo.ferramentas) {
+      const itemInventario = inventario.find(item => item.nome === ferramenta.nome);
+      if (!itemInventario || ferramenta.quantidade > itemInventario.disponivel) {
+        alert(`Quantidade indisponível para ${ferramenta.nome}`);
+        return;
+      }
+    }
+
     const novo = {
       ...novoEmprestimo,
       status: 'emprestado',
       dataDevolucao: null,
       horaDevolucao: null,
-      funcionarioId: funcionarioSelecionado.id // Armazenar o ID do funcionário também
+      funcionarioId: funcionarioSelecionado.id,
+      // Mapeia as ferramentas para incluir apenas nome e quantidade
+      ferramentas: novoEmprestimo.ferramentas.map(f => ({
+        nome: f.nome,
+        quantidade: f.quantidade
+      }))
     };
     const emprestimoAdicionado = adicionarEmprestimo(novo, atualizarDisponibilidade);
     if (emprestimoAdicionado) {
@@ -91,7 +130,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
   const ferramentasDisponiveis = inventario.filter(item => item.disponivel > 0);
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,9 +174,22 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
               <div className="space-y-2">
                 {novoEmprestimo.ferramentas.map((ferramenta, index) => (
                   <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                    <span className="text-sm">{ferramenta}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm">{ferramenta.nome}</span>
+                      <select
+                        value={ferramenta.quantidade}
+                        onChange={(e) => atualizarQuantidade(ferramenta.nome, e.target.value)}
+                        className="form-select text-sm border-gray-300 rounded-md"
+                      >
+                        {[...Array(ferramenta.disponivel)].map((_, i) => (
+                          <option key={i + 1} value={i + 1}>
+                            {i + 1}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <button
-                      onClick={() => removerFerramenta(ferramenta)}
+                      onClick={() => removerFerramenta(ferramenta.nome)}
                       className="text-red-500 hover:text-red-700 p-1"
                     >
                       <Trash2 className="w-3 h-3" />

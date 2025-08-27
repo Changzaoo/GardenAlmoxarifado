@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { formatarData } from '../../utils/dateUtils';
+import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
 
 const ListaEmprestimos = ({ 
   emprestimos, 
@@ -9,6 +10,8 @@ const ListaEmprestimos = ({
   atualizarDisponibilidade 
 }) => {
   const [filtroEmprestimos, setFiltroEmprestimos] = useState('');
+  const [showDevolucaoModal, setShowDevolucaoModal] = useState(false);
+  const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
 
   const emprestimosFiltrados = emprestimos
     .filter(emp =>
@@ -23,7 +26,14 @@ const ListaEmprestimos = ({
     });
 
   const handleDevolverFerramentas = (id) => {
-    devolverFerramentas(id, atualizarDisponibilidade);
+    setSelectedEmprestimo(id);
+    setShowDevolucaoModal(true);
+  };
+
+  const handleConfirmDevolucao = (devolvidoPorTerceiros) => {
+    devolverFerramentas(selectedEmprestimo, atualizarDisponibilidade, devolvidoPorTerceiros);
+    setSelectedEmprestimo(null);
+    setShowDevolucaoModal(false);
   };
 
   const handleRemoverEmprestimo = (id) => {
@@ -31,7 +41,7 @@ const ListaEmprestimos = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">Histórico de Empréstimos</h2>
         <div className="relative">
@@ -89,6 +99,11 @@ const ListaEmprestimos = ({
                     <div>
                       <div>{formatarData(emprestimo.dataDevolucao)}</div>
                       <div className="text-gray-500">{emprestimo.horaDevolucao}</div>
+                      {emprestimo.devolvidoPorTerceiros && (
+                        <div className="text-xs text-orange-600 mt-1">
+                          Devolvido por terceiros
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <span className="text-gray-400">-</span>
@@ -132,6 +147,16 @@ const ListaEmprestimos = ({
           </tbody>
         </table>
       </div>
+
+      {showDevolucaoModal && (
+        <DevolucaoTerceirosModal
+          onClose={() => {
+            setShowDevolucaoModal(false);
+            setSelectedEmprestimo(null);
+          }}
+          onConfirm={handleConfirmDevolucao}
+        />
+      )}
     </div>
   );
 };

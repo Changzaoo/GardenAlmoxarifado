@@ -1,0 +1,50 @@
+/* Estilos para cards e containers principais */
+.card-base {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow;
+}
+
+.card-content {
+  @apply p-6;
+}
+
+/* Estilos para texto */
+.text-base {
+  @apply text-gray-900 dark:text-white;
+}
+
+.text-muted {
+  @apply text-gray-600 dark:text-gray-300;
+}
+
+/* Estilos para inputs e formulários */
+.input-base {
+  @apply bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-green-500 dark:focus:ring-green-400;
+}
+
+/* Estilos para tabelas */
+.table-row {
+  @apply bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700;
+}
+
+.table-cell {
+  @apply text-gray-900 dark:text-white;
+}
+
+/* Estilos para modais */
+.modal-base {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6;
+}
+
+/* Estilos para dropdowns e menus */
+.dropdown-base {
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg;
+}
+
+.dropdown-item {
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700;
+}
+
+/* Estilos para botões secundários */
+.button-secondary {
+  @apply bg-white dark:bg-gray-700 text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600;
+}

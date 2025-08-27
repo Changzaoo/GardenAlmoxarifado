@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, Check, CalendarClock, Users } from 'lucide-react';
 import { formatarData } from '../../utils/dateUtils';
+import { darkModeClasses } from '../../styles/darkMode';
 
 const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = false }) => {
   const getPrioridadeClasses = (prioridade) => {
@@ -24,11 +25,9 @@ const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = fals
   };
 
   return (
-    <div className="bg-white shadow rounded-lg">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
       <div className="p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Lista de Tarefas</h3>
-        
-        <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Lista de Tarefas</h3>        <div className="space-y-4">
           {tarefas.map((tarefa) => (
             <div
               key={tarefa.id}

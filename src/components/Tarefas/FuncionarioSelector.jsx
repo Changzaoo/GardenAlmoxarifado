@@ -38,16 +38,16 @@ const FuncionarioSelector = ({ funcionarios, onSelecionarFuncionarios }) => {
 
   const handleSelecionarFuncionario = (funcionario) => {
     if (!onSelecionarFuncionarios) return;
-    const novosSelecionados = [...selecionados, funcionario.id];
+    const novosSelecionados = [...selecionados, funcionario.nome];
     setSelecionados(novosSelecionados);
     onSelecionarFuncionarios(novosSelecionados);
     setBuscaFuncionario('');
     setSugestoesVisiveis(false);
   };
 
-  const handleRemoverFuncionario = (funcionarioId) => {
+  const handleRemoverFuncionario = (funcionarioNome) => {
     if (!onSelecionarFuncionarios) return;
-    const novosSelecionados = selecionados.filter(id => id !== funcionarioId);
+    const novosSelecionados = selecionados.filter(nome => nome !== funcionarioNome);
     setSelecionados(novosSelecionados);
     onSelecionarFuncionarios(novosSelecionados);
   };

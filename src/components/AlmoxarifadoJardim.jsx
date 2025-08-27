@@ -3,6 +3,8 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs } fr
 import { ToastProvider } from './ToastProvider';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
+import { useTheme } from './ThemeProvider';
+import UserProfileModal from './Auth/UserProfileModal';
 import { TarefasProvider } from './Tarefas/TarefasProvider';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
 import { useNotifications } from '../hooks/useNotifications';
@@ -18,6 +20,7 @@ import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
 import TarefasTab from './Tarefas/TarefasTab';
 import SuporteTab from './Suporte/SuporteTab';
 import FerramentasPerdidasTab from './Perdidas/FerramentasPerdidasTab';
+import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import { MessageCircle } from 'lucide-react';
 import ComprasTab from './Compras/ComprasTab';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
@@ -44,7 +47,12 @@ import {
   UserCog,
   ShoppingCart,
   ToolCase,
-  ArrowRight
+  ArrowRight,
+  History,
+  Sun,
+  Moon,
+  Camera,
+  Upload
 } from 'lucide-react';
 
 // ===== SISTEMA DE COOKIES =====
@@ -654,13 +662,13 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <Package className="w-8 h-8 text-green-600" />
+          <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
+            <Package className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Almoxarifado Jardim</h1>
-          <p className="text-gray-600 mb-4">Sistema de Gestão</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Almoxarifado Jardim</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">Sistema de Gestão</p>
 
         </div>
 
@@ -765,14 +773,14 @@ const Dashboard = ({ stats, firebaseStatus }) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg shadow">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded">
-              <Package className="w-6 h-6 text-blue-600" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded">
+              <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Inventário</p>
-              <p className="text-2xl font-bold text-gray-900">{inventario?.length || 0}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">Inventário</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{inventario?.length || 0}</p>
             </div>
           </div>
         </div>
@@ -874,11 +882,13 @@ const PermissionDenied = ({ message = "Você não tem permissão para realizar e
 // Componente principal do sistema
 const AlmoxarifadoSistema = () => {
   const { usuario, logout, firebaseStatus } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
   
   // Estados locais
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -1081,7 +1091,7 @@ const AlmoxarifadoSistema = () => {
   };
 
   // Função para marcar empréstimo como devolvido
-  const devolverFerramentas = async (id, atualizarDisponibilidade) => {
+  const devolverFerramentas = async (id, atualizarDisponibilidade, devolvidoPorTerceiros = false) => {
     try {
       // Atualiza status e data/hora de devolução
       const dataDevolucao = new Date().toISOString().split('T')[0];
@@ -1089,7 +1099,8 @@ const AlmoxarifadoSistema = () => {
       await atualizarEmprestimo(id, {
         status: 'devolvido',
         dataDevolucao,
-        horaDevolucao
+        horaDevolucao,
+        devolvidoPorTerceiros // Adiciona flag de devolução por terceiros
       });
       // Atualiza disponibilidade das ferramentas se necessário
       if (typeof atualizarDisponibilidade === 'function') {
@@ -1394,6 +1405,12 @@ const AlmoxarifadoSistema = () => {
       icone: AlertCircle,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
+    {
+      id: 'historico-emprestimos',
+      nome: 'Histórico de Empréstimos',
+      icone: History,
+      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
+    },
     { 
       id: 'historico-transferencias', 
       nome: 'Histórico de Transferências', 
@@ -1406,23 +1423,23 @@ const AlmoxarifadoSistema = () => {
   const podeVerUsuarios = [NIVEIS_PERMISSAO.ADMIN, NIVEIS_PERMISSAO.SUPERVISOR, NIVEIS_PERMISSAO.GERENTE].includes(usuario?.nivel);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header móvel */}
       {isMobile && (
-        <header className="bg-white border-b fixed top-0 left-0 right-0 z-20">
+        <header className="bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-700 fixed top-0 left-0 right-0 z-20">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center">
               <Package className="w-6 h-6 text-green-600 mr-2" />
-              <h1 className="text-base font-bold text-gray-900">Almoxarifado</h1>
+              <h1 className="text-base font-bold text-gray-900 dark:text-white">Almoxarifado</h1>
             </div>
             <button
               onClick={toggleMenu}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               {menuOpen ? (
-                <X className="w-6 h-6 text-gray-600" />
+                <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
               ) : (
-                <MenuIcon className="w-6 h-6 text-gray-600" />
+                <MenuIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
               )}
             </button>
           </div>
@@ -1436,14 +1453,14 @@ const AlmoxarifadoSistema = () => {
               menuOpen ? 'translate-x-0' : '-translate-x-full'
             }`
           : 'w-64 fixed'
-      } bg-white border-r min-h-screen`}>
+      } bg-gray-50 dark:bg-gray-900 border-r dark:border-gray-700 min-h-screen`}>
         {!isMobile && (
-          <div className="p-4 border-b">
+          <div className="p-4 border-b dark:border-gray-700">
             <div className="flex items-center">
               <Package className="w-8 h-8 text-green-600 mr-3" />
               <div>
-                <h1 className="text-lg font-bold text-gray-900">Almoxarifado Jardim</h1>
-                <p className="text-xs text-gray-500">Sistema de Gestão</p>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Almoxarifado Jardim</h1>
+                <p className="text-xs text-gray-900 dark:text-white">Sistema de Gestão</p>
               </div>
             </div>
           </div>
@@ -1464,11 +1481,11 @@ const AlmoxarifadoSistema = () => {
                   }}
                   className={`w-full flex items-center space-x-2 px-3 ${isMobile ? 'py-3' : 'py-2'} rounded-lg font-medium text-sm transition-colors ${
                     abaAtiva === aba.id
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
-                  <Icone className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} flex-shrink-0 ${abaAtiva === aba.id ? 'text-gray-900' : 'text-gray-500'}`} />
+                  <Icone className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} flex-shrink-0 ${abaAtiva === aba.id ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`} />
                   <span>{aba.nome}</span>
                 </button>
               );
@@ -1495,16 +1512,43 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
 
-        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 p-4 border-t bg-white`}>
+        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900`}>
           <div className="flex items-center space-x-3 mb-3">
-            <div className="flex-1">
-              <p className={`${isMobile ? 'text-base' : 'text-sm'} font-medium text-gray-800`}>{usuario.nome}</p>
-              <p className="text-xs text-gray-600">{NIVEIS_LABELS[usuario.nivel]}</p>
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
+              {usuario.photoURL ? (
+                <img src={usuario.photoURL} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-full h-full p-2 text-gray-600 dark:text-gray-400" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`${isMobile ? 'text-base' : 'text-sm'} font-medium text-gray-900 dark:text-white truncate`}>{usuario.nome}</p>
+              <p className="text-xs text-gray-900 dark:text-white truncate">{NIVEIS_LABELS[usuario.nivel]}</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="Editar perfil"
+              >
+                <Edit className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-600 dark:text-gray-400`} />
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title={theme === 'light' ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
+              >
+                {theme === 'light' ? (
+                  <Moon className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-600 dark:text-gray-400`} />
+                ) : (
+                  <Sun className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-600 dark:text-gray-400`} />
+                )}
+              </button>
             </div>
           </div>
           <button
             onClick={logout}
-            className={`w-full flex items-center justify-center gap-2 px-3 ${isMobile ? 'py-3 text-base' : 'py-2 text-sm'} rounded-lg transition-colors text-red-600 hover:bg-red-50`}
+            className={`w-full flex items-center justify-center gap-2 px-3 ${isMobile ? 'py-3 text-base' : 'py-2 text-sm'} rounded-lg transition-colors text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40`}
           >
             <Lock className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
             <span>Sair</span>
@@ -1512,11 +1556,18 @@ const AlmoxarifadoSistema = () => {
         </div>
       </nav>
 
-      <main className={`${isMobile ? 'pt-16' : 'pl-64'} w-full min-h-screen bg-gray-50`}>
+      {/* Profile Modal */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        userId={usuario.id}
+      />
+
+      <main className={`${isMobile ? 'pt-16' : 'pl-64'} w-full min-h-screen bg-gray-50 dark:bg-gray-900`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-6">
             <div className="flex items-center justify-between mb-6">
-              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-gray-900`}>
+              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-gray-900 dark:text-white`}>
                 {abas.find(aba => aba.id === abaAtiva)?.nome || 'Dashboard'}
               </h1>
             </div>
@@ -1625,6 +1676,18 @@ const AlmoxarifadoSistema = () => {
                 />
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar as ferramentas perdidas." />
+              )
+            )}
+
+            {abaAtiva === 'historico-emprestimos' && (
+              PermissionChecker.canView(usuario?.nivel) ? (
+                <HistoricoEmprestimosTab
+                  emprestimos={emprestimos}
+                  funcionarios={funcionarios}
+                  inventario={inventario}
+                />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para visualizar o histórico de empréstimos." />
               )
             )}
 

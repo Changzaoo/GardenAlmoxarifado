@@ -24,7 +24,10 @@ export const AuthProvider = ({ children }) => {
     const usuariosSalvos = localStorage.getItem('usuarios');
     
     if (usuarioSalvo) {
-      setUsuario(JSON.parse(usuarioSalvo));
+      const userData = JSON.parse(usuarioSalvo);
+      // Garantir que o nível seja um número
+      userData.nivel = parseInt(userData.nivel) || 1;
+      setUsuario(userData);
     }
     
     if (usuariosSalvos) {

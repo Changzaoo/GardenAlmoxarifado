@@ -9,6 +9,7 @@ import FuncionariosTab from './Funcionarios/FuncionariosTab';
 import ComprasTab from './Compras/ComprasTab';
 import InventarioTab from './Inventario/InventarioTab';
 import EmprestimosTab from './Emprestimos/EmprestimosTab';
+import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
 import TarefasTab from './Tarefas/TarefasTab';
 
@@ -69,6 +70,12 @@ const AppRoutes = () => {
       <Route path="/tarefas" element={
         <PrivateRoute requiredLevel={NIVEIS_PERMISSAO.FUNCIONARIO}>
           <TarefasTab />
+        </PrivateRoute>
+      } />
+
+      <Route path="/historico-emprestimos" element={
+        <PrivateRoute requiredLevel={NIVEIS_PERMISSAO.FUNCIONARIO}>
+          <HistoricoEmprestimosTab />
         </PrivateRoute>
       } />
 

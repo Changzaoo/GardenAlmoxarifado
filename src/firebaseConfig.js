@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 
 // Suas configurações do Firebase (obtenha no console)
 const firebaseConfig = {
@@ -21,6 +22,9 @@ export const db = getFirestore(app);
 
 // Inicializar Auth
 export const auth = getAuth(app);
+
+// Inicializar Storage
+export const storage = getStorage(app);
 
 // Configurar persistência offline e cache
 const initFirestore = async () => {

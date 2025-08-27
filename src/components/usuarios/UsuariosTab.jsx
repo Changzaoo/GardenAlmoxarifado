@@ -44,7 +44,7 @@ const UsuariosTab = () => {
   // Check if context is properly loaded
   if (!usuarioLogado) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
         <p className="text-gray-600">Carregando dados do usuário...</p>
       </div>
@@ -250,7 +250,7 @@ const UsuariosTab = () => {
               <UserCog className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Gerenciamento de Usuários</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Gerenciamento de Usuários</h2>
               <p className="text-gray-600">Gerencie os usuários do sistema de acordo com suas permissões</p>
             </div>
           </div>
@@ -532,11 +532,11 @@ const UsuariosTab = () => {
       {/* Modal de Confirmação de Remoção */}
       {confirmacaoRemocao && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full mx-4">
             <div className="p-6">
               <div className="flex items-center mb-4">
-                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900">
+                  <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
                 </div>
               </div>
               <div className="text-center">
