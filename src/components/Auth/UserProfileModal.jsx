@@ -60,28 +60,28 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
   const handleFileUpload = async (file) => {
     try {
       setLoading(true);
+      
+      // Upload da foto para o Storage
       const storageRef = ref(storage, `profile-photos/${usuario.id}`);
-      await uploadBytes(storageRef, file);
-      const photoURL = await getDownloadURL(storageRef);
+      const uploadTask = await uploadBytes(storageRef, file);
+      const photoURL = await getDownloadURL(uploadTask.ref);
       
-      // Encriptar a URL da foto antes de salvar
-      // Atualizar o documento com a nova URL da foto
-      await updateDoc(doc(db, 'usuarios', usuario.id), {
-        photoURL // Salvamos a URL diretamente, sem encriptação
-      });
+      // Atualizar no Firestore
+      const userRef = doc(db, 'usuarios', usuario.id);
+      await updateDoc(userRef, { photoURL });
       
-      // Atualizar o estado do usuário no contexto
-      await atualizarUsuario(usuario.id, { photoURL });
+      // Atualizar o estado local e contexto
+      const result = await atualizarUsuario({ photoURL });
       
-      // Mostrar mensagem de sucesso
-      showToast('Foto de perfil atualizada com sucesso!', 'success');
-      
-      // Limpar o preview
-      setPreview(null);
+      if (result.success) {
+        showToast('Foto de perfil atualizada com sucesso!', 'success');
+        setPreview(null);
+      } else {
+        throw new Error(result.message || 'Erro ao atualizar foto de perfil');
+      }
     } catch (error) {
       console.error('Erro ao fazer upload da foto:', error);
       showToast('Erro ao atualizar a foto de perfil. Tente novamente.', 'error');
-      // Limpar o preview em caso de erro
       setPreview(null);
     } finally {
       setLoading(false);
@@ -133,19 +133,22 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
         telefone: userData.telefone || ''
       };
 
-      // Encriptar e salvar os dados
-      const encryptedData = encryptData(dataToSave);
-      await updateDoc(doc(db, 'usuarios', usuario.id), encryptedData);
+      // Atualizar no Firestore
+      const userRef = doc(db, 'usuarios', usuario.id);
+      await updateDoc(userRef, dataToSave);
       
-      // Atualizar o contexto do usuário e fechar o modo de edição
-      await atualizarUsuario();
-      setEditMode(false);
+      // Atualizar o estado local e contexto
+      const result = await atualizarUsuario(dataToSave);
       
-      // Mostrar mensagem de sucesso com temporizador de 5 segundos
-      showToast('Perfil atualizado com sucesso!', 'success');
+      if (result.success) {
+        setEditMode(false);
+        showToast('Perfil atualizado com sucesso!', 'success');
+      } else {
+        throw new Error(result.message || 'Erro ao atualizar perfil');
+      }
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
-      alert(error.message || 'Erro ao atualizar perfil');
+      showToast(error.message || 'Erro ao atualizar perfil', 'error');
     } finally {
       setLoading(false);
     }

@@ -108,21 +108,27 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Função para atualizar usuário
-  const atualizarUsuario = async (id, dadosAtualizados) => {
+  const atualizarUsuario = async (dadosAtualizados) => {
     try {
-      setUsuarios(prev => prev.map(u => 
-        u.id === id ? { ...u, ...dadosAtualizados } : u
-      ));
-
-      // Se for o usuário logado, atualizar também
-      if (usuario && usuario.id === id) {
-        const usuarioAtualizado = { ...usuario, ...dadosAtualizados };
-        setUsuario(usuarioAtualizado);
-        localStorage.setItem('usuario', JSON.stringify(usuarioAtualizado));
+      if (!usuario) {
+        throw new Error('Nenhum usuário logado');
       }
 
-      return { success: true };
+      // Atualizar no estado
+      const usuarioAtualizado = { ...usuario, ...dadosAtualizados };
+      setUsuario(usuarioAtualizado);
+      
+      // Atualizar na lista de usuários
+      setUsuarios(prev => prev.map(u => 
+        u.id === usuario.id ? usuarioAtualizado : u
+      ));
+
+      // Atualizar no localStorage
+      localStorage.setItem('usuario', JSON.stringify(usuarioAtualizado));
+
+      return { success: true, usuario: usuarioAtualizado };
     } catch (error) {
+      console.error('Erro ao atualizar usuário:', error);
       return { success: false, message: error.message };
     }
   };
