@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Funções auxiliares de segurança
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nivel > 2;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidTimestamp() {
+      return request.time.toMillis() <= (request.resource.data.timestamp + 300000) // 5 minutos de tolerância
+         && request.time.toMillis() >= (request.resource.data.timestamp - 300000);
+    }
+    
+    // Regras para usuários
+    match /usuarios/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || isOwner(userId);
+      allow delete: if isAdmin();
+    }
+    
+    // Regras para inventário
+    match /inventario/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidTimestamp();
+    }
+    
+    // Regras para empréstimos
+    match /emprestimos/{emprestimoId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidTimestamp();
+      allow update: if isAdmin() && isValidTimestamp();
+      allow delete: if isAdmin();
+    }
+    
+    // Regras para verificações mensais
+    match /verificacoes_mensais/{verificacaoId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidTimestamp();
+    }
+    
+    // Regras para ferramentas danificadas
+    match /ferramentas_danificadas/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidTimestamp();
+    }
+    
+    // Regras para ferramentas perdidas
+    match /ferramentas_perdidas/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() && isValidTimestamp();
+    }
+    
+    // Regras para histórico
+    match /historico/{id} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidTimestamp();
+      allow update, delete: if false; // Histórico não deve ser modificado
+    }
+  }
+}

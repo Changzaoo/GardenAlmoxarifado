@@ -1,26 +1,26 @@
 import CryptoJS from 'crypto-js';
 
-// Chave de aplicativo única - Isso deve ser mantido em segurança e não deve ser compartilhado
-const APP_SECRET = process.env.REACT_APP_CRYPTO_SECRET || 'almo-garden-secure-key-2025';
+// A chave secreta deve vir das variáveis de ambiente
+if (!process.env.REACT_APP_CRYPTO_SECRET) {
+  throw new Error('REACT_APP_CRYPTO_SECRET environment variable is not set');
+}
 
-// Função para gerar um salt baseado em data/hora
-const generateTimeSalt = () => {
-  const now = new Date();
-  const timeComponents = [
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    now.getHours(),
-    Math.floor(now.getMinutes() / 15) // Agrupa em blocos de 15 minutos para reduzir variação
-  ];
-  return timeComponents.join('-');
+const APP_SECRET = process.env.REACT_APP_CRYPTO_SECRET;
+const SALT_ITERATIONS = 10000; // Número de iterações para derivação da chave
+const KEY_SIZE = 256; // Tamanho da chave em bits
+const IV_SIZE = 128; // Tamanho do vetor de inicialização em bits
+
+// Função para gerar um salt seguro
+const generateSecureSalt = () => {
+  return CryptoJS.lib.WordArray.random(16).toString();
 };
 
-// Função para gerar uma chave de encriptação
-const generateEncryptionKey = (customSalt = '') => {
-  const timeSalt = generateTimeSalt();
-  const baseString = `${APP_SECRET}-${timeSalt}-${customSalt}`;
-  return CryptoJS.SHA512(baseString).toString();
+// Função para derivar uma chave segura usando PBKDF2
+const deriveKey = (password, salt) => {
+  return CryptoJS.PBKDF2(password, salt, {
+    keySize: KEY_SIZE / 32,
+    iterations: SALT_ITERATIONS
+  });
 };
 
 // Função para encriptar dados

@@ -1,18 +1,29 @@
-// Sistema de cookies
+import { encryptData, decryptData } from './crypto';
+
+const COOKIE_ENCRYPTION_KEY = process.env.REACT_APP_COOKIE_SECRET || process.env.REACT_APP_CRYPTO_SECRET;
+
 const CookieManager = {
-  // Função para definir cookie
   setCookie: (name, value, days = 30) => {
     try {
       const expires = new Date();
       expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
       const expiresString = expires.toUTCString();
       
-      // Converter objeto para string se necessário
-      const cookieValue = typeof value === 'object' ? JSON.stringify(value) : value;
+      // Encriptar valor do cookie
+      const encryptedValue = encryptData(value);
+      const cookieValue = encodeURIComponent(JSON.stringify(encryptedValue));
       
-      // Criar cookie com configurações de segurança
-      document.cookie = `${name}=${encodeURIComponent(cookieValue)};expires=${expiresString};path=/;SameSite=Strict`;
+      // Configurações de segurança aprimoradas para o cookie
+      const cookieSettings = [
+        `${name}=${cookieValue}`,
+        `expires=${expiresString}`,
+        'path=/',
+        'SameSite=Strict',
+        'Secure',  // Garante que o cookie só seja enviado por HTTPS
+        process.env.NODE_ENV === 'production' ? 'HttpOnly' : '' // Previne acesso via JavaScript em produção
+      ].filter(Boolean).join(';');
       
+      document.cookie = cookieSettings;
       console.log(`Cookie ${name} definido com sucesso`);
       return true;
     } catch (error) {

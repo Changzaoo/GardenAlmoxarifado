@@ -77,6 +77,19 @@ const ListaEmprestimos = ({
               <tr key={emprestimo.id} className="border-b hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <td className="py-3 px-2 font-medium">{emprestimo.nomeFuncionario || emprestimo.colaborador || '-'}</td>
                 <td className="py-3 px-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    emprestimo.status === 'emprestado'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {emprestimo.status === 'emprestado' ? (
+                      <><Clock className="w-3 h-3 inline mr-1" />Emprestado</>
+                    ) : (
+                      <><CheckCircle className="w-3 h-3 inline mr-1" />Devolvido</>
+                    )}
+                  </span>
+                </td>
+                <td className="py-3 px-2">
                   <div className="flex gap-2">
                     {emprestimo.status === 'emprestado' && (
                       <button
@@ -95,19 +108,6 @@ const ListaEmprestimos = ({
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                </td>
-                <td className="py-3 px-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    emprestimo.status === 'emprestado'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {emprestimo.status === 'emprestado' ? (
-                      <><Clock className="w-3 h-3 inline mr-1" />Emprestado</>
-                    ) : (
-                      <><CheckCircle className="w-3 h-3 inline mr-1" />Devolvido</>
-                    )}
-                  </span>
                 </td>
                 <td className="py-3 px-2 text-sm">
                   <div className="max-w-xs">

@@ -1,0 +1,44 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Funções auxiliares de segurança
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data.nivel > 2;
+    }
+    
+    function isValidContentType() {
+      return request.resource.contentType.matches('image/.*')
+          || request.resource.contentType.matches('application/pdf');
+    }
+    
+    function isValidFileSize() {
+      return request.resource.size < 5 * 1024 * 1024; // 5MB
+    }
+    
+    // Regras para fotos de perfil de usuários
+    match /users/{userId}/profile-* {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+                  && request.auth.uid == userId 
+                  && isValidContentType()
+                  && isValidFileSize();
+    }
+    
+    // Regras para documentos de ferramentas
+    match /ferramentas/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() 
+                  && isValidContentType()
+                  && isValidFileSize();
+    }
+    
+    // Nega acesso a todos os outros arquivos
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
