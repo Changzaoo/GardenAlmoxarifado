@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs } from 'firebase/firestore';
 import { ToastProvider } from './ToastProvider';
+import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './ThemeProvider';
@@ -30,7 +31,8 @@ import {
   Users, 
   ClipboardList,
   ClipboardCheck,
-  AlertTriangle, 
+  AlertTriangle,
+  Calendar,
   Search,
   BarChart3,
   Settings,
@@ -1389,6 +1391,12 @@ const AlmoxarifadoSistema = () => {
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
     { 
+      id: 'verificacao-mensal', 
+      nome: 'Verificação Mensal', 
+      icone: Calendar,
+      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
+    },
+    { 
       id: 'danificadas', 
       nome: 'Ferramentas Danificadas', 
       icone: AlertTriangle,
@@ -1567,6 +1575,8 @@ const AlmoxarifadoSistema = () => {
             
             {abaAtiva === 'dashboard' && <Dashboard stats={stats} />}
             
+            {abaAtiva === 'verificacao-mensal' && <VerificacaoMensalTab />}
+
             {abaAtiva === 'meu-inventario' && (
               <MeuInventarioTab
                 emprestimos={emprestimosCarregados ? emprestimos : null}
