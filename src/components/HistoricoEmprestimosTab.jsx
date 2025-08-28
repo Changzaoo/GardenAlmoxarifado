@@ -131,7 +131,7 @@ const HistoricoEmprestimosTab = () => {
       {/* Cabeçalho */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Empréstimos</h1>
+
           <p className="text-gray-500">Visualize e analise todos os empréstimos realizados</p>
         </div>
         <button
@@ -237,11 +237,11 @@ const HistoricoEmprestimosTab = () => {
             <select
               value={filtros.status}
               onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+              className="mt-1 block w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
             >
-              <option value="todos">Todos</option>
-              <option value="ativos">Ativos</option>
-              <option value="devolvidos">Devolvidos</option>
+              <option value="todos" className="bg-[#192734]">Todos</option>
+              <option value="ativos" className="bg-[#192734]">Ativos</option>
+              <option value="devolvidos" className="bg-[#192734]">Devolvidos</option>
             </select>
           </div>
           <div>
@@ -249,7 +249,7 @@ const HistoricoEmprestimosTab = () => {
             <select
               value={filtros.ordenacao}
               onChange={(e) => setFiltros(prev => ({ ...prev, ordenacao: e.target.value }))}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+              className="mt-1 block w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
             >
               <option value="recentes">Mais Recentes</option>
               <option value="antigos">Mais Antigos</option>

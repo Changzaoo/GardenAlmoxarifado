@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { NIVEIS_PERMISSAO } from '../constants/permissoes';
 
 // Importação dos componentes das páginas
-import AlmoxarifadoJardim from './AlmoxarifadoJardim';
+import Seed from './Seed';
 import FuncionariosTab from './Funcionarios/FuncionariosTab';
 import ComprasTab from './Compras/ComprasTab';
 import InventarioTab from './Inventario/InventarioTab';

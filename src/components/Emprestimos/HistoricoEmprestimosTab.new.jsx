@@ -242,7 +242,7 @@ const HistoricoEmprestimosTab = () => {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Histórico de Empréstimos</h2>
+
             <p className="text-sm text-gray-600">
               Visualize e analise todos os empréstimos de ferramentas
             </p>
@@ -345,9 +345,9 @@ const HistoricoEmprestimosTab = () => {
               <select
                 value={filtros.status}
                 onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
               >
-                <option value="todos">Todos os Status</option>
+                <option value="todos" className="bg-[#192734]">Todos os Status</option>
                 <option value="emprestado">Emprestados</option>
                 <option value="devolvido">Devolvidos</option>
                 <option value="atrasado">Atrasados</option>
@@ -375,9 +375,9 @@ const HistoricoEmprestimosTab = () => {
               <select
                 value={filtros.funcionario}
                 onChange={(e) => setFiltros(prev => ({ ...prev, funcionario: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
               >
-                <option value="">Todos os Funcionários</option>
+                <option value="" className="bg-[#192734]">Todos os Funcionários</option>
                 {funcionariosUnicos.map(func => (
                   <option key={func} value={func}>{func}</option>
                 ))}

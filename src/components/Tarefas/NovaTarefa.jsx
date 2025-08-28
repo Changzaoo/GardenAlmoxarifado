@@ -95,9 +95,9 @@ const NovaTarefa = ({ adicionarTarefa, funcionarios = [] }) => {
             <select
               value={novaTarefa.prioridade}
               onChange={(e) => setNovaTarefa(prev => ({ ...prev, prioridade: e.target.value }))}
-              className={classes.select}
+              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
             >
-              <option value="baixa">Baixa</option>
+              <option value="baixa" className="bg-[#192734]">Baixa</option>
               <option value="normal">Normal</option>
               <option value="alta">Alta</option>
               <option value="urgente">Urgente</option>

@@ -54,11 +54,11 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
           setBuscaFerramenta(e.target.value);
           setSugestoesVisiveis(false);
         }}
-        className="form-select min-w-48 mb-2"
+        className="min-w-48 mb-2 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
       >
-        <option value="">Selecione uma ferramenta...</option>
+        <option value="" className="bg-[#192734]">Selecione uma ferramenta...</option>
         {ferramentasDisponiveis.map(item => (
-          <option key={item.id} value={item.nome}>
+          <option key={item.id} value={item.nome} className="bg-[#192734]">
             {item.nome} ({item.disponivel})
           </option>
         ))}
@@ -93,7 +93,7 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
               const quantidade = parseInt(e.target.value);
               if (isNaN(quantidade) || quantidade < 1) e.target.value = '1';
             }}
-            className="form-select w-20 text-lg py-3"
+            className="w-20 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
           >
             {[...Array(10)].map((_, i) => (
               <option key={i + 1} value={i + 1}>{i + 1}</option>

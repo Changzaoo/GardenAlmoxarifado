@@ -9,14 +9,14 @@ export const twitterThemeConfig = {
     modal: '#192734',
     
     // Primary Colors
-    primary: '#1DA1F2',
-    primaryHover: '#1a91da',
+    primary: '#4776E6',
+    primaryHover: '#3D63C4',
     secondary: '#253341',
     secondaryHover: '#2C3D4F',
     danger: '#F4212E',
     dangerHover: '#dc1e29',
-    success: '#1DA1F2',
-    successHover: '#1a91da',
+    success: '#4776E6',
+    successHover: '#3D63C4',
     warning: '#FFD700',
     warningHover: '#E6C200',
     
@@ -43,8 +43,8 @@ export const twitterThemeConfig = {
     
     // Buttons
     button: {
-      base: 'rounded-full font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B] disabled:opacity-50',
-      primary: 'bg-[#1DA1F2] hover:bg-[#1a91da] text-white',
+      base: 'rounded-full font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#4776E6] focus:ring-offset-2 focus:ring-offset-[#15202B] disabled:opacity-50',
+      primary: 'bg-[#4776E6] hover:bg-[#3D63C4] text-white',
       secondary: 'bg-[#253341] hover:bg-[#2C3D4F] text-white',
       danger: 'bg-[#F4212E] hover:bg-[#dc1e29] text-white',
       outline: 'border border-[#38444D] hover:bg-[#253341] text-white',

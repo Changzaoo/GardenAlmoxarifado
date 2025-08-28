@@ -17,7 +17,7 @@ const ListaInventario = ({ inventario, emprestimos, removerItem }) => {
   return (
     <div className="bg-[#192734] rounded-2xl shadow-lg p-6 border border-[#38444D]">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-[#fff]">Inventário Completo</h2>
+
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-3 text-[#8899A6]" />
           <input

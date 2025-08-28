@@ -4,7 +4,7 @@ import { obterDataAtual, obterHoraAtual } from '../../utils/dateUtils';
 import FerramentaSelector from './FerramentaSelector';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { NIVEIS_PERMISSAO } from '../AlmoxarifadoJardim';
+import { NIVEIS_PERMISSAO } from '../Seed';
 import SugestoesEmprestimo from './SugestoesEmprestimo';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
@@ -141,12 +141,12 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                 setNovoEmprestimo({...novoEmprestimo, colaborador: valor});
                 setFuncionarioSelecionado(valor);
               }}
-              className="form-select w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-500"
+              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
               required
             >
-              <option value="">Selecione o funcionário</option>
+              <option value="" className="bg-[#192734]">Selecione o funcionário</option>
               {funcionarios.map((funcionario) => (
-                <option key={funcionario.id} value={funcionario.nome}>
+                <option key={funcionario.id} value={funcionario.nome} className="bg-[#192734]">
                   {funcionario.nome}
                 </option>
               ))}

@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import AlmoxarifadoJardim from './components/AlmoxarifadoJardim';
+import Workflow from './components/Workflow';
 import ThemeProvider from './components/ThemeProvider';
 import './index.css';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
@@ -8,7 +8,7 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
-      <AlmoxarifadoJardim />
+      <Workflow />
     </ThemeProvider>
   </React.StrictMode>
 );

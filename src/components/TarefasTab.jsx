@@ -22,7 +22,7 @@ import {
   PRIORIDADE_TAREFA,
   PRIORIDADE_TAREFA_LABELS
 } from '../constants/tarefas';
-import { NIVEIS_PERMISSAO } from './AlmoxarifadoJardim';
+import { NIVEIS_PERMISSAO } from './Seed';
 
 const TarefasTab = ({ usuario }) => {
   // Estados
@@ -473,7 +473,7 @@ const TarefasTab = ({ usuario }) => {
             <ListTodo className="w-5 h-5 text-[#1D9BF0]" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#FFFFFF]">Minhas Tarefas</h2>
+
             <p className="text-[#8899A6]">Gerencie suas tarefas e atividades</p>
           </div>
         </div>
@@ -727,7 +727,7 @@ const TarefasTab = ({ usuario }) => {
                     <select
                       value={novaTarefa.prioridade}
                       onChange={(e) => setNovaTarefa({ ...novaTarefa, prioridade: e.target.value })}
-                      className="w-full bg-[#253341] border border-[#38444D] rounded-lg px-4 py-2 text-[#FFFFFF] focus:border-[#1D9BF0] focus:ring-1 focus:ring-[#1D9BF0]"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                     >
                       {Object.entries(PRIORIDADE_TAREFA_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>

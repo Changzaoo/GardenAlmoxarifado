@@ -139,7 +139,7 @@ const FerramentasPerdidasTab = ({
               <AlertCircle className="w-5 h-5 text-[#F4212E]" />
             </div>
             <div>
-              <h2 className={`text-xl font-bold ${colors.text}`}>Ferramentas Perdidas</h2>
+
               <p className={`text-sm ${colors.textSecondary}`}>Controle e rastreamento de ferramentas perdidas</p>
             </div>
           </div>
@@ -218,11 +218,11 @@ const FerramentasPerdidasTab = ({
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className={`w-full md:w-48 px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent`}
+            className="w-full md:w-48 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
           >
-            <option value="todos">Todos os Status</option>
-            <option value="buscando">Buscando</option>
-            <option value="encontrada">Encontrada</option>
+            <option value="todos" className="bg-[#192734]">Todos os Status</option>
+            <option value="buscando" className="bg-[#192734]">Buscando</option>
+            <option value="encontrada" className="bg-[#192734]">Encontrada</option>
             <option value="perdida_definitiva">Perda Definitiva</option>
             <option value="substituida">Substituída</option>
           </select>
@@ -253,11 +253,11 @@ const FerramentasPerdidasTab = ({
                 </span>
                 {!readonly && (
                   <select
-                    className={`${classes.input} mt-2 text-xs`}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 mt-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                     value={item.statusBusca}
                     onChange={e => atualizarFerramentaPerdida(item.id, { statusBusca: e.target.value })}
                   >
-                    <option value="buscando">Buscando</option>
+                    <option value="buscando" className="bg-[#192734]">Buscando</option>
                     <option value="encontrada">Encontrada</option>
                     <option value="perdida_definitiva">Perda Definitiva</option>
                     <option value="substituida">Substituída</option>
@@ -430,9 +430,9 @@ const FerramentasPerdidasTab = ({
                     <select
                       value={novaFerramenta.statusBusca}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, statusBusca: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                     >
-                      <option value="buscando">Buscando</option>
+                      <option value="buscando" className="bg-[#192734]">Buscando</option>
                       <option value="encontrada">Encontrada</option>
                       <option value="perdida_definitiva">Perda Definitiva</option>
                       <option value="substituida">Substituída</option>
@@ -446,9 +446,9 @@ const FerramentasPerdidasTab = ({
                     <select
                       value={novaFerramenta.prioridade}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, prioridade: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                     >
-                      <option value="baixa">Baixa</option>
+                      <option value="baixa" className="bg-[#192734]">Baixa</option>
                       <option value="media">Média</option>
                       <option value="alta">Alta</option>
                     </select>

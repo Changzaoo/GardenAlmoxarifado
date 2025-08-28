@@ -79,7 +79,7 @@ export const TwitterBadge = ({ variant = 'info', className = '', children }) => 
 
 export const TwitterSelect = ({ className = '', children, ...props }) => (
   <select
-    className={`bg-[#253341] border border-[#38444D] rounded-full px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] ${className}`}
+    className={`bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none ${className}`}
     {...props}
   >
     {children}

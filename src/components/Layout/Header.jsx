@@ -13,7 +13,7 @@ const Header = ({ handleLogout }) => {
             <Package className="w-8 h-8 text-green-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Almoxarifado do Jardim</h1>
+  
             <p className="text-gray-600">Controle de ferramentas e equipamentos</p>
           </div>
         </div>

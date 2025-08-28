@@ -1,8 +1,9 @@
 import React from 'react';
-import { Shield, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
+import logo from '../../assets/logo.png';
 
 const LoginForm = ({ 
   loginData, 
@@ -19,11 +20,11 @@ const LoginForm = ({
       <div className={`rounded-2xl shadow-xl p-8 w-full max-w-md ${colors.backgroundSecondary} ${colors.border}`}>
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-[#1DA1F2] bg-opacity-10">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
+            <img src={logo} alt="Logo WorkFlow" className="w-full h-full object-contain" />
           </div>
           <h1 className={`text-2xl font-bold ${colors.text}`}>
-            Almoxarifado do Jardim
+            WorkFlow
           </h1>
           <p className={colors.textSecondary}>Sistema de Controle Seguro</p>
         </div>
@@ -93,7 +94,7 @@ const LoginForm = ({
 
         <div className={`mt-6 text-center text-xs ${colors.textSecondary}`}>
           <p>Sistema protegido por autenticação</p>
-          <p className="mt-1">© 2024 Almoxarifado do Jardim</p>
+          <p className="mt-1">© 2024 WorkFlow</p>
         </div>
       </div>
     </div>

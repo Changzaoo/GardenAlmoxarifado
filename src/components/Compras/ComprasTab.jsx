@@ -194,7 +194,7 @@ const ComprasTab = ({
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className={`text-2xl font-bold ${colors.text}`}>Gestão de Compras</h2>
+
           <p className={colors.textSecondary}>Gerenciar solicitações e pedidos de compra</p>
         </div>
         {!readonly && (
@@ -271,9 +271,9 @@ const ComprasTab = ({
           <select
             value={statusFiltro}
             onChange={(e) => setStatusFiltro(e.target.value)}
-            className={classes.select}
+            className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
           >
-            <option value="todos">Todos os status</option>
+            <option value="todos" className="bg-[#192734]">Todos os status</option>
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
@@ -281,9 +281,9 @@ const ComprasTab = ({
           <select
             value={prioridadeFiltro}
             onChange={(e) => setPrioridadeFiltro(e.target.value)}
-            className={classes.select}
+            className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
           >
-            <option value="todas">Todas as prioridades</option>
+            <option value="todas" className="bg-[#192734]">Todas as prioridades</option>
             {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
@@ -366,7 +366,7 @@ const ComprasTab = ({
                         value={compra.status}
                         onChange={(e) => atualizarStatus(compra.id, e.target.value)}
                         disabled={readonly}
-                        className={`text-xs font-medium px-2.5 py-0.5 rounded-full border-0 ${STATUS_COLORS[compra.status]} ${readonly ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                        className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                       >
                         {Object.entries(STATUS_LABELS).map(([value, label]) => (
                           <option key={value} value={value}>{label}</option>
@@ -488,7 +488,7 @@ const ComprasTab = ({
                   <select
                     value={novaCompra.prioridade}
                     onChange={(e) => setNovaCompra({ ...novaCompra, prioridade: e.target.value })}
-                    className={classes.select}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                     required
                   >
                     {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
@@ -516,7 +516,7 @@ const ComprasTab = ({
                     <select
                       value={novaCompra.status}
                       onChange={(e) => setNovaCompra({ ...novaCompra, status: e.target.value })}
-                      className={classes.select}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                     >
                       {Object.entries(STATUS_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>{label}</option>

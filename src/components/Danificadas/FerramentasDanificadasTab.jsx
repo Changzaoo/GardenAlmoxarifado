@@ -122,7 +122,7 @@ const FerramentasDanificadasTab = ({
               <AlertTriangle className="w-5 h-5 text-[#F4212E]" />
             </div>
             <div>
-              <h2 className={`text-xl font-bold ${colors.text}`}>Ferramentas Danificadas</h2>
+
               <p className={`text-sm ${colors.textSecondary}`}>Controle e acompanhamento de reparos</p>
             </div>
           </div>
@@ -176,9 +176,9 @@ const FerramentasDanificadasTab = ({
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className={classes.select}
+            className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
           >
-            <option value="todos">Todos os Status</option>
+            <option value="todos" className="bg-[#192734]">Todos os Status</option>
             <option value="aguardando">Aguardando Reparo</option>
             <option value="em_reparo">Em Reparo</option>
             <option value="reparado">Reparado</option>
@@ -210,11 +210,11 @@ const FerramentasDanificadasTab = ({
                 </span>
                 {/* Status editing dropdown */}
                 <select
-                  className={`${classes.select} mt-2 text-xs`}
+                  className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none mt-2 text-xs"
                   value={item.statusReparo}
                   onChange={e => atualizarFerramentaDanificada(item.id, { statusReparo: e.target.value })}
                 >
-                  <option value="aguardando">Aguardando Reparo</option>
+                  <option value="aguardando" className="bg-[#192734]">Aguardando Reparo</option>
                   <option value="em_reparo">Em Reparo</option>
                   <option value="reparado">Reparado</option>
                   <option value="irreparavel">Irreparável</option>
@@ -308,7 +308,7 @@ const FerramentasDanificadasTab = ({
                     <select
                       value={novaFerramenta.nomeItem}
                       onChange={e => setNovaFerramenta({ ...novaFerramenta, nomeItem: e.target.value })}
-                      className={classes.select}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                       required
                     >
                       <option value="">Selecione a ferramenta</option>
@@ -353,7 +353,7 @@ const FerramentasDanificadasTab = ({
                     <select
                       value={novaFerramenta.responsavel}
                       onChange={e => setNovaFerramenta({ ...novaFerramenta, responsavel: e.target.value })}
-                      className={classes.select}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                       required
                     >
                       <option value="">Selecione o responsável</option>
@@ -384,9 +384,9 @@ const FerramentasDanificadasTab = ({
                     <select
                       value={novaFerramenta.prioridade}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, prioridade: e.target.value})}
-                      className={classes.select}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                     >
-                      <option value="baixa">Baixa</option>
+                      <option value="baixa" className="bg-[#192734]">Baixa</option>
                       <option value="media">Média</option>
                       <option value="alta">Alta</option>
                     </select>
@@ -401,9 +401,9 @@ const FerramentasDanificadasTab = ({
                     <select
                       value={novaFerramenta.statusReparo}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, statusReparo: e.target.value})}
-                      className={classes.select}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
                     >
-                      <option value="aguardando">Aguardando Reparo</option>
+                      <option value="aguardando" className="bg-[#192734]">Aguardando Reparo</option>
                       <option value="em_reparo">Em Reparo</option>
                       <option value="reparado">Reparado</option>
                       <option value="irreparavel">Irreparável</option>

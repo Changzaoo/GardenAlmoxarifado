@@ -663,11 +663,11 @@ const LoginForm = () => {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-700/20 p-8">
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-            <Sprout className="w-8 h-8 text-green-600 dark:text-green-400" />
+          <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
+            <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Almoxarifado Jardim</h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">Sistema de Gestão</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">WorkFlow</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Gerenciamento de Ferramentas</p>
 
         </div>
 
@@ -848,18 +848,18 @@ const LoadingScreen = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#ebf8ff] to-[#e6f7ff] dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
       <div className="text-center">
-        <div className="mx-auto w-16 h-16 bg-[#bae3ff] dark:bg-[#1DA1F2] rounded-full flex items-center justify-center mb-4">
-          <Sprout className="w-8 h-8 text-green-600 dark:text-green-400 animate-pulse" />
+        <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
+          <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain animate-pulse" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Almoxarifado Jardim</h1>
+
         <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 dark:border-green-400"></div>
-          <p className="text-gray-600 dark:text-gray-300">Conectando ao Firebase...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <p className="text-gray-600 dark:text-gray-300">Iniciando WorkFlow...</p>
         </div>
         <div className="w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-          <div className="bg-green-600 dark:bg-green-400 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
+          <div className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Inicializando módulos de segurança...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Carregando sistema...</p>
       </div>
     </div>
   );
@@ -1452,10 +1452,10 @@ const AlmoxarifadoSistema = () => {
         {!isMobile && (
           <div className="p-4 border-b dark:border-[#2F3336]">
             <div className="flex items-center">
-              <Sprout className="w-8 h-8 text-[#1D9BF0] mr-3" />
+              <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-12 mr-3" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-[#E7E9EA]">Almoxarifado Jardim</h1>
-                <p className="text-sm text-gray-500 dark:text-[#71767B]">Sistema de Gestão</p>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">WorkFlow</h1>
+                <p className="text-xs text-gray-500 dark:text-[#71767B]">Gerenciamento de Ferramentas</p>
               </div>
             </div>
           </div>
@@ -1562,9 +1562,7 @@ const AlmoxarifadoSistema = () => {
         <div className="max-w-5xl mx-auto px-4">
           <div className="py-3">
             <div className="flex items-center justify-between sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md py-3 mb-4 border-b border-gray-100 dark:border-[#2F3336]">
-              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900 dark:text-[#E7E9EA]`}>
-                {abas.find(aba => aba.id === abaAtiva)?.nome || 'Dashboard'}
-              </h1>
+
             </div>
             
             {abaAtiva === 'dashboard' && <Dashboard stats={stats} />}
@@ -1716,7 +1714,7 @@ const App = () => {
 };
 
 // Componente principal com Provider
-const AlmoxarifadoJardim = () => {
+const Seed = () => {
   // Inicializar hook de notificações
   useNotifications();
   
@@ -1732,4 +1730,4 @@ const AlmoxarifadoJardim = () => {
 
 // Export do hook useAuth e componente principal
 export { useAuth };
-export default AlmoxarifadoJardim;
+export default Seed;

@@ -22,7 +22,7 @@ import ComprasTab from './components/Compras/ComprasTab';
 import TarefasTab from './components/Tarefas/TarefasTab';
 import HistoricoPage from './pages/HistoricoPage';
 import FerramentasDanificadasTab from './components/Danificadas/FerramentasDanificadasTab';
-import AlmoxarifadoJardim from './components/AlmoxarifadoJardim';
+import Workflow from './components/Workflow';
 
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -51,7 +51,7 @@ function App() {
                     <Routes>
                       <Route path="/login" element={<LoginForm />} />
                       <Route path="/" element={<Layout />}>
-                        <Route index element={<PrivateRoute requiredLevel={1}><AlmoxarifadoJardim /></PrivateRoute>} />
+                        <Route index element={<PrivateRoute requiredLevel={1}><Workflow /></PrivateRoute>} />
                         <Route path="funcionarios" element={<PrivateRoute requiredLevel={2}><FuncionariosTab /></PrivateRoute>} />
                         <Route path="compras" element={<PrivateRoute requiredLevel={2}><ComprasTab /></PrivateRoute>} />
                         <Route path="inventario" element={<PrivateRoute requiredLevel={1}><InventarioTab /></PrivateRoute>} />

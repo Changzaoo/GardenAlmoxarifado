@@ -20,7 +20,7 @@ const NovoItem = ({ adicionarItem }) => {
 
   return (
     <div className="bg-[#192734] rounded-2xl shadow-sm p-6 border border-[#38444D]">
-      <h2 className="text-xl font-bold text-[#1DA1F2] mb-4">Novo Item no Inventário</h2>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <input
           type="text"

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../AlmoxarifadoJardim';
-import { NIVEIS_PERMISSAO, NIVEIS_LABELS, PermissionChecker } from '../AlmoxarifadoJardim';
+import { useAuth } from '../Seed';
+import { NIVEIS_PERMISSAO, NIVEIS_LABELS, PermissionChecker } from '../Seed';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import { 
   UserCog,
@@ -253,7 +253,6 @@ const UsuariosTab = () => {
               <UserCog className="w-5 h-5 text-[#1D9BF0]" />
             </div>
             <div>
-              <h2 className={`text-xl font-bold ${colors.text}`}>Gerenciamento de Usuários</h2>
               <p className={colors.textSecondary}>Gerencie os usuários do sistema de acordo com suas permissões</p>
             </div>
           </div>
