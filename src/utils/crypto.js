@@ -23,6 +23,12 @@ const deriveKey = (password, salt) => {
   });
 };
 
+// Função para gerar uma chave de encriptação
+const generateEncryptionKey = (customSalt = '') => {
+  const salt = customSalt || generateSecureSalt();
+  return deriveKey(APP_SECRET, salt).toString();
+};
+
 // Função para encriptar dados
 export const encryptData = (data, customSalt = '') => {
   try {

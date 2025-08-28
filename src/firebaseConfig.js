@@ -43,24 +43,9 @@ auth.onAuthStateChanged((user) => {
 
 // Inicializar Storage com regras de segurança
 export const storage = getStorage(app);
-  try {
-    await db.enablePersistence({
-      synchronizeTabs: true
-    });
-  } catch (err) {
-    if (err.code === 'failed-precondition') {
-      console.warn('Múltiplas abas abertas, persistência desabilitada');
-    } else if (err.code === 'unimplemented') {
-      console.warn('Navegador não suporta persistência');
-    }
-  }
-};
-
-// Inicializar persistência
-initFirestore();
 
 // Para desenvolvimento local (opcional)
-if (process.env.NODE_ENV === 'development' && !db._settings?.host?.includes('firestore.googleapis.com')) {
+if (process.env.NODE_ENV === 'development') {
   try {
     connectFirestoreEmulator(db, 'localhost', 8080);
     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
