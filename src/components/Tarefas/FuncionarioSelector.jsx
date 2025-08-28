@@ -40,22 +40,28 @@ const FuncionarioSelector = ({ funcionarios, onSelecionarFuncionarios }) => {
 
   const handleSelecionarFuncionario = (funcionario) => {
     if (!onSelecionarFuncionarios) return;
-    const novosSelecionados = [...selecionados, funcionario.nome];
+    const novosSelecionados = [...selecionados, funcionario.id]; // Armazena o ID
     setSelecionados(novosSelecionados);
     onSelecionarFuncionarios(novosSelecionados);
     setBuscaFuncionario('');
     setSugestoesVisiveis(false);
   };
 
-  const handleRemoverFuncionario = (funcionarioNome) => {
+  const handleRemoverFuncionario = (funcionarioId) => {
     if (!onSelecionarFuncionarios) return;
-    const novosSelecionados = selecionados.filter(nome => nome !== funcionarioNome);
+    const novosSelecionados = selecionados.filter(id => id !== funcionarioId);
     setSelecionados(novosSelecionados);
     onSelecionarFuncionarios(novosSelecionados);
   };
 
   const sugestoes = filtrarFuncionarios(buscaFuncionario);
   const funcionariosSelecionados = funcionarios.filter(f => selecionados.includes(f.id));
+
+  // Função auxiliar para pegar o nome do funcionário pelo ID
+  const getNomeFuncionario = (id) => {
+    const funcionario = funcionarios.find(f => f.id === id);
+    return funcionario ? funcionario.nome : 'Funcionário não encontrado';
+  };
 
   return (
     <div className="flex flex-col gap-2" ref={ref}>

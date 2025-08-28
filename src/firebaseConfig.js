@@ -3,20 +3,26 @@ import { getFirestore, connectFirestoreEmulator, enableIndexedDbPersistence } fr
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
-const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
-};
-
-// Inicializar Firebase com validação de configuração
-if (!firebaseConfig.apiKey || !firebaseConfig.authDomain) {
-  throw new Error('Firebase configuration is incomplete. Please check your environment variables.');
-}
+// Em produção, use variáveis de ambiente. Em desenvolvimento, use as credenciais diretamente
+const firebaseConfig = process.env.NODE_ENV === 'production' 
+  ? {
+      apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+      authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.REACT_APP_FIREBASE_APP_ID,
+      measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+    }
+  : {
+      apiKey: "AIzaSyAnLmtlhOUUAbtRcOg64dXdCLbltv_iE4E",
+      authDomain: "garden-c0b50.firebaseapp.com",
+      projectId: "garden-c0b50",
+      storageBucket: "garden-c0b50.firebasestorage.app",
+      messagingSenderId: "467344354997",
+      appId: "1:467344354997:web:3c3397e0176060bb0c98fc",
+      measurementId: "G-7LML93QDTF"
+    };
 
 const app = initializeApp(firebaseConfig);
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../Seed';
-import { NIVEIS_PERMISSAO, NIVEIS_LABELS, PermissionChecker } from '../Seed';
+import { useAuth } from '../../hooks/useAuth';
+import { NIVEIS_PERMISSAO, NIVEIS_LABELS, PermissionChecker } from '../../constants/permissoes';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import { 
   UserCog,

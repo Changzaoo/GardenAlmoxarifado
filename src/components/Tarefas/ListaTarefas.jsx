@@ -1,10 +1,13 @@
 import React from 'react';
-import { Clock, Check, CalendarClock, Users } from 'lucide-react';
+import { Clock, Check, CalendarClock, Users, Play, X } from 'lucide-react';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import { formatarData } from '../../utils/dateUtils';
+import { useAuth } from '../../hooks/useAuth';
+import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 
-const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = false }) => {
+const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = false, funcionarios = [] }) => {
   const { colors, classes } = twitterThemeConfig;
+  const { usuario } = useAuth();
   
   const getPrioridadeClasses = (prioridade) => {
     const classes = {
@@ -65,7 +68,10 @@ const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = fals
                     <div className="flex items-center gap-1">
                       <Users className="w-4 h-4" />
                       <span>
-                        {tarefa.responsaveis.length} responsável(is)
+                        Responsáveis: {tarefa.responsaveis.map(id => {
+                          const funcionario = funcionarios?.find(f => f.id === id);
+                          return funcionario ? funcionario.nome : 'Não encontrado';
+                        }).join(', ')}
                       </span>
                     </div>
                     
@@ -73,29 +79,67 @@ const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = fals
                       <Clock className="w-4 h-4" />
                       <span>Criado em: {formatarData(tarefa.dataCriacao)}</span>
                     </div>
+
+                    {tarefa.dataInicio && (
+                      <div className="flex items-center gap-1">
+                        <Play className="w-4 h-4" />
+                        <span>Iniciado em: {formatarData(tarefa.dataInicio)}</span>
+                      </div>
+                    )}
+
+                    {tarefa.dataConclusao && (
+                      <div className="flex items-center gap-1">
+                        <Check className="w-4 h-4" />
+                        <span>Concluído em: {formatarData(tarefa.dataConclusao)}</span>
+                      </div>
+                    )}
+
+                    {tarefa.dataCancelamento && (
+                      <div className="flex items-center gap-1">
+                        <X className="w-4 h-4" />
+                        <span>Cancelado em: {formatarData(tarefa.dataCancelamento)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {!readonly && tarefa.status !== 'concluida' && tarefa.status !== 'cancelada' && (
+                {/* Botões de ação */}
+                {tarefa.status !== 'concluida' && tarefa.status !== 'cancelada' && (
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => atualizarTarefa(tarefa.id, 'concluida')}
-                      className={`p-2 ${colors.success} hover:${colors.successHover} transition-colors`}
-                      title="Marcar como concluída"
-                    >
-                      <Check className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => removerTarefa(tarefa.id)}
-                      className={`p-2 ${colors.danger} hover:${colors.dangerHover} transition-colors`}
-                      title="Cancelar tarefa"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                )}
+                    {/* Botão de Iniciar - Apenas responsáveis podem iniciar */}
+                    {tarefa.status === 'pendente' && tarefa.responsaveis.includes(usuario.id) && (
+                      <button
+                        onClick={() => atualizarTarefa(tarefa.id, 'em-andamento')}
+                        className={`p-2 ${colors.info} hover:${colors.infoHover} rounded-full transition-colors`}
+                        title="Iniciar tarefa"
+                      >
+                        <Play className="w-5 h-5" />
+                      </button>
+                    )}
+
+                    {/* Botão de Concluir - Apenas responsáveis podem concluir */}
+                    {tarefa.status === 'em-andamento' && tarefa.responsaveis.includes(usuario.id) && (
+                      <button
+                        onClick={() => atualizarTarefa(tarefa.id, 'concluida')}
+                        className={`p-2 ${colors.success} hover:${colors.successHover} rounded-full transition-colors`}
+                        title="Concluir tarefa"
+                      >
+                        <Check className="w-5 h-5" />
+                      </button>
+                    )}
+
+                    {/* Botão de Cancelar - Apenas supervisores podem cancelar */}
+                    {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
+                      <button
+                        onClick={() => atualizarTarefa(tarefa.id, 'cancelada')}
+                        className={`p-2 ${colors.danger} hover:${colors.dangerHover} rounded-full transition-colors`}
+                        title="Cancelar tarefa"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    )}
+                    </div>
+                  )}
               </div>
             </div>
           ))}

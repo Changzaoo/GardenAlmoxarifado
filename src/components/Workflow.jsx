@@ -5,6 +5,7 @@ import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './ThemeProvider';
+import SupportTab from './Support/SupportTab';
 import UserProfileModal from './Auth/UserProfileModal';
 import { TarefasProvider } from './Tarefas/TarefasProvider';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
@@ -45,11 +46,12 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
+  HelpCircle,
   UserCog,
+  History,
+  ArrowRight,
   ShoppingCart,
   ToolCase,
-  ArrowRight,
-  History,
   Sun,
   Moon,
   Camera,
@@ -851,12 +853,12 @@ const LoadingScreen = () => {
     <div className="min-h-screen bg-gradient-to-br from-[#ebf8ff] to-[#e6f7ff] dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
       <div className="text-center">
         <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
-          <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain animate-pulse" />
+          <img src="/logo.png" alt="Logo Garden Tools" className="w-full h-full object-contain animate-pulse" />
         </div>
 
         <div className="flex items-center justify-center gap-2 mb-4">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <p className="text-gray-600 dark:text-gray-300">Iniciando WorkFlow...</p>
+          <p className="text-gray-600 dark:text-gray-300">Iniciando Garden Tools...</p>
         </div>
         <div className="w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
@@ -1354,6 +1356,12 @@ const AlmoxarifadoSistema = () => {
       icone: BarChart3,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
+    {
+      id: 'suporte',
+      nome: 'Suporte',
+      icone: HelpCircle,
+      permissao: () => true // Visível para todos os níveis
+    },
     { 
       id: 'meu-inventario', 
       nome: 'Meu Inventário', 
@@ -1429,12 +1437,8 @@ const AlmoxarifadoSistema = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header móvel */}
       {isMobile && (
-        <header className="bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-700 fixed top-0 left-0 right-0 z-20">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center">
-              <Sprout className="w-6 h-6 text-green-600 mr-2" />
-              <h1 className="text-base font-bold text-gray-900 dark:text-white">Almoxarifado</h1>
-            </div>
+        <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b dark:border-[#2F3336] shadow-sm">
+          <div className="flex items-center justify-between px-4 h-16">
             <button
               onClick={toggleMenu}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -1445,6 +1449,16 @@ const AlmoxarifadoSistema = () => {
                 <MenuIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
               )}
             </button>
+
+            {/* Logo e título no header mobile quando menu fechado */}
+            {!menuOpen && (
+              <div className="flex items-center">
+                <img src="/logo.png" alt="Logo WorkFlow" className="w-8 h-8 mr-2" />
+                <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
+              </div>
+            )}
+            
+            <div className="w-10"></div>
           </div>
         </header>
       )}
@@ -1452,7 +1466,7 @@ const AlmoxarifadoSistema = () => {
       {/* Menu lateral */}
       <nav className={`${
         isMobile 
-          ? `fixed inset-0 z-10 transform transition-transform duration-300 ease-in-out ${
+          ? `fixed inset-0 z-40 transform transition-transform duration-300 ease-in-out ${
               menuOpen ? 'translate-x-0' : '-translate-x-full'
             }`
           : 'w-72 fixed'
@@ -1469,7 +1483,20 @@ const AlmoxarifadoSistema = () => {
           </div>
         )}
 
-        <div className={`py-4 px-2 ${isMobile ? 'mt-4' : ''}`}>
+        {/* Versão Mobile do Header */}
+        {isMobile && menuOpen && (
+          <div className="pt-20 pb-4 px-4 border-b dark:border-[#2F3336]">
+            <div className="flex items-center">
+              <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
+              <div>
+                <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
+                <p className="text-xs text-gray-500 dark:text-[#71767B]">Gerenciamento de Ferramentas</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`py-4 px-2 ${isMobile ? 'mt-2' : ''}`}>
           <div className="space-y-1">
             {abas.filter(aba => aba.permissao()).map((aba) => {
               const Icone = aba.icone;
@@ -1576,6 +1603,8 @@ const AlmoxarifadoSistema = () => {
             {abaAtiva === 'dashboard' && <Dashboard stats={stats} />}
             
             {abaAtiva === 'verificacao-mensal' && <VerificacaoMensalTab />}
+
+            {abaAtiva === 'suporte' && <SupportTab />}
 
             {abaAtiva === 'meu-inventario' && (
               <MeuInventarioTab

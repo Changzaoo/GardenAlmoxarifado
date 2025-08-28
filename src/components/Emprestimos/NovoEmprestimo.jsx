@@ -4,7 +4,7 @@ import { obterDataAtual, obterHoraAtual } from '../../utils/dateUtils';
 import FerramentaSelector from './FerramentaSelector';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { NIVEIS_PERMISSAO } from '../Seed';
+import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import SugestoesEmprestimo from './SugestoesEmprestimo';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {

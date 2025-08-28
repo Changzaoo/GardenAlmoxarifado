@@ -23,7 +23,7 @@ export const TarefasProvider = ({ children }) => {
       // Funcionários veem apenas suas tarefas e as tarefas onde são responsáveis
       q = query(
         collection(db, 'tarefas'),
-        where('responsaveis', 'array-contains', usuario.nome)
+        where('responsaveis', 'array-contains', usuario.id)
       );
     }
 
@@ -90,15 +90,37 @@ export const TarefasProvider = ({ children }) => {
     }
   };
 
-  // Atualizar status da tarefa
-  const atualizarTarefa = async (tarefaId, novoStatus) => {
+  // Atualizar tarefa
+  const atualizarTarefa = async (tarefaId, novosDados) => {
     try {
       const tarefaRef = doc(db, 'tarefas', tarefaId);
-      await updateDoc(tarefaRef, {
-        status: novoStatus,
-        dataAtualizacao: new Date(),
-        ...(novoStatus === 'concluida' ? { dataConclusao: new Date() } : {})
-      });
+      
+      let dadosAtualizacao;
+
+      // Se novosDados for uma string, é uma atualização de status simples
+      if (typeof novosDados === 'string') {
+        dadosAtualizacao = {
+          status: novosDados,
+          dataAtualizacao: new Date()
+        };
+
+        // Adiciona campos específicos baseado no status
+        if (novosDados === 'em-andamento') {
+          dadosAtualizacao.dataInicio = new Date();
+        } else if (novosDados === 'concluida') {
+          dadosAtualizacao.dataConclusao = new Date();
+        } else if (novosDados === 'cancelada') {
+          dadosAtualizacao.dataCancelamento = new Date();
+        }
+      } else {
+        // Se for um objeto, é uma atualização completa
+        dadosAtualizacao = {
+          ...novosDados,
+          dataAtualizacao: new Date()
+        };
+      }
+
+      await updateDoc(tarefaRef, dadosAtualizacao);
       return true;
     } catch (error) {
       console.error('Erro ao atualizar tarefa:', error);

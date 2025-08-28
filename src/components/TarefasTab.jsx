@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useFuncionarios } from './Funcionarios/FuncionariosProvider';
+import { useToast } from './ToastProvider';
+import ExportImportButtons from './common/ExportImportButtons';
 import { 
   CheckCircle2, 
   Clock, 
@@ -16,6 +18,7 @@ import {
   Users,
   ChevronDown
 } from 'lucide-react';
+import SupportButton from './Support/SupportButton';
 import { 
   ESTADOS_TAREFA, 
   ESTADOS_TAREFA_LABELS,
@@ -27,6 +30,7 @@ import { NIVEIS_PERMISSAO } from './Seed';
 const TarefasTab = ({ usuario }) => {
   // Estados
   const { funcionarios } = useFuncionarios();
+  const { showToast } = useToast();
   const [tarefas, setTarefas] = useState([]);
   const [modalAberto, setModalAberto] = useState(false);
   const [tarefaEditando, setTarefaEditando] = useState(null);
@@ -137,7 +141,7 @@ const TarefasTab = ({ usuario }) => {
       // Se não for admin, filtra por responsável
       if (usuario.nivel <= NIVEIS_PERMISSAO.FUNCIONARIO) {
         console.log('Aplicando filtro de responsável:', usuario.id);
-        constraints.push(where('responsavel', '==', usuario.id));
+        constraints.push(where('responsaveis', 'array-contains', usuario.id));
       }
 
       // Adiciona filtro de status se não for 'todos'
@@ -320,14 +324,17 @@ const TarefasTab = ({ usuario }) => {
       });
 
       const tarefaData = {
-        ...novaTarefa,
         titulo: novaTarefa.titulo.trim(),
         descricao: novaTarefa.descricao.trim(),
         criadorId: usuario.id,
-        responsavel: novaTarefa.responsavel, // ID do funcionário responsável
+        responsaveis: novaTarefa.responsaveis, // Array de IDs dos funcionários responsáveis
         status: ESTADOS_TAREFA.PENDENTE,
         dataCriacao: new Date().toISOString(),
-        dataAtualizacao: new Date().toISOString()
+        dataAtualizacao: new Date().toISOString(),
+        categoria: novaTarefa.categoria,
+        prioridade: novaTarefa.prioridade,
+        dataLimite: novaTarefa.dataLimite || null,
+        observacoes: novaTarefa.observacoes
       };
       
       console.log('Salvando nova tarefa no Firestore:', {
@@ -429,7 +436,7 @@ const TarefasTab = ({ usuario }) => {
     }
     
     // Para funcionários regulares, mostra apenas suas tarefas
-    const ehResponsavel = tarefa.responsavel === usuario.id;
+    const ehResponsavel = tarefa.responsaveis && tarefa.responsaveis.includes(usuario.id);
     if (!ehResponsavel) return false;
     
     return filtroStatus === 'todos' ? true : tarefa.status === filtroStatus;
@@ -478,18 +485,30 @@ const TarefasTab = ({ usuario }) => {
           </div>
         </div>
 
-        {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
-          <button
-            onClick={() => {
-              limparFormulario();
-              setModalAberto(true);
-            }}
-            className="bg-[#1DA1F2] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-[#1a91da] transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nova Tarefa
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+                <button
+                  onClick={() => {
+                    limparFormulario();
+                    setModalAberto(true);
+                  }}
+                  className="bg-[#1DA1F2] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-[#1a91da] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nova Tarefa
+                </button>
+              )}
+              {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+                <ExportImportButtons
+                  colecao="tarefas"
+                  onSuccess={(message) => showToast(message, 'success')}
+                  onError={(message) => showToast(message, 'error')}
+                />
+              )}
+              <SupportButton />
+            </div>
+          </div>
       </div>      {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-[#192734] border border-[#38444D] rounded-lg p-4">

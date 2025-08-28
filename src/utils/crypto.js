@@ -1,11 +1,9 @@
 import CryptoJS from 'crypto-js';
 
-// A chave secreta deve vir das variáveis de ambiente
-if (!process.env.REACT_APP_CRYPTO_SECRET) {
-  throw new Error('REACT_APP_CRYPTO_SECRET environment variable is not set');
-}
-
-const APP_SECRET = process.env.REACT_APP_CRYPTO_SECRET;
+// Em desenvolvimento, use uma chave padrão. Em produção, use a variável de ambiente
+const APP_SECRET = process.env.NODE_ENV === 'production'
+  ? process.env.REACT_APP_CRYPTO_SECRET
+  : 'workflow-garden-secure-key-2025';
 const SALT_ITERATIONS = 10000; // Número de iterações para derivação da chave
 const KEY_SIZE = 256; // Tamanho da chave em bits
 const IV_SIZE = 128; // Tamanho do vetor de inicialização em bits

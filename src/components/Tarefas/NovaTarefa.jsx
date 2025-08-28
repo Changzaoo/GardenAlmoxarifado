@@ -23,9 +23,12 @@ const NovaTarefa = ({ adicionarTarefa, funcionarios = [] }) => {
         throw new Error('Selecione pelo menos um responsável pela tarefa');
       }
 
+      // Certifica que responsáveis é um array de IDs
+      const responsaveisIds = funcionariosSelecionados.map(f => f.id || f);
+
       const sucesso = await adicionarTarefa({
         ...novaTarefa,
-        responsaveis: funcionariosSelecionados
+        responsaveis: responsaveisIds
       });
 
       if (sucesso) {
@@ -121,10 +124,10 @@ const NovaTarefa = ({ adicionarTarefa, funcionarios = [] }) => {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-6">
           <button
             type="submit"
-            className={`${classes.primaryButton} flex items-center gap-2`}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#1D9BF0] hover:bg-[#1A8CD8] rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Criar Tarefa

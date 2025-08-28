@@ -20,7 +20,7 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
   
   const [userData, setUserData] = useState({
     nome: usuario?.nome || '',
-    usuario: usuario?.usuario || '',
+    email: usuario?.email || '',
     senha: '',
     telefone: usuario?.telefone || ''
   });
@@ -29,7 +29,7 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
     if (isOpen && usuario) {
       setUserData({
         nome: usuario.nome || '',
-        usuario: usuario.usuario || '',
+        email: usuario.email || '',
         senha: '',
         telefone: usuario.telefone || ''
       });
@@ -60,52 +60,25 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
 
   const handleSave = async () => {
     try {
-      if (!canEdit) {
-        showToast('Você só pode editar seu próprio perfil', 'error');
-        return;
-      }
-
       setLoading(true);
-
-      // Validações básicas
-      if (!userData.nome?.trim()) {
-        showToast('O nome é obrigatório', 'error');
-        setLoading(false);
-        return;
-      }
-
-      if (!userData.usuario?.trim()) {
-        showToast('O usuário é obrigatório', 'error');
-        setLoading(false);
-        return;
-      }
-
-      // Prepara os dados para atualização
-      const dadosParaAtualizar = {
-        nome: userData.nome.trim(),
-        usuario: userData.usuario.trim(),
-        telefone: userData.telefone?.trim() || ''
+      const updatedData = {
+        ...userData,
+        email: `${userData.email.replace(/@.*$/, '')}@almoxarifado.com`
       };
 
-      // Adiciona senha apenas se foi fornecida
-      if (userData.senha?.trim()) {
-        dadosParaAtualizar.senha = userData.senha.trim();
+      // Only include password in update if it was changed
+      if (!userData.senha) {
+        delete updatedData.senha;
       }
-
-      // Atualiza no Firestore
-      await updateDoc(doc(db, 'usuarios', usuario.id), dadosParaAtualizar);
       
-      // Atualiza o estado local
-      atualizarUsuario({
-        ...usuario,
-        ...dadosParaAtualizar
-      });
+      const encryptedData = encryptData(updatedData);
+      await updateDoc(doc(db, 'usuarios', usuario.id), encryptedData);
       
+      atualizarUsuario(updatedData);
       showToast('Perfil atualizado com sucesso!', 'success');
-      onClose();
     } catch (error) {
       console.error('Erro ao atualizar:', error);
-      showToast('Erro ao atualizar perfil: ' + (error.message || 'Tente novamente'), 'error');
+      showToast('Erro ao atualizar perfil', 'error');
     } finally {
       setLoading(false);
     }
@@ -188,14 +161,16 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
             <div className="space-y-4">
               <Input
                 label="Nome"
-                value={userData.nome || ''}
+                value={userData.nome}
                 onChange={(e) => setUserData(prev => ({ ...prev, nome: e.target.value }))}
+                disabled={!canEdit}
               />
 
               <Input
                 label="Usuário"
-                value={userData.usuario || ''}
-                onChange={(e) => setUserData(prev => ({ ...prev, usuario: e.target.value }))}
+                value={userData.email?.replace(/@.*$/, '') || ''}
+                onChange={(e) => setUserData(prev => ({ ...prev, email: e.target.value }))}
+                disabled={!canEdit}
               />
 
               <Input
@@ -203,14 +178,16 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
                 type="password"
                 value={userData.senha || ''}
                 onChange={(e) => setUserData(prev => ({ ...prev, senha: e.target.value }))}
-                placeholder="Digite a nova senha"
+                disabled={!canEdit}
+                placeholder={canEdit ? "Digite a nova senha" : ""}
               />
 
               <Input
                 label="Telefone"
                 type="tel"
-                value={userData.telefone || ''}
+                value={userData.telefone}
                 onChange={(e) => setUserData(prev => ({ ...prev, telefone: e.target.value }))}
+                disabled={!canEdit}
               />
 
               {canEdit && (

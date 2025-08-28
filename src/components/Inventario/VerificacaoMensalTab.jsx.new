@@ -1,0 +1,303 @@
+import React, { useState, useEffect } from 'react';
+import { Calendar, CheckCircle, AlertCircle, ClipboardList, Calendar as CalendarIcon } from 'lucide-react';
+import { db } from '../../firebaseConfig';
+import { collection, query, where, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
+import Button from '../common/Button';
+import { useAuth } from '../../hooks/useAuth';
+
+const VerificacaoMensalTab = () => {
+  const [inventario, setInventario] = useState([]);
+  const [verificacoes, setVerificacoes] = useState([]);
+  const [mesAtual, setMesAtual] = useState(new Date().toISOString().slice(0, 7));
+  const [loading, setLoading] = useState(false);
+  const { usuario } = useAuth();
+
+  useEffect(() => {
+    carregarInventario();
+    carregarVerificacoes();
+  }, [mesAtual]);
+
+  const carregarInventario = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'inventario'));
+      const itens = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        verificado: false,
+        observacao: '',
+        disponivel_temp: doc.data().disponivel // Campo temporário para edição
+      }));
+      setInventario(itens);
+    } catch (error) {
+      console.error('Erro ao carregar inventário:', error);
+    }
+  };
+
+  const carregarVerificacoes = async () => {
+    try {
+      const verificacoesRef = collection(db, 'verificacoes_mensais');
+      const q = query(verificacoesRef, where('mes', '==', mesAtual));
+      const querySnapshot = await getDocs(q);
+      const verificacoesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setVerificacoes(verificacoesData);
+
+      // Atualizar o estado dos itens verificados
+      if (verificacoesData.length > 0) {
+        const verificacao = verificacoesData[0];
+        setInventario(prev => prev.map(item => ({
+          ...item,
+          verificado: verificacao.itens[item.id]?.verificado || false,
+          observacao: verificacao.itens[item.id]?.observacao || '',
+          disponivel_temp: verificacao.itens[item.id]?.disponivel ?? item.disponivel // Usar o valor da verificação se existir
+        })));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar verificações:', error);
+    }
+  };
+
+  const handleVerificarItem = async (id) => {
+    try {
+      const item = inventario.find(i => i.id === id);
+      const novoValorVerificado = !item.verificado;
+      
+      if (novoValorVerificado) {
+        // Atualizar o valor disponível no banco de dados quando marcar como verificado
+        const itemRef = doc(db, 'inventario', id);
+        await updateDoc(itemRef, {
+          disponivel: Number(item.disponivel_temp)
+        });
+      }
+
+      setInventario(prev => prev.map(item => 
+        item.id === id ? { 
+          ...item,
+          verificado: novoValorVerificado,
+          disponivel: novoValorVerificado ? Number(item.disponivel_temp) : item.disponivel
+        } : item
+      ));
+    } catch (error) {
+      console.error('Erro ao verificar item:', error);
+      alert('Erro ao atualizar o item. Tente novamente.');
+    }
+  };
+
+  const handleObservacao = (id, observacao) => {
+    setInventario(prev => prev.map(item => 
+      item.id === id ? { ...item, observacao } : item
+    ));
+  };
+
+  const handleDisponivelChange = (id, valor) => {
+    // Validar se é um número e não é negativo
+    if (valor === '' || (!isNaN(valor) && Number(valor) >= 0)) {
+      setInventario(prev => prev.map(item =>
+        item.id === id ? { ...item, disponivel_temp: valor } : item
+      ));
+    }
+  };
+
+  const salvarVerificacao = async () => {
+    try {
+      setLoading(true);
+      const verificacaoData = {
+        mes: mesAtual,
+        dataVerificacao: new Date().toISOString(),
+        responsavel: usuario.nome,
+        itens: {}
+      };
+
+      inventario.forEach(item => {
+        verificacaoData.itens[item.id] = {
+          verificado: item.verificado,
+          observacao: item.observacao,
+          disponivel: Number(item.disponivel_temp)
+        };
+      });
+
+      // Verificar se já existe uma verificação para este mês
+      if (verificacoes.length > 0) {
+        // Atualizar verificação existente
+        const docRef = doc(db, 'verificacoes_mensais', verificacoes[0].id);
+        await updateDoc(docRef, verificacaoData);
+      } else {
+        // Criar nova verificação
+        await addDoc(collection(db, 'verificacoes_mensais'), verificacaoData);
+      }
+
+      alert('Verificação mensal salva com sucesso!');
+      await carregarInventario(); // Recarregar os dados
+    } catch (error) {
+      console.error('Erro ao salvar verificação:', error);
+      alert('Erro ao salvar verificação. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusIcon = (item) => {
+    if (!item.verificado) return null;
+    return Number(item.disponivel_temp) === item.quantidade ? 
+      <CheckCircle className="w-5 h-5 text-green-500" /> : 
+      <AlertCircle className="w-5 h-5 text-yellow-500" />;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <ClipboardList className="w-6 h-6" />
+          Verificação Mensal de Estoque
+        </h2>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="w-5 h-5 text-gray-500" />
+            <input
+              type="month"
+              value={mesAtual}
+              onChange={(e) => setMesAtual(e.target.value)}
+              className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+            />
+          </div>
+          <Button
+            onClick={salvarVerificacao}
+            loading={loading}
+            variant="primary"
+          >
+            Salvar Verificação
+          </Button>
+        </div>
+      </div>
+
+      {/* Sumário por categoria */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {Object.entries(
+          inventario.reduce((acc, item) => {
+            if (!acc[item.categoria]) {
+              acc[item.categoria] = {
+                total: 0,
+                disponivel: 0,
+                verificados: 0
+              };
+            }
+            acc[item.categoria].total += item.quantidade;
+            acc[item.categoria].disponivel += Number(item.disponivel_temp) || 0;
+            if (item.verificado) acc[item.categoria].verificados++;
+            return acc;
+          }, {})
+        ).map(([categoria, stats]) => (
+          <div key={categoria} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{categoria}</h3>
+            <div className="space-y-1">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Total: {stats.total} itens
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Disponível: {stats.disponivel} itens
+              </p>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${(stats.verificados / Math.max(1, inventario.filter(i => i.categoria === categoria).length)) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {stats.verificados} de {inventario.filter(i => i.categoria === categoria).length} verificados
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabela detalhada com scroll horizontal */}
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div className="relative">
+          <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-700 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[150px] min-w-[150px]">
+                      Categoria
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[200px] min-w-[200px]">
+                      Item
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[130px] min-w-[130px]">
+                      Quantidade Total
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[130px] min-w-[130px]">
+                      Disponível
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[100px] min-w-[100px]">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[200px] min-w-[200px]">
+                      Observações
+                    </th>
+                    <th className="sticky right-0 z-10 bg-gray-50 dark:bg-gray-700 px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[100px] min-w-[100px]">
+                      Verificado
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {inventario
+                    .sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nome.localeCompare(b.nome))
+                    .map((item) => (
+                      <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="sticky left-0 z-10 bg-white dark:bg-gray-800 px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                          {item.categoria}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {item.nome}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {item.quantidade}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <input
+                            type="number"
+                            min="0"
+                            max={item.quantidade}
+                            value={item.disponivel_temp}
+                            onChange={(e) => handleDisponivelChange(item.id, e.target.value)}
+                            className="w-20 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1"
+                            disabled={item.verificado} // Desabilitar após verificado
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {getStatusIcon(item)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                          <input
+                            type="text"
+                            value={item.observacao}
+                            onChange={(e) => handleObservacao(item.id, e.target.value)}
+                            placeholder="Adicionar observação..."
+                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1"
+                          />
+                        </td>
+                        <td className="sticky right-0 z-10 bg-white dark:bg-gray-800 px-6 py-4 whitespace-nowrap text-center">
+                          <input
+                            type="checkbox"
+                            checked={item.verificado}
+                            onChange={() => handleVerificarItem(item.id)}
+                            className="h-4 w-4 text-blue-600 dark:text-blue-400 rounded border-gray-300 dark:border-gray-600"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default VerificacaoMensalTab;

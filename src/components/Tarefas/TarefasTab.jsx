@@ -29,6 +29,7 @@ const TarefasTab = () => {
         tarefas={tarefas}
         atualizarTarefa={atualizarTarefa}
         removerTarefa={removerTarefa}
+        funcionarios={funcionarios}
         readonly={usuario?.nivel < NIVEIS_PERMISSAO.SUPERVISOR}
       />
     </div>
