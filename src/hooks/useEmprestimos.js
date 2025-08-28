@@ -17,14 +17,21 @@ export const useEmprestimos = () => {
           console.log('Empréstimos carregados (brutos):', lista);
           if (Array.isArray(lista)) {
             // Garantir que cada item tenha as propriedades necessárias
-            const emprestimosValidos = lista.filter(emp => {
-              const valido = emp && emp.id && (emp.nomeFuncionario || emp.colaborador);
-              if (!valido) {
-                console.warn('Empréstimo inválido encontrado:', emp);
-              }
-              return valido;
+            const emprestimosValidos = lista.map(emp => {
+              // Garantir que todos os campos necessários existam
+              return {
+                id: emp.id || '',
+                nomeFuncionario: emp.nomeFuncionario || emp.colaborador || 'Não identificado',
+                ferramentas: emp.ferramentas || [],
+                dataEmprestimo: emp.dataEmprestimo || new Date().toISOString(),
+                dataDevolucao: emp.dataDevolucao || null,
+                status: emp.status || 'emprestado',
+                devolvidoPorTerceiros: emp.devolvidoPorTerceiros || false,
+                observacoes: emp.observacoes || '',
+                ...emp // Manter outros campos que possam existir
+              };
             });
-            console.log('Empréstimos válidos:', emprestimosValidos);
+            console.log('Empréstimos processados:', emprestimosValidos);
             setEmprestimos(emprestimosValidos);
           } else {
             console.error('Lista de empréstimos não é um array:', lista);

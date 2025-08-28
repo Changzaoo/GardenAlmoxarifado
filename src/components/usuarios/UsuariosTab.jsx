@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AlmoxarifadoJardim';
 import { NIVEIS_PERMISSAO, NIVEIS_LABELS, PermissionChecker } from '../AlmoxarifadoJardim';
+import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import { 
   UserCog,
   Plus, 
@@ -14,6 +15,8 @@ import {
   AlertTriangle,
   User
 } from 'lucide-react';
+
+const { classes, colors } = twitterThemeConfig;
 
 
 const UsuariosTab = () => {
@@ -44,9 +47,9 @@ const UsuariosTab = () => {
   // Check if context is properly loaded
   if (!usuarioLogado) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Carregando dados do usuário...</p>
+      <div className={`${classes.card} p-8 text-center`}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D9BF0] mx-auto mb-4"></div>
+        <p className={colors.textSecondary}>Carregando dados do usuário...</p>
       </div>
     );
   }
@@ -243,22 +246,22 @@ const UsuariosTab = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className={`${classes.card} p-6`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <UserCog className="w-6 h-6 text-purple-600" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#1D9BF0] bg-opacity-10 rounded-lg flex items-center justify-center">
+              <UserCog className="w-5 h-5 text-[#1D9BF0]" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Gerenciamento de Usuários</h2>
-              <p className="text-gray-600">Gerencie os usuários do sistema de acordo com suas permissões</p>
+              <h2 className={`text-xl font-bold ${colors.text}`}>Gerenciamento de Usuários</h2>
+              <p className={colors.textSecondary}>Gerencie os usuários do sistema de acordo com suas permissões</p>
             </div>
           </div>
           
           {niveisDisponiveis.length > 0 && (
             <button
               onClick={abrirModalCriar}
-              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center gap-2 bg-[#1D9BF0] text-white px-4 py-2 rounded-full hover:bg-[#1A8CD8] transition-colors"
             >
               <Plus className="w-4 h-4" />
               Novo Usuário
@@ -268,70 +271,70 @@ const UsuariosTab = () => {
 
         {/* Mensagens */}
         {erro && (
-          <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+          <div className={`${classes.card} mt-4 p-4 border border-[#F4212E] border-opacity-20 bg-[#F4212E] bg-opacity-10 text-[#F4212E]`}>
             {erro}
           </div>
         )}
         
         {sucesso && (
-          <div className="mt-4 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg">
+          <div className={`${classes.card} mt-4 p-4 border border-[#00BA7C] border-opacity-20 bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]`}>
             {sucesso}
           </div>
         )}
       </div>
 
       {/* Lista de Usuários */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className={`${classes.card} overflow-hidden`}>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y dark:divide-[#2F3336]">
+            <thead className="bg-black bg-opacity-5 dark:bg-[#2F3336]">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                   Usuário
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                   Nível de Acesso
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                   Último Login
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                   Ações
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y dark:divide-[#2F3336]">
               {usuariosVisiveis.map((usuario) => (
-                <tr key={usuario.id} className="hover:bg-gray-50">
+                <tr key={usuario.id} className={`hover:bg-black hover:bg-opacity-5 dark:hover:bg-[#2F3336]`}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
-                          <User className="w-4 h-4 text-purple-600" />
+                        <div className="h-8 w-8 bg-[#1D9BF0] bg-opacity-10 rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-[#1D9BF0]" />
                         </div>
                       </div>
                       <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className={`text-sm font-medium ${colors.text}`}>
                           {usuario.nome}
                           {usuario.id === usuarioLogado.id && (
-                            <span className="ml-2 text-xs text-purple-600 font-medium">(Você)</span>
+                            <span className="ml-2 text-xs text-[#1D9BF0] font-medium">(Você)</span>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500">{usuario.email}</div>
+                        <div className={`text-sm ${colors.textSecondary}`}>{usuario.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <Shield className="w-4 h-4 text-gray-400 mr-2" />
+                      <Shield className="w-4 h-4 text-[#1D9BF0] mr-2" />
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-red-100 text-red-800' :
-                        usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-purple-100 text-purple-800' :
-                        usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
+                        usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]' :
+                        usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]' :
+                        usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]' :
+                        'bg-[#FFD700] bg-opacity-10 text-[#FFD700]'
                       }`}>
                         {NIVEIS_LABELS[usuario.nivel]}
                       </span>
@@ -339,39 +342,39 @@ const UsuariosTab = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      usuario.ativo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      usuario.ativo ? 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]' : 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]'
                     }`}>
                       {usuario.ativo ? 'Ativo' : 'Inativo'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.textSecondary}`}>
                     {usuario.ultimoLogin ? 
                       new Date(usuario.ultimoLogin).toLocaleString('pt-BR') : 
                       'Nunca'
                     }
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <span className="flex gap-2">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex gap-2">
                       {PermissionChecker.canEditUser(usuarioLogado.nivel, usuarioLogado.id, usuario.id, usuario.nivel) && (
                         <button
                           onClick={() => abrirModalEditar(usuario)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          className="p-2 hover:bg-[#1D9BF0] hover:bg-opacity-10 rounded-full transition-colors"
                           title="Editar usuário"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-4 h-4 text-[#1D9BF0]" />
                         </button>
                       )}
                       {usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN &&
                         usuario.email !== 'admin' && usuario.id !== usuarioLogado.id && (
                         <button
                           onClick={() => confirmarRemocao(usuario)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 hover:bg-[#F4212E] hover:bg-opacity-10 rounded-full transition-colors"
                           title="Remover usuário"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 text-[#F4212E]" />
                         </button>
                       )}
-                    </span>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -383,51 +386,51 @@ const UsuariosTab = () => {
       {/* Modal de Usuário */}
       {mostrarModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4 max-h-screen overflow-y-auto">
+          <div className={`${classes.card} max-w-md w-full mx-4 max-h-screen overflow-y-auto`}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className={`text-lg font-medium ${colors.text}`}>
                   {usuarioEditando ? 'Editar Usuário' : 'Novo Usuário'}
                 </h3>
                 <button
                   onClick={fecharModal}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-2 hover:bg-[#1D9BF0] hover:bg-opacity-10 rounded-full transition-colors"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-6 h-6 text-[#1D9BF0]" />
                 </button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Nome Completo *
                   </label>
                   <input
                     type="text"
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                     placeholder="Digite o nome completo"
                     disabled={carregando}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Email/Usuário *
                   </label>
                   <input
                     type="text"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                     placeholder="Digite o email ou nome de usuário"
                     disabled={carregando}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Senha {usuarioEditando ? '(deixe vazio para manter a atual)' : '*'}
                   </label>
                   <div className="relative">
@@ -435,29 +438,32 @@ const UsuariosTab = () => {
                       type={mostrarSenha ? 'text' : 'password'}
                       value={formData.senha}
                       onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className={`w-full px-3 py-2 pr-10 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                       placeholder={usuarioEditando ? "Nova senha" : "Digite a senha"}
                       disabled={carregando}
                     />
                     <button
                       type="button"
                       onClick={() => setMostrarSenha(!mostrarSenha)}
-                      className="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-2 p-1 hover:bg-[#1D9BF0] hover:bg-opacity-10 rounded-full transition-colors"
                       disabled={carregando}
                     >
-                      {mostrarSenha ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {mostrarSenha ? 
+                        <EyeOff className="w-5 h-5 text-[#1D9BF0]" /> : 
+                        <Eye className="w-5 h-5 text-[#1D9BF0]" />
+                      }
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Nível de Acesso *
                   </label>
                   <select
                     value={formData.nivel}
                     onChange={(e) => setFormData({ ...formData, nivel: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                     disabled={carregando}
                   >
                     {niveisDisponiveis.map(nivel => (
@@ -466,7 +472,7 @@ const UsuariosTab = () => {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className={`text-xs ${colors.textSecondary} mt-1`}>
                     {formData.nivel === NIVEIS_PERMISSAO.FUNCIONARIO && "Apenas visualizar informações"}
                     {formData.nivel === NIVEIS_PERMISSAO.SUPERVISOR && "Criar funcionários + operações"}
                     {formData.nivel === NIVEIS_PERMISSAO.GERENTE && "Gerenciar funcionários e usuários"}
@@ -480,39 +486,39 @@ const UsuariosTab = () => {
                     id="ativo"
                     checked={formData.ativo}
                     onChange={(e) => setFormData({ ...formData, ativo: e.target.checked })}
-                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-[#1D9BF0] focus:ring-[#1D9BF0] border-[#1D9BF0] rounded"
                     disabled={carregando}
                   />
-                  <label htmlFor="ativo" className="ml-2 text-sm text-gray-700">
+                  <label htmlFor="ativo" className={`ml-2 text-sm ${colors.text}`}>
                     Usuário ativo
                   </label>
                 </div>
               </div>
 
               {erro && (
-                <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg text-sm">
+                <div className={`${classes.card} mt-4 p-4 border border-[#F4212E] border-opacity-20 bg-[#F4212E] bg-opacity-10 text-[#F4212E]`}>
                   {erro}
                 </div>
               )}
 
               {sucesso && (
-                <div className="mt-4 bg-green-50 border border-green-200 text-green-600 px-3 py-2 rounded-lg text-sm">
+                <div className={`${classes.card} mt-4 p-4 border border-[#00BA7C] border-opacity-20 bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]`}>
                   {sucesso}
                 </div>
               )}
 
-              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
+              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t dark:border-[#2F3336]">
                 <button
                   onClick={fecharModal}
                   disabled={carregando}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  className={`px-4 py-2 bg-black bg-opacity-5 dark:bg-opacity-20 ${colors.text} rounded-full hover:bg-opacity-10 dark:hover:bg-opacity-30 transition-colors disabled:opacity-50`}
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={salvarUsuario}
                   disabled={carregando}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-[#1D9BF0] text-white rounded-full hover:bg-[#1A8CD8] transition-colors disabled:opacity-50"
                 >
                   {carregando ? (
                     <div className="flex items-center gap-2">
@@ -532,18 +538,18 @@ const UsuariosTab = () => {
       {/* Modal de Confirmação de Remoção */}
       {confirmacaoRemocao && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full mx-4">
+          <div className={`${classes.card} max-w-md w-full mx-4`}>
             <div className="p-6">
               <div className="flex items-center mb-4">
-                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900">
-                  <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-[#F4212E] bg-opacity-10">
+                  <AlertTriangle className="h-6 w-6 text-[#F4212E]" />
                 </div>
               </div>
               <div className="text-center">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className={`text-lg font-medium ${colors.text} mb-2`}>
                   Confirmar Remoção
                 </h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className={`text-sm ${colors.textSecondary} mb-4`}>
                   Tem certeza que deseja remover o usuário <strong>{confirmacaoRemocao.nome}</strong>?
                   Esta ação não pode ser desfeita.
                 </p>
@@ -552,14 +558,14 @@ const UsuariosTab = () => {
                 <button
                   onClick={() => setConfirmacaoRemocao(null)}
                   disabled={carregando}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  className={`px-4 py-2 bg-black bg-opacity-5 dark:bg-opacity-20 ${colors.text} rounded-full hover:bg-opacity-10 dark:hover:bg-opacity-30 transition-colors disabled:opacity-50`}
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={executarRemocao}
                   disabled={carregando}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-[#F4212E] text-white rounded-full hover:bg-opacity-90 transition-colors disabled:opacity-50"
                 >
                   {carregando ? (
                     <div className="flex items-center gap-2">

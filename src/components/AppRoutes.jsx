@@ -9,7 +9,7 @@ import FuncionariosTab from './Funcionarios/FuncionariosTab';
 import ComprasTab from './Compras/ComprasTab';
 import InventarioTab from './Inventario/InventarioTab';
 import EmprestimosTab from './Emprestimos/EmprestimosTab';
-import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
+import HistoricoPage from '../pages/HistoricoPage';
 import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
 import TarefasTab from './Tarefas/TarefasTab';
 
@@ -75,7 +75,7 @@ const AppRoutes = () => {
 
       <Route path="/historico-emprestimos" element={
         <PrivateRoute requiredLevel={NIVEIS_PERMISSAO.FUNCIONARIO}>
-          <HistoricoEmprestimosTab />
+          <HistoricoPage />
         </PrivateRoute>
       } />
 

@@ -881,7 +881,6 @@ const PermissionDenied = ({ message = "Você não tem permissão para realizar e
 // Componente principal do sistema
 const AlmoxarifadoSistema = () => {
   const { usuario, logout, firebaseStatus } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const isMobile = useIsMobile();
   
   // Estados locais
@@ -1477,14 +1476,14 @@ const AlmoxarifadoSistema = () => {
                   }}
                   className={`w-full flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-base transition-all duration-200 ${
                     abaAtiva === aba.id
-                      ? 'bg-black dark:bg-[#1D9BF0] text-white dark:text-white'
-                      : 'text-gray-900 dark:text-[#E7E9EA] hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10'
+                      ? 'bg-[#1D9BF0] text-white'
+                      : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
                   }`}
                 >
                   <Icone className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
                     abaAtiva === aba.id 
                       ? 'text-white' 
-                      : 'text-gray-900 dark:text-[#E7E9EA] group-hover:text-[#1D9BF0]'
+                      : 'text-[#E7E9EA] group-hover:text-[#1D9BF0]'
                   }`} />
                   <span>{aba.nome}</span>
                 </button>
@@ -1499,13 +1498,17 @@ const AlmoxarifadoSistema = () => {
                     setMenuOpen(false);
                   }
                 }}
-                className={`w-full flex items-center space-x-2 px-3 ${isMobile ? 'py-3' : 'py-2'} rounded-lg font-medium text-sm transition-colors ${
+                className={`w-full flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-base transition-all duration-200 ${
                   abaAtiva === 'usuarios'
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-[#1D9BF0] text-white'
+                    : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
                 }`}
               >
-                <UserCog className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} flex-shrink-0 ${abaAtiva === 'usuarios' ? 'text-gray-900' : 'text-gray-500'}`} />
+                <UserCog className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
+                  abaAtiva === 'usuarios' 
+                    ? 'text-white' 
+                    : 'text-gray-900 dark:text-[#E7E9EA] group-hover:text-[#1D9BF0]'
+                }`} />
                 <span>Usuários do Sistema</span>
               </button>
             )}
@@ -1533,24 +1536,14 @@ const AlmoxarifadoSistema = () => {
               >
                 <Edit className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
               </button>
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                title={theme === 'light' ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
-              >
-                {theme === 'light' ? (
-                  <Moon className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
-                ) : (
-                  <Sun className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
-                )}
-              </button>
+
             </div>
           </div>
           <button
             onClick={logout}
             className={`w-full flex items-center justify-center gap-2 px-4 ${
               isMobile ? 'py-3 text-base' : 'py-2.5 text-sm'
-            } rounded-full font-medium transition-colors text-gray-900 dark:text-[#E7E9EA] hover:bg-red-500/10 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-500`}
+            } rounded-full font-medium transition-colors text-[#E7E9EA] hover:bg-red-500/10 hover:text-red-500`}
           >
             <Lock className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
             <span>Sair</span>

@@ -1,11 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { twitterThemeConfig } from '../styles/twitterThemeConfig';
+import React, { createContext, useContext, useEffect } from 'react';
+import { themes } from '../styles/theme';
 
 const ThemeContext = createContext({
-  theme: 'dark',
-  toggleTheme: () => {},
-  colors: twitterThemeConfig.colors,
-  classes: twitterThemeConfig.classes,
+  colors: themes.dark.colors,
+  components: themes.dark.components,
 });
 
 export const themeColors = {
@@ -113,34 +111,16 @@ export const useTheme = () => {
 };
 
 const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme || 
-      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  });
-
+  // Força o tema escuro sempre
   useEffect(() => {
-    localStorage.setItem('theme', theme);
     const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
-  };
+    root.classList.remove('light');
+    root.classList.add('dark');
+  }, []);
 
   const value = {
-    theme,
-    toggleTheme,
-    colors: themeColors[theme],
-    styles: {
-      button: (variant) => commonStyles.button(theme, variant),
-      input: () => commonStyles.input(theme),
-      card: () => commonStyles.card(theme),
-      modal: () => commonStyles.modal(theme),
-      table: () => commonStyles.table(theme),
-    }
+    colors: themes.dark.colors,
+    components: themes.dark.components
   };
 
   return (

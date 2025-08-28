@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useFuncionarios } from './Funcionarios/FuncionariosProvider';
-import TarefaCard from './TarefaCard';
 import { 
   CheckCircle2, 
   Clock, 
@@ -13,19 +12,18 @@ import {
   X,
   Calendar,
   AlertCircle,
-  Tag
+  ListTodo,
+  Users,
+  ChevronDown
 } from 'lucide-react';
 import { 
   ESTADOS_TAREFA, 
-  ESTADOS_TAREFA_LABELS, 
-  ESTADOS_TAREFA_COLORS,
+  ESTADOS_TAREFA_LABELS,
   PRIORIDADE_TAREFA,
-  PRIORIDADE_TAREFA_LABELS,
-  PRIORIDADE_TAREFA_COLORS
+  PRIORIDADE_TAREFA_LABELS
 } from '../constants/tarefas';
 import { NIVEIS_PERMISSAO } from './AlmoxarifadoJardim';
 
-// Componente principal
 const TarefasTab = ({ usuario }) => {
   // Estados
   const { funcionarios } = useFuncionarios();
@@ -33,7 +31,8 @@ const TarefasTab = ({ usuario }) => {
   const [modalAberto, setModalAberto] = useState(false);
   const [tarefaEditando, setTarefaEditando] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('todos');
-  const [ferramentasEmprestadas, setFerramentasEmprestadas] = useState([]);
+  const [selecionandoResponsaveis, setSelecionandoResponsaveis] = useState(false);
+  const [funcionariosSelecionados, setFuncionariosSelecionados] = useState([]);
   
   const [novaTarefa, setNovaTarefa] = useState({
     titulo: '',
@@ -41,7 +40,7 @@ const TarefasTab = ({ usuario }) => {
     status: ESTADOS_TAREFA.PENDENTE,
     prioridade: PRIORIDADE_TAREFA.MEDIA,
     dataLimite: '',
-    responsavel: '', // ID do funcionário responsável
+    responsaveis: [], // Lista de IDs dos funcionários responsáveis
     categoria: '',
     observacoes: ''
   });
@@ -291,32 +290,32 @@ const TarefasTab = ({ usuario }) => {
         return;
       }
 
-      if (!novaTarefa.responsavel) {
-        alert('Por favor, selecione um funcionário responsável');
+      if (novaTarefa.responsaveis.length === 0) {
+        alert('Por favor, selecione pelo menos um funcionário responsável');
         return;
       }
 
       // Debug dos dados da nova tarefa
       console.log('DEBUG - Dados da nova tarefa:', {
         titulo: novaTarefa.titulo,
-        responsavel: novaTarefa.responsavel,
+        responsaveis: novaTarefa.responsaveis,
         status: novaTarefa.status,
         criadorId: usuario.id
       });
 
       // Verificar se o responsável existe
-      const funcionarioSelecionado = funcionarios?.find(f => f.id === novaTarefa.responsavel);
+      const funcionariosSelecionados = funcionarios?.filter(f => novaTarefa.responsaveis.includes(f.id)) || [];
       
-      // Debug do funcionário selecionado
-      console.log('DEBUG - Funcionário responsável:', funcionarioSelecionado ? {
-        id: funcionarioSelecionado.id,
-        nome: funcionarioSelecionado.nome,
-        nivel: funcionarioSelecionado.nivel
-      } : 'Não encontrado');
+      // Debug dos funcionários selecionados
+      console.log('DEBUG - Funcionários responsáveis:', funcionariosSelecionados.map(f => ({
+        id: f.id,
+        nome: f.nome,
+        nivel: f.nivel
+      })));
       
       console.log('Criando nova tarefa com dados:', {
-        responsavel: novaTarefa.responsavel,
-        funcionarioNome: funcionarioSelecionado?.nome,
+        responsaveis: novaTarefa.responsaveis,
+        funcionariosNomes: funcionariosSelecionados.map(f => f.nome),
         criadorId: usuario.id
       });
 
@@ -391,8 +390,9 @@ const TarefasTab = ({ usuario }) => {
       dataLimite: tarefa.dataLimite,
       categoria: tarefa.categoria,
       observacoes: tarefa.observacoes,
-      responsavel: tarefa.responsavel // Mantém o responsável atual
+      responsaveis: Array.isArray(tarefa.responsaveis) ? tarefa.responsaveis : [tarefa.responsavel]
     });
+    setFuncionariosSelecionados(Array.isArray(tarefa.responsaveis) ? tarefa.responsaveis : [tarefa.responsavel]);
     setModalAberto(true);
   };
 
@@ -404,12 +404,14 @@ const TarefasTab = ({ usuario }) => {
       status: ESTADOS_TAREFA.PENDENTE,
       prioridade: PRIORIDADE_TAREFA.MEDIA,
       dataLimite: '',
+      responsaveis: [],
       categoria: '',
       observacoes: '',
-      responsavel: '', // Limpa o responsável selecionado
-      criadorId: '' // Limpa o criador
+      criadorId: ''
     });
+    setFuncionariosSelecionados([]);
     setTarefaEditando(null);
+    setSelecionandoResponsaveis(false);
   };
 
   // Função para formatar data
@@ -465,68 +467,72 @@ const TarefasTab = ({ usuario }) => {
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Minhas Tarefas</h2>
-          <p className="text-gray-600">Gerencie suas tarefas e atividades</p>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#1D9BF0] bg-opacity-10 rounded-lg flex items-center justify-center">
+            <ListTodo className="w-5 h-5 text-[#1D9BF0]" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-[#FFFFFF]">Minhas Tarefas</h2>
+            <p className="text-[#8899A6]">Gerencie suas tarefas e atividades</p>
+          </div>
         </div>
+
         {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
           <button
             onClick={() => {
               limparFormulario();
               setModalAberto(true);
             }}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+            className="bg-[#1DA1F2] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-[#1a91da] transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nova Tarefa
           </button>
         )}
-      </div>
-
-      {/* Estatísticas */}
+      </div>      {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-[#192734] border border-[#38444D] rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-100 rounded">
-              <AlertCircle className="w-6 h-6 text-gray-600" />
+            <div className="p-2 bg-[#1D9BF0] bg-opacity-10 rounded-lg">
+              <AlertCircle className="w-6 h-6 text-[#1D9BF0]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Total</p>
-              <p className="text-2xl font-bold text-gray-900">{estatisticas.total}</p>
+              <p className="text-sm font-medium text-[#8899A6]">Total</p>
+              <p className="text-2xl font-bold text-[#FFFFFF]">{estatisticas.total}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-[#192734] border border-[#38444D] rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-100 rounded">
-              <Clock className="w-6 h-6 text-yellow-600" />
+            <div className="p-2 bg-[#FFD700] bg-opacity-10 rounded-lg">
+              <Clock className="w-6 h-6 text-[#FFD700]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-yellow-600">Pendentes</p>
-              <p className="text-2xl font-bold text-gray-900">{estatisticas.pendentes}</p>
+              <p className={`text-sm font-medium text-[#FFD700]`}>Pendentes</p>
+              <p className="text-2xl font-bold text-[#FFFFFF]">{estatisticas.pendentes}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-[#192734] border border-[#38444D] rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded">
-              <AlertTriangle className="w-6 h-6 text-blue-600" />
+            <div className="p-2 bg-[#1D9BF0] bg-opacity-10 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-[#1D9BF0]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-blue-600">Em Andamento</p>
-              <p className="text-2xl font-bold text-gray-900">{estatisticas.emAndamento}</p>
+              <p className={`text-sm font-medium text-[#1D9BF0]`}>Em Andamento</p>
+              <p className="text-2xl font-bold text-[#FFFFFF]">{estatisticas.emAndamento}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-[#192734] border border-[#38444D] rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded">
-              <CheckCircle2 className="w-6 h-6 text-green-600" />
+            <div className="p-2 bg-[#00BA7C] bg-opacity-10 rounded-lg">
+              <CheckCircle2 className="w-6 h-6 text-[#00BA7C]" />
             </div>
             <div>
-              <p className="text-sm font-medium text-green-600">Concluídas</p>
-              <p className="text-2xl font-bold text-gray-900">{estatisticas.concluidas}</p>
+              <p className={`text-sm font-medium text-[#00BA7C]`}>Concluídas</p>
+              <p className="text-2xl font-bold text-[#FFFFFF]">{estatisticas.concluidas}</p>
             </div>
           </div>
         </div>
@@ -537,27 +543,36 @@ const TarefasTab = ({ usuario }) => {
         <button
           onClick={() => setFiltroStatus('todos')}
           className={
-            'px-3 py-1 rounded-full text-sm font-medium ' +
+            'px-3 py-1 rounded-full text-sm font-medium transition-colors ' +
             (filtroStatus === 'todos'
-              ? 'bg-gray-200 text-gray-800'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
+              ? 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]'
+              : 'bg-[#253341] hover:bg-[#2C3640] text-[#8899A6]')
           }
         >
           Todas
         </button>
-        {Object.entries(ESTADOS_TAREFA).map(([key, value]) => (
-          <button
-            key={key}
-            onClick={() => setFiltroStatus(value)}
-            className={'px-3 py-1 rounded-full text-sm font-medium ' + 
-              (filtroStatus === value
-                ? ESTADOS_TAREFA_COLORS[value]
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
-            }
-          >
-            {ESTADOS_TAREFA_LABELS[value]}
-          </button>
-        ))}
+        {Object.entries(ESTADOS_TAREFA).map(([key, value]) => {
+          const colorMap = {
+            [ESTADOS_TAREFA.PENDENTE]: '#FFD700',
+            [ESTADOS_TAREFA.EM_ANDAMENTO]: '#1D9BF0',
+            [ESTADOS_TAREFA.CONCLUIDA]: '#00BA7C',
+          };
+          const color = colorMap[value];
+          
+          return (
+            <button
+              key={key}
+              onClick={() => setFiltroStatus(value)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                filtroStatus === value
+                  ? `bg-[${color}] bg-opacity-10 text-[${color}]`
+                  : 'bg-[#253341] hover:bg-[#2C3640] text-[#8899A6]'
+              }`}
+            >
+              {ESTADOS_TAREFA_LABELS[value]}
+            </button>
+          );
+        })}
       </div>
 
       {/* Lista de Tarefas */}
@@ -565,15 +580,15 @@ const TarefasTab = ({ usuario }) => {
         {tarefasFiltradas.map((tarefa) => (
           <div
             key={tarefa.id}
-            className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-gray-300 transition-colors"
+            className="bg-[#192734] border border-[#38444D] rounded-lg p-4"
           >
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <h3 className="font-medium text-gray-900">{tarefa.titulo}</h3>
-                <p className="text-gray-600 text-sm">{tarefa.descricao}</p>
+                <h3 className="font-medium text-[#FFFFFF]">{tarefa.titulo}</h3>
+                <p className="text-sm text-[#8899A6]">{tarefa.descricao}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-sm font-medium text-gray-600">Responsável:</span>
-                  <span className="text-sm text-gray-800 bg-gray-100 px-2 py-1 rounded-md">
+                  <span className="text-sm font-medium text-[#8899A6]">Responsável:</span>
+                  <span className="text-sm text-[#FFFFFF] bg-[#1D9BF0] bg-opacity-5 px-2 py-1 rounded-full">
                     {funcionarios?.find(f => f.id === tarefa.responsavel)?.nome || 'Não atribuído'}
                   </span>
                 </div>
@@ -582,34 +597,42 @@ const TarefasTab = ({ usuario }) => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => abrirModalEdicao(tarefa)}
-                    className="p-1 text-gray-400 hover:text-gray-600"
+                    className="p-2 hover:bg-[#1D9BF0] hover:bg-opacity-10 rounded-full transition-colors"
                   >
-                    <Edit2 className="w-4 h-4" />
+                    <Edit2 className="w-4 h-4 text-[#1D9BF0]" />
                   </button>
                   <button
                     onClick={() => removerTarefa(tarefa.id)}
-                    className="p-1 text-gray-400 hover:text-red-600"
+                    className="p-2 hover:bg-[#F4212E] hover:bg-opacity-10 rounded-full transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 text-[#F4212E]" />
                   </button>
                 </div>
               )}
             </div>
             
             <div className="mt-4 flex flex-wrap gap-2">
-              <span className={'px-2 py-1 rounded-full text-xs font-medium ' + ESTADOS_TAREFA_COLORS[tarefa.status]}>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                tarefa.status === ESTADOS_TAREFA.PENDENTE ? 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]' :
+                tarefa.status === ESTADOS_TAREFA.EM_ANDAMENTO ? 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]' :
+                'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]'
+              }`}>
                 {ESTADOS_TAREFA_LABELS[tarefa.status]}
               </span>
-              <span className={'px-2 py-1 rounded-full text-xs font-medium ' + PRIORIDADE_TAREFA_COLORS[tarefa.prioridade]}>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                tarefa.prioridade === PRIORIDADE_TAREFA.ALTA ? 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]' :
+                tarefa.prioridade === PRIORIDADE_TAREFA.MEDIA ? 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]' :
+                'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]'
+              }`}>
                 {PRIORIDADE_TAREFA_LABELS[tarefa.prioridade]}
               </span>
               {tarefa.categoria && (
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]">
                   {tarefa.categoria}
                 </span>
               )}
               {tarefa.dataLimite && (
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 flex items-center gap-1">
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-[#253341] text-[#FFFFFF] flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
                   {formatarData(tarefa.dataLimite)}
                 </span>
@@ -617,29 +640,30 @@ const TarefasTab = ({ usuario }) => {
             </div>
             
             {tarefa.observacoes && (
-              <p className="mt-2 text-sm text-gray-500">{tarefa.observacoes}</p>
+              <p className="mt-2 text-sm text-[#8899A6]">{tarefa.observacoes}</p>
             )}
           </div>
         ))}
 
         {tarefasFiltradas.length === 0 && (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <div className="bg-[#192734] border border-[#38444D] rounded-lg text-center py-12">
             <div className="flex justify-center mb-4">
-              <AlertCircle className="w-12 h-12 text-gray-400" />
+              <AlertCircle className={`w-12 h-12 text-[#1D9BF0]`} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900">Nenhuma tarefa encontrada</h3>
-            <p className="text-gray-500">Não existem tarefas para os filtros selecionados.</p>
+            <h3 className="text-lg font-medium text-[#FFFFFF]">Nenhuma tarefa encontrada</h3>
+            <p className="text-[#8899A6]">Não existem tarefas para os filtros selecionados.</p>
           </div>
         )}
       </div>
 
       {/* Modal de Adicionar/Editar */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-medium text-gray-900">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-[#253341] p-6 rounded-xl">
+              {/* Header do Modal */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-[#FFFFFF]">
                   {tarefaEditando ? 'Editar Tarefa' : 'Nova Tarefa'}
                 </h3>
                 <button
@@ -647,144 +671,161 @@ const TarefasTab = ({ usuario }) => {
                     setModalAberto(false);
                     limparFormulario();
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-[#8899A6] hover:text-[#FFFFFF] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={tarefaEditando ? atualizarTarefa : adicionarTarefa} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Título
-                  </label>
-                  <input
-                    type="text"
-                    value={novaTarefa.titulo}
-                    onChange={(e) => setNovaTarefa({ ...novaTarefa, titulo: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  />
+              <form onSubmit={tarefaEditando ? atualizarTarefa : adicionarTarefa} className="space-y-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-[#FFFFFF] mb-2">
+                      Título
+                    </label>
+                    <input
+                      type="text"
+                      value={novaTarefa.titulo}
+                      onChange={(e) => setNovaTarefa({ ...novaTarefa, titulo: e.target.value })}
+                      className="w-full bg-[#253341] border border-[#38444D] rounded-lg px-4 py-2 text-[#FFFFFF] focus:border-[#1D9BF0] focus:ring-1 focus:ring-[#1D9BF0]"
+                      placeholder="Digite o título da tarefa"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#FFFFFF] mb-2">
+                      Data Limite
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={novaTarefa.dataLimite}
+                      onChange={(e) => setNovaTarefa({ ...novaTarefa, dataLimite: e.target.value })}
+                      className="w-full bg-[#253341] border border-[#38444D] rounded-lg px-4 py-2 text-[#FFFFFF] focus:border-[#1D9BF0] focus:ring-1 focus:ring-[#1D9BF0]"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#FFFFFF] mb-2">
                     Descrição
                   </label>
                   <textarea
                     value={novaTarefa.descricao}
                     onChange={(e) => setNovaTarefa({ ...novaTarefa, descricao: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full bg-[#253341] border border-[#38444D] rounded-lg px-4 py-2 text-[#FFFFFF] focus:border-[#1D9BF0] focus:ring-1 focus:ring-[#1D9BF0]"
+                    placeholder="Descreva os detalhes da tarefa"
+                    required
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Status
-                    </label>
-                    <select
-                      value={novaTarefa.status}
-                      onChange={(e) => setNovaTarefa({ ...novaTarefa, status: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    >
-                      {Object.entries(ESTADOS_TAREFA_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#FFFFFF] mb-2">
                       Prioridade
                     </label>
                     <select
                       value={novaTarefa.prioridade}
                       onChange={(e) => setNovaTarefa({ ...novaTarefa, prioridade: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full bg-[#253341] border border-[#38444D] rounded-lg px-4 py-2 text-[#FFFFFF] focus:border-[#1D9BF0] focus:ring-1 focus:ring-[#1D9BF0]"
                     >
                       {Object.entries(PRIORIDADE_TAREFA_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Data Limite
-                    </label>
-                    <input
-                      type="date"
-                      value={novaTarefa.dataLimite}
-                      onChange={(e) => setNovaTarefa({ ...novaTarefa, dataLimite: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Funcionário Responsável
-                    </label>
-                    <select
-                      value={novaTarefa.responsavel || ''}
-                      onChange={(e) => setNovaTarefa({ ...novaTarefa, responsavel: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Selecione um funcionário</option>
-                      {funcionarios?.map((funcionario) => (
-                        <option key={funcionario.id} value={funcionario.id}>
-                          {funcionario.nome}
+                        <option key={value} value={value}>
+                          {label}
                         </option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Categoria
+                    <label className="block text-sm font-medium text-[#FFFFFF] mb-2">
+                      Responsáveis
                     </label>
-                    <input
-                      type="text"
-                      value={novaTarefa.categoria}
-                      onChange={(e) => setNovaTarefa({ ...novaTarefa, categoria: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      placeholder="Ex: Manutenção, Limpeza, etc"
-                    />
+                    <div className="flex flex-col gap-2">
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setSelecionandoResponsaveis(!selecionandoResponsaveis)}
+                          className="w-full bg-[#253341] border border-[#38444D] rounded-lg px-4 py-2 text-[#FFFFFF] focus:border-[#1D9BF0] focus:ring-1 focus:ring-[#1D9BF0] flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-[#8899A6]" />
+                            <span className="text-[#FFFFFF]">
+                              {funcionariosSelecionados.length > 0
+                                ? `${funcionariosSelecionados.length} selecionado(s)`
+                                : 'Selecionar funcionários...'}
+                            </span>
+                          </div>
+                          <ChevronDown className={`w-4 h-4 text-[#8899A6] transition-transform ${
+                            selecionandoResponsaveis ? 'rotate-180' : ''
+                          }`} />
+                        </button>
+                        
+                        {selecionandoResponsaveis && (
+                          <div className="absolute z-10 mt-1 w-full bg-[#253341] border border-[#38444D] rounded-lg shadow-lg">
+                            <div className="p-2 max-h-48 overflow-y-auto">
+                              {funcionarios?.map((funcionario) => (
+                                <label
+                                  key={funcionario.id}
+                                  className="flex items-center gap-2 px-2 py-1 hover:bg-[#192734] rounded cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={funcionariosSelecionados.includes(funcionario.id)}
+                                    onChange={() => {
+                                      const isSelected = funcionariosSelecionados.includes(funcionario.id);
+                                      const newSelecionados = isSelected
+                                        ? funcionariosSelecionados.filter(id => id !== funcionario.id)
+                                        : [...funcionariosSelecionados, funcionario.id];
+                                      setFuncionariosSelecionados(newSelecionados);
+                                      setNovaTarefa({ ...novaTarefa, responsaveis: newSelecionados });
+                                    }}
+                                    className="text-[#1D9BF0] bg-[#253341] border-[#38444D] rounded focus:ring-[#1D9BF0]"
+                                  />
+                                  <span className="text-[#FFFFFF]">{funcionario.nome}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {funcionariosSelecionados.map((id) => {
+                          const funcionario = funcionarios?.find(f => f.id === id);
+                          if (!funcionario) return null;
+                          
+                          return (
+                            <span
+                              key={id}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0] rounded-full text-sm"
+                            >
+                              {funcionario.nome}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newSelecionados = funcionariosSelecionados.filter(fid => fid !== id);
+                                  setFuncionariosSelecionados(newSelecionados);
+                                  setNovaTarefa({ ...novaTarefa, responsaveis: newSelecionados });
+                                }}
+                                className="hover:text-[#FFFFFF] transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Observações
-                  </label>
-                  <textarea
-                    value={novaTarefa.observacoes}
-                    onChange={(e) => setNovaTarefa({ ...novaTarefa, observacoes: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Observações adicionais..."
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setModalAberto(false);
-                      limparFormulario();
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-                  >
-                    Cancelar
-                  </button>
+                <div className="flex justify-end pt-6">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#1D9BF0] hover:bg-[#1A8CD8] rounded-lg transition-colors"
                   >
+                    <Plus className="w-4 h-4" />
                     {tarefaEditando ? 'Salvar Alterações' : 'Criar Tarefa'}
                   </button>
                 </div>

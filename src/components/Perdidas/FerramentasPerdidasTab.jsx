@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { Search, Plus, Calendar, User, MapPin, DollarSign, FileText, AlertCircle } from 'lucide-react';
+import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
+
+const { classes, colors } = twitterThemeConfig;
 
 const FerramentasPerdidasTab = ({ 
   ferramentasPerdidas, 
@@ -78,11 +81,11 @@ const FerramentasPerdidasTab = ({
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'buscando': return 'bg-yellow-100 text-yellow-800';
-      case 'encontrada': return 'bg-green-100 text-green-800';
-      case 'perdida_definitiva': return 'bg-red-100 text-red-800';
-      case 'substituida': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'buscando': return 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]';
+      case 'encontrada': return 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]';
+      case 'perdida_definitiva': return 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]';
+      case 'substituida': return 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]';
+      default: return 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]';
     }
   };
 
@@ -98,10 +101,10 @@ const FerramentasPerdidasTab = ({
 
   const getPrioridadeColor = (prioridade) => {
     switch (prioridade) {
-      case 'baixa': return 'bg-green-100 text-green-800';
-      case 'media': return 'bg-yellow-100 text-yellow-800';
-      case 'alta': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'baixa': return 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]';
+      case 'media': return 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]';
+      case 'alta': return 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]';
+      default: return 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]';
     }
   };
 
@@ -129,20 +132,22 @@ const FerramentasPerdidasTab = ({
   return (
     <div className="space-y-6">
       {/* Header com botão */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <AlertCircle className="w-6 h-6 text-red-600" />
-              Ferramentas Perdidas
-            </h2>
-            <p className="text-gray-600 mt-1">Controle e rastreamento de ferramentas perdidas</p>
+      <div className={`${classes.card} p-6`}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#F4212E] bg-opacity-10 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-[#F4212E]" />
+            </div>
+            <div>
+              <h2 className={`text-xl font-bold ${colors.text}`}>Ferramentas Perdidas</h2>
+              <p className={`text-sm ${colors.textSecondary}`}>Controle e rastreamento de ferramentas perdidas</p>
+            </div>
           </div>
           
           {!isFuncionario && !readonly && (
             <button
               onClick={() => setModalAberto(true)}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              className="bg-[#1DA1F2] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-[#1a91da] transition-colors"
             >
               <Plus className="w-4 h-4" />
               Registrar Perda
@@ -152,51 +157,68 @@ const FerramentasPerdidasTab = ({
 
         {/* Estatísticas */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          <div className="bg-gray-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-gray-600">{estatisticas.total}</div>
-            <div className="text-sm text-gray-500">Total</div>
-          </div>
-          <div className="bg-yellow-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-yellow-600">{estatisticas.buscando}</div>
-            <div className="text-sm text-yellow-600">Buscando</div>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-green-600">{estatisticas.encontradas}</div>
-            <div className="text-sm text-green-600">Encontradas</div>
-          </div>
-          <div className="bg-red-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-red-600">{estatisticas.perdidasDefinitivas}</div>
-            <div className="text-sm text-red-600">Perdidas</div>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-blue-600">{estatisticas.substituidas}</div>
-            <div className="text-sm text-blue-600">Substituídas</div>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-lg text-center">
-            <div className="text-lg font-bold text-orange-600">
-              R$ {estatisticas.valorTotalPerdido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          <div className={`${classes.card} p-4`}>
+            <div className="flex items-center">
+              <div className="bg-[#1DA1F2] bg-opacity-10 p-3 rounded-full">
+                <AlertCircle className="w-5 h-5 text-[#1DA1F2]" />
+              </div>
+              <div className="ml-3">
+                <p className={`text-sm ${colors.textSecondary}`}>Total</p>
+                <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.total}</p>
+              </div>
             </div>
-            <div className="text-sm text-orange-600">Valor Perdido</div>
+          </div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Buscando</p>
+              <p className="text-xl font-bold text-[#FFD700]">{estatisticas.buscando}</p>
+            </div>
+          </div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Encontradas</p>
+              <p className="text-xl font-bold text-[#00BA7C]">{estatisticas.encontradas}</p>
+            </div>
+          </div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Perdidas</p>
+              <p className="text-xl font-bold text-[#F4212E]">{estatisticas.perdidasDefinitivas}</p>
+            </div>
+          </div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Substituídas</p>
+              <p className="text-xl font-bold text-[#1D9BF0]">{estatisticas.substituidas}</p>
+            </div>
+          </div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Valor Perdido</p>
+              <p className="text-xl font-bold text-[#F4212E]">
+                R$ {estatisticas.valorTotalPerdido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+            <Search className={`w-4 h-4 absolute left-3 top-3 ${colors.textSecondary}`} />
             <input
               type="text"
               placeholder="Buscar por ferramenta, descrição, responsável ou local..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`pl-10 w-full px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent`}
             />
           </div>
           
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="w-full md:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={`w-full md:w-48 px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent`}
           >
             <option value="todos">Todos os Status</option>
             <option value="buscando">Buscando</option>
@@ -210,18 +232,18 @@ const FerramentasPerdidasTab = ({
       {/* Lista de ferramentas perdidas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {ferramentasFiltradas.map(item => (
-          <div key={item.id} className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-red-500">
+          <div key={item.id} className={`${classes.card} p-6`}>
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
-                <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
+                <h3 className={`font-bold ${colors.text} text-lg flex items-center gap-2`}>
+                  <AlertCircle className="w-5 h-5 text-[#F4212E]" />
                   {item.nomeItem}
                 </h3>
                 {item.categoria && (
-                  <p className="text-gray-500 text-sm">{item.categoria}</p>
+                  <p className={`text-sm ${colors.textSecondary}`}>{item.categoria}</p>
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-2 items-end">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.statusBusca)}`}>
                   {getStatusText(item.statusBusca)}
@@ -229,10 +251,9 @@ const FerramentasPerdidasTab = ({
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPrioridadeColor(item.prioridade)}`}>
                   Prioridade {item.prioridade.charAt(0).toUpperCase() + item.prioridade.slice(1)}
                 </span>
-                {/* Status editing dropdown */}
                 {!readonly && (
                   <select
-                    className="form-select mt-2 text-xs"
+                    className={`${classes.input} mt-2 text-xs`}
                     value={item.statusBusca}
                     onChange={e => atualizarFerramentaPerdida(item.id, { statusBusca: e.target.value })}
                   >
@@ -246,27 +267,27 @@ const FerramentasPerdidasTab = ({
             </div>
 
             <div className="space-y-3 text-sm">
-              <div className="bg-red-50 p-3 rounded-lg">
-                <div className="flex items-center gap-2 font-medium text-red-800 mb-1">
+              <div className={`${classes.card} p-3 bg-[#F4212E] bg-opacity-5`}>
+                <div className={`flex items-center gap-2 font-medium text-[#F4212E] mb-1`}>
                   <FileText className="w-4 h-4" />
                   Descrição da Perda
                 </div>
-                <p className="text-red-700">{item.descricaoPerda}</p>
+                <p className="text-[#F4212E]">{item.descricaoPerda}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-2">
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className={`flex items-center gap-2 ${colors.text}`}>
                   <User className="w-4 h-4" />
                   <span><strong>Responsável:</strong> {item.responsavel}</span>
                 </div>
                 
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className={`flex items-center gap-2 ${colors.text}`}>
                   <Calendar className="w-4 h-4" />
                   <span><strong>Data da Perda:</strong> {new Date(item.dataPerdida).toLocaleDateString('pt-BR')}</span>
                 </div>
                 
                 {item.localUltimaVez && (
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className={`flex items-center gap-2 ${colors.text}`}>
                     <MapPin className="w-4 h-4" />
                     <span><strong>Último local visto:</strong> {item.localUltimaVez}</span>
                   </div>
@@ -274,9 +295,9 @@ const FerramentasPerdidasTab = ({
               </div>
 
               {item.valorEstimado > 0 && (
-                <div className="bg-orange-50 p-2 rounded flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-orange-600" />
-                  <span className="text-orange-800">
+                <div className={`${classes.card} p-2 bg-[#FFD700] bg-opacity-5 flex items-center gap-2`}>
+                  <DollarSign className="w-4 h-4 text-[#FFD700]" />
+                  <span className="text-[#FFD700]">
                     <strong>Valor Estimado:</strong> 
                     <span className="ml-1">
                       R$ {item.valorEstimado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -286,14 +307,14 @@ const FerramentasPerdidasTab = ({
               )}
 
               {item.observacoes && (
-                <div className="bg-gray-50 p-2 rounded">
-                  <strong className="text-gray-700">Observações:</strong>
-                  <p className="text-gray-600 mt-1">{item.observacoes}</p>
+                <div className={`${classes.card} p-2`}>
+                  <strong className={colors.text}>Observações:</strong>
+                  <p className={colors.textSecondary}>{item.observacoes}</p>
                 </div>
               )}
 
               {/* Tempo desde a perda */}
-              <div className="text-xs text-gray-400 border-t pt-2">
+              <div className={`text-xs ${colors.textSecondary} border-t pt-2`}>
                 Perdida há {Math.floor((new Date() - new Date(item.dataPerdida)) / (1000 * 60 * 60 * 24))} dias
               </div>
             </div>
@@ -302,15 +323,15 @@ const FerramentasPerdidasTab = ({
       </div>
 
       {ferramentasFiltradas.length === 0 && (
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <Search className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500 text-lg">
+        <div className={`${classes.card} p-8 text-center`}>
+          <Search className={`w-16 h-16 mx-auto ${colors.textSecondary} mb-4`} />
+          <p className={`text-lg font-medium ${colors.text}`}>
             {filtro || filtroStatus !== 'todos' 
               ? 'Nenhuma ferramenta perdida encontrada' 
               : 'Nenhuma ferramenta perdida registrada'
             }
           </p>
-          <p className="text-gray-400 text-sm mt-2">
+          <p className={`${colors.textSecondary} mt-2`}>
             {filtro || filtroStatus !== 'todos'
               ? 'Tente alterar os filtros de busca'
               : 'Clique em "Registrar Perda" para adicionar uma ocorrência'

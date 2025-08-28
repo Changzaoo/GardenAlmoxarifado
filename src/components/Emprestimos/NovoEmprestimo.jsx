@@ -176,7 +176,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                       <select
                         value={ferramenta.quantidade}
                         onChange={(e) => atualizarQuantidade(ferramenta.nome, e.target.value)}
-                        className="form-select text-sm border-gray-300 rounded-md"
+                        className="form-select text-lg py-3 px-4 border-gray-300 rounded-md w-20"
                       >
                         {[...Array(ferramenta.disponivel)].map((_, i) => (
                           <option key={i + 1} value={i + 1}>

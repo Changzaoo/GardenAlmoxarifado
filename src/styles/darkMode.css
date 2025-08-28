@@ -1,28 +1,28 @@
-/* Base styles - Twitter/X Dark Theme */
-.dark body {
+/* Base styles - Twitter/X Theme */
+body {
   background-color: #000000;
   color: #E7E9EA;
 }
 
 /* Input styles */
-.dark input,
-.dark select,
-.dark textarea {
+input,
+select,
+textarea {
   background-color: #000000;
   color: #E7E9EA;
   border-color: #2F3336;
 }
 
-.dark input:focus,
-.dark select:focus,
-.dark textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   border-color: #1D9BF0;
   outline: none;
   box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.2);
 }
 
-.dark input::placeholder,
-.dark textarea::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: #71767B;
 }
 

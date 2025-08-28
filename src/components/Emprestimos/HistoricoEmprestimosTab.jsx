@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Search, CheckCircle, Clock, Filter, Trash2 } from 'lucide-react';
+import { Search, CheckCircle, Clock, Filter, Trash2, AlertTriangle, ToolCase } from 'lucide-react';
 import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import { useEmprestimos } from '../../hooks/useEmprestimos';
 import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
 
-const HistoricoEmprestimosTab = () => {
-  const { emprestimos, devolverFerramentas, removerEmprestimo, atualizarDisponibilidade } = useEmprestimos();
+const HistoricoEmprestimosTab = ({
+  emprestimos,
+  devolverFerramentas,
+  removerEmprestimo,
+  atualizarDisponibilidade
+}) => {
   const [filtros, setFiltros] = useState({
     busca: '',
     status: 'todos',
@@ -38,32 +42,45 @@ const HistoricoEmprestimosTab = () => {
   };
 
   const emprestimosFiltrados = React.useMemo(() => {
-    if (!emprestimos) return [];
-    console.log('Dados brutos dos empréstimos:', emprestimos);
+    if (!emprestimos || !Array.isArray(emprestimos)) return [];
+    
+    console.log('Iniciando filtragem de empréstimos:', {
+      total: emprestimos.length,
+      filtros
+    });
     return emprestimos.filter(emp => {
         if (!emp) return false;
         
-        // Filtro de busca
-        const funcionario = (emp.nomeFuncionario || emp.colaborador || '').toLowerCase();
-        const ferramentas = emp.ferramentas || [];
-        const filtro = filtros.busca.toLowerCase();
-        
-        // Busca em funcionários e ferramentas
-        const matchBusca = filtro === '' || funcionario.includes(filtro) || 
-          (Array.isArray(ferramentas) && ferramentas.some(f => {
-            const nomeFerramenta = typeof f === 'string' ? f : f.nome;
-            return nomeFerramenta.toLowerCase().includes(filtro);
-          }));
+        try {
+          // Filtro de busca
+          const funcionario = (emp.nomeFuncionario || emp.colaborador || '').toLowerCase();
+          const ferramentas = emp.ferramentas || [];
+          const filtro = (filtros.busca || '').toLowerCase();
+          const observacoes = (emp.observacoes || '').toLowerCase();
+          
+          // Busca em funcionários, ferramentas e observações
+          const matchBusca = !filtro || 
+            funcionario.includes(filtro) || 
+            observacoes.includes(filtro) ||
+            (Array.isArray(ferramentas) && ferramentas.some(f => {
+              const nomeFerramenta = typeof f === 'string' ? f : (f?.nome || '');
+              return nomeFerramenta.toLowerCase().includes(filtro);
+            }));
 
-        // Filtro de status
-        const matchStatus = filtros.status === 'todos' || 
-          emp.status === filtros.status;
+          // Filtro de status
+          const matchStatus = filtros.status === 'todos' || 
+            (emp.status || 'emprestado') === filtros.status;
 
-        // Filtro de data
-        const matchData = !filtros.dataInicio || 
-          new Date(emp.dataEmprestimo) >= new Date(filtros.dataInicio);
+          // Filtro de data
+          const matchData = !filtros.dataInicio || (
+            emp.dataEmprestimo && new Date(emp.dataEmprestimo) >= new Date(filtros.dataInicio)
+          );
         
-        return matchBusca && matchStatus && matchData;
+          return matchBusca && matchStatus && matchData;
+        } catch (error) {
+          console.error('Erro ao filtrar empréstimo:', error, emp);
+          return false;
+        }
       })
       .sort((a, b) => {
         // Ordenar por data, mais recente primeiro
@@ -76,7 +93,6 @@ const HistoricoEmprestimosTab = () => {
       {/* Cabeçalho */}
       <div className="mb-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Histórico de Empréstimos</h2>
           <button
             onClick={() => setShowFiltros(!showFiltros)}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50"
@@ -140,6 +156,7 @@ const HistoricoEmprestimosTab = () => {
                 <th className="text-left py-3 px-2">Colaborador</th>
                 <th className="text-left py-3 px-2">Ferramentas</th>
                 <th className="text-left py-3 px-2">Retirada</th>
+                <th className="text-left py-3 px-2">Previsão</th>
                 <th className="text-left py-3 px-2">Devolução</th>
                 <th className="text-left py-3 px-2">Status</th>
                 <th className="text-left py-3 px-2">Ações</th>
@@ -148,7 +165,7 @@ const HistoricoEmprestimosTab = () => {
             <tbody>
               {emprestimosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-4 text-gray-500">
+                  <td colSpan="7" className="text-center py-4 text-gray-500">
                     Nenhum empréstimo encontrado
                   </td>
                 </tr>
@@ -156,24 +173,41 @@ const HistoricoEmprestimosTab = () => {
                 emprestimosFiltrados.map(emprestimo => (
                   <tr key={emprestimo.id} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-2 font-medium">{emprestimo.nomeFuncionario || emprestimo.colaborador || '-'}</td>
-                  <td className="py-3 px-2">
-                    <div className="max-w-xs">
-                      {Array.isArray(emprestimo?.ferramentas) ? (
-                        emprestimo.ferramentas.map((ferramenta, idx) => (
-                          <div key={idx} className="text-sm flex items-center gap-2 mb-1">
-                            <span className="font-medium">{ferramenta.nome}</span>
-                            {ferramenta.quantidade > 1 && (
-                              <span className="text-gray-500">({ferramenta.quantidade} unidades)</span>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-gray-500">Sem ferramentas</div>
-                      )}
+                    <td className="py-3 px-2">
+                      <div className="max-w-xs">
+                        {(() => {
+                          const ferramentas = emprestimo?.ferramentas || [];
+                          if (!Array.isArray(ferramentas) || ferramentas.length === 0) {
+                            return <div className="text-sm text-gray-500">Sem ferramentas</div>;
+                          }
+
+                          return ferramentas.map((ferramenta, idx) => {
+                            const nomeFerramenta = typeof ferramenta === 'string' ? ferramenta : ferramenta?.nome;
+                            const quantidade = typeof ferramenta === 'string' ? 1 : ferramenta?.quantidade;
+                            const codigo = typeof ferramenta === 'string' ? null : ferramenta?.codigo;
+                            
+                            if (!nomeFerramenta) return null;
+                            
+                            return (
+                              <div key={idx} className="text-sm flex items-center gap-2 mb-1">
+                                <span className="font-medium">{nomeFerramenta}</span>
+                                {quantidade > 1 && (
+                                  <span className="text-gray-500">({quantidade} unidades)</span>
+                                )}
+                                {codigo && (
+                                  <span className="text-xs text-gray-400">#{codigo}</span>
+                                )}
+                              </div>
+                            );
+                          });
+                        })()}
                     </div>
                   </td>
                   <td className="py-3 px-2 text-sm">
-                    {formatarDataHora(emprestimo.dataEmprestimo)}
+                    {emprestimo.dataEmprestimo ? formatarDataHora(emprestimo.dataEmprestimo) : 'Data não registrada'}
+                  </td>
+                  <td className="py-3 px-2 text-sm">
+                    {emprestimo.dataPrevista ? formatarData(emprestimo.dataPrevista) : '-'}
                   </td>
                   <td className="py-3 px-2 text-sm">
                     {emprestimo.dataDevolucao ? (
@@ -192,11 +226,17 @@ const HistoricoEmprestimosTab = () => {
                   <td className="py-3 px-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       emprestimo.status === 'emprestado'
-                        ? 'bg-yellow-100 text-yellow-800'
+                        ? emprestimo.dataPrevista && new Date(emprestimo.dataPrevista) < new Date()
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
                         : 'bg-green-100 text-green-800'
                     }`}>
                       {emprestimo.status === 'emprestado' ? (
-                        <><Clock className="w-3 h-3 inline mr-1" />Emprestado</>
+                        emprestimo.dataPrevista && new Date(emprestimo.dataPrevista) < new Date() ? (
+                          <><AlertTriangle className="w-3 h-3 inline mr-1" />Atrasado</>
+                        ) : (
+                          <><Clock className="w-3 h-3 inline mr-1" />Emprestado</>
+                        )
                       ) : (
                         <><CheckCircle className="w-3 h-3 inline mr-1" />Devolvido</>
                       )}
