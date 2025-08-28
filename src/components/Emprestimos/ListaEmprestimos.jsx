@@ -65,8 +65,8 @@ const ListaEmprestimos = ({
           <thead>
             <tr className="border-b">
               <th className="text-left py-3 px-2">Colaborador</th>
-              <th className="text-left py-3 px-2">Ações</th>
               <th className="text-left py-3 px-2">Status</th>
+              <th className="text-left py-3 px-2">Ações</th>
               <th className="text-left py-3 px-2">Ferramentas</th>
               <th className="text-left py-3 px-2">Retirada</th>
               <th className="text-left py-3 px-2">Devolução</th>
