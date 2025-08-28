@@ -18,8 +18,8 @@ const Layout = () => {
       <Sidebar onProfileClick={() => setShowProfileModal(true)} />
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 transition-all duration-300 ease-in-out">
-        <div className="p-6 max-w-7xl mx-auto">
+      <main className="flex-1 md:ml-64 transition-all duration-300 ease-in-out overflow-hidden">
+        <div className="p-4 md:p-6 max-w-7xl mx-auto">
           <Outlet />
         </div>
       </main>
