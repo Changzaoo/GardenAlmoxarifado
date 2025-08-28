@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, ShoppingCart, X } from 'lucide-react';
+import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
 const STATUS_COMPRAS = {
   SOLICITADO: 'solicitado',
@@ -18,11 +19,11 @@ const STATUS_LABELS = {
 };
 
 const STATUS_COLORS = {
-  solicitado: 'bg-blue-100 text-blue-800',
-  aprovado: 'bg-green-100 text-green-800',
-  pedido_enviado: 'bg-yellow-100 text-yellow-800',
-  recebido: 'bg-purple-100 text-purple-800',
-  cancelado: 'bg-red-100 text-red-800'
+  solicitado: 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]',
+  aprovado: 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]',
+  pedido_enviado: 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]',
+  recebido: 'bg-[#7856FF] bg-opacity-10 text-[#7856FF]',
+  cancelado: 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]'
 };
 
 // Prioridades da compra
@@ -41,10 +42,10 @@ const PRIORIDADE_LABELS = {
 };
 
 const PRIORIDADE_COLORS = {
-  baixa: 'bg-gray-100 text-gray-800',
-  media: 'bg-blue-100 text-blue-800',
-  alta: 'bg-orange-100 text-orange-800',
-  urgente: 'bg-red-100 text-red-800'
+  baixa: 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]',
+  media: 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]',
+  alta: 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]',
+  urgente: 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]'
 };
 
 const ComprasTab = ({ 
@@ -56,6 +57,7 @@ const ComprasTab = ({
   atualizarCompra,
   readonly = false 
 }) => {
+  const { colors, classes } = twitterThemeConfig;
   const [filtro, setFiltro] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('todos');
   const [prioridadeFiltro, setPrioridadeFiltro] = useState('todas');
@@ -192,13 +194,13 @@ const ComprasTab = ({
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestão de Compras</h2>
-          <p className="text-gray-600">Gerenciar solicitações e pedidos de compra</p>
+          <h2 className={`text-2xl font-bold ${colors.text}`}>Gestão de Compras</h2>
+          <p className={colors.textSecondary}>Gerenciar solicitações e pedidos de compra</p>
         </div>
         {!readonly && (
           <button
             onClick={abrirModalNova}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className={`flex items-center gap-2 ${classes.primaryButton}`}
           >
             <Plus className="w-4 h-4" />
             Nova Solicitação
@@ -208,56 +210,68 @@ const ComprasTab = ({
 
       {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className={`${classes.card} p-4`}>
           <div className="flex items-center">
-            <ShoppingCart className="w-8 h-8 text-purple-600" />
+            <div className="bg-[#1DA1F2] bg-opacity-10 p-3 rounded-full">
+              <ShoppingCart className="w-8 h-8 text-[#1DA1F2]" />
+            </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Total</p>
-              <p className="text-xl font-bold text-gray-900">{estatisticas.total}</p>
+              <p className={`text-sm font-medium ${colors.textSecondary}`}>Total</p>
+              <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.total}</p>
             </div>
           </div>
         </div>
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <p className="text-sm font-medium text-blue-600">Solicitado</p>
-          <p className="text-xl font-bold text-blue-900">{estatisticas.solicitado}</p>
+        <div className={`${classes.card} p-4`}>
+          <div className="flex flex-col">
+            <p className={`text-sm font-medium ${colors.textSecondary}`}>Solicitado</p>
+            <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.solicitado}</p>
+          </div>
         </div>
-        <div className="bg-green-50 p-4 rounded-lg">
-          <p className="text-sm font-medium text-green-600">Aprovado</p>
-          <p className="text-xl font-bold text-green-900">{estatisticas.aprovado}</p>
+        <div className={`${classes.card} p-4`}>
+          <div className="flex flex-col">
+            <p className={`text-sm font-medium ${colors.textSecondary}`}>Aprovado</p>
+            <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.aprovado}</p>
+          </div>
         </div>
-        <div className="bg-yellow-50 p-4 rounded-lg">
-          <p className="text-sm font-medium text-yellow-600">Enviado</p>
-          <p className="text-xl font-bold text-yellow-900">{estatisticas.enviado}</p>
+        <div className={`${classes.card} p-4`}>
+          <div className="flex flex-col">
+            <p className={`text-sm font-medium ${colors.textSecondary}`}>Enviado</p>
+            <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.enviado}</p>
+          </div>
         </div>
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <p className="text-sm font-medium text-purple-600">Recebido</p>
-          <p className="text-xl font-bold text-purple-900">{estatisticas.recebido}</p>
+        <div className={`${classes.card} p-4`}>
+          <div className="flex flex-col">
+            <p className={`text-sm font-medium ${colors.textSecondary}`}>Recebido</p>
+            <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.recebido}</p>
+          </div>
         </div>
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <p className="text-sm font-medium text-gray-600">Valor Total</p>
-          <p className="text-lg font-bold text-gray-900">
-            R$ {estatisticas.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
+        <div className={`${classes.card} p-4`}>
+          <div className="flex flex-col">
+            <p className={`text-sm font-medium ${colors.textSecondary}`}>Valor Total</p>
+            <p className={`text-lg font-bold ${colors.text}`}>
+              R$ {estatisticas.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="bg-white p-4 rounded-lg shadow space-y-4">
+      <div className={`${classes.card} p-4 space-y-4`}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+            <Search className={`w-4 h-4 absolute left-3 top-3 ${colors.textSecondary}`} />
             <input
               type="text"
               placeholder="Pesquisar compras..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className={classes.searchInput}
             />
           </div>
           <select
             value={statusFiltro}
             onChange={(e) => setStatusFiltro(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className={classes.select}
           >
             <option value="todos">Todos os status</option>
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -267,84 +281,84 @@ const ComprasTab = ({
           <select
             value={prioridadeFiltro}
             onChange={(e) => setPrioridadeFiltro(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className={classes.select}
           >
             <option value="todas">Todas as prioridades</option>
             {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
-          <div className="text-sm text-gray-600 flex items-center">
+          <div className={`text-sm ${colors.textSecondary} flex items-center`}>
             Mostrando {comprasFiltradas.length} de {compras.length} compras
           </div>
         </div>
       </div>
 
       {/* Lista de Compras */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className={`${classes.card} overflow-hidden`}>
         {comprasFiltradas.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <div className={`p-8 text-center ${colors.textSecondary}`}>
+            <ShoppingCart className={`w-12 h-12 mx-auto mb-4 ${colors.textSecondary}`} />
             <p>Nenhuma compra encontrada.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className={classes.tableHeader}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Item
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Quantidade
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Valor
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Fornecedor
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Prioridade
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Data
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className={classes.tableBody}>
                 {comprasFiltradas.map((compra) => (
-                  <tr key={compra.id} className="hover:bg-gray-50">
+                  <tr key={compra.id} className={classes.tableRow}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className={`text-sm font-medium ${colors.text}`}>
                           {compra.descricao}
                         </div>
                         {compra.solicitante && (
-                          <div className="text-sm text-gray-500">
+                          <div className={`text-sm ${colors.textSecondary}`}>
                             Solicitante: {compra.solicitante}
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.text}`}>
                       {compra.quantidade}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                      <div className={`text-sm ${colors.text}`}>
                         R$ {(compra.valorUnitario || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className={`text-sm ${colors.textSecondary}`}>
                         Total: R$ {(compra.valorTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.text}`}>
                       {compra.fornecedor || 'Não informado'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -364,7 +378,7 @@ const ComprasTab = ({
                         {PRIORIDADE_LABELS[compra.prioridade]}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.textSecondary}`}>
                       <div>Sol: {compra.dataSolicitacao?.toDate ? compra.dataSolicitacao.toDate().toLocaleDateString('pt-BR') : compra.dataSolicitacao}</div>
                       {compra.dataRecebimento && (
                         <div>Rec: {compra.dataRecebimento?.toDate ? compra.dataRecebimento.toDate().toLocaleDateString('pt-BR') : compra.dataRecebimento}</div>
@@ -375,14 +389,14 @@ const ComprasTab = ({
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => abrirModalEdicao(compra)}
-                            className="text-indigo-600 hover:text-indigo-900"
+                            className={`${colors.primary} hover:${colors.primaryHover}`}
                             title="Editar"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => confirmarExclusao(compra)}
-                            className="text-red-600 hover:text-red-900"
+                            className={`${colors.danger} hover:${colors.dangerHover}`}
                             title="Excluir"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -401,14 +415,14 @@ const ComprasTab = ({
       {/* Modal de Nova/Editar Compra */}
       {modalAberto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className={`${classes.card} p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className={`text-lg font-medium ${colors.text}`}>
                 {compraEditando ? 'Editar Compra' : 'Nova Solicitação de Compra'}
               </h3>
               <button
                 onClick={() => setModalAberto(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className={`${colors.textSecondary} hover:${colors.text}`}
               >
                 <X className="w-6 h-6" />
               </button>
@@ -416,20 +430,20 @@ const ComprasTab = ({
             <form onSubmit={salvarCompra} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Descrição do Item *
                   </label>
                   <input
                     type="text"
                     value={novaCompra.descricao}
                     onChange={(e) => setNovaCompra({ ...novaCompra, descricao: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={classes.input}
                     placeholder="Ex: Furadeira elétrica 1/2"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Quantidade *
                   </label>
                   <input
@@ -437,12 +451,12 @@ const ComprasTab = ({
                     min="1"
                     value={novaCompra.quantidade}
                     onChange={(e) => setNovaCompra({ ...novaCompra, quantidade: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={classes.input}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Valor Unitário (R$)
                   </label>
                   <input
@@ -451,30 +465,30 @@ const ComprasTab = ({
                     min="0"
                     value={novaCompra.valorUnitario}
                     onChange={(e) => setNovaCompra({ ...novaCompra, valorUnitario: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={classes.input}
                     placeholder="0.00"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Fornecedor
                   </label>
                   <input
                     type="text"
                     value={novaCompra.fornecedor}
                     onChange={(e) => setNovaCompra({ ...novaCompra, fornecedor: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={classes.input}
                     placeholder="Nome do fornecedor"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Prioridade *
                   </label>
                   <select
                     value={novaCompra.prioridade}
                     onChange={(e) => setNovaCompra({ ...novaCompra, prioridade: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={classes.select}
                     required
                   >
                     {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
@@ -483,26 +497,26 @@ const ComprasTab = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Solicitante
                   </label>
                   <input
                     type="text"
                     value={novaCompra.solicitante}
                     onChange={(e) => setNovaCompra({ ...novaCompra, solicitante: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={classes.input}
                     placeholder="Nome do solicitante"
                   />
                 </div>
                 {compraEditando && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                       Status
                     </label>
                     <select
                       value={novaCompra.status}
                       onChange={(e) => setNovaCompra({ ...novaCompra, status: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className={classes.select}
                     >
                       {Object.entries(STATUS_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>{label}</option>
@@ -511,24 +525,24 @@ const ComprasTab = ({
                   </div>
                 )}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Observações
                   </label>
                   <textarea
                     value={novaCompra.observacoes}
                     onChange={(e) => setNovaCompra({ ...novaCompra, observacoes: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className={classes.textarea}
                     placeholder="Observações adicionais..."
                   />
                 </div>
               </div>
               {/* Valor total calculado */}
               {novaCompra.quantidade && novaCompra.valorUnitario && (
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className={`${classes.card} p-4`}>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">Valor Total:</span>
-                    <span className="text-lg font-bold text-gray-900">
+                    <span className={`text-sm font-medium ${colors.textSecondary}`}>Valor Total:</span>
+                    <span className={`text-lg font-bold ${colors.text}`}>
                       R$ {(Number(novaCompra.quantidade) * parseFloat(novaCompra.valorUnitario)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -538,13 +552,13 @@ const ComprasTab = ({
                 <button
                   type="button"
                   onClick={() => setModalAberto(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className={classes.secondaryButton}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700"
+                  className={classes.primaryButton}
                 >
                   {compraEditando ? 'Atualizar' : 'Solicitar'}
                 </button>
@@ -557,11 +571,11 @@ const ComprasTab = ({
       {/* Modal de Confirmação de Exclusão */}
       {modalConfirmacao && compraParaExcluir && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+          <div className={`${classes.card} p-6 w-full max-w-md`}>
+            <h3 className={`text-lg font-medium ${colors.text} mb-4`}>
               Confirmar Exclusão
             </h3>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className={`text-sm ${colors.textSecondary} mb-4`}>
               Tem certeza que deseja excluir a compra "{compraParaExcluir.descricao}"?
               Esta ação não pode ser desfeita.
             </p>
@@ -571,13 +585,13 @@ const ComprasTab = ({
                   setModalConfirmacao(false);
                   setCompraParaExcluir(null);
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                className={classes.secondaryButton}
               >
                 Cancelar
               </button>
               <button
                 onClick={excluirCompra}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700"
+                className={classes.dangerButton}
               >
                 Excluir
               </button>

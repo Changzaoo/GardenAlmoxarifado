@@ -19,8 +19,8 @@ const LoginForm = ({
       <div className={`rounded-2xl shadow-xl p-8 w-full max-w-md ${colors.backgroundSecondary} ${colors.border}`}>
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-[#1DA1F2] bg-opacity-10">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-[#1D9BF0] bg-opacity-10">
+            <Shield className="w-8 h-8 text-[#1D9BF0]" />
           </div>
           <h1 className={`text-2xl font-bold ${colors.text}`}>
             Almoxarifado do Jardim

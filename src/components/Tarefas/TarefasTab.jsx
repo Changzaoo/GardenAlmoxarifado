@@ -5,14 +5,16 @@ import { useFuncionarios } from '../Funcionarios/FuncionariosProvider';
 import NovaTarefa from './NovaTarefa';
 import ListaTarefas from './ListaTarefas';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
+import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
 const TarefasTab = () => {
+  const { colors, classes } = twitterThemeConfig;
   const { usuario } = useAuth();
   const { funcionarios } = useFuncionarios();
   const { tarefas, loading, adicionarTarefa, atualizarTarefa, removerTarefa } = useTarefas();
   
   if (loading) {
-    return <div>Carregando...</div>;
+    return <div className={`p-4 text-center ${colors.textSecondary}`}>Carregando...</div>;
   }
 
   return (

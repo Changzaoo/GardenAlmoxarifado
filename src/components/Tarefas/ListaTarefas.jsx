@@ -1,42 +1,45 @@
 import React from 'react';
 import { Clock, Check, CalendarClock, Users } from 'lucide-react';
+import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import { formatarData } from '../../utils/dateUtils';
-import { darkModeClasses } from '../../styles/darkMode';
 
 const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = false }) => {
+  const { colors, classes } = twitterThemeConfig;
+  
   const getPrioridadeClasses = (prioridade) => {
     const classes = {
-      baixa: 'bg-blue-100 text-blue-800',
-      normal: 'bg-gray-100 text-gray-800',
-      alta: 'bg-orange-100 text-orange-800',
-      urgente: 'bg-red-100 text-red-800'
+      baixa: 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]',
+      normal: 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]',
+      alta: 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]',
+      urgente: 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]'
     };
     return classes[prioridade] || classes.normal;
   };
 
   const getStatusClasses = (status) => {
     const classes = {
-      pendente: 'bg-yellow-100 text-yellow-800',
-      'em-andamento': 'bg-blue-100 text-blue-800',
-      concluida: 'bg-green-100 text-green-800',
-      cancelada: 'bg-gray-100 text-gray-800'
+      pendente: 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]',
+      'em-andamento': 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]',
+      concluida: 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]',
+      cancelada: 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]'
     };
     return classes[status] || classes.pendente;
   };
 
   return (
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+      <div className={classes.card}>
       <div className="p-6">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Lista de Tarefas</h3>        <div className="space-y-4">
+        <h3 className={`text-lg font-medium ${colors.text} mb-4`}>Lista de Tarefas</h3>
+        <div className="space-y-4">
           {tarefas.map((tarefa) => (
             <div
               key={tarefa.id}
-              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+              className={`${classes.cardHover} p-4`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <h4 className="text-lg font-medium text-gray-900 truncate">
+                    <h4 className={`text-lg font-medium ${colors.text} truncate`}>
                       {tarefa.titulo}
                     </h4>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPrioridadeClasses(tarefa.prioridade)}`}>
@@ -47,11 +50,11 @@ const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = fals
                     </span>
                   </div>
                   
-                  <p className="text-sm text-gray-500 mb-4">
+                  <p className={`text-sm ${colors.textSecondary} mb-4`}>
                     {tarefa.descricao}
                   </p>
                   
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                  <div className={`flex flex-wrap gap-4 text-sm ${colors.textSecondary}`}>
                     {tarefa.prazo && (
                       <div className="flex items-center gap-1">
                         <CalendarClock className="w-4 h-4" />
@@ -77,14 +80,14 @@ const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = fals
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => atualizarTarefa(tarefa.id, 'concluida')}
-                      className="p-2 text-green-600 hover:text-green-700 transition-colors"
+                      className={`p-2 ${colors.success} hover:${colors.successHover} transition-colors`}
                       title="Marcar como concluída"
                     >
                       <Check className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => removerTarefa(tarefa.id)}
-                      className="p-2 text-red-600 hover:text-red-700 transition-colors"
+                      className={`p-2 ${colors.danger} hover:${colors.dangerHover} transition-colors`}
                       title="Cancelar tarefa"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +101,7 @@ const ListaTarefas = ({ tarefas, atualizarTarefa, removerTarefa, readonly = fals
           ))}
 
           {tarefas.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className={`text-center py-8 ${colors.textSecondary}`}>
               Nenhuma tarefa encontrada
             </div>
           )}

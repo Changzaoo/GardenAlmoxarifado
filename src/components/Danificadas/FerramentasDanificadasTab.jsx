@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { AlertTriangle, Plus, Search, Calendar, User, Wrench, FileText } from 'lucide-react';
 import { AuthContext } from '../../hooks/useAuth';
+import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
 const FerramentasDanificadasTab = ({ 
   ferramentasDanificadas, 
@@ -72,13 +73,15 @@ const FerramentasDanificadasTab = ({
     }
   };
 
+  const { colors, classes } = twitterThemeConfig;
+
   const getStatusColor = (status) => {
     switch (status) {
-      case 'aguardando': return 'bg-yellow-100 text-yellow-800';
-      case 'em_reparo': return 'bg-blue-100 text-blue-800';
-      case 'reparado': return 'bg-green-100 text-green-800';
-      case 'irreparavel': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'aguardando': return 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]';
+      case 'em_reparo': return 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]';
+      case 'reparado': return 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]';
+      case 'irreparavel': return 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]';
+      default: return 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]';
     }
   };
 
@@ -94,10 +97,10 @@ const FerramentasDanificadasTab = ({
 
   const getPrioridadeColor = (prioridade) => {
     switch (prioridade) {
-      case 'baixa': return 'bg-green-100 text-green-800';
-      case 'media': return 'bg-yellow-100 text-yellow-800';
-      case 'alta': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'baixa': return 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]';
+      case 'media': return 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]';
+      case 'alta': return 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]';
+      default: return 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]';
     }
   };
 
@@ -112,21 +115,21 @@ const FerramentasDanificadasTab = ({
   return (
     <div className="space-y-6">
       {/* Header com estatísticas */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className={`${classes.card} p-6`}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-orange-600" />
+            <div className="w-10 h-10 bg-[#F4212E] bg-opacity-10 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-[#F4212E]" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Ferramentas Danificadas</h2>
-              <p className="text-sm text-gray-500">Controle e acompanhamento de reparos</p>
+              <h2 className={`text-xl font-bold ${colors.text}`}>Ferramentas Danificadas</h2>
+              <p className={`text-sm ${colors.textSecondary}`}>Controle e acompanhamento de reparos</p>
             </div>
           </div>
           
           <button
             onClick={() => setModalAberto(true)}
-            className="btn-primary flex items-center gap-2"
+            className="bg-[#1DA1F2] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-[#1a91da] transition-colors"
           >
             <Plus className="w-4 h-4" />
             Registrar Dano
@@ -135,45 +138,45 @@ const FerramentasDanificadasTab = ({
 
         {/* Estatísticas */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-gray-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-gray-600">{estatisticas.total}</div>
-            <div className="text-sm text-gray-500">Total</div>
+          <div className={`${classes.card} p-4`}>
+            <div className={`text-2xl font-bold ${colors.text}`}>{estatisticas.total}</div>
+            <div className={`text-sm ${colors.textSecondary}`}>Total</div>
           </div>
-          <div className="bg-yellow-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-yellow-600">{estatisticas.aguardando}</div>
-            <div className="text-sm text-yellow-600">Aguardando</div>
+          <div className={`${classes.card} p-4 bg-[#FFD700] bg-opacity-5`}>
+            <div className="text-2xl font-bold text-[#FFD700]">{estatisticas.aguardando}</div>
+            <div className="text-sm text-[#FFD700]">Aguardando</div>
           </div>
-          <div className="bg-blue-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-blue-600">{estatisticas.emReparo}</div>
-            <div className="text-sm text-blue-600">Em Reparo</div>
+          <div className={`${classes.card} p-4 bg-[#1D9BF0] bg-opacity-5`}>
+            <div className="text-2xl font-bold text-[#1D9BF0]">{estatisticas.emReparo}</div>
+            <div className="text-sm text-[#1D9BF0]">Em Reparo</div>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-green-600">{estatisticas.reparadas}</div>
-            <div className="text-sm text-green-600">Reparadas</div>
+          <div className={`${classes.card} p-4 bg-[#00BA7C] bg-opacity-5`}>
+            <div className="text-2xl font-bold text-[#00BA7C]">{estatisticas.reparadas}</div>
+            <div className="text-sm text-[#00BA7C]">Reparadas</div>
           </div>
-          <div className="bg-red-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-red-600">{estatisticas.irreparaveis}</div>
-            <div className="text-sm text-red-600">Irreparáveis</div>
+          <div className={`${classes.card} p-4 bg-[#F4212E] bg-opacity-5`}>
+            <div className="text-2xl font-bold text-[#F4212E]">{estatisticas.irreparaveis}</div>
+            <div className="text-sm text-[#F4212E]">Irreparáveis</div>
           </div>
         </div>
 
         {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+            <Search className={`w-4 h-4 absolute left-3 top-3 ${colors.textSecondary}`} />
             <input
               type="text"
               placeholder="Buscar por ferramenta, problema ou responsável..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className="pl-10 form-input"
+              className={classes.searchInput}
             />
           </div>
           
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="form-select w-full md:w-48"
+            className={classes.select}
           >
             <option value="todos">Todos os Status</option>
             <option value="aguardando">Aguardando Reparo</option>
@@ -187,15 +190,15 @@ const FerramentasDanificadasTab = ({
       {/* Lista de ferramentas danificadas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {ferramentasFiltradas.map(item => (
-          <div key={item.id} className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-orange-500">
+          <div key={item.id} className={`${classes.card} ${classes.cardHover} p-6 border-l-4 border-[#F4212E]`}>
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
-                <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                  <Wrench className="w-5 h-5 text-orange-600" />
+                <h3 className={`font-bold ${colors.text} text-lg flex items-center gap-2`}>
+                  <Wrench className="w-5 h-5 text-[#F4212E]" />
                   {item.nomeItem}
                 </h3>
                 {item.categoria && (
-                  <p className="text-gray-500 text-sm">{item.categoria}</p>
+                  <p className={`${colors.textSecondary} text-sm`}>{item.categoria}</p>
                 )}
               </div>
               <div className="flex flex-col gap-2 items-end">
@@ -207,7 +210,7 @@ const FerramentasDanificadasTab = ({
                 </span>
                 {/* Status editing dropdown */}
                 <select
-                  className="form-select mt-2 text-xs"
+                  className={`${classes.select} mt-2 text-xs`}
                   value={item.statusReparo}
                   onChange={e => atualizarFerramentaDanificada(item.id, { statusReparo: e.target.value })}
                 >
@@ -220,39 +223,39 @@ const FerramentasDanificadasTab = ({
             </div>
 
             <div className="space-y-3 text-sm">
-              <div className="bg-red-50 p-3 rounded-lg">
-                <div className="flex items-center gap-2 font-medium text-red-800 mb-1">
+              <div className={`${classes.card} bg-[#F4212E] bg-opacity-5 p-3`}>
+                <div className="flex items-center gap-2 font-medium text-[#F4212E] mb-1">
                   <FileText className="w-4 h-4" />
                   Descrição do Problema
                 </div>
-                <p className="text-red-700">{item.descricaoProblema}</p>
+                <p className="text-[#F4212E]">{item.descricaoProblema}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className={`flex items-center gap-2 ${colors.textSecondary}`}>
                   <User className="w-4 h-4" />
                   <span><strong>Responsável:</strong> {item.responsavel}</span>
                 </div>
                 
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className={`flex items-center gap-2 ${colors.textSecondary}`}>
                   <Calendar className="w-4 h-4" />
                   <span><strong>Data:</strong> {new Date(item.dataOcorrencia).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
 
               {item.custoReparo > 0 && (
-                <div className="bg-blue-50 p-2 rounded">
-                  <strong className="text-blue-800">Custo de Reparo:</strong> 
-                  <span className="text-blue-700 ml-1">
+                <div className={`${classes.card} bg-[#1D9BF0] bg-opacity-5 p-2`}>
+                  <strong className="text-[#1D9BF0]">Custo de Reparo:</strong> 
+                  <span className="text-[#1D9BF0] ml-1">
                     R$ {item.custoReparo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               )}
 
               {item.observacoes && (
-                <div className="bg-gray-50 p-2 rounded">
-                  <strong className="text-gray-700">Observações:</strong>
-                  <p className="text-gray-600 mt-1">{item.observacoes}</p>
+                <div className={`${classes.card} p-2`}>
+                  <strong className={colors.text}>Observações:</strong>
+                  <p className={`${colors.textSecondary} mt-1`}>{item.observacoes}</p>
                 </div>
               )}
             </div>
@@ -261,15 +264,15 @@ const FerramentasDanificadasTab = ({
       </div>
 
       {ferramentasFiltradas.length === 0 && (
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <AlertTriangle className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-500 text-lg">
+        <div className={`${classes.card} p-8 text-center`}>
+          <AlertTriangle className={`w-16 h-16 mx-auto ${colors.textSecondary} mb-4`} />
+          <p className={`${colors.text} text-lg`}>
             {filtro || filtroStatus !== 'todos' 
               ? 'Nenhuma ferramenta danificada encontrada' 
               : 'Nenhuma ferramenta danificada registrada'
             }
           </p>
-          <p className="text-gray-400 text-sm mt-2">
+          <p className={`${colors.textSecondary} text-sm mt-2`}>
             {filtro || filtroStatus !== 'todos'
               ? 'Tente alterar os filtros de busca'
               : 'Clique em "Registrar Dano" para adicionar uma ocorrência'
@@ -280,17 +283,17 @@ const FerramentasDanificadasTab = ({
 
       {/* Modal de Nova Ferramenta Danificada */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className={`${classes.modalOverlay} p-4`}>
+          <div className={`${classes.modal} max-w-3xl w-full max-h-[90vh] overflow-y-auto`}>
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-orange-600" />
+                <h3 className={`text-lg font-bold ${colors.text} flex items-center gap-2`}>
+                  <AlertTriangle className="w-5 h-5 text-[#F4212E]" />
                   Registrar Ferramenta Danificada
                 </h3>
                 <button
                   onClick={() => setModalAberto(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className={`${colors.textSecondary} hover:${colors.text}`}
                 >
                   ✕
                 </button>
@@ -299,13 +302,13 @@ const FerramentasDanificadasTab = ({
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
                       Nome da Ferramenta *
                     </label>
                     <select
                       value={novaFerramenta.nomeItem}
                       onChange={e => setNovaFerramenta({ ...novaFerramenta, nomeItem: e.target.value })}
-                      className="form-select"
+                      className={classes.select}
                       required
                     >
                       <option value="">Selecione a ferramenta</option>
@@ -316,27 +319,27 @@ const FerramentasDanificadasTab = ({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
                       Categoria
                     </label>
                     <input
                       type="text"
                       value={novaFerramenta.categoria}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, categoria: e.target.value})}
-                      className="form-input"
+                      className={classes.input}
                       placeholder="Ex: Ferramenta Elétrica"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium ${colors.text} mb-1`}>
                     Descrição do Problema *
                   </label>
                   <textarea
                     value={novaFerramenta.descricaoProblema}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, descricaoProblema: e.target.value})}
-                    className="form-input h-24 resize-none"
+                    className={`${classes.textarea} h-24`}
                     placeholder="Descreva detalhadamente o problema encontrado na ferramenta..."
                     required
                   />
@@ -344,13 +347,13 @@ const FerramentasDanificadasTab = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
                       Responsável pelo Relato
                     </label>
                     <select
                       value={novaFerramenta.responsavel}
                       onChange={e => setNovaFerramenta({ ...novaFerramenta, responsavel: e.target.value })}
-                      className="form-select"
+                      className={classes.select}
                       required
                     >
                       <option value="">Selecione o responsável</option>
@@ -363,25 +366,25 @@ const FerramentasDanificadasTab = ({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
                       Data da Ocorrência
                     </label>
                     <input
                       type="date"
                       value={novaFerramenta.dataOcorrencia}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, dataOcorrencia: e.target.value})}
-                      className="form-input"
+                      className={classes.input}
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
                       Prioridade
                     </label>
                     <select
                       value={novaFerramenta.prioridade}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, prioridade: e.target.value})}
-                      className="form-select"
+                      className={classes.select}
                     >
                       <option value="baixa">Baixa</option>
                       <option value="media">Média</option>
@@ -392,13 +395,13 @@ const FerramentasDanificadasTab = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
                       Status do Reparo
                     </label>
                     <select
                       value={novaFerramenta.statusReparo}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, statusReparo: e.target.value})}
-                      className="form-select"
+                      className={classes.select}
                     >
                       <option value="aguardando">Aguardando Reparo</option>
                       <option value="em_reparo">Em Reparo</option>
@@ -408,7 +411,7 @@ const FerramentasDanificadasTab = ({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
                       Custo Estimado de Reparo (R$)
                     </label>
                     <input
@@ -417,32 +420,32 @@ const FerramentasDanificadasTab = ({
                       min="0"
                       value={novaFerramenta.custoReparo}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, custoReparo: e.target.value})}
-                      className="form-input"
+                      className={classes.input}
                       placeholder="0,00"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className={`block text-sm font-medium ${colors.text} mb-1`}>
                     Observações Adicionais
                   </label>
                   <textarea
                     value={novaFerramenta.observacoes}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, observacoes: e.target.value})}
-                    className="form-input h-20 resize-none"
+                    className={`${classes.textarea} h-20`}
                     placeholder="Informações complementares sobre o dano ou reparo..."
                   />
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <button type="submit" className="btn-primary flex-1">
+                  <button type="submit" className={`${classes.primaryButton} flex-1`}>
                     Registrar Ferramenta Danificada
                   </button>
                   <button
                     type="button"
                     onClick={() => setModalAberto(false)}
-                    className="btn-secondary flex-1"
+                    className={`${classes.secondaryButton} flex-1`}
                   >
                     Cancelar
                   </button>

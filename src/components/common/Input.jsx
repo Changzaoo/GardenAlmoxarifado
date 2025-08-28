@@ -1,35 +1,45 @@
 import React from 'react';
-import { useTheme } from '../ThemeProvider';
+import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
-const Input = ({ 
+const Input = ({
+  id,
   label,
   error,
+  icon: Icon,
   className = '',
+  size = 'md',
   type = 'text',
-  ...props 
+  ...props
 }) => {
-  const { styles, colors } = useTheme();
-
+  const classes = twitterThemeConfig.classes;
+  
   return (
-    <div className="w-full">
+    <div className={classes.form.group}>
       {label && (
-        <label className={`block text-sm font-medium mb-1 ${colors.text}`}>
+        <label htmlFor={id} className={classes.form.label}>
           {label}
         </label>
       )}
-      <input
-        type={type}
-        className={`
-          ${styles.input()}
-          ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}
-          ${className}
-        `}
-        {...props}
-      />
+      <div className="relative">
+        {Icon && (
+          <Icon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8899A6]" />
+        )}
+        <input
+          id={id}
+          type={type}
+          className={`
+            ${classes.input.base}
+            ${classes.input.focus}
+            ${error ? classes.input.error : ''}
+            ${classes.input.sizes[size]}
+            ${Icon ? 'pl-10' : ''}
+            ${className}
+          `}
+          {...props}
+        />
+      </div>
       {error && (
-        <p className="mt-1 text-sm text-red-500">
-          {error}
-        </p>
+        <p className={classes.form.error}>{error}</p>
       )}
     </div>
   );

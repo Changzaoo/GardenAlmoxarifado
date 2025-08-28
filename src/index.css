@@ -2,16 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './styles/darkMode.css';
+
 :root {
   --background: #ffffff;
-  --text: #1a1a1a;
-  --border: #e5e7eb;
+  --text: #0F1419;
+  --border: #EFF3F4;
+  --card-bg: #ffffff;
+  --hover: #F7F9F9;
+  --accent: #1D9BF0;
+  --secondary-text: #536471;
+  --success: #00BA7C;
+  --error: #F4212E;
+  --warning: #FAA626;
+  --sidebar-bg: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #EFF3F4;
+  --input-text: #0F1419;
+  --input-placeholder: #536471;
+  --dropdown-bg: #ffffff;
+  --dropdown-hover: #F7F9F9;
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --divider: #EFF3F4;
+  --scrollbar-thumb: #CBD5E1;
+  --scrollbar-track: #F1F5F9;
 }
 
 .dark {
-  --background: #1a1a1a;
-  --text: #ffffff;
-  --border: #374151;
+  --background: #000000;
+  --text: #E7E9EA;
+  --border: #2F3336;
+  --card-bg: #16181C;
+  --hover: #1D1F23;
+  --accent: #1D9BF0;
+  --secondary-text: #71767B;
+  --success: #00BA7C;
+  --error: #F4212E;
+  --warning: #FAA626;
+  --sidebar-bg: #16181C;
+  --input-bg: #000000;
+  --input-border: #2F3336;
+  --input-text: #E7E9EA;
+  --input-placeholder: #71767B;
+  --dropdown-bg: #16181C;
+  --dropdown-hover: #1D1F23;
+  --modal-overlay: rgba(91, 112, 131, 0.4);
+  --divider: #2F3336;
+  --scrollbar-thumb: #2F3336;
+  --scrollbar-track: #000000;
 }
 
 /* Reset e estilos globais */

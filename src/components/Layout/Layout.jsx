@@ -2,22 +2,18 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../../hooks/useAuth';
-import { useTheme } from '../ThemeProvider';
 import UserProfileModal from '../Auth/UserProfileModal';
 
 const Layout = () => {
   const { usuario } = useAuth();
-  const { theme } = useTheme();
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   if (!usuario) {
     return null;
   }
 
-  const { colors } = useTheme();
-
   return (
-    <div className={`flex min-h-screen ${colors.background} ${colors.text}`}>
+    <div className="flex min-h-screen bg-[#15202B] text-white">
       {/* Sidebar */}
       <Sidebar onProfileClick={() => setShowProfileModal(true)} />
 
@@ -33,6 +29,7 @@ const Layout = () => {
         <UserProfileModal
           isOpen={showProfileModal}
           onClose={() => setShowProfileModal(false)}
+          userId={usuario.id}
         />
       )}
     </div>

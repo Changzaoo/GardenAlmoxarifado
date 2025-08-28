@@ -11,6 +11,16 @@ const MeuInventarioTab = ({ emprestimos }) => {
   const [transferencias, setTransferencias] = useState([]);
   const [isLoadingTransferencias, setIsLoadingTransferencias] = useState(true);
 
+  // Aplicar o tema do Twitter à página
+  useEffect(() => {
+    document.body.style.backgroundColor = '#15202B';
+    document.body.style.color = '#ffffff';
+    return () => {
+      document.body.style.backgroundColor = '';
+      document.body.style.color = '';
+    };
+  }, []);
+
   // Carregar transferências pendentes
   useEffect(() => {
     let unsubscribe = () => {};

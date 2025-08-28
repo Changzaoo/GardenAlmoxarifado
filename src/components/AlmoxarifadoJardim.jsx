@@ -18,7 +18,6 @@ import FuncionariosTab from './Funcionarios/FuncionariosTab';
 import UsuariosTab from './usuarios/UsuariosTab';
 import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
 import TarefasTab from './Tarefas/TarefasTab';
-import SuporteTab from './Suporte/SuporteTab';
 import FerramentasPerdidasTab from './Perdidas/FerramentasPerdidasTab';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import { MessageCircle } from 'lucide-react';
@@ -27,7 +26,7 @@ import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferencias
 import { AuthContext, useAuth } from '../hooks/useAuth';
 // Icons
 import { 
-  Package, 
+  Sprout, 
   Users, 
   ClipboardList,
   ClipboardCheck,
@@ -661,11 +660,11 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-700/20 p-8">
         <div className="text-center mb-8">
           <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-            <Package className="w-8 h-8 text-green-600 dark:text-green-400" />
+            <Sprout className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Almoxarifado Jardim</h1>
           <p className="text-gray-600 dark:text-gray-300 mb-4">Sistema de Gestão</p>
@@ -674,17 +673,17 @@ const LoginForm = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Email/Usuário
             </label>
             <div className="relative">
-              <User className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+              <User className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 onKeyPress={handleKeyPress}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
                 placeholder="Digite seu usuário"
                 required
                 disabled={carregando}
@@ -693,17 +692,17 @@ const LoginForm = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Senha
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+              <Lock className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
               <input
                 type={mostrarSenha ? 'text' : 'password'}
                 value={formData.senha}
                 onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
                 onKeyPress={handleKeyPress}
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
                 placeholder="Digite sua senha"
                 required
                 disabled={carregando}
@@ -711,7 +710,7 @@ const LoginForm = () => {
               <button
                 type="button"
                 onClick={() => setMostrarSenha(!mostrarSenha)}
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 disabled={carregando}
               >
                 {mostrarSenha ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -772,11 +771,11 @@ const Dashboard = ({ stats, firebaseStatus }) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
-        <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-lg shadow">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded">
-              <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+              <Sprout className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-900 dark:text-white">Inventário</p>
@@ -784,58 +783,58 @@ const Dashboard = ({ stats, firebaseStatus }) => {
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded">
-              <ClipboardList className="w-6 h-6 text-green-600" />
+            <div className="p-2 bg-green-100 dark:bg-green-900 rounded">
+              <ClipboardList className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Empréstimos Ativos</p>
-              <p className="text-2xl font-bold text-gray-900">{emprestimos?.filter(e => e.status !== 'devolvido').length || 0}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Empréstimos Ativos</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{emprestimos?.filter(e => e.status !== 'devolvido').length || 0}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
           <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded">
-              <Users className="w-6 h-6 text-yellow-600" />
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded">
+              <Users className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Funcionários</p>
-              <p className="text-2xl font-bold text-gray-900">{funcionarios?.length || 0}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Funcionários</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{funcionarios?.length || 0}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
           <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+            <div className="p-2 bg-red-100 dark:bg-red-900 rounded">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Danificadas</p>
-              <p className="text-2xl font-bold text-gray-900">{ferramentasDanificadas?.length || 0}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Danificadas</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{ferramentasDanificadas?.length || 0}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
           <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded">
-              <AlertCircle className="w-6 h-6 text-red-600" />
+            <div className="p-2 bg-red-100 dark:bg-red-900 rounded">
+              <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Perdidas</p>
-              <p className="text-2xl font-bold text-gray-900">{ferramentasPerdidas?.length || 0}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Perdidas</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{ferramentasPerdidas?.length || 0}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
           <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded">
-              <ShoppingCart className="w-6 h-6 text-purple-600" />
+            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded">
+              <ShoppingCart className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Compras</p>
-              <p className="text-2xl font-bold text-gray-900">{compras?.length || 0}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Compras</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{compras?.length || 0}</p>
             </div>
           </div>
         </div>
@@ -847,20 +846,20 @@ const Dashboard = ({ stats, firebaseStatus }) => {
 // Componente de Loading
 const LoadingScreen = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-[#ebf8ff] to-[#e6f7ff] dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
       <div className="text-center">
-        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-          <Package className="w-8 h-8 text-green-600 animate-pulse" />
+        <div className="mx-auto w-16 h-16 bg-[#bae3ff] dark:bg-[#1DA1F2] rounded-full flex items-center justify-center mb-4">
+          <Sprout className="w-8 h-8 text-green-600 dark:text-green-400 animate-pulse" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Almoxarifado Jardim</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Almoxarifado Jardim</h1>
         <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
-          <p className="text-gray-600">Conectando ao Firebase...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 dark:border-green-400"></div>
+          <p className="text-gray-600 dark:text-gray-300">Conectando ao Firebase...</p>
         </div>
-        <div className="w-64 bg-gray-200 rounded-full h-2">
-          <div className="bg-green-600 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
+        <div className="w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="bg-green-600 dark:bg-green-400 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
         </div>
-        <p className="text-sm text-gray-500 mt-2">Inicializando módulos de segurança...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Inicializando módulos de segurança...</p>
       </div>
     </div>
   );
@@ -869,12 +868,12 @@ const LoadingScreen = () => {
 // Componente de Aviso de Permissão
 const PermissionDenied = ({ message = "Você não tem permissão para realizar esta ação." }) => {
   return (
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+    <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
       <div className="flex items-center justify-center mb-2">
-        <Shield className="w-8 h-8 text-red-600" />
+        <Shield className="w-8 h-8 text-red-600 dark:text-red-400" />
       </div>
-      <h3 className="text-lg font-medium text-red-800 mb-1">Acesso Negado</h3>
-      <p className="text-red-600">{message}</p>
+      <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-1">Acesso Negado</h3>
+      <p className="text-red-600 dark:text-red-400">{message}</p>
     </div>
   );
 };
@@ -1367,15 +1366,9 @@ const AlmoxarifadoSistema = () => {
       permissao: () => true // Visível para todos os níveis
     },
     { 
-      id: 'suporte', 
-      nome: 'Suporte', 
-      icone: MessageCircle,
-      permissao: () => true // Visível para todos os níveis
-    },
-    { 
       id: 'inventario', 
       nome: 'Inventário', 
-      icone: Package,
+      icone: Sprout,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
     { 
@@ -1432,7 +1425,7 @@ const AlmoxarifadoSistema = () => {
         <header className="bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-700 fixed top-0 left-0 right-0 z-20">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center">
-              <Package className="w-6 h-6 text-green-600 mr-2" />
+              <Sprout className="w-6 h-6 text-green-600 mr-2" />
               <h1 className="text-base font-bold text-gray-900 dark:text-white">Almoxarifado</h1>
             </div>
             <button
@@ -1455,15 +1448,15 @@ const AlmoxarifadoSistema = () => {
           ? `fixed inset-0 z-10 transform transition-transform duration-300 ease-in-out ${
               menuOpen ? 'translate-x-0' : '-translate-x-full'
             }`
-          : 'w-64 fixed'
-      } bg-gray-50 dark:bg-gray-900 border-r dark:border-gray-700 min-h-screen`}>
+          : 'w-72 fixed'
+      } bg-white dark:bg-black border-r dark:border-[#2F3336] min-h-screen`}>
         {!isMobile && (
-          <div className="p-4 border-b dark:border-gray-700">
+          <div className="p-4 border-b dark:border-[#2F3336]">
             <div className="flex items-center">
-              <Package className="w-8 h-8 text-green-600 mr-3" />
+              <Sprout className="w-8 h-8 text-[#1D9BF0] mr-3" />
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Almoxarifado Jardim</h1>
-                <p className="text-xs text-gray-900 dark:text-white">Sistema de Gestão</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-[#E7E9EA]">Almoxarifado Jardim</h1>
+                <p className="text-sm text-gray-500 dark:text-[#71767B]">Sistema de Gestão</p>
               </div>
             </div>
           </div>
@@ -1482,13 +1475,17 @@ const AlmoxarifadoSistema = () => {
                       setMenuOpen(false);
                     }
                   }}
-                  className={`w-full flex items-center space-x-2 px-3 ${isMobile ? 'py-3' : 'py-2'} rounded-lg font-medium text-sm transition-colors ${
+                  className={`w-full flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-base transition-all duration-200 ${
                     abaAtiva === aba.id
-                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
-                      : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-black dark:bg-[#1D9BF0] text-white dark:text-white'
+                      : 'text-gray-900 dark:text-[#E7E9EA] hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10'
                   }`}
                 >
-                  <Icone className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} flex-shrink-0 ${abaAtiva === aba.id ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`} />
+                  <Icone className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
+                    abaAtiva === aba.id 
+                      ? 'text-white' 
+                      : 'text-gray-900 dark:text-[#E7E9EA] group-hover:text-[#1D9BF0]'
+                  }`} />
                   <span>{aba.nome}</span>
                 </button>
               );
@@ -1515,43 +1512,45 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
 
-        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900`}>
+        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 p-4 border-t dark:border-[#2F3336] bg-white dark:bg-black`}>
           <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
               {usuario.photoURL ? (
                 <img src={usuario.photoURL} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <User className="w-full h-full p-2 text-gray-600 dark:text-gray-400" />
+                <User className="w-full h-full p-2 text-gray-600 dark:text-[#71767B]" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`${isMobile ? 'text-base' : 'text-sm'} font-medium text-gray-900 dark:text-white truncate`}>{usuario.nome}</p>
-              <p className="text-xs text-gray-900 dark:text-white truncate">{NIVEIS_LABELS[usuario.nivel]}</p>
+              <p className={`${isMobile ? 'text-base' : 'text-sm'} font-bold text-gray-900 dark:text-[#E7E9EA] truncate`}>{usuario.nome}</p>
+              <p className="text-sm text-gray-500 dark:text-[#71767B] truncate">{NIVEIS_LABELS[usuario.nivel]}</p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
               <button
                 onClick={() => setShowProfileModal(true)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Editar perfil"
               >
-                <Edit className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-600 dark:text-gray-400`} />
+                <Edit className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
               </button>
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title={theme === 'light' ? 'Mudar para modo escuro' : 'Mudar para modo claro'}
               >
                 {theme === 'light' ? (
-                  <Moon className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-600 dark:text-gray-400`} />
+                  <Moon className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
                 ) : (
-                  <Sun className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-600 dark:text-gray-400`} />
+                  <Sun className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
                 )}
               </button>
             </div>
           </div>
           <button
             onClick={logout}
-            className={`w-full flex items-center justify-center gap-2 px-3 ${isMobile ? 'py-3 text-base' : 'py-2 text-sm'} rounded-lg transition-colors text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40`}
+            className={`w-full flex items-center justify-center gap-2 px-4 ${
+              isMobile ? 'py-3 text-base' : 'py-2.5 text-sm'
+            } rounded-full font-medium transition-colors text-gray-900 dark:text-[#E7E9EA] hover:bg-red-500/10 dark:hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-500`}
           >
             <Lock className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
             <span>Sair</span>
@@ -1566,11 +1565,11 @@ const AlmoxarifadoSistema = () => {
         userId={usuario.id}
       />
 
-      <main className={`${isMobile ? 'pt-16' : 'pl-64'} w-full min-h-screen bg-gray-50 dark:bg-gray-900`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-gray-900 dark:text-white`}>
+      <main className={`${isMobile ? 'pt-16' : 'pl-64'} w-full min-h-screen bg-white dark:bg-black`}>
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="py-3">
+            <div className="flex items-center justify-between sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md py-3 mb-4 border-b border-gray-100 dark:border-[#2F3336]">
+              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900 dark:text-[#E7E9EA]`}>
                 {abas.find(aba => aba.id === abaAtiva)?.nome || 'Dashboard'}
               </h1>
             </div>
@@ -1589,10 +1588,6 @@ const AlmoxarifadoSistema = () => {
                   <TarefasTab />
                 </TarefasProvider>
               </FuncionariosProvider>
-            )}
-
-            {abaAtiva === 'suporte' && (
-              <SuporteTab />
             )}
 
             {abaAtiva === 'inventario' && (

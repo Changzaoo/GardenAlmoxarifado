@@ -9,16 +9,24 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
+          DEFAULT: '#1D9BF0',
+          hover: '#1A8CD8',
+        },
+        dark: {
+          bg: '#000000',
+          card: '#16181C',
+          hover: '#1D1F23',
+          border: '#2F3336',
+          text: {
+            primary: '#E7E9EA',
+            secondary: '#71767B',
+          }
+        },
+        accent: {
+          blue: '#1D9BF0',
+          green: '#00BA7C',
+          red: '#F4212E',
+          yellow: '#FAA626',
         },
       },
       fontFamily: {

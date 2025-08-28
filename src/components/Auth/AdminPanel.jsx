@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Shield } from 'lucide-react';
+import { Shield, AlertTriangle } from 'lucide-react';
+import Input from '../common/Input';
+import Button from '../common/Button';
 
 const AdminPanel = ({ onClose }) => {
   const [newCredentials, setNewCredentials] = useState({ username: '', password: '' });
@@ -17,54 +19,58 @@ const AdminPanel = ({ onClose }) => {
   };
 
   return (
-    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-      <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
-        <Shield className="w-4 h-4" />
+    <div className="bg-[#192734] border border-[#38444D] rounded-xl p-6 shadow-lg">
+      <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+        <Shield className="w-5 h-5 text-[#1D9BF0]" />
         Painel de Administração
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-blue-700 mb-1">
-            Novo Usuário
-          </label>
-          <input
+
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Novo Usuário"
             type="text"
             value={newCredentials.username}
             onChange={(e) => setNewCredentials({...newCredentials, username: e.target.value})}
-            className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Digite o novo usuário"
           />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-blue-700 mb-1">
-            Nova Senha
-          </label>
-          <input
+          
+          <Input
+            label="Nova Senha"
             type="password"
             value={newCredentials.password}
             onChange={(e) => setNewCredentials({...newCredentials, password: e.target.value})}
-            className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Digite a nova senha"
           />
         </div>
-      </div>
-      <div className="flex gap-2 mt-3">
-        <button
-          onClick={updateCredentials}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-        >
-          Atualizar Credenciais
-        </button>
-        <button
-          onClick={onClose}
-          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm"
-        >
-          Cancelar
-        </button>
-      </div>
-      <div className="mt-3 p-3 bg-yellow-100 border border-yellow-400 rounded text-sm text-yellow-800">
-        <strong>Atenção:</strong> As credenciais atuais só são conhecidas pelo desenvolvedor. 
-        Ao alterar, anote as novas informações pois o sistema será reinicializado.
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-4 mt-6">
+          <Button
+            variant="primary"
+            onClick={updateCredentials}
+            className="flex-1"
+          >
+            Atualizar Credenciais
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            className="flex-1"
+          >
+            Cancelar
+          </Button>
+        </div>
+        
+        <div className="mt-4 p-4 bg-[#FFD700] bg-opacity-10 border border-[#FFD700] rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-[#FFD700] flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-[#FFD700]">
+              <strong>Atenção:</strong> As credenciais atuais só são conhecidas pelo desenvolvedor. 
+              Ao alterar, anote as novas informações pois o sistema será reinicializado.
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

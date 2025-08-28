@@ -1,88 +1,77 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { twitterThemeConfig } from '../styles/twitterThemeConfig';
 
 const ThemeContext = createContext({
-  theme: 'light',
+  theme: 'dark',
   toggleTheme: () => {},
+  colors: twitterThemeConfig.colors,
+  classes: twitterThemeConfig.classes,
 });
 
-// Tema padrão do sistema
 export const themeColors = {
-  light: {
-    primary: 'bg-green-600 hover:bg-green-700',
-    secondary: 'bg-blue-600 hover:bg-blue-700',
-    danger: 'bg-red-600 hover:bg-red-700',
-    warning: 'bg-yellow-500 hover:bg-yellow-600',
-    success: 'bg-green-600 hover:bg-green-700',
-    info: 'bg-blue-500 hover:bg-blue-600',
-    
+  colors: {
     // Backgrounds
-    background: 'bg-gray-50 dark:bg-gray-900',
-    card: 'bg-white dark:bg-gray-800',
-    navbar: 'bg-white dark:bg-gray-800',
-    modal: 'bg-white dark:bg-gray-800',
+    background: 'bg-[#15202B]',
+    card: 'bg-[#192734]',
+    input: 'bg-[#253341]',
+    modal: 'bg-[#192734]',
     
-    // Text
-    text: 'text-gray-900 dark:text-white',
-    textSecondary: 'text-gray-600 dark:text-gray-300',
-    textMuted: 'text-gray-500 dark:text-gray-400',
+    // Primary Colors
+    primary: 'bg-[#1DA1F2] hover:bg-[#1a91da]',
+    secondary: 'bg-[#253341] hover:bg-[#2C3D4F]',
+    danger: 'bg-[#F4212E] hover:bg-[#dc1e29]',
+    success: 'bg-[#1DA1F2] hover:bg-[#1a91da]',
+    warning: 'bg-[#FFD700] hover:bg-[#E6C200]',
+    info: 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]',
     
-    // Borders
-    border: 'border-gray-200',
-    
-    // Form elements
-    input: 'bg-white border-gray-300 focus:ring-green-500 focus:border-green-500',
-    
-    // Table
-    tableHeader: 'bg-gray-50',
-    tableRow: 'hover:bg-gray-50',
-    tableBorder: 'border-gray-200',
-    
-    // Status
-    activeStatus: 'bg-green-100 text-green-800',
-    pendingStatus: 'bg-yellow-100 text-yellow-800',
-    inactiveStatus: 'bg-gray-100 text-gray-800',
-    
-    // Shadows
-    shadow: 'shadow-md',
-  },
-  dark: {
-    primary: 'bg-green-600 hover:bg-green-700',
-    secondary: 'bg-blue-600 hover:bg-blue-700',
-    danger: 'bg-red-600 hover:bg-red-700',
-    warning: 'bg-yellow-500 hover:bg-yellow-600',
-    success: 'bg-green-600 hover:bg-green-700',
-    info: 'bg-blue-500 hover:bg-blue-600',
-    
-    // Backgrounds
-    background: 'bg-gray-900',
-    card: 'bg-gray-800',
-    navbar: 'bg-gray-800',
-    modal: 'bg-gray-800',
-    
-    // Text
+    // Text Colors
     text: 'text-white',
-    textSecondary: 'text-gray-300',
-    textMuted: 'text-gray-400',
+    textSecondary: 'text-[#8899A6]',
+    textMuted: 'text-[#536471]',
     
     // Borders
-    border: 'border-gray-700',
+    border: 'border-[#38444D]',
     
-    // Form elements
-    input: 'bg-gray-700 border-gray-600 focus:ring-green-500 focus:border-green-500 text-white',
+    // Form Elements
+    inputBg: 'bg-[#253341]',
+    inputBorder: 'border-[#38444D]',
+    inputFocus: 'focus:ring-[#1DA1F2] focus:border-[#1DA1F2]',
+    inputText: 'text-white placeholder-[#8899A6]',
     
-    // Table
-    tableHeader: 'bg-gray-900',
-    tableRow: 'hover:bg-gray-700',
-    tableBorder: 'border-gray-700',
+    // Status Colors
+    successLight: 'bg-[#1DA1F2] bg-opacity-10 text-[#1DA1F2]',
+    warningLight: 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]',
+    dangerLight: 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]',
     
-    // Status
-    activeStatus: 'bg-green-900 text-green-300',
-    pendingStatus: 'bg-yellow-900 text-yellow-300',
-    inactiveStatus: 'bg-gray-900 text-gray-300',
+    // Tables
+    tableHeader: 'bg-[#253341]',
+    tableRow: 'border-[#38444D] hover:bg-[#253341]',
+    tableBorder: 'border-[#38444D]',
     
     // Shadows
-    shadow: 'shadow-lg shadow-gray-900/50',
+    shadow: 'shadow-lg shadow-[#15202B]/50'
   },
+  
+  components: {
+    // Buttons
+    button: 'rounded-full font-medium transition-colors',
+    buttonPrimary: 'bg-[#1DA1F2] hover:bg-[#1a91da] text-white',
+    buttonSecondary: 'bg-[#253341] hover:bg-[#2C3D4F] text-white',
+    buttonDanger: 'bg-[#F4212E] hover:bg-[#dc1e29] text-white',
+    buttonOutline: 'border border-[#38444D] hover:bg-[#253341] text-white',
+    
+    // Inputs
+    input: 'w-full rounded-full bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]',
+    
+    // Cards
+    card: 'bg-[#192734] border border-[#38444D] rounded-xl shadow-sm',
+    
+    // Modal
+    modal: 'bg-[#192734] border border-[#38444D] rounded-xl shadow-xl',
+    
+    // Status Badges
+    badge: 'rounded-full px-2 py-1 text-xs font-medium'
+  }
 };
 
 // Componentes comuns estilizados

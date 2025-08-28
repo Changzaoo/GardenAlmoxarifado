@@ -6,9 +6,9 @@ import { FuncionariosProvider } from './components/Funcionarios/FuncionariosProv
 import { InventarioProvider } from './components/Inventario/InventarioProvider';
 import { TarefasProvider } from './components/Tarefas/TarefasProvider';
 import { NotificationProvider } from './components/NotificationProvider';
-import { ThemeProvider } from './components/ThemeProvider';
+import { TwitterThemeProvider } from './components/TwitterThemeProvider';
 import Layout from './components/Layout/Layout';
-import LoginFormContainer from './components/Auth/LoginFormContainer';
+import LoginForm from './components/Auth/LoginForm';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import UserProfileModal from './components/Auth/UserProfileModal';
 import 'react-toastify/dist/ReactToastify.css';
@@ -31,15 +31,25 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <ThemeProvider>
+        <TwitterThemeProvider>
           <NotificationProvider>
             <FuncionariosProvider>
               <InventarioProvider>
                 <TarefasProvider>
                   <div className="App">
-                    <ToastContainer position="top-right" autoClose={3000} />
+                    <ToastContainer 
+                      position="top-right" 
+                      autoClose={3000}
+                      theme="dark"
+                      toastStyle={{
+                        background: '#192734',
+                        color: '#ffffff',
+                        borderRadius: '1rem',
+                        border: '1px solid #38444D'
+                      }}
+                    />
                     <Routes>
-                      <Route path="/login" element={<LoginFormContainer />} />
+                      <Route path="/login" element={<LoginForm />} />
                       <Route path="/" element={<Layout />}>
                         <Route index element={<PrivateRoute requiredLevel={1}><AlmoxarifadoJardim /></PrivateRoute>} />
                         <Route path="funcionarios" element={<PrivateRoute requiredLevel={2}><FuncionariosTab /></PrivateRoute>} />
@@ -56,7 +66,7 @@ function App() {
               </InventarioProvider>
             </FuncionariosProvider>
           </NotificationProvider>
-        </ThemeProvider>
+        </TwitterThemeProvider>
       </AuthProvider>
     </Router>
   );

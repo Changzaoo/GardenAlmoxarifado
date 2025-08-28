@@ -1,0 +1,80 @@
+/* Base styles for form inputs */
+.form-input {
+  @apply bg-white dark:bg-gray-700 
+         text-gray-900 dark:text-white 
+         border border-gray-300 dark:border-gray-600 
+         rounded-lg 
+         focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 
+         focus:border-green-500 dark:focus:border-green-400
+         placeholder-gray-400 dark:placeholder-gray-500;
+}
+
+.form-select {
+  @apply bg-white dark:bg-gray-700 
+         text-gray-900 dark:text-white 
+         border border-gray-300 dark:border-gray-600 
+         rounded-lg 
+         focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 
+         focus:border-green-500 dark:focus:border-green-400;
+}
+
+/* Style for the dropdown options */
+.form-select option {
+  @apply bg-white dark:bg-gray-700 
+         text-gray-900 dark:text-white;
+}
+
+/* Style for input placeholder text */
+.form-input::placeholder {
+  @apply text-gray-400 dark:text-gray-500;
+}
+
+/* Style for disabled inputs */
+.form-input:disabled,
+.form-select:disabled {
+  @apply bg-gray-100 dark:bg-gray-800 
+         cursor-not-allowed 
+         opacity-50;
+}
+
+/* Style for focused state */
+.form-input:focus,
+.form-select:focus {
+  @apply outline-none;
+}
+
+/* Style for input groups */
+.input-group {
+  @apply flex items-center space-x-2;
+}
+
+/* Style for form labels */
+.form-label {
+  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+}
+
+/* Style for textarea */
+textarea.form-input {
+  @apply resize-y min-h-[100px];
+}
+
+/* Style for search inputs */
+.search-input {
+  @apply pl-10 pr-4;
+}
+
+/* Style for number inputs */
+input[type="number"].form-input {
+  @apply pr-2;
+}
+
+/* Remove spinner buttons from number inputs */
+input[type="number"].form-input::-webkit-outer-spin-button,
+input[type="number"].form-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"].form-input {
+  -moz-appearance: textfield;
+}

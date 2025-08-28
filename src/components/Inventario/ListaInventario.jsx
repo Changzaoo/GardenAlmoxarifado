@@ -15,24 +15,24 @@ const ListaInventario = ({ inventario, emprestimos, removerItem }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-[#192734] rounded-2xl shadow-lg p-6 border border-[#38444D]">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Inventário Completo</h2>
+        <h2 className="text-xl font-bold text-[#fff]">Inventário Completo</h2>
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <Search className="w-4 h-4 absolute left-3 top-3 text-[#8899A6]" />
           <input
             type="text"
             placeholder="Buscar por item ou categoria..."
             value={filtroInventario}
             onChange={(e) => setFiltroInventario(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="pl-10 pr-4 py-2 bg-[#253341] border border-[#38444D] rounded-full text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
           />
         </div>
       </div>
 
       {/* Resumo por Categoria */}
       <div className="mb-6">
-        <h3 className="font-medium text-gray-700 mb-3">Resumo por Categoria</h3>
+        <h3 className="font-medium text-[#1DA1F2] mb-3">Resumo por Categoria</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {['Ferramentas', 'Equipamentos', 'EPI', 'Outros'].map(categoria => {
             const itensCategoria = inventarioFiltrado.filter(item => item.categoria === categoria);
@@ -41,12 +41,21 @@ const ListaInventario = ({ inventario, emprestimos, removerItem }) => {
             const emUso = totalItens - disponiveis;
             
             return (
-              <div key={categoria} className="bg-gray-50 p-3 rounded-lg">
-                <div className="font-medium text-gray-800">{categoria}</div>
-                <div className="text-sm text-gray-600">
-                  <div>Total: {totalItens}</div>
-                  <div>Disponível: {disponiveis}</div>
-                  <div>Em uso: {emUso}</div>
+              <div key={categoria} className="bg-[#253341] p-4 rounded-2xl border border-[#38444D]">
+                <div className="font-medium text-white mb-2">{categoria}</div>
+                <div className="text-sm text-[#8899A6] space-y-1">
+                  <div className="flex justify-between">
+                    <span>Total:</span>
+                    <span className="text-white">{totalItens}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Disponível:</span>
+                    <span className="text-[#00BA7C]">{disponiveis}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Em uso:</span>
+                    <span className="text-[#1DA1F2]">{emUso}</span>
+                  </div>
                 </div>
               </div>
             );

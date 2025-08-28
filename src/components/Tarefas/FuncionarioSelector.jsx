@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Users, X } from 'lucide-react';
+import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
 const FuncionarioSelector = ({ funcionarios, onSelecionarFuncionarios }) => {
+  const { colors, classes } = twitterThemeConfig;
   const [buscaFuncionario, setBuscaFuncionario] = useState('');
   const [sugestoesVisiveis, setSugestoesVisiveis] = useState(false);
   const [selecionados, setSelecionados] = useState([]);
@@ -60,16 +62,16 @@ const FuncionarioSelector = ({ funcionarios, onSelecionarFuncionarios }) => {
       <div className="relative">
         <button
           onClick={() => setSugestoesVisiveis(!sugestoesVisiveis)}
-          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg flex items-center justify-between hover:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          className={`w-full px-4 py-2 ${classes.select} flex items-center justify-between`}
         >
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-700">
+            <Users className={`w-4 h-4 ${colors.textSecondary}`} />
+            <span className={colors.text}>
               {buscaFuncionario || "Selecionar funcionários..."}
             </span>
           </div>
           <svg
-            className={`w-4 h-4 text-gray-400 transition-transform ${
+            className={`w-4 h-4 ${colors.textSecondary} transition-transform ${
               sugestoesVisiveis ? "rotate-180" : ""
             }`}
             fill="none"
@@ -86,15 +88,15 @@ const FuncionarioSelector = ({ funcionarios, onSelecionarFuncionarios }) => {
         </button>
 
         {sugestoesVisiveis && (
-          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-100">
+          <div className={`absolute z-10 w-full mt-1 ${classes.card} max-h-64 overflow-auto`}>
+            <div className={`sticky top-0 ${classes.card} border-b border-gray-100`}>
               <div className="flex items-center px-3 py-2">
                 <input
                   type="text"
                   value={buscaFuncionario}
                   onChange={(e) => setBuscaFuncionario(e.target.value)}
                   placeholder="Digite para filtrar funcionários..."
-                  className="w-full px-2 py-1 text-sm border-none focus:ring-0 focus:outline-none"
+                  className={`w-full px-2 py-1 text-sm ${classes.input} border-none focus:ring-0`}
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
@@ -104,23 +106,23 @@ const FuncionarioSelector = ({ funcionarios, onSelecionarFuncionarios }) => {
                 <button
                   key={funcionario.id}
                   onClick={() => handleSelecionarFuncionario(funcionario)}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                  className={`w-full px-4 py-2 text-left ${classes.hoverBg} flex items-center gap-2 transition-colors`}
                 >
-                  <Users className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">
+                  <Users className={`w-4 h-4 ${colors.textSecondary}`} />
+                  <span className={`text-sm font-medium ${colors.text}`}>
                     {funcionario.nome}
                   </span>
-                  <span className="text-xs text-gray-500 ml-auto">
+                  <span className={`text-xs ${colors.textSecondary} ml-auto`}>
                     {funcionario.cargo || 'Funcionário'}
                   </span>
                 </button>
               ))
             ) : funcionarios.length === 0 ? (
-              <div className="px-4 py-2 text-sm text-gray-500">
+              <div className={`px-4 py-2 text-sm ${colors.textSecondary}`}>
                 Nenhum funcionário cadastrado
               </div>
             ) : (
-              <div className="px-4 py-2 text-sm text-gray-500">
+              <div className={`px-4 py-2 text-sm ${colors.textSecondary}`}>
                 Nenhum funcionário encontrado com esse filtro
               </div>
             )}
@@ -133,13 +135,13 @@ const FuncionarioSelector = ({ funcionarios, onSelecionarFuncionarios }) => {
         {funcionariosSelecionados.map((funcionario) => (
           <div
             key={funcionario.id}
-            className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full border border-green-200"
+            className={`inline-flex items-center gap-2 px-3 py-1 ${colors.primaryLight} ${colors.primary} rounded-full`}
           >
             <Users className="w-4 h-4" />
             <span className="text-sm font-medium">{funcionario.nome}</span>
             <button
               onClick={() => handleRemoverFuncionario(funcionario.id)}
-              className="p-0.5 hover:bg-green-100 rounded-full transition-colors"
+              className={`p-0.5 hover:${colors.primaryLightHover} rounded-full transition-colors`}
             >
               <X className="w-4 h-4" />
             </button>
