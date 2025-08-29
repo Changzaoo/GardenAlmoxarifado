@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Plus, Star, PauseCircle, PlayCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import CriarTarefa from './CriarTarefa';
+import DetalheTarefa from './DetalheTarefa';
 
 const NIVEIS_PERMISSAO = {
   FUNCIONARIO: 1,
@@ -18,6 +19,8 @@ const TarefasTab = ({ funcionarios = [] }) => {
   const [tarefas, setTarefas] = useState([]);
   const [showCriarTarefa, setShowCriarTarefa] = useState(false);
   const [filtro, setFiltro] = useState('todas'); // todas, minhas, pendentes, concluidas
+  const [tarefaSelecionada, setTarefaSelecionada] = useState(null);
+  const [temposDecorridos, setTemposDecorridos] = useState({});
 
   // Função para detectar menções na descrição
   const detectarMencoes = (descricao) => {
@@ -34,6 +37,20 @@ const TarefasTab = ({ funcionarios = [] }) => {
         ...doc.data()
       }));
       setTarefas(tarefasData);
+      
+      // Inicializar tempos decorridos para tarefas em andamento
+      const temposIniciais = {};
+      tarefasData.forEach(tarefa => {
+        if (tarefa.status === 'em_andamento' && tarefa.dataInicio) {
+          const inicioData = new Date(tarefa.dataInicio);
+          let tempo = new Date() - inicioData;
+          if (tarefa.tempoPausado) {
+            tempo -= tarefa.tempoPausado;
+          }
+          temposIniciais[tarefa.id] = tempo;
+        }
+      });
+      setTemposDecorridos(temposIniciais);
     });
 
     return () => unsubscribe();
@@ -84,8 +101,34 @@ const TarefasTab = ({ funcionarios = [] }) => {
     }
   };
 
+  useEffect(() => {
+    // Atualizar o tempo a cada segundo para tarefas em andamento
+    const interval = setInterval(() => {
+      setTemposDecorridos(prevTempos => {
+        const novosTempos = { ...prevTempos };
+        tarefas.forEach(tarefa => {
+          if (tarefa.status === 'em_andamento' && tarefa.dataInicio) {
+            const inicioData = new Date(tarefa.dataInicio);
+            let tempo = new Date() - inicioData;
+            if (tarefa.tempoPausado) {
+              tempo -= tarefa.tempoPausado;
+            }
+            novosTempos[tarefa.id] = tempo;
+          }
+        });
+        return novosTempos;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [tarefas]);
+
   const calcularTempoTotal = (tarefa) => {
     if (!tarefa.dataInicio) return 0;
+    
+    if (tarefa.status === 'em_andamento') {
+      return temposDecorridos[tarefa.id] || 0;
+    }
     
     let tempoTotal = 0;
     const inicioData = new Date(tarefa.dataInicio);
@@ -96,8 +139,6 @@ const TarefasTab = ({ funcionarios = [] }) => {
     } else if (tarefa.status === 'pausada') {
       const pausaData = new Date(tarefa.dataPausa);
       tempoTotal = pausaData - inicioData;
-    } else if (tarefa.status === 'em_andamento') {
-      tempoTotal = new Date() - inicioData;
     }
     
     // Subtrair tempo de pausas anteriores
@@ -160,19 +201,15 @@ const TarefasTab = ({ funcionarios = [] }) => {
     // Verificar se o usuário está atribuído à tarefa
     const isUserAssigned = tarefa.funcionariosIds?.includes(usuario.nome) || tarefa.funcionarios?.some(f => f.nome === usuario.nome);
     
-    // Verificar se o usuário foi mencionado na descrição
-    const mencoesNaDescricao = detectarMencoes(tarefa.descricao);
-    const isUserMentioned = mencoesNaDescricao.includes(usuario.nome);
-
-    // Se o usuário não for supervisor ou admin, mostrar suas tarefas e menções
-    if (usuario.nivel < NIVEIS_PERMISSAO.SUPERVISOR) {
-      return isUserAssigned || isUserMentioned;
+    // Para funcionários regulares, mostrar apenas suas tarefas atribuídas
+    if (usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
+      return isUserAssigned;
     }
 
     // Para supervisores e admins, aplicar os filtros normalmente
     switch (filtro) {
       case 'minhas':
-        return isUserAssigned || isUserMentioned;
+        return isUserAssigned;
       case 'pendentes':
         return tarefa.status === 'pendente';
       case 'em_andamento':
@@ -193,7 +230,11 @@ const TarefasTab = ({ funcionarios = [] }) => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-white">Tarefas</h1>
-          <p className="text-[#8899A6]">Gerencie as tarefas do almoxarifado</p>
+          <p className="text-[#8899A6]">
+            {usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO
+              ? "Suas tarefas atribuídas"
+              : "Gerencie as tarefas do almoxarifado"}
+          </p>
         </div>
         {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
           <button
@@ -208,18 +249,20 @@ const TarefasTab = ({ funcionarios = [] }) => {
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setFiltro('todas')}
-          className={`px-4 py-2 rounded-full ${
-            filtro === 'todas'
-              ? 'bg-[#1DA1F2] text-white'
-              : 'text-[#8899A6] hover:bg-[#1D9BF0]/10'
-          }`}
-        >
-          Todas
-        </button>
+        {usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+          <button
+            onClick={() => setFiltro('todas')}
+            className={`px-4 py-2 rounded-full ${
+              filtro === 'todas'
+                ? 'bg-[#1DA1F2] text-white'
+                : 'text-[#8899A6] hover:bg-[#1D9BF0]/10'
+            }`}
+          >
+            Todas
+          </button>
+        )}
         
-        {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
+        {usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
           <button
             onClick={() => setFiltro('minhas')}
             className={`px-4 py-2 rounded-full ${
@@ -282,7 +325,8 @@ const TarefasTab = ({ funcionarios = [] }) => {
         {tarefasFiltradas.map((tarefa) => (
           <div
             key={tarefa.id}
-            className="bg-[#192734] p-4 rounded-xl border border-[#38444D]"
+            onClick={() => setTarefaSelecionada(tarefa)}
+            className="bg-[#192734] p-4 rounded-xl border border-[#38444D] cursor-pointer hover:border-[#1DA1F2] transition-colors"
           >
             <div className="flex justify-between items-start mb-3">
               <div>
@@ -452,10 +496,19 @@ const TarefasTab = ({ funcionarios = [] }) => {
       </div>
 
       {/* Modal de Criar Tarefa */}
+      {/* Modal de Criar Tarefa */}
       {showCriarTarefa && (
         <CriarTarefa 
           onClose={() => setShowCriarTarefa(false)} 
           funcionarios={funcionarios}
+        />
+      )}
+
+      {/* Modal de Detalhes da Tarefa */}
+      {tarefaSelecionada && (
+        <DetalheTarefa
+          tarefa={tarefaSelecionada}
+          onClose={() => setTarefaSelecionada(null)}
         />
       )}
     </div>

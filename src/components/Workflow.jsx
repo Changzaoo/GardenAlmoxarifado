@@ -1449,8 +1449,11 @@ const AlmoxarifadoSistema = () => {
             {/* Logo e título no header mobile quando menu fechado */}
             {!menuOpen && (
               <div className="flex items-center">
-                <img src="/logo.png" alt="Logo WorkFlow" className="w-8 h-8 mr-2" />
-                <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
+                <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
+                <div>
+                  <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
+                  <p className="text-xs text-gray-500 dark:text-[#71767B]">Gerenciamento de Ferramentas</p>
+                </div>
               </div>
             )}
             
