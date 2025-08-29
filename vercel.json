@@ -35,6 +35,13 @@
     }
   ],
   "env": {
-    "REACT_APP_ENV": "production"
+    "REACT_APP_ENV": "production",
+    "REACT_APP_FIREBASE_API_KEY": "AIzaSyAnLmtlhOUUAbtRcOg64dXdCLbltv_iE4E",
+    "REACT_APP_FIREBASE_AUTH_DOMAIN": "garden-c0b50.firebaseapp.com",
+    "REACT_APP_FIREBASE_PROJECT_ID": "garden-c0b50",
+    "REACT_APP_FIREBASE_STORAGE_BUCKET": "garden-c0b50.firebasestorage.app",
+    "REACT_APP_FIREBASE_MESSAGING_SENDER_ID": "467344354997",
+    "REACT_APP_FIREBASE_APP_ID": "1:467344354997:web:3c3397e0176060bb0c98fc",
+    "REACT_APP_FIREBASE_MEASUREMENT_ID": "G-7LML93QDTF"
   }
 }
