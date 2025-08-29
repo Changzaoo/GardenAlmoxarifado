@@ -28,6 +28,32 @@ const generateEncryptionKey = (customSalt = '') => {
 };
 
 // Função para encriptar dados
+// Função para encriptar uma senha usando um salt único
+export const encryptPassword = (password) => {
+  const salt = generateSecureSalt(); // Gera um novo salt único
+  const key = generateEncryptionKey(salt);
+  const encrypted = CryptoJS.AES.encrypt(password, key).toString();
+  
+  return {
+    hash: encrypted,
+    salt: salt,
+    version: 1 // Versão do esquema de encriptação
+  };
+};
+
+// Função para validar uma senha contra um hash existente
+export const verifyPassword = (password, hash, salt, version = 1) => {
+  if (!hash || !salt) return false;
+  
+  const key = generateEncryptionKey(salt);
+  try {
+    const decrypted = CryptoJS.AES.decrypt(hash, key).toString(CryptoJS.enc.Utf8);
+    return decrypted === password;
+  } catch (error) {
+    return false;
+  }
+};
+
 export const encryptData = (data, customSalt = '') => {
   try {
     const key = generateEncryptionKey(customSalt);

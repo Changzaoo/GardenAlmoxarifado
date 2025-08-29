@@ -219,12 +219,6 @@ const UsuariosTab = () => {
         { valor: NIVEIS_PERMISSAO.GERENTE, label: NIVEIS_LABELS[NIVEIS_PERMISSAO.GERENTE] },
         { valor: NIVEIS_PERMISSAO.ADMIN, label: NIVEIS_LABELS[NIVEIS_PERMISSAO.ADMIN] }
       );
-    } else if (usuarioLogado.nivel === NIVEIS_PERMISSAO.GERENTE) {
-      // Gerente pode criar funcionários e supervisores
-      niveis.push(
-        { valor: NIVEIS_PERMISSAO.FUNCIONARIO, label: NIVEIS_LABELS[NIVEIS_PERMISSAO.FUNCIONARIO] },
-        { valor: NIVEIS_PERMISSAO.SUPERVISOR, label: NIVEIS_LABELS[NIVEIS_PERMISSAO.SUPERVISOR] }
-      );
     }
     
     return niveis;

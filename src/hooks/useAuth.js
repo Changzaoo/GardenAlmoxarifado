@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { encryptData, encryptPassword, verifyPassword } from '../utils/crypto';
 
 // Criar o contexto
 const AuthContext = createContext();
@@ -34,12 +35,15 @@ export const AuthProvider = ({ children }) => {
       setUsuarios(JSON.parse(usuariosSalvos));
     } else {
       // Criar usuário admin padrão se não existir
+      const senhaAdmin = encryptPassword('admin');
       const usuariosPadrao = [
         {
           id: 1,
           nome: 'Administrador',
           email: 'admin',
-          senha: 'admin',
+          senha: senhaAdmin.hash,
+          senhaSalt: senhaAdmin.salt,
+          senhaVersion: senhaAdmin.version,
           nivel: 'admin',
           ativo: true,
           ultimoLogin: null
@@ -61,27 +65,46 @@ export const AuthProvider = ({ children }) => {
 
   // Função de login
   const login = async (email, senha) => {
-    const usuarioEncontrado = usuarios.find(
-      u => u.email === email && u.senha === senha && u.ativo
-    );
+    try {
+      // Busca o usuário pelo email primeiro
+      const usuarioEncontrado = usuarios.find(
+        u => u.email === email && u.ativo
+      );
 
-    if (usuarioEncontrado) {
+      // Se não encontrou o usuário ou está inativo, retorna erro
+      if (!usuarioEncontrado) {
+        return { success: false, message: 'Credenciais inválidas' };
+      }
+
+      // Verifica se a senha fornecida coincide com a senha salva usando o salt único
+      const senhaValida = verifyPassword(
+        senha,
+        usuarioEncontrado.senha,
+        usuarioEncontrado.senhaSalt,
+        usuarioEncontrado.senhaVersion
+      );
+
+      if (!senhaValida) {
+        return { success: false, message: 'Credenciais inválidas' };
+      }
+
       const usuarioAtualizado = {
         ...usuarioEncontrado,
         ultimoLogin: new Date().toISOString()
       };
-      
+        
       // Atualizar último login na lista de usuários
       setUsuarios(prev => prev.map(u => 
         u.id === usuarioEncontrado.id ? usuarioAtualizado : u
       ));
-      
+        
       setUsuario(usuarioAtualizado);
       localStorage.setItem('usuario', JSON.stringify(usuarioAtualizado));
       return { success: true };
+    } catch (error) {
+      console.error('Erro no login:', error);
+      return { success: false, message: 'Erro interno do sistema' };
     }
-
-    return { success: false, message: 'Credenciais inválidas' };
   };
 
   // Função de logout
@@ -94,9 +117,15 @@ export const AuthProvider = ({ children }) => {
   const criarUsuario = async (dadosUsuario) => {
     try {
       const novoId = Math.max(...usuarios.map(u => u.id), 0) + 1;
+      // Gera um hash novo para a senha com salt único
+      const senhaCriptografada = encryptPassword(dadosUsuario.senha);
+      
       const novoUsuario = {
         id: novoId,
         ...dadosUsuario,
+        senha: senhaCriptografada.hash,
+        senhaSalt: senhaCriptografada.salt,
+        senhaVersion: senhaCriptografada.version,
         ultimoLogin: null
       };
 

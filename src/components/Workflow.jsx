@@ -2,12 +2,13 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs } from 'firebase/firestore';
 import { ToastProvider } from './ToastProvider';
 import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
+import LegalTab from './Legal/LegalTab';
+import { Shield } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './ThemeProvider';
 import SupportTab from './Support/SupportTab';
 import UserProfileModal from './Auth/UserProfileModal';
-import { TarefasProvider } from './Tarefas/TarefasProvider';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
 import { useNotifications } from '../hooks/useNotifications';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -19,16 +20,16 @@ import EmprestimosTab from './Emprestimos/EmprestimosTab';
 import FuncionariosTab from './Funcionarios/FuncionariosTab';
 import UsuariosTab from './usuarios/UsuariosTab';
 import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
-import TarefasTab from './Tarefas/TarefasTab';
 import FerramentasPerdidasTab from './Perdidas/FerramentasPerdidasTab';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import { MessageCircle } from 'lucide-react';
 import ComprasTab from './Compras/ComprasTab';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
+import TarefasTab from './Tarefas/TarefasTab';
 import { AuthContext, useAuth } from '../hooks/useAuth';
 // Icons
 import { 
-  Sprout, 
+  Package,
   Users, 
   ClipboardList,
   ClipboardCheck,
@@ -38,7 +39,6 @@ import {
   BarChart3,
   Settings,
   Lock,
-  Shield,
   User,
   Plus,
   Edit,
@@ -779,7 +779,7 @@ const Dashboard = ({ stats, firebaseStatus }) => {
         <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <Sprout className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              <Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-900 dark:text-white">Inventário</p>
@@ -891,6 +891,7 @@ const AlmoxarifadoSistema = () => {
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -1356,12 +1357,6 @@ const AlmoxarifadoSistema = () => {
       icone: BarChart3,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
-    {
-      id: 'suporte',
-      nome: 'Suporte',
-      icone: HelpCircle,
-      permissao: () => true // Visível para todos os níveis
-    },
     { 
       id: 'meu-inventario', 
       nome: 'Meu Inventário', 
@@ -1369,15 +1364,9 @@ const AlmoxarifadoSistema = () => {
       permissao: () => true // Visível para todos os níveis
     },
     { 
-      id: 'tarefas', 
-      nome: 'Tarefas', 
-      icone: ClipboardCheck,
-      permissao: () => true // Visível para todos os níveis
-    },
-    { 
       id: 'inventario', 
       nome: 'Inventário', 
-      icone: Sprout,
+      icone: Package,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
     { 
@@ -1410,6 +1399,7 @@ const AlmoxarifadoSistema = () => {
       icone: AlertTriangle,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
+
     { 
       id: 'perdidas', 
       nome: 'Ferramentas Perdidas', 
@@ -1427,11 +1417,17 @@ const AlmoxarifadoSistema = () => {
       nome: 'Histórico de Transferências', 
       icone: ArrowRight,
       permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR
+    },
+    { 
+      id: 'tarefas', 
+      nome: 'Tarefas', 
+      icone: ClipboardCheck,
+      permissao: () => true // Visível para todos os níveis
     }
   ].filter(aba => aba.permissao());
 
-  // Permissão para aba de usuários (ADMIN, SUPERVISOR, GERENTE)
-  const podeVerUsuarios = [NIVEIS_PERMISSAO.ADMIN, NIVEIS_PERMISSAO.SUPERVISOR, NIVEIS_PERMISSAO.GERENTE].includes(usuario?.nivel);
+  // Permissão para aba de usuários (apenas ADMIN)
+  const podeVerUsuarios = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -1547,6 +1543,29 @@ const AlmoxarifadoSistema = () => {
                 <span>Usuários do Sistema</span>
               </button>
             )}
+
+            {usuario?.nivel >= NIVEIS_PERMISSAO.LEGAL && (
+              <button
+                onClick={() => {
+                  setAbaAtiva('legal');
+                  if (isMobile) {
+                    setMenuOpen(false);
+                  }
+                }}
+                className={`w-full flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-base transition-all duration-200 ${
+                  abaAtiva === 'legal'
+                    ? 'bg-[#1D9BF0] text-white'
+                    : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                }`}
+              >
+                <Shield className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
+                  abaAtiva === 'legal' 
+                    ? 'text-white' 
+                    : 'text-gray-900 dark:text-[#E7E9EA] group-hover:text-[#1D9BF0]'
+                }`} />
+                <span>Gestão Legal</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -1561,9 +1580,20 @@ const AlmoxarifadoSistema = () => {
             </div>
             <div className="flex-1 min-w-0">
               <p className={`${isMobile ? 'text-base' : 'text-sm'} font-bold text-gray-900 dark:text-[#E7E9EA] truncate`}>{usuario.nome}</p>
-              <p className="text-sm text-gray-500 dark:text-[#71767B] truncate">{NIVEIS_LABELS[usuario.nivel]}</p>
+              <p className="text-sm text-gray-500 dark:text-[#71767B] truncate">
+                {usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 
+                  NIVEIS_LABELS[usuario.nivel] : 
+                  (usuario.cargo || NIVEIS_LABELS[usuario.nivel])}
+              </p>
             </div>
             <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setShowHelpModal(true)}
+                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                title="Ajuda"
+              >
+                <HelpCircle className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
+              </button>
               <button
                 onClick={() => setShowProfileModal(true)}
                 className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
@@ -1571,7 +1601,6 @@ const AlmoxarifadoSistema = () => {
               >
                 <Edit className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
               </button>
-
             </div>
           </div>
           <button
@@ -1593,6 +1622,13 @@ const AlmoxarifadoSistema = () => {
         userId={usuario.id}
       />
 
+      {/* Help Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 z-50">
+          <SupportTab onClose={() => setShowHelpModal(false)} />
+        </div>
+      )}
+
       <main className={`${isMobile ? 'pt-16' : 'pl-64'} w-full min-h-screen bg-white dark:bg-black`}>
         <div className="max-w-5xl mx-auto px-4">
           <div className="py-3">
@@ -1604,20 +1640,10 @@ const AlmoxarifadoSistema = () => {
             
             {abaAtiva === 'verificacao-mensal' && <VerificacaoMensalTab />}
 
-            {abaAtiva === 'suporte' && <SupportTab />}
-
             {abaAtiva === 'meu-inventario' && (
               <MeuInventarioTab
                 emprestimos={emprestimosCarregados ? emprestimos : null}
               />
-            )}
-
-            {abaAtiva === 'tarefas' && (
-              <FuncionariosProvider>
-                <TarefasProvider>
-                  <TarefasTab />
-                </TarefasProvider>
-              </FuncionariosProvider>
             )}
 
             {abaAtiva === 'inventario' && (
@@ -1732,6 +1758,14 @@ const AlmoxarifadoSistema = () => {
                 <HistoricoTransferenciasTab />
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar o histórico de transferências." />
+              )
+            )}
+
+            {abaAtiva === 'tarefas' && (
+              PermissionChecker.canView(usuario?.nivel) ? (
+                <TarefasTab />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para visualizar as tarefas." />
               )
             )}
           </div>

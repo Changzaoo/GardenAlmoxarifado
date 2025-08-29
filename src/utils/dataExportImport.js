@@ -71,7 +71,6 @@ export const validarDados = (dados, colecao) => {
   const estruturas = {
     inventario: ['nome', 'quantidade', 'disponivel', 'categoria'],
     emprestimos: ['funcionarioId', 'ferramentas', 'dataRetirada', 'status'],
-    tarefas: ['titulo', 'descricao', 'responsaveis', 'status', 'dataCriacao'],
     funcionarios: ['nome', 'nivel', 'setor'],
     ferramentas_danificadas: ['ferramentaId', 'descricao', 'dataRegistro'],
     ferramentas_perdidas: ['ferramentaId', 'descricao', 'dataRegistro'],

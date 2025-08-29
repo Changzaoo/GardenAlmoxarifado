@@ -29,7 +29,6 @@ const Input = ({
             border border-[#38444D]
             text-white
             placeholder-[#8899A6]
-            px-4 py-2
             transition-colors
             focus:outline-none
             focus:ring-2
@@ -37,7 +36,8 @@ const Input = ({
             focus:border-[#1DA1F2]
             hover:border-[#1DA1F2]
             ${error ? 'border-red-500' : ''}
-            ${Icon ? 'pl-10' : ''}
+            ${Icon ? 'pl-10 pr-4' : 'px-4'} 
+            py-2
             ${props.disabled ? 'opacity-75 cursor-not-allowed' : ''}
             ${className}
           `}

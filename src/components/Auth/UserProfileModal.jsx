@@ -1,62 +1,40 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { User, Upload, Save } from 'lucide-react';
-import { storage } from '../../firebaseConfig';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import React, { useState, useEffect } from 'react';
+import { X, Eye, EyeOff } from 'lucide-react';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ToastProvider';
-import { encryptData } from '../../utils/crypto';
-import Button from '../common/Button';
-import Input from '../common/Input';
+import { encryptPassword } from '../../utils/crypto';
+import { NIVEIS_PERMISSAO, NIVEIS_LABELS } from '../../constants/permissoes';
 
 const UserProfileModal = ({ isOpen, onClose, userId }) => {
   const { usuario, atualizarUsuario } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState(null);
-  const fileInputRef = useRef();
+  const [showPassword, setShowPassword] = useState(false);
   const canEdit = usuario?.id === userId;
   
   const [userData, setUserData] = useState({
     nome: usuario?.nome || '',
-    usuario: usuario?.usuario || '',
+    email: usuario?.email || '',
     senha: '',
-    telefone: usuario?.telefone || ''
+    telefone: usuario?.telefone || '',
+    nivel: usuario?.nivel || NIVEIS_PERMISSAO.FUNCIONARIO,
+    ativo: usuario?.ativo ?? true
   });
 
   useEffect(() => {
     if (isOpen && usuario) {
       setUserData({
         nome: usuario.nome || '',
-        usuario: usuario.usuario || '',
+        email: usuario.email || '',
         senha: '',
-        telefone: usuario.telefone || ''
+        telefone: usuario.telefone || '',
+        nivel: usuario.nivel || NIVEIS_PERMISSAO.FUNCIONARIO,
+        ativo: usuario.ativo ?? true
       });
-      setPreview(null);
     }
   }, [isOpen, usuario]);
-
-  const handleFileUpload = async (file) => {
-    try {
-      setLoading(true);
-      const storageRef = ref(storage, `users/${usuario.id}/profile-${Date.now()}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      
-      await updateDoc(doc(db, 'usuarios', usuario.id), {
-        photoURL: downloadURL
-      });
-      
-      atualizarUsuario({ photoURL: downloadURL });
-      showToast('Foto atualizada com sucesso!', 'success');
-    } catch (error) {
-      console.error('Erro ao fazer upload:', error);
-      showToast('Erro ao atualizar foto', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSave = async () => {
     try {
@@ -74,22 +52,18 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
         return;
       }
 
-      if (!userData.usuario?.trim()) {
-        showToast('O usuário é obrigatório', 'error');
-        setLoading(false);
-        return;
-      }
-
       // Prepara os dados para atualização
       const dadosParaAtualizar = {
         nome: userData.nome.trim(),
-        usuario: userData.usuario.trim(),
-        telefone: userData.telefone?.trim() || ''
+        ativo: userData.ativo
       };
 
-      // Adiciona senha apenas se foi fornecida
+      // Adiciona senha apenas se foi fornecida, e encripta antes de salvar
       if (userData.senha?.trim()) {
-        dadosParaAtualizar.senha = userData.senha.trim();
+        const senhaCriptografada = encryptPassword(userData.senha.trim());
+        dadosParaAtualizar.senha = senhaCriptografada.hash;
+        dadosParaAtualizar.senhaSalt = senhaCriptografada.salt;
+        dadosParaAtualizar.senhaVersion = senhaCriptografada.version;
       }
 
       // Atualiza no Firestore
@@ -115,112 +89,90 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-lg max-w-lg w-full mx-4 relative">
-        <button 
-          onClick={onClose}
-          className="absolute right-4 top-4 p-1 hover:bg-[#253341] rounded-full transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#8899A6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        
+      <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-lg max-w-lg w-full mx-4">
         <div className="p-6">
-          <h2 className="text-xl font-semibold text-white mb-6">Perfil do Usuário</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-medium text-[#FFFFFF]">
+              {usuario?.id === userId ? 'Editar Perfil' : 'Visualizar Perfil'}
+            </h3>
+            
+          </div>
 
-          <div className="space-y-6">
-            <div className="flex flex-col items-center">
-              <div className="relative mb-4">
-                {preview ? (
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-[#1DA1F2]"
-                  />
-                ) : usuario?.photoURL ? (
-                  <img
-                    src={usuario.photoURL}
-                    alt="Profile"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-[#1DA1F2]"
-                  />
-                ) : (
-                  <div className="w-32 h-32 rounded-full bg-[#253341] flex items-center justify-center border-4 border-[#1DA1F2]">
-                    <User size={48} className="text-[#8899A6]" />
-                  </div>
-                )}
-
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-[#FFFFFF] mb-2">
+                Nome
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 bg-[#253341] text-white border border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent"
+                placeholder="Digite o nome completo"
+                value={userData.nome || ''}
+                onChange={(e) => setUserData(prev => ({ ...prev, nome: e.target.value }))}
+                disabled={!canEdit}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#FFFFFF] mb-2">
+                Senha {canEdit}
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="w-full px-3 py-2 pr-10 bg-[#253341] text-white border border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent"
+                  placeholder={canEdit ? "Nova senha" : ""}
+                  value={userData.senha || ''}
+                  onChange={(e) => setUserData(prev => ({ ...prev, senha: e.target.value }))}
+                  disabled={!canEdit}
+                />
                 {canEdit && (
-                  <div className="absolute -bottom-2 right-0 flex space-x-2">
-                    <button
-                      onClick={() => fileInputRef.current.click()}
-                      className="p-2 rounded-full bg-[#1DA1F2] text-white hover:bg-[#1a91da] transition-colors"
-                      title="Upload foto"
-                    >
-                      <Upload size={16} />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2 p-1 hover:bg-[#1D9BF0] hover:bg-opacity-10 rounded-full transition-colors"
+                  >
+                    {showPassword ? 
+                      <EyeOff className="w-5 h-5 text-[#1D9BF0]" /> : 
+                      <Eye className="w-5 h-5 text-[#1D9BF0]" />
+                    }
+                  </button>
                 )}
               </div>
             </div>
 
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  if (file.size > 5 * 1024 * 1024) {
-                    showToast('A foto deve ter no máximo 5MB', 'error');
-                    return;
-                  }
-                  if (!file.type.startsWith('image/')) {
-                    showToast('Por favor, selecione uma imagem válida', 'error');
-                    return;
-                  }
-                  setPreview(URL.createObjectURL(file));
-                  handleFileUpload(file);
-                }
-              }}
-            />
-
-            <div className="space-y-4">
-              <Input
-                label="Nome"
-                value={userData.nome || ''}
-                onChange={(e) => setUserData(prev => ({ ...prev, nome: e.target.value }))}
-              />
-
-              <Input
-                label="Usuário"
-                value={userData.usuario || ''}
-                onChange={(e) => setUserData(prev => ({ ...prev, usuario: e.target.value }))}
-              />
-
-              <Input
-                label="Senha"
-                type="password"
-                value={userData.senha || ''}
-                onChange={(e) => setUserData(prev => ({ ...prev, senha: e.target.value }))}
-                placeholder="Digite a nova senha"
-              />
-
-              <Input
-                label="Telefone"
+            <div>
+              <label className="block text-sm font-medium text-[#FFFFFF] mb-2">
+                Telefone
+              </label>
+              <input
                 type="tel"
+                className="w-full px-3 py-2 bg-[#253341] text-white border border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent"
+                placeholder="Digite o telefone"
                 value={userData.telefone || ''}
                 onChange={(e) => setUserData(prev => ({ ...prev, telefone: e.target.value }))}
+                disabled={!canEdit}
               />
-
-              {canEdit && (
-                <div className="flex justify-end mt-6">
-                  <Button variant="primary" onClick={handleSave} loading={loading} icon={Save}>
-                    Salvar
-                  </Button>
-                </div>
-              )}
             </div>
+
+           
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-[#2F3336]">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-black bg-opacity-5 dark:bg-opacity-20 text-[#FFFFFF] rounded-full hover:bg-opacity-10 dark:hover:bg-opacity-30 transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            {canEdit && (
+              <button
+                onClick={handleSave}
+                disabled={loading}
+                className="px-4 py-2 bg-[#1D9BF0] text-white rounded-full hover:bg-[#1A8CD8] transition-colors disabled:opacity-50"
+              >
+                {loading ? "Salvando..." : "Atualizar"}
+              </button>
+            )}
           </div>
         </div>
       </div>

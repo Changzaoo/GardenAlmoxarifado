@@ -4,9 +4,10 @@ import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from './hooks/useAuth';
 import { FuncionariosProvider } from './components/Funcionarios/FuncionariosProvider';
 import { InventarioProvider } from './components/Inventario/InventarioProvider';
-import { TarefasProvider } from './components/Tarefas/TarefasProvider';
 import { NotificationProvider } from './components/NotificationProvider';
 import { TwitterThemeProvider } from './components/TwitterThemeProvider';
+import { RouteStateManager } from './components/RouteStateManager';
+import { ScrollPersistence } from './hooks/useScrollPersistence';
 import Layout from './components/Layout/Layout';
 import LoginForm from './components/Auth/LoginForm';
 import PrivateRoute from './components/Auth/PrivateRoute';
@@ -19,7 +20,6 @@ import MeuInventarioTab from './components/Inventario/MeuInventarioTab';
 import EmprestimosTab from './components/Emprestimos/EmprestimosTab';
 import FuncionariosTab from './components/Funcionarios/FuncionariosTab';
 import ComprasTab from './components/Compras/ComprasTab';
-import TarefasTab from './components/Tarefas/TarefasTab';
 import HistoricoPage from './pages/HistoricoPage';
 import FerramentasDanificadasTab from './components/Danificadas/FerramentasDanificadasTab';
 import Workflow from './components/Workflow';
@@ -35,8 +35,9 @@ function App() {
           <NotificationProvider>
             <FuncionariosProvider>
               <InventarioProvider>
-                <TarefasProvider>
-                  <div className="App">
+                <div className="App">
+                  <RouteStateManager />
+                  <ScrollPersistence />
                     <ToastContainer 
                       position="top-right" 
                       autoClose={3000}
@@ -58,11 +59,9 @@ function App() {
                         <Route path="emprestimos" element={<PrivateRoute requiredLevel={1}><EmprestimosTab /></PrivateRoute>} />
                         <Route path="historico-emprestimos" element={<PrivateRoute requiredLevel={1}><HistoricoPage /></PrivateRoute>} />
                         <Route path="danificadas" element={<PrivateRoute requiredLevel={1}><FerramentasDanificadasTab /></PrivateRoute>} />
-                        <Route path="tarefas" element={<PrivateRoute requiredLevel={1}><TarefasTab /></PrivateRoute>} />
                       </Route>
                     </Routes>
                   </div>
-                </TarefasProvider>
               </InventarioProvider>
             </FuncionariosProvider>
           </NotificationProvider>

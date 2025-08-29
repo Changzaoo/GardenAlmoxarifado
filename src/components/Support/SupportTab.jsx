@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Book, Search, X, HelpCircle } from 'lucide-react';
+import { Search, X, HelpCircle, Book } from 'lucide-react';
 
-const SupportTab = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const SupportTab = ({ onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const supportContent = {
@@ -15,7 +14,7 @@ const SupportTab = () => {
         },
         {
           title: 'Interface do Sistema',
-          text: 'O sistema possui uma barra lateral com as principais funcionalidades:\n- Dashboard: Visão geral do sistema\n- Inventário: Gerenciamento de ferramentas e equipamentos\n- Empréstimos: Controle de empréstimos de ferramentas\n- Tarefas: Gerenciamento de tarefas\n- Funcionários: Gestão de funcionários\n- Compras: Solicitações e controle de compras'
+          text: 'O sistema possui uma barra lateral com as principais funcionalidades:\n- Dashboard: Visão geral do sistema\n- Inventário: Gerenciamento de ferramentas e equipamentos\n- Empréstimos: Controle de empréstimos de ferramentas\n- Funcionários: Gestão de funcionários\n- Compras: Solicitações e controle de compras'
         }
       ]
     },
@@ -45,16 +44,16 @@ const SupportTab = () => {
         }
       ]
     },
-    'tasks': {
-      title: 'Gestão de Tarefas',
+    'employees': {
+      title: 'Gestão de Funcionários',
       content: [
         {
-          title: 'Criar Nova Tarefa',
-          text: '1. Acesse a aba "Tarefas"\n2. Clique no botão "Criar Tarefa"\n3. Preencha as informações:\n   - Título\n   - Descrição\n   - Prazo\n   - Responsáveis\n   - Prioridade\n4. Clique em "Salvar"'
+          title: 'Cadastro de Funcionários',
+          text: 'Para cadastrar novo funcionário:\n1. Acesse a aba "Funcionários"\n2. Clique em "Adicionar Funcionário"\n3. Preencha as informações necessárias:\n   - Nome\n   - Cargo\n   - Setor\n4. Clique em "Salvar"'
         },
         {
-          title: 'Acompanhamento de Tarefas',
-          text: 'Para acompanhar tarefas:\n- Use os filtros por status e prioridade\n- Visualize o progresso de cada tarefa\n- Atualize o status quando necessário\n- Adicione comentários e observações'
+          title: 'Gerenciamento de Acesso',
+          text: 'Para gerenciar acessos:\n- Configure níveis de permissão\n- Atribua responsabilidades\n- Monitore atividades\n- Mantenha registros atualizados'
         }
       ]
     },
@@ -122,22 +121,10 @@ const SupportTab = () => {
 
   const filteredContent = filterContent(supportContent);
 
-  const toggleModal = () => setIsOpen(!isOpen);
-
   return (
-    <>
-      <button
-        onClick={toggleModal}
-        className="flex items-center justify-center w-10 h-10 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-        title="Ajuda"
-      >
-        <HelpCircle className="w-5 h-5" />
-      </button>
-
-      {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={toggleModal} />
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
 
             <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
               <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
@@ -145,7 +132,7 @@ const SupportTab = () => {
                   Suporte
                 </h3>
                 <button
-                  onClick={toggleModal}
+                  onClick={onClose}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
                 >
                   <X className="w-5 h-5 text-gray-500" />
@@ -200,8 +187,6 @@ const SupportTab = () => {
             </div>
           </div>
         </div>
-      )}
-    </>
   );
 };
 
