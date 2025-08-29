@@ -2,15 +2,28 @@ import React, { Suspense, lazy, useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import ThemeProvider from './components/ThemeProvider';
 import './index.css';
+import './styles/mobile.css';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import { verificarConexaoFirebase } from './utils/verificarConexao';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const Workflow = lazy(() => import('./components/Workflow'));
 
+// Ajusta a altura da viewport em dispositivos móveis
+const setMobileHeight = () => {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+};
+
 const App = () => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setMobileHeight();
+    window.addEventListener('resize', setMobileHeight);
+    return () => window.removeEventListener('resize', setMobileHeight);
+  }, []);
 
   useEffect(() => {
     const init = async () => {

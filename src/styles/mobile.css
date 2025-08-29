@@ -1,0 +1,65 @@
+/* Mobile viewport height fix */
+:root {
+  --vh: 1vh;
+}
+
+/* Ensure proper height on mobile */
+html, body {
+  height: 100%;
+  height: calc(var(--vh, 1vh) * 100);
+  overflow: hidden;
+}
+
+/* Mobile-first container */
+.mobile-container {
+  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Scrollable content area */
+.mobile-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  position: relative;
+}
+
+/* Bottom safe area padding for iOS */
+.mobile-bottom-safe {
+  padding-bottom: env(safe-area-inset-bottom, 1rem);
+}
+
+/* Prevent iOS zoom on focus */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Fix for iOS momentum scrolling */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: scroll;
+  overscroll-behavior-y: contain;
+}
+
+/* Prevent pull-to-refresh on mobile */
+body {
+  overscroll-behavior-y: none;
+}
+
+/* Fix for iOS keyboard appearance */
+.ios-keyboard-fix {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Fix for position: fixed elements on iOS */
+.fixed-ios {
+  position: fixed;
+  width: 100%;
+  transform: translateZ(0);
+}
