@@ -13,9 +13,21 @@ const ListaEmprestimos = ({
   const [showDevolucaoModal, setShowDevolucaoModal] = useState(false);
   const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
 
+  const isToday = (date) => {
+    const today = new Date();
+    const empDate = new Date(date);
+    return empDate.getDate() === today.getDate() &&
+           empDate.getMonth() === today.getMonth() &&
+           empDate.getFullYear() === today.getFullYear();
+  };
+
   const emprestimosFiltrados = (emprestimos || [])
     .filter(emp => {
-      if (!emp) return false;
+      if (!emp || !emp.dataEmprestimo) return false;
+      
+      // Filtra apenas empréstimos do dia atual
+      if (!isToday(emp.dataEmprestimo)) return false;
+
       const funcionario = (emp.nomeFuncionario || emp.colaborador || '').toLowerCase();
       const ferramentas = emp.nomeFerramentas || [];
       const filtro = filtroEmprestimos.toLowerCase();
@@ -24,7 +36,7 @@ const ListaEmprestimos = ({
              ferramentas.some(f => f.toLowerCase().includes(filtro));
     })
     .sort((a, b) => {
-      // Ordena por data/hora de empréstimo mais recente
+      // Ordena por data/hora de empréstimo mais recente primeiro
       const dataA = a?.dataEmprestimo ? new Date(a.dataEmprestimo) : new Date();
       const dataB = b?.dataEmprestimo ? new Date(b.dataEmprestimo) : new Date();
       return dataB - dataA;
@@ -55,7 +67,7 @@ const ListaEmprestimos = ({
             placeholder="Buscar por colaborador ou ferramenta..."
             value={filtroEmprestimos}
             onChange={(e) => setFiltroEmprestimos(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="pl-10 pr-4 py-2 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] text-center dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
           />
         </div>
       </div>

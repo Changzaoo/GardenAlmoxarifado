@@ -57,9 +57,9 @@ const FerramentaSelector = ({ ferramentasDisponiveis, onAdicionarFerramenta }) =
         className="min-w-48 mb-2 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
       >
         <option value="" className="bg-[#192734]">Selecione uma ferramenta...</option>
-        {ferramentasDisponiveis.map(item => (
+        {[...ferramentasDisponiveis].sort((a, b) => a.nome.localeCompare(b.nome)).map(item => (
           <option key={item.id} value={item.nome} className="bg-[#192734]">
-            {item.nome} ({item.disponivel})
+            {item.nome}
           </option>
         ))}
       </select>

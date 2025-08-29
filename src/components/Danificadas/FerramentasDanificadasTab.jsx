@@ -162,21 +162,21 @@ const FerramentasDanificadasTab = ({
 
         {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
+          <div className="flex-[3] relative">
             <Search className={`w-4 h-4 absolute left-3 top-3 ${colors.textSecondary}`} />
             <input
               type="text"
               placeholder="Buscar por ferramenta, problema ou responsável..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className={classes.searchInput}
+              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors"
             />
           </div>
           
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+            className="md:w-48 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none hover:bg-[#192734]"
           >
             <option value="todos" className="bg-[#192734]">Todos os Status</option>
             <option value="aguardando">Aguardando Reparo</option>
@@ -283,17 +283,17 @@ const FerramentasDanificadasTab = ({
 
       {/* Modal de Nova Ferramenta Danificada */}
       {modalAberto && (
-        <div className={`${classes.modalOverlay} p-4`}>
-          <div className={`${classes.modal} max-w-3xl w-full max-h-[90vh] overflow-y-auto`}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className={`text-lg font-bold ${colors.text} flex items-center gap-2`}>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-[#F4212E]" />
                   Registrar Ferramenta Danificada
                 </h3>
                 <button
                   onClick={() => setModalAberto(false)}
-                  className={`${colors.textSecondary} hover:${colors.text}`}
+                  className="text-[#8899A6] hover:text-white"
                 >
                   ✕
                 </button>
@@ -302,44 +302,44 @@ const FerramentasDanificadasTab = ({
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
+                    <label className={`block text-sm font-medium text-white text-center mb-2`}>
                       Nome da Ferramenta *
                     </label>
                     <select
                       value={novaFerramenta.nomeItem}
                       onChange={e => setNovaFerramenta({ ...novaFerramenta, nomeItem: e.target.value })}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
                       required
                     >
                       <option value="">Selecione a ferramenta</option>
-                      {inventario.map(item => (
+                      {[...inventario].sort((a, b) => a.nome.localeCompare(b.nome)).map(item => (
                         <option key={item.id} value={item.nome}>{item.nome}</option>
                       ))}
                     </select>
                   </div>
                   
                   <div>
-                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Categoria
                     </label>
                     <input
                       type="text"
                       value={novaFerramenta.categoria}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, categoria: e.target.value})}
-                      className={classes.input}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
                       placeholder="Ex: Ferramenta Elétrica"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className={`block text-sm font-medium ${colors.text} mb-1`}>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
                     Descrição do Problema *
                   </label>
                   <textarea
                     value={novaFerramenta.descricaoProblema}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, descricaoProblema: e.target.value})}
-                    className={`${classes.textarea} h-24`}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-24"
                     placeholder="Descreva detalhadamente o problema encontrado na ferramenta..."
                     required
                   />
@@ -347,13 +347,13 @@ const FerramentasDanificadasTab = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Responsável pelo Relato
                     </label>
                     <select
                       value={novaFerramenta.responsavel}
                       onChange={e => setNovaFerramenta({ ...novaFerramenta, responsavel: e.target.value })}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
                       required
                     >
                       <option value="">Selecione o responsável</option>
@@ -366,25 +366,25 @@ const FerramentasDanificadasTab = ({
                   </div>
                   
                   <div>
-                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Data da Ocorrência
                     </label>
                     <input
                       type="date"
                       value={novaFerramenta.dataOcorrencia}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, dataOcorrencia: e.target.value})}
-                      className={classes.input}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
                     />
                   </div>
                   
                   <div>
-                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Prioridade
                     </label>
                     <select
                       value={novaFerramenta.prioridade}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, prioridade: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
                     >
                       <option value="baixa" className="bg-[#192734]">Baixa</option>
                       <option value="media">Média</option>
@@ -395,13 +395,13 @@ const FerramentasDanificadasTab = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Status do Reparo
                     </label>
                     <select
                       value={novaFerramenta.statusReparo}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, statusReparo: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
                     >
                       <option value="aguardando" className="bg-[#192734]">Aguardando Reparo</option>
                       <option value="em_reparo">Em Reparo</option>
@@ -411,7 +411,7 @@ const FerramentasDanificadasTab = ({
                   </div>
                   
                   <div>
-                    <label className={`block text-sm font-medium ${colors.text} mb-1`}>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Custo Estimado de Reparo (R$)
                     </label>
                     <input
@@ -420,32 +420,35 @@ const FerramentasDanificadasTab = ({
                       min="0"
                       value={novaFerramenta.custoReparo}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, custoReparo: e.target.value})}
-                      className={classes.input}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
                       placeholder="0,00"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className={`block text-sm font-medium ${colors.text} mb-1`}>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
                     Observações Adicionais
                   </label>
                   <textarea
                     value={novaFerramenta.observacoes}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, observacoes: e.target.value})}
-                    className={`${classes.textarea} h-20`}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-20"
                     placeholder="Informações complementares sobre o dano ou reparo..."
                   />
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <button type="submit" className={`${classes.primaryButton} flex-1`}>
+                  <button 
+                    type="submit" 
+                    className="flex-1 bg-[#1DA1F2] text-white font-bold py-2 px-4 rounded-full hover:bg-[#1a91da] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                  >
                     Registrar Ferramenta Danificada
                   </button>
                   <button
                     type="button"
                     onClick={() => setModalAberto(false)}
-                    className={`${classes.secondaryButton} flex-1`}
+                    className="flex-1 border border-[#1DA1F2] text-[#1DA1F2] font-bold py-2 px-4 rounded-full hover:bg-[#1DA1F2] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
                   >
                     Cancelar
                   </button>

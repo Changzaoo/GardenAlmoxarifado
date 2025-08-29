@@ -342,17 +342,17 @@ const FerramentasPerdidasTab = ({
 
       {/* Modal de Nova Ferramenta Perdida */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <Search className="w-5 h-5 text-red-600" />
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Search className="w-5 h-5 text-[#F4212E]" />
                   Registrar Ferramenta Perdida
                 </h3>
                 <button
                   onClick={() => setModalAberto(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-[#8899A6] hover:text-white transition-colors"
                 >
                   ✕
                 </button>
@@ -361,55 +361,55 @@ const FerramentasPerdidasTab = ({
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Nome da Ferramenta *
                     </label>
                     <input
                       type="text"
                       value={novaFerramenta.nomeItem}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, nomeItem: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
                       placeholder="Ex: Martelo Tramontina 25mm"
                       list="inventario-list"
                       required
                     />
                     <datalist id="inventario-list">
-                      {inventario.map(item => (
+                      {[...inventario].sort((a, b) => a.nome.localeCompare(b.nome)).map(item => (
                         <option key={item.id} value={item.nome} />
                       ))}
                     </datalist>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Categoria
                     </label>
                     <input
                       type="text"
                       value={novaFerramenta.categoria}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, categoria: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
                       placeholder="Ex: Ferramenta Manual"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-white text-center mb-2">
                     Último Local Visto
                   </label>
                   <input
                     type="text"
                     value={novaFerramenta.localUltimaVez}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, localUltimaVez: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
                     placeholder="Ex: Obra da Rua A, Almoxarifado, Canteiro 3..."
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Valor Estimado (R$)
                     </label>
                     <input
@@ -418,19 +418,19 @@ const FerramentasPerdidasTab = ({
                       min="0"
                       value={novaFerramenta.valorEstimado}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, valorEstimado: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
                       placeholder="0,00"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Status da Busca
                     </label>
                     <select
                       value={novaFerramenta.statusBusca}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, statusBusca: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
                     >
                       <option value="buscando" className="bg-[#192734]">Buscando</option>
                       <option value="encontrada">Encontrada</option>
@@ -440,13 +440,13 @@ const FerramentasPerdidasTab = ({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Prioridade
                     </label>
                     <select
                       value={novaFerramenta.prioridade}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, prioridade: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
                     >
                       <option value="baixa" className="bg-[#192734]">Baixa</option>
                       <option value="media">Média</option>
@@ -456,23 +456,23 @@ const FerramentasPerdidasTab = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-white text-center mb-2">
                     Observações e Ações Tomadas
                   </label>
                   <textarea
                     value={novaFerramenta.observacoes}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, observacoes: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 resize-none"
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-20 resize-none"
                     placeholder="Ex: Já foi feita busca no almoxarifado, verificado com outros funcionários..."
                   />
                 </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 text-blue-800 mb-2">
+                <div className="bg-[#1DA1F2] bg-opacity-5 p-4 rounded-lg border border-[#1DA1F2] border-opacity-10">
+                  <div className="flex items-center gap-2 text-[#1DA1F2] mb-2">
                     <AlertCircle className="w-4 h-4" />
                     <span className="font-medium">Dicas para recuperação:</span>
                   </div>
-                  <ul className="text-sm text-blue-700 space-y-1">
+                  <ul className="text-sm text-[#1DA1F2] space-y-1">
                     <li>• Verifique os locais de trabalho recentes</li>
                     <li>• Consulte outros funcionários da equipe</li>
                     <li>• Confira veículos e equipamentos utilizados</li>
@@ -483,14 +483,14 @@ const FerramentasPerdidasTab = ({
                 <div className="flex gap-3 pt-4">
                   <button 
                     type="submit"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                    className="flex-1 bg-[#1DA1F2] text-white font-bold py-2 px-4 rounded-full hover:bg-[#1a91da] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
                   >
                     Registrar Ferramenta Perdida
                   </button>
                   <button
                     type="button"
                     onClick={() => setModalAberto(false)}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg transition-colors"
+                    className="flex-1 border border-[#1DA1F2] text-[#1DA1F2] font-bold py-2 px-4 rounded-full hover:bg-[#1DA1F2] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
                   >
                     Cancelar
                   </button>

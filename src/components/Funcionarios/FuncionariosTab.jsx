@@ -154,7 +154,7 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
           </tr>
         </thead>
         <tbody>
-          {funcionarios.map((func) => (
+          {[...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome)).map((func) => (
             <tr key={func.id} className="bg-white dark:bg-gray-800">
               <td className="px-4 py-2 whitespace-nowrap">
                 {func.photoURL ? (

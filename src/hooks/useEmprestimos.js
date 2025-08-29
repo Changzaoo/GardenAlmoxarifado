@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { SecureCollection } from '../utils/secureFirebase';
+import { useToast } from '../components/ToastProvider';
 
 const emprestimosCollection = new SecureCollection('emprestimos');
 
 export const useEmprestimos = () => {
   const [emprestimos, setEmprestimos] = useState([]);
+  const { showToast } = useToast();
   
   // Carregar dados ao inicializar
   useEffect(() => {
@@ -120,12 +122,54 @@ export const useEmprestimos = () => {
     return true;
   };
 
+  // Devolver ferramentas parcialmente
+  const devolverFerramentasParcial = async (emprestimoId, ferramentasDevolvidas, devolvidoPorTerceiros = false) => {
+    try {
+      const emprestimo = emprestimos.find(e => e.id === emprestimoId);
+      if (!emprestimo) {
+        showToast('Empréstimo não encontrado', 'error');
+        return;
+      }
+
+      // Filtra as ferramentas que permanecerão emprestadas
+      const ferramentasRestantes = emprestimo.ferramentas.filter(ferr => 
+        !ferramentasDevolvidas.some(fd => 
+          (typeof fd === 'string' ? fd === ferr : fd.nome === ferr.nome)
+        )
+      );
+
+      if (ferramentasRestantes.length === 0) {
+        // Se todas as ferramentas foram devolvidas, marca o empréstimo como concluído
+        await emprestimosCollection.update(emprestimoId, {
+          ...emprestimo,
+          status: 'devolvido',
+          dataDevolucao: new Date().toISOString(),
+          devolvidoPorTerceiros,
+          ferramentas: []
+        });
+        showToast('Todas as ferramentas foram devolvidas com sucesso', 'success');
+      } else {
+        // Atualiza o empréstimo mantendo apenas as ferramentas não devolvidas
+        await emprestimosCollection.update(emprestimoId, {
+          ...emprestimo,
+          ferramentas: ferramentasRestantes,
+          devolvidoPorTerceiros
+        });
+        showToast('Ferramentas selecionadas foram devolvidas com sucesso', 'success');
+      }
+    } catch (error) {
+      console.error('Erro ao devolver ferramentas:', error);
+      showToast('Erro ao devolver ferramentas. Tente novamente.', 'error');
+    }
+  };
+
   return {
     emprestimos,
     adicionarEmprestimo,
     devolverFerramentas,
     removerEmprestimo,
     marcarDevolucaoPorTerceiros,
+    devolverFerramentasParcial,
     atualizarDisponibilidade
   };
 };

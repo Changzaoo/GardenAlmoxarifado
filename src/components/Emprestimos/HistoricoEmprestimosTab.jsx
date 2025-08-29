@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, CheckCircle, Clock, Filter, Trash2, AlertTriangle, ToolCase } from 'lucide-react';
 import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import { useEmprestimos } from '../../hooks/useEmprestimos';
-import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
+import DevolucaoFerramentasModal from './DevolucaoFerramentasModal';
 
 const HistoricoEmprestimosTab = ({
   emprestimos,
@@ -18,19 +18,29 @@ const HistoricoEmprestimosTab = ({
   const [showDevolucaoModal, setShowDevolucaoModal] = useState(false);
   const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
   const [showFiltros, setShowFiltros] = useState(false);
+  const { devolverFerramentasParcial } = useEmprestimos();
 
   // Debug dos dados
   useEffect(() => {
     console.log('Empréstimos carregados:', emprestimos);
   }, [emprestimos]);
 
-  const handleDevolverFerramentas = (id) => {
-    setSelectedEmprestimo(id);
-    setShowDevolucaoModal(true);
+  const handleDevolverFerramentas = (emprestimo) => {
+    const emprestimoCompleto = emprestimos.find(e => e.id === emprestimo.id);
+    if (emprestimoCompleto) {
+      setSelectedEmprestimo(emprestimoCompleto);
+      setShowDevolucaoModal(true);
+    }
   };
 
-  const handleConfirmDevolucao = (devolvidoPorTerceiros) => {
-    devolverFerramentas(selectedEmprestimo, atualizarDisponibilidade, devolvidoPorTerceiros);
+  const handleConfirmDevolucao = async ({ ferramentas, devolvidoPorTerceiros, emprestimoId }) => {
+    if (ferramentas.length === emprestimos.find(e => e.id === emprestimoId).ferramentas.length) {
+      // Se todas as ferramentas foram selecionadas, usa a devolução completa
+      await devolverFerramentas(emprestimoId, atualizarDisponibilidade, devolvidoPorTerceiros);
+    } else {
+      // Se apenas algumas ferramentas foram selecionadas, usa a devolução parcial
+      await devolverFerramentasParcial(emprestimoId, ferramentas, devolvidoPorTerceiros);
+    }
     setSelectedEmprestimo(null);
     setShowDevolucaoModal(false);
   };
@@ -246,9 +256,9 @@ const HistoricoEmprestimosTab = ({
                     <div className="flex gap-2">
                       {emprestimo.status === 'emprestado' && (
                         <button
-                          onClick={() => handleDevolverFerramentas(emprestimo.id)}
+                          onClick={() => handleDevolverFerramentas(emprestimo)}
                           className="text-green-600 hover:text-green-800 p-1"
-                          title="Marcar como devolvido"
+                          title="Devolver ferramentas"
                         >
                           <CheckCircle className="w-4 h-4" />
                         </button>
@@ -269,8 +279,9 @@ const HistoricoEmprestimosTab = ({
           </table>
         </div>
 
-        {showDevolucaoModal && (
-          <DevolucaoTerceirosModal
+        {showDevolucaoModal && selectedEmprestimo && (
+          <DevolucaoFerramentasModal
+            emprestimo={selectedEmprestimo}
             onClose={() => {
               setShowDevolucaoModal(false);
               setSelectedEmprestimo(null);

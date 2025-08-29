@@ -1359,6 +1359,12 @@ const AlmoxarifadoSistema = () => {
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
     { 
+      id: 'tarefas', 
+      nome: 'Tarefas', 
+      icone: ClipboardCheck,
+      permissao: () => true // Visível para todos os níveis
+    },
+    { 
       id: 'meu-inventario', 
       nome: 'Meu Inventário', 
       icone: ToolCase,
@@ -1394,13 +1400,13 @@ const AlmoxarifadoSistema = () => {
       icone: Calendar,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
+    
     { 
       id: 'danificadas', 
       nome: 'Ferramentas Danificadas', 
       icone: AlertTriangle,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
-
     { 
       id: 'perdidas', 
       nome: 'Ferramentas Perdidas', 
@@ -1418,12 +1424,6 @@ const AlmoxarifadoSistema = () => {
       nome: 'Histórico de Transferências', 
       icone: ArrowRight,
       permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR
-    },
-    { 
-      id: 'tarefas', 
-      nome: 'Tarefas', 
-      icone: ClipboardCheck,
-      permissao: () => true // Visível para todos os níveis
     }
   ].filter(aba => aba.permissao());
 

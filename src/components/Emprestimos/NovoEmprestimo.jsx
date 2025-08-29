@@ -145,7 +145,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
               required
             >
               <option value="" className="bg-[#192734]">Selecione o funcionário</option>
-              {funcionarios.map((funcionario) => (
+              {[...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome)).map((funcionario) => (
                 <option key={funcionario.id} value={funcionario.nome} className="bg-[#192734]">
                   {funcionario.nome}
                 </option>
@@ -163,20 +163,20 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
           />
         </div>
         <div>
-          <h3 className="font-medium text-gray-700 mb-2">Ferramentas Selecionadas:</h3>
-          <div className="border border-gray-200 rounded-lg p-3 min-h-32 max-h-40 overflow-y-auto">
+          <h3 className="font-medium text-gray-700 dark:text-white mb-2">Ferramentas Selecionadas:</h3>
+          <div className="border border-gray-200 dark:border-[#38444D] rounded-lg p-3 min-h-32 max-h-40 overflow-y-auto">
             {novoEmprestimo.ferramentas.length === 0 ? (
-              <p className="text-gray-400 text-sm">Nenhuma ferramenta selecionada</p>
+              <p className="text-gray-400 dark:text-gray-600 text-sm">Nenhuma ferramenta selecionada</p>
             ) : (
               <div className="space-y-2">
                 {novoEmprestimo.ferramentas.map((ferramenta, index) => (
-                  <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                  <div key={index} className="flex justify-between items-center bg-gray-50 dark:bg-[#192734] p-2 rounded">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm">{ferramenta.nome}</span>
+                      <span className="text-sm dark:text-white">{ferramenta.nome}</span>
                       <select
                         value={ferramenta.quantidade}
                         onChange={(e) => atualizarQuantidade(ferramenta.nome, e.target.value)}
-                        className="form-select text-lg py-3 px-4 border-gray-300 rounded-md w-20"
+                        className="form-select text-lg py-2 px-3 border-gray-300 dark:border-[#38444D] dark:bg-[#253341] dark:text-white rounded w-20"
                       >
                         {[...Array(ferramenta.disponivel)].map((_, i) => (
                           <option key={i + 1} value={i + 1}>
@@ -187,7 +187,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                     </div>
                     <button
                       onClick={() => removerFerramenta(ferramenta.nome)}
-                      className="text-red-500 hover:text-red-700 p-1"
+                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
