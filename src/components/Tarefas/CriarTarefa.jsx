@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
-import { X } from 'lucide-react';
+import { X, ListChecks } from 'lucide-react';
 import { useToast } from '../ToastProvider';
+import SeletorTarefaPredefinida from './SeletorTarefaPredefinida';
 
 const CriarTarefa = ({ onClose }) => {
   const { usuario } = useAuth();
@@ -15,6 +16,17 @@ const CriarTarefa = ({ onClose }) => {
     funcionariosIds: []
   });
   const [loading, setLoading] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  const handleSelectTemplate = (template) => {
+    setFormData({
+      ...formData,
+      titulo: template.titulo,
+      descricao: template.descricao,
+      prioridade: template.prioridade
+    });
+    setShowTemplates(false);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,6 +73,15 @@ const CriarTarefa = ({ onClose }) => {
         </button>
 
         <h2 className="text-xl font-bold text-white mb-6">Nova Tarefa</h2>
+
+        <button
+          type="button"
+          onClick={() => setShowTemplates(true)}
+          className="w-full mb-4 py-2 px-4 bg-[#253341] text-[#8899A6] rounded-lg border border-[#38444D] hover:bg-[#2C3E50] transition-colors flex items-center justify-center gap-2"
+        >
+          <ListChecks className="w-5 h-5" />
+          Usar Modelo de Tarefa
+        </button>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -174,6 +195,14 @@ const CriarTarefa = ({ onClose }) => {
           </div>
         </form>
       </div>
+
+      {/* Modal de Seleção de Template */}
+      {showTemplates && (
+        <SeletorTarefaPredefinida
+          onSelect={handleSelectTemplate}
+          onClose={() => setShowTemplates(false)}
+        />
+      )}
     </div>
   );
 };

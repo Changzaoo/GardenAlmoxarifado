@@ -55,7 +55,8 @@ import {
   Sun,
   Moon,
   Camera,
-  Upload
+  Upload,
+  LogOut
 } from 'lucide-react';
 
 // ===== SISTEMA DE COOKIES =====
@@ -1435,29 +1436,26 @@ const AlmoxarifadoSistema = () => {
       {isMobile && (
         <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b dark:border-[#2F3336] shadow-sm">
           <div className="flex items-center justify-between px-4 h-16">
-            <button
-              onClick={toggleMenu}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              {menuOpen ? (
-                <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-              ) : (
-                <MenuIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-              )}
-            </button>
+            <div className="flex items-center w-full relative">
+              <button
+                onClick={toggleMenu}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors absolute left-0"
+              >
+                {menuOpen ? (
+                  <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                ) : (
+                  <MenuIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                )}
+              </button>
 
-            {/* Logo e título no header mobile quando menu fechado */}
-            {!menuOpen && (
-              <div className="flex items-center">
-                <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
-                <div>
+              {/* Logo e título no header mobile */}
+              <div className="flex items-center justify-center w-full">
+                <div className="flex items-center">
+                  <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
                   <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
-                  <p className="text-xs text-gray-500 dark:text-[#71767B]">Gerenciamento de Ferramentas</p>
                 </div>
               </div>
-            )}
-            
-            <div className="w-10"></div>
+            </div>
           </div>
         </header>
       )}
@@ -1465,38 +1463,31 @@ const AlmoxarifadoSistema = () => {
       {/* Menu lateral */}
       <nav className={`${
         isMobile 
-          ? `fixed inset-0 z-40 transform transition-transform duration-300 ease-in-out ${
+          ? `fixed top-0 bottom-0 left-0 z-40 w-full transform transition-transform duration-300 ease-in-out ${
               menuOpen ? 'translate-x-0' : '-translate-x-full'
             }`
-          : 'w-72 fixed'
-      } bg-white dark:bg-black border-r dark:border-[#2F3336] min-h-screen`}>
-        {!isMobile && (
-          <div className="p-4 border-b dark:border-[#2F3336]">
-            <div className="flex items-center">
-              <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-12 mr-3" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">WorkFlow</h1>
-                <p className="text-xs text-gray-500 dark:text-[#71767B]">Gerenciamento de Ferramentas</p>
+          : 'w-72 fixed h-full'
+      } bg-white dark:bg-black border-r dark:border-[#2F3336]`}>
+        <div className="flex flex-col h-full">
+          {!isMobile && (
+            <div className="p-4 border-b dark:border-[#2F3336]">
+              <div className="flex items-center">
+                <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-12 mr-3" />
+                <div>
+                  <h1 className="text-lg font-bold text-gray-900 dark:text-white">WorkFlow</h1>
+                  <p className="text-xs text-gray-500 dark:text-[#71767B]">Gerenciamento de Ferramentas</p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Versão Mobile do Header */}
-        {isMobile && menuOpen && (
-          <div className="pt-20 pb-4 px-4 border-b dark:border-[#2F3336]">
-            <div className="flex items-center">
-              <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
-              <div>
-                <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
-                <p className="text-xs text-gray-500 dark:text-[#71767B]">Gerenciamento de Ferramentas</p>
-              </div>
-            </div>
-          </div>
-        )}
+          {/* Espaço para o header fixo no mobile */}
+          {isMobile && menuOpen && (
+            <div className="h-16"></div>
+          )}
 
-        <div className={`py-4 px-2 ${isMobile ? 'mt-2' : ''}`}>
-          <div className="space-y-1">
+          <div className="flex-1 overflow-y-auto py-4 px-2">
+            <div className="space-y-1">
             {abas.filter(aba => aba.permissao()).map((aba) => {
               const Icone = aba.icone;
               return (
@@ -1508,7 +1499,7 @@ const AlmoxarifadoSistema = () => {
                       setMenuOpen(false);
                     }
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-base transition-all duration-200 ${
+                  className={`block w-full text-left flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-base transition-all duration-200 ${
                     abaAtiva === aba.id
                       ? 'bg-[#1D9BF0] text-white'
                       : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
@@ -1591,11 +1582,11 @@ const AlmoxarifadoSistema = () => {
             </div>
             <div className="flex items-center space-x-1">
               <button
-                onClick={() => setShowHelpModal(true)}
-                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                title="Ajuda"
+                onClick={logout}
+                className="p-2 rounded-full hover:bg-red-500/10 transition-colors"
+                title="Sair"
               >
-                <HelpCircle className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
+                <LogOut className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
               </button>
               <button
                 onClick={() => setShowProfileModal(true)}
@@ -1604,17 +1595,16 @@ const AlmoxarifadoSistema = () => {
               >
                 <Edit className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
               </button>
+              <button
+                onClick={() => setShowHelpModal(true)}
+                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                title="Ajuda"
+              >
+                <HelpCircle className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
+              </button>
             </div>
           </div>
-          <button
-            onClick={logout}
-            className={`w-full flex items-center justify-center gap-2 px-4 ${
-              isMobile ? 'py-3 text-base' : 'py-2.5 text-sm'
-            } rounded-full font-medium transition-colors text-[#E7E9EA] hover:bg-red-500/10 hover:text-red-500`}
-          >
-            <Lock className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
-            <span>Sair</span>
-          </button>
+        </div>
         </div>
       </nav>
 

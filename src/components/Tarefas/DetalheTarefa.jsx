@@ -220,36 +220,86 @@ const DetalheTarefa = ({ tarefa, onClose }) => {
             <span className="text-white">{tarefa.criadoPor?.nome}</span>
           </div>
 
-          {/* Avaliação e Comentários */}
+          {/* Avaliações e Comentários */}
           {tarefa.status === 'concluida' && (
             <div className="border-t border-[#38444D] pt-4">
-              <h3 className="text-sm font-medium text-[#8899A6] mb-2">Avaliação</h3>
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-5 h-5 ${
-                      i < tarefa.avaliacao
-                        ? 'text-yellow-500 fill-yellow-500'
-                        : 'text-[#38444D]'
-                    }`}
-                  />
-                ))}
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Avaliação do Colaborador - visível apenas para supervisores */}
+                {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
+                  <div>
+                    <h3 className="text-sm font-medium text-[#8899A6] mb-2">Colaborador</h3>
+                    <div className="flex items-center gap-1 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-5 h-5 ${
+                            i < (tarefa.notaTarefa || 0)
+                              ? 'text-yellow-500 fill-yellow-500'
+                              : 'text-[#38444D]'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    {tarefa.comentarioFuncionario && (
+                      <div className="mt-2">
+                        <p className="text-white text-sm">{tarefa.comentarioFuncionario}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {tarefa.comentarioFuncionario && (
-                <div className="mb-4">
-                  <h3 className="text-sm font-medium text-[#8899A6] mb-2">Comentário do Funcionário</h3>
-                  <p className="text-white">{tarefa.comentarioFuncionario}</p>
-                </div>
-              )}
-
-              {tarefa.comentarioSupervisor && (
+                {/* Avaliação do Supervisor */}
                 <div>
-                  <h3 className="text-sm font-medium text-[#8899A6] mb-2">Comentário do Supervisor</h3>
-                  <p className="text-white">{tarefa.comentarioSupervisor}</p>
+                  <h3 className="text-sm font-medium text-[#8899A6] mb-2">Supervisor</h3>
+                  <div className="flex items-center gap-1 mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-5 h-5 ${
+                          i < (tarefa.notaFuncionario || 0)
+                            ? 'text-yellow-500 fill-yellow-500'
+                            : 'text-[#38444D]'
+                          }`}
+                      />
+                    ))}
+                  </div>
+                  {tarefa.comentarioSupervisor && (
+                    <div className="mt-2">
+                      <p className="text-white text-sm">{tarefa.comentarioSupervisor}</p>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* Nota Final (média das avaliações) */}
+                {tarefa.notaTarefa && tarefa.notaFuncionario && (
+                  <div className="mt-6 pt-4 border-t border-[#38444D]">
+                    <h3 className="text-sm font-medium text-[#8899A6] mb-2">Nota Final</h3>
+                    <div className="flex items-center gap-1 mb-2">
+                      {[...Array(5)].map((_, i) => {
+                        const notaMedia = (tarefa.notaTarefa + tarefa.notaFuncionario) / 2;
+                        const starFill = i < Math.floor(notaMedia);
+                        const starHalf = !starFill && i < Math.ceil(notaMedia) && notaMedia % 1 >= 0.5;
+                        
+                        return (
+                          <Star
+                            key={i}
+                            className={`w-5 h-5 ${
+                              starFill
+                                ? 'text-yellow-500 fill-yellow-500'
+                                : starHalf
+                                ? 'text-yellow-500 fill-yellow-500 opacity-50'
+                                : 'text-[#38444D]'
+                            }`}
+                          />
+                        );
+                      })}
+                      <span className="text-sm text-[#8899A6] ml-2">
+                        Média: {((tarefa.notaTarefa + tarefa.notaFuncionario) / 2).toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

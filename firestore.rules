@@ -19,6 +19,17 @@ service cloud.firestore {
          && request.time.toMillis() >= (request.resource.data.timestamp - 300000);
     }
     
+    function hasMinLevel(minLevel) {
+      return isAuthenticated() && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nivel >= minLevel;
+    }
+
+    // Regras para templates de tarefas
+    match /templates/{templateId} {
+      allow read: if isAuthenticated();
+      allow create, update: if hasMinLevel(2);
+      allow delete: if hasMinLevel(2);
+    }
+    
     // Regras para usuários
     match /usuarios/{userId} {
       allow read: if isAuthenticated();
