@@ -26,6 +26,14 @@ const STATUS_COLORS = {
   cancelado: 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]'
 };
 
+const STATUS_CSS_VARS = {
+  solicitado: { '--background': '#1D9BF0', '--text': '#1D9BF0' },
+  aprovado: { '--background': '#00BA7C', '--text': '#00BA7C' },
+  pedido_enviado: { '--background': '#FFD700', '--text': '#FFD700' },
+  recebido: { '--background': '#7856FF', '--text': '#7856FF' },
+  cancelado: { '--background': '#F4212E', '--text': '#F4212E' }
+};
+
 // Prioridades da compra
 const PRIORIDADES = {
   BAIXA: 'baixa',
@@ -57,6 +65,8 @@ const ComprasTab = ({
   atualizarCompra,
   readonly = false 
 }) => {
+  
+
   const { colors, classes } = twitterThemeConfig;
   const [filtro, setFiltro] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('todos');
@@ -73,8 +83,11 @@ const ComprasTab = ({
     prioridade: PRIORIDADES.MEDIA,
     solicitante: '',
     observacoes: '',
+    link: '',
     status: STATUS_COMPRAS.SOLICITADO
   });
+  
+  const [detalhesCompra, setDetalhesCompra] = useState(null);
 
   // Filtrar compras
   const comprasFiltradas = compras.filter(compra => {
@@ -307,10 +320,16 @@ const ComprasTab = ({
               <thead className={classes.tableHeader}>
                 <tr>
                   <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
+                    Ações
+                  </th>
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Item
                   </th>
                   <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
-                    Quantidade
+                    Data Solicitação
+                  </th>
+                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
+                    QTD
                   </th>
                   <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Valor
@@ -324,66 +343,11 @@ const ComprasTab = ({
                   <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
                     Prioridade
                   </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
-                    Data
-                  </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
-                    Ações
-                  </th>
                 </tr>
               </thead>
               <tbody className={classes.tableBody}>
                 {comprasFiltradas.map((compra) => (
                   <tr key={compra.id} className={classes.tableRow}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className={`text-sm font-medium ${colors.text}`}>
-                          {compra.descricao}
-                        </div>
-                        {compra.solicitante && (
-                          <div className={`text-sm ${colors.textSecondary}`}>
-                            Solicitante: {compra.solicitante}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.text}`}>
-                      {compra.quantidade}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`text-sm ${colors.text}`}>
-                        R$ {(compra.valorUnitario || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
-                      <div className={`text-sm ${colors.textSecondary}`}>
-                        Total: R$ {(compra.valorTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.text}`}>
-                      {compra.fornecedor || 'Não informado'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={compra.status}
-                        onChange={(e) => atualizarStatus(compra.id, e.target.value)}
-                        disabled={readonly}
-                        className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
-                      >
-                        {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                          <option key={value} value={value}>{label}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full ${PRIORIDADE_COLORS[compra.prioridade]}`}>
-                        {PRIORIDADE_LABELS[compra.prioridade]}
-                      </span>
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.textSecondary}`}>
-                      <div>Sol: {compra.dataSolicitacao?.toDate ? compra.dataSolicitacao.toDate().toLocaleDateString('pt-BR') : compra.dataSolicitacao}</div>
-                      {compra.dataRecebimento && (
-                        <div>Rec: {compra.dataRecebimento?.toDate ? compra.dataRecebimento.toDate().toLocaleDateString('pt-BR') : compra.dataRecebimento}</div>
-                      )}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {!readonly && (
                         <div className="flex items-center space-x-2">
@@ -403,6 +367,86 @@ const ComprasTab = ({
                           </button>
                         </div>
                       )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className={`text-sm font-medium ${colors.text}`}>
+                          {compra.descricao}
+                        </div>
+                        {compra.solicitante && (
+                          <div className={`text-sm ${colors.textSecondary}`}>
+                            Solicitante: {compra.solicitante}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.textSecondary}`}>
+                      {compra.dataSolicitacao?.toDate ? compra.dataSolicitacao.toDate().toLocaleDateString('pt-BR') : compra.dataSolicitacao}
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.text} cursor-pointer`}
+                        onClick={() => setDetalhesCompra(compra)}>
+                      {compra.quantidade}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap cursor-pointer"
+                        onClick={() => setDetalhesCompra(compra)}>
+                      <div className={`text-sm ${colors.text}`}>
+                        R$ {(compra.valorUnitario || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                      <div className={`text-sm ${colors.textSecondary}`}>
+                        Total: R$ {(compra.valorTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.text} cursor-pointer`}
+                        onClick={() => setDetalhesCompra(compra)}>
+                      {compra.fornecedor || 'Não informado'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        {!readonly ? (
+                          <select
+                            value={compra.status}
+                            onChange={(e) => atualizarStatus(compra.id, e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`appearance-none inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors border-0 min-w-[120px] ${STATUS_COLORS[compra.status]}`}
+                            style={{
+                              ...STATUS_CSS_VARS[compra.status],
+                              WebkitAppearance: 'none',
+                              MozAppearance: 'none',
+                              backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")',
+                              backgroundRepeat: 'no-repeat',
+                              backgroundPosition: 'right 0.5rem center',
+                              backgroundSize: '1em 1em',
+                              paddingRight: '2rem',
+                              width: 'auto'
+                            }}
+                          >
+                            {Object.entries(STATUS_LABELS).map(([value, label]) => {
+                              const colors = STATUS_COLORS[value].split(' ');
+                              const bgColor = colors[0];
+                              const textColor = colors[2];
+                              return (
+                                <option 
+                                  key={value} 
+                                  value={value} 
+                                  className={`${bgColor} ${textColor} bg-opacity-10`}
+                                  style={{ backgroundColor: 'var(--background)', color: 'var(--text)' }}
+                                >
+                                  {label}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        ) : (
+                          <span className={`inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full ${STATUS_COLORS[compra.status]}`}>
+                            {STATUS_LABELS[compra.status]}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex text-xs font-medium px-2.5 py-0.5 rounded-full ${PRIORIDADE_COLORS[compra.prioridade]}`}>
+                        {PRIORIDADE_LABELS[compra.prioridade]}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -498,6 +542,18 @@ const ComprasTab = ({
                 </div>
                 <div>
                   <label className={`block text-sm font-medium ${colors.text} mb-2`}>
+                    Link da Compra
+                  </label>
+                  <input
+                    type="url"
+                    value={novaCompra.link}
+                    onChange={(e) => setNovaCompra({ ...novaCompra, link: e.target.value })}
+                    className={classes.input}
+                    placeholder="https://"
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Solicitante
                   </label>
                   <input
@@ -564,6 +620,104 @@ const ComprasTab = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes da Compra */}
+      {detalhesCompra && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className={`${classes.card} p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className={`text-lg font-medium ${colors.text}`}>Detalhes da Compra</h3>
+              <button
+                onClick={() => setDetalhesCompra(null)}
+                className={`${colors.textSecondary} hover:${colors.text}`}
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Item</label>
+                  <p className={`text-base ${colors.text}`}>{detalhesCompra.descricao}</p>
+                </div>
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Solicitante</label>
+                  <p className={`text-base ${colors.text}`}>{detalhesCompra.solicitante || '-'}</p>
+                </div>
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Quantidade</label>
+                  <p className={`text-base ${colors.text}`}>{detalhesCompra.quantidade}</p>
+                </div>
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Fornecedor</label>
+                  <p className={`text-base ${colors.text}`}>{detalhesCompra.fornecedor || '-'}</p>
+                </div>
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Valor Unitário</label>
+                  <p className={`text-base ${colors.text}`}>
+                    R$ {(detalhesCompra.valorUnitario || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Valor Total</label>
+                  <p className={`text-base ${colors.text}`}>
+                    R$ {(detalhesCompra.valorTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Status</label>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-1 ${STATUS_COLORS[detalhesCompra.status]}`}>
+                    {STATUS_LABELS[detalhesCompra.status]}
+                  </span>
+                </div>
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Prioridade</label>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-1 ${PRIORIDADE_COLORS[detalhesCompra.prioridade]}`}>
+                    {PRIORIDADE_LABELS[detalhesCompra.prioridade]}
+                  </span>
+                </div>
+              </div>
+
+              {detalhesCompra.link && (
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary} mb-1`}>Link da Compra</label>
+                  <a
+                    href={detalhesCompra.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1DA1F2] hover:underline break-all"
+                  >
+                    {detalhesCompra.link}
+                  </a>
+                </div>
+              )}
+
+              {detalhesCompra.observacoes && (
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary} mb-1`}>Observações</label>
+                  <p className={`text-base ${colors.text} whitespace-pre-wrap`}>{detalhesCompra.observacoes}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Data de Solicitação</label>
+                  <p className={`text-base ${colors.text}`}>
+                    {detalhesCompra.dataSolicitacao?.toDate?.().toLocaleDateString('pt-BR') || '-'}
+                  </p>
+                </div>
+                <div>
+                  <label className={`block text-sm ${colors.textSecondary}`}>Última Atualização</label>
+                  <p className={`text-base ${colors.text}`}>
+                    {detalhesCompra.dataAtualizacao?.toDate?.().toLocaleDateString('pt-BR') || '-'}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

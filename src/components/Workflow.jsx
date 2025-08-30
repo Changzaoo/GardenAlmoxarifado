@@ -22,7 +22,7 @@ import UsuariosTab from './usuarios/UsuariosTab';
 import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
 import FerramentasPerdidasTab from './Perdidas/FerramentasPerdidasTab';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
-import { MessageCircle } from 'lucide-react';
+import WorkflowChat from './Chat/WorkflowChat';
 import ComprasTab from './Compras/ComprasTab';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
 import TarefasTab from './Tarefas/TarefasTab';
@@ -1764,6 +1764,7 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
       </main>
+      <WorkflowChat currentUser={usuario} />
     </div>
   );
 };

@@ -164,12 +164,12 @@ const HistoricoEmprestimosTab = ({
             <thead>
               <tr className="border-b">
                 <th className="text-left py-3 px-2">Colaborador</th>
+                <th className="text-left py-3 px-2">Status</th>
+                <th className="text-left py-3 px-2">Ações</th>
                 <th className="text-left py-3 px-2">Ferramentas</th>
                 <th className="text-left py-3 px-2">Retirada</th>
                 <th className="text-left py-3 px-2">Previsão</th>
                 <th className="text-left py-3 px-2">Devolução</th>
-                <th className="text-left py-3 px-2">Status</th>
-                <th className="text-left py-3 px-2">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -183,6 +183,45 @@ const HistoricoEmprestimosTab = ({
                 emprestimosFiltrados.map(emprestimo => (
                   <tr key={emprestimo.id} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-2 font-medium">{emprestimo.nomeFuncionario || emprestimo.colaborador || '-'}</td>
+                    <td className="py-3 px-2 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                        emprestimo.status === 'emprestado'
+                          ? emprestimo.dataPrevista && new Date(emprestimo.dataPrevista) < new Date()
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {emprestimo.status === 'emprestado' ? (
+                          emprestimo.dataPrevista && new Date(emprestimo.dataPrevista) < new Date() ? (
+                            <><AlertTriangle className="w-3 h-3 mr-1 flex-shrink-0" />Atrasado</>
+                          ) : (
+                            <><Clock className="w-3 h-3 mr-1 flex-shrink-0" />Emprestado</>
+                          )
+                        ) : (
+                          <><CheckCircle className="w-3 h-3 mr-1 flex-shrink-0" />Devolvido</>
+                        )}
+                      </span>
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="flex gap-2">
+                        {emprestimo.status === 'emprestado' && (
+                          <button
+                            onClick={() => handleDevolverFerramentas(emprestimo)}
+                            className="text-green-600 hover:text-green-800 p-1"
+                            title="Devolver ferramentas"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleRemoverEmprestimo(emprestimo.id)}
+                          className="text-red-600 hover:text-red-800 p-1"
+                          title="Remover registro"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
                     <td className="py-3 px-2">
                       <div className="max-w-xs">
                         {(() => {
@@ -211,67 +250,28 @@ const HistoricoEmprestimosTab = ({
                             );
                           });
                         })()}
-                    </div>
-                  </td>
-                  <td className="py-3 px-2 text-sm">
-                    {emprestimo.dataEmprestimo ? formatarDataHora(emprestimo.dataEmprestimo) : 'Data não registrada'}
-                  </td>
-                  <td className="py-3 px-2 text-sm">
-                    {emprestimo.dataPrevista ? formatarData(emprestimo.dataPrevista) : '-'}
-                  </td>
-                  <td className="py-3 px-2 text-sm">
-                    {emprestimo.dataDevolucao ? (
-                      <div>
-                        <div>{formatarDataHora(emprestimo.dataDevolucao)}</div>
-                        {emprestimo.devolvidoPorTerceiros && (
-                          <div className="text-xs text-orange-600 mt-1">
-                            Devolvido por terceiros
-                          </div>
-                        )}
                       </div>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      emprestimo.status === 'emprestado'
-                        ? emprestimo.dataPrevista && new Date(emprestimo.dataPrevista) < new Date()
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {emprestimo.status === 'emprestado' ? (
-                        emprestimo.dataPrevista && new Date(emprestimo.dataPrevista) < new Date() ? (
-                          <><AlertTriangle className="w-3 h-3 inline mr-1" />Atrasado</>
-                        ) : (
-                          <><Clock className="w-3 h-3 inline mr-1" />Emprestado</>
-                        )
+                    </td>
+                    <td className="py-3 px-2 text-sm">
+                      {emprestimo.dataEmprestimo ? formatarDataHora(emprestimo.dataEmprestimo) : 'Data não registrada'}
+                    </td>
+                    <td className="py-3 px-2 text-sm">
+                      {emprestimo.dataPrevista ? formatarData(emprestimo.dataPrevista) : '-'}
+                    </td>
+                    <td className="py-3 px-2 text-sm">
+                      {emprestimo.dataDevolucao ? (
+                        <div>
+                          <div>{formatarDataHora(emprestimo.dataDevolucao)}</div>
+                          {emprestimo.devolvidoPorTerceiros && (
+                            <div className="text-xs text-orange-600 mt-1">
+                              Devolvido por terceiros
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <><CheckCircle className="w-3 h-3 inline mr-1" />Devolvido</>
+                        <span className="text-gray-400">-</span>
                       )}
-                    </span>
-                  </td>
-                  <td className="py-3 px-2">
-                    <div className="flex gap-2">
-                      {emprestimo.status === 'emprestado' && (
-                        <button
-                          onClick={() => handleDevolverFerramentas(emprestimo)}
-                          className="text-green-600 hover:text-green-800 p-1"
-                          title="Devolver ferramentas"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleRemoverEmprestimo(emprestimo.id)}
-                        className="text-red-600 hover:text-red-800 p-1"
-                        title="Remover registro"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                    </td>
                 </tr>
                 ))
               )}

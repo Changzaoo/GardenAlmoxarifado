@@ -36,6 +36,7 @@ const UsuariosTab = () => {
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
   const [confirmacaoRemocao, setConfirmacaoRemocao] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -228,13 +229,19 @@ const UsuariosTab = () => {
 
   // Filtrar usuários visíveis
   const usuariosVisiveis = usuarios.filter(usuario => {
-    if (usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN) {
-      return true; // Admin vê todos
-    }
-    if (usuarioLogado.nivel === NIVEIS_PERMISSAO.GERENTE) {
-      return usuario.nivel < NIVEIS_PERMISSAO.GERENTE || usuario.id === usuarioLogado.id;
-    }
-    return usuario.id === usuarioLogado.id; // Só pode ver a si mesmo
+    // Primeiro aplicar filtro de permissões
+    const temPermissao = usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN ? true :
+      usuarioLogado.nivel === NIVEIS_PERMISSAO.GERENTE ? 
+        (usuario.nivel < NIVEIS_PERMISSAO.GERENTE || usuario.id === usuarioLogado.id) :
+        usuario.id === usuarioLogado.id;
+
+    // Depois aplicar filtro de busca
+    const termoBusca = searchTerm.toLowerCase();
+    const matchBusca = !searchTerm || 
+      usuario.nome.toLowerCase().includes(termoBusca) ||
+      usuario.email.toLowerCase().includes(termoBusca);
+
+    return temPermissao && matchBusca;
   });
 
   return (
@@ -251,6 +258,17 @@ const UsuariosTab = () => {
             </div>
           </div>
           
+          {/* Campo de busca */}
+          <div className="flex-1 mx-4">
+            <input
+              type="text"
+              placeholder="Buscar por nome ou email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full px-4 py-2 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+            />
+          </div>
+
           {niveisDisponiveis.length > 0 && (
             <button
               onClick={abrirModalCriar}

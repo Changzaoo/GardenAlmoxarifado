@@ -1,0 +1,154 @@
+.workflow-chat-container {
+  background-color: #1f2936;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  max-width: 90vw;
+}
+
+.workflow-chat-messages {
+  background-color: #1f2936;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Emoji Picker customization */
+.EmojiPickerReact {
+  --epr-bg-color: #2f3136 !important;
+  --epr-category-label-bg-color: #36393f !important;
+  --epr-hover-bg-color: rgba(255, 255, 255, 0.1) !important;
+  --epr-focus-bg-color: rgba(255, 255, 255, 0.1) !important;
+  --epr-search-border-color: rgba(255, 255, 255, 0.1) !important;
+  --epr-search-input-bg-color: #40444b !important;
+  --epr-search-input-placeholder-color: #72767d !important;
+  --epr-scrollbar-thumb-color: rgba(255, 255, 255, 0.1) !important;
+  --epr-scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.2) !important;
+  --epr-search-input-text-color: #dcddde !important;
+  --epr-text-color: #dcddde !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Ajusta o input de pesquisa do emoji picker */
+.EmojiPickerReact .epr-search {
+  margin: 0.5rem !important;
+}
+
+.EmojiPickerReact input.epr-search {
+  padding-left: 2rem !important;
+  padding-right: 1rem !important;
+}
+
+/* Traduz o placeholder */
+.EmojiPickerReact input[type="text"][placeholder="Search"] {
+  padding-left: 35px !important;
+}
+
+.EmojiPickerReact input[type="text"][placeholder="Search"]::placeholder {
+  content: "Pesquisar";
+}
+
+/* Força o texto do placeholder */
+.EmojiPickerReact input[type="text"] {
+  padding-left: 35px !important;
+}
+
+/* Scrollbar personalizada para Chrome */
+.workflow-chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.workflow-chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.workflow-chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.workflow-chat-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.workflow-chat-message {
+  position: relative;
+  max-width: 70%;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.workflow-chat-message-sent {
+  background-color: #1d9bf0;
+  color: #ffffff;
+  margin-left: auto;
+  border-radius: 8px 0 8px 8px;
+}
+
+.workflow-chat-message-received {
+  background-color: #1f2936;
+  color: #dcddde;
+  margin-right: auto;
+  border-radius: 0 8px 8px 8px;
+}
+
+.workflow-chat-input {
+  background-color: #40444b;
+  color: #dcddde;
+  border-radius: 24px !important;
+  padding-right: 48px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.workflow-chat-input::placeholder {
+  color: #72767d;
+}
+
+.workflow-chat-send-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.workflow-chat-list-item {
+  transition: all 0.2s ease;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #dcddde;
+}
+
+.workflow-chat-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.workflow-chat-search {
+  border-radius: 24px !important;
+  background-color: #40444b;
+  color: #dcddde;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.workflow-chat-search:focus {
+  background-color: #36393f;
+}
+
+.workflow-chat-search::placeholder {
+  color: #72767d;
+  text-indent: 20px; /* Move o texto do placeholder para a direita */
+}
+
+.workflow-chat-user-avatar {
+  width: 40px;
+  height: 40px;
+  background-color: #40444b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: #dcddde;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}

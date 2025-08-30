@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { AuthProvider } from './hooks/useAuth';
+import Chat from './components/Chat/Chat';
 import { FuncionariosProvider } from './components/Funcionarios/FuncionariosProvider';
 import { InventarioProvider } from './components/Inventario/InventarioProvider';
 import { NotificationProvider } from './components/NotificationProvider';
@@ -38,7 +39,8 @@ function App() {
                 <div className="App">
                   <RouteStateManager />
                   <ScrollPersistence />
-                    <ToastContainer 
+                  <Chat />
+                  <ToastContainer 
                       position="top-right" 
                       autoClose={3000}
                       theme="dark"
