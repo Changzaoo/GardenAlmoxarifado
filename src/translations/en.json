@@ -1,0 +1,50 @@
+{
+  "translation": {
+    "menu": {
+      "dashboard": "Dashboard",
+      "employees": "Employees",
+      "purchases": "Purchases",
+      "inventory": "Inventory",
+      "loans": "Loans",
+      "damaged": "Damaged",
+      "history": "History",
+      "legal": "Legal Information"
+    },
+    "profile": {
+      "profile": "Profile",
+      "logout": "Logout"
+    },
+    "auth": {
+      "login": "Login",
+      "email": "Email/Username",
+      "password": "Password",
+      "enterEmail": "Enter your username",
+      "enterPassword": "Enter your password",
+      "rememberMe": "Remember me",
+      "loginButton": "Enter System",
+      "loading": "Logging in...",
+      "error": "Login error. Try again.",
+      "fillFields": "Please fill in all fields"
+    },
+    "legal": {
+      "title": "Legal Information",
+      "terms": "Terms of Use",
+      "privacy": "Privacy",
+      "contact": "Contact",
+      "lgpd": "GDPR Information"
+    },
+    "common": {
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "add": "Add",
+      "search": "Search",
+      "noResults": "No results found",
+      "required": "Required field"
+    }
+  }
+}

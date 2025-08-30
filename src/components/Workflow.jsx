@@ -3,7 +3,8 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs } fr
 import { ToastProvider } from './ToastProvider';
 import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
 import LegalTab from './Legal/LegalTab';
-import { Shield } from 'lucide-react';
+import { Shield, Scale, Globe, Menu as MenuIcon, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './ThemeProvider';
@@ -12,7 +13,6 @@ import UserProfileModal from './Auth/UserProfileModal';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
 import { useNotifications } from '../hooks/useNotifications';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { Menu as MenuIcon, X } from 'lucide-react';
 import InventarioTab from './Inventario/InventarioTab';
 import MeuInventarioTab from './Inventario/MeuInventarioTab';
 import { inventarioInicial } from '../data/inventarioInicial';
@@ -893,6 +893,9 @@ const AlmoxarifadoSistema = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const { t, i18n } = useTranslation();
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -1602,6 +1605,42 @@ const AlmoxarifadoSistema = () => {
               >
                 <HelpCircle className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
               </button>
+              <button
+                onClick={() => setShowLegalModal(true)}
+                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                title="Informações Legais"
+              >
+                <Scale className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
+              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowLanguageMenu(prev => !prev)}
+                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                  title={t('common.language')}
+                >
+                  <Globe className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
+                </button>
+                <div className={`absolute right-0 mt-2 py-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 ${showLanguageMenu ? 'block' : 'hidden'}`}>
+                  <button
+                    onClick={() => { i18n.changeLanguage('pt'); setShowLanguageMenu(false); }}
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+                  >
+                    Português
+                  </button>
+                  <button
+                    onClick={() => { i18n.changeLanguage('es'); setShowLanguageMenu(false); }}
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+                  >
+                    Español
+                  </button>
+                  <button
+                    onClick={() => { i18n.changeLanguage('en'); setShowLanguageMenu(false); }}
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+                  >
+                    English
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1619,6 +1658,13 @@ const AlmoxarifadoSistema = () => {
       {showHelpModal && (
         <div className="fixed inset-0 z-50">
           <SupportTab onClose={() => setShowHelpModal(false)} />
+        </div>
+      )}
+
+      {/* Legal Modal */}
+      {showLegalModal && (
+        <div className="fixed inset-0 z-50">
+          <LegalTab onClose={() => setShowLegalModal(false)} />
         </div>
       )}
 
