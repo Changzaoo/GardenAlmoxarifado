@@ -2,37 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ajustes para responsividade em dispositivos móveis */
-@layer utilities {
-  .mobile-safe-height {
-    height: 100vh; /* Fallback */
-    height: -webkit-fill-available;
-    height: stretch;
-  }
-  
-  .mobile-container {
-    min-height: 100vh; /* Fallback */
-    min-height: -webkit-fill-available;
-    min-height: stretch;
-    @apply flex flex-col;
-  }
-
-  .mobile-content {
-    @apply flex-1 overflow-y-auto overscroll-contain;
-  }
-
-  .mobile-bottom-safe {
-    padding-bottom: env(safe-area-inset-bottom, 1rem);
-  }
-}
-
-/* Prevenir zoom em inputs em iOS */
-@supports (-webkit-touch-callout: none) {
-  input, select, textarea {
-    font-size: 16px !important;
-  }
-}
-
 @import './styles/darkMode.css';
 
 :root {

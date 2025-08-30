@@ -45,9 +45,32 @@
       /* Loading spinner inicial */
       .initial-loading {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         min-height: 100vh;
+        background-color: #fff;
+        font-family: 'Inter', sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        .initial-loading {
+          background-color: #16181C;
+          color: #fff;
+        }
+      }
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 16px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #1DA1F2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
         background: linear-gradient(135deg, #ebf5fb 0%, #e6f7ff 100%);
       }
       

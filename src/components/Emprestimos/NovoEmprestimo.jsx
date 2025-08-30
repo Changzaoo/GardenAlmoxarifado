@@ -164,7 +164,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
         </div>
         <div>
           <h3 className="font-medium text-gray-700 dark:text-white mb-2">Ferramentas Selecionadas:</h3>
-          <div className="border border-gray-200 dark:border-[#38444D] rounded-lg p-3 min-h-32 max-h-40 overflow-y-auto">
+          <div className="border border-gray-200 dark:border-[#38444D] rounded-lg p-3 min-h-32 max-h-[calc(50vh-4rem)] overflow-y-auto">
             {novoEmprestimo.ferramentas.length === 0 ? (
               <p className="text-gray-400 dark:text-gray-600 text-sm">Nenhuma ferramenta selecionada</p>
             ) : (
