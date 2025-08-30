@@ -1,23 +1,13 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import useScrollDirection from '../../hooks/useScrollDirection';
 
 const SideNavigation = () => {
   const location = useLocation();
-  const scrollDirection = useScrollDirection();
   
   return (
     <nav className="fixed left-0 h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out">
       <div className="flex flex-col h-full">
-        <div className="overflow-y-auto flex-grow scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent" onScroll={(e) => {
-          const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-          const isAtBottom = scrollHeight - scrollTop === clientHeight;
-          if (isAtBottom) {
-            e.currentTarget.classList.add('at-bottom');
-          } else {
-            e.currentTarget.classList.remove('at-bottom');
-          }
-        }}>
+        <div className="overflow-y-auto flex-grow scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
           {/* Main Navigation */}
           <div className="px-3 py-4 space-y-2">
             <ul className="space-y-1">
@@ -72,42 +62,6 @@ const SideNavigation = () => {
                 </a>
               </li>
             </ul>
-          </div>
-        </div>
-        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t dark:border-[#2F3336] bg-white dark:bg-black transform transition-transform duration-300 ${scrollDirection === 'up' ? 'translate-y-full' : 'translate-y-0'}`}>
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-user w-full h-full p-2 text-gray-600 dark:text-[#71767B]">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-[#E7E9EA] truncate">Vinicius</p>
-              <p className="text-sm text-gray-500 dark:text-[#71767B] truncate">Administrador</p>
-            </div>
-            <div className="flex items-center space-x-1">
-              <button className="p-2 rounded-full hover:bg-red-500/10 transition-colors" title="Sair">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-log-out w-4 h-4 text-gray-900 dark:text-[#E7E9EA]">
-                  <path d="m16 17 5-5-5-5"></path>
-                  <path d="M21 12H9"></path>
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                </svg>
-              </button>
-              <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors" title="Editar perfil">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-square-pen w-4 h-4 text-gray-900 dark:text-[#E7E9EA]">
-                  <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"></path>
-                </svg>
-              </button>
-              <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors" title="Ajuda">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-question-mark w-4 h-4 text-gray-900 dark:text-[#E7E9EA]">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                  <path d="M12 17h.01"></path>
-                </svg>
-              </button>
-            </div>
           </div>
         </div>
       </div>
