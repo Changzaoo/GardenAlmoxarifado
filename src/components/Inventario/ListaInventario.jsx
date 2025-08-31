@@ -25,7 +25,7 @@ const ListaInventario = ({ inventario, emprestimos, removerItem }) => {
           <Search className="w-4 h-4 absolute left-3 top-3 text-[#8899A6]" />
           <input
             type="text"
-            placeholder="Buscar por item ou categoria..."
+            placeholder="    Buscar por item..."
             value={filtroInventario}
             onChange={(e) => setFiltroInventario(e.target.value)}
             className="pl-10 pr-4 py-2 bg-[#253341] border border-[#38444D] rounded-full text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"

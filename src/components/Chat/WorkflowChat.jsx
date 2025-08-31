@@ -5,12 +5,11 @@ import {
   Smile, Paperclip, Mic, Trash2, Image,
   FileText, Video, Headphones, File
 } from 'lucide-react';
+import ChatButton from './ChatButton';
 import './WorkflowChat.css';
 import EmojiPicker from 'emoji-picker-react';
 import { db, storage } from '../../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getMessaging, getToken } from 'firebase/messaging';
-import localforage from 'localforage';
 import {
   collection,
   query,
@@ -25,19 +24,46 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 
-// Configurar storage local para mídia
-const mediaStorage = localforage.createInstance({
-  name: 'chatMediaCache'
-});
+const formatLastMessageTime = (timestamp) => {
+  if (!timestamp) return '';
+  
+  const now = new Date();
+  const messageDate = new Date(timestamp);
+  
+  // Se for hoje
+  if (messageDate.toDateString() === now.toDateString()) {
+    return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  
+  // Se for ontem
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (messageDate.toDateString() === yesterday.toDateString()) {
+    return 'Ontem';
+  }
+  
+  // Se for esta semana
+  const oneWeekAgo = new Date(now);
+  oneWeekAgo.setDate(now.getDate() - 7);
+  if (messageDate > oneWeekAgo) {
+    const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    return days[messageDate.getDay()];
+  }
+  
+  // Se for este ano
+  if (messageDate.getFullYear() === now.getFullYear()) {
+    return messageDate.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+  }
+  
+  // Se for ano anterior
+  return messageDate.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' });
+};
 
-const WorkflowChat = ({ currentUser }) => {
+const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 86, y: window.innerHeight - 86 } }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [chats, setChats] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [fcmToken, setFcmToken] = useState(null);
-  const [offlineMediaQueue, setOfflineMediaQueue] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -61,22 +87,11 @@ const WorkflowChat = ({ currentUser }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Atualizar última visualização do chat
   useEffect(() => {
-    if (activeChat && messages?.length) {
+    if (messages?.length) {
       scrollToBottom();
-      
-      // Atualiza o timestamp da última visualização
-      const lastSeen = {
-        ...activeChat.lastSeen,
-        [currentUser.id]: new Date()
-      };
-      
-      updateDoc(doc(db, 'chats', activeChat.id), {
-        lastSeen
-      });
     }
-  }, [messages, activeChat, currentUser]);
+  }, [messages]);
 
   // Fechar menu de contexto ao clicar fora
   useEffect(() => {
@@ -107,32 +122,6 @@ const WorkflowChat = ({ currentUser }) => {
   }, [currentUser]);
 
   // Carregar chats do usuário
-  // Inicializar notificações
-  useEffect(() => {
-    const initializeNotifications = async () => {
-      try {
-        const messaging = getMessaging();
-        const permission = await Notification.requestPermission();
-        
-        if (permission === 'granted') {
-          const token = await getToken(messaging);
-          setFcmToken(token);
-          
-          if (currentUser) {
-            await updateDoc(doc(db, 'usuarios', currentUser.id), {
-              fcmToken: token
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao configurar notificações:', error);
-      }
-    };
-
-    initializeNotifications();
-  }, [currentUser]);
-
-  // Carregar chats e contar mensagens não lidas
   useEffect(() => {
     if (!currentUser) return;
 
@@ -146,90 +135,17 @@ const WorkflowChat = ({ currentUser }) => {
         id: doc.id,
         ...doc.data(),
         lastMessage: doc.data().lastMessage || '',
-        timestamp: doc.data().timestamp?.toDate() || new Date()
+        lastMessageTimestamp: doc.data().lastMessageTimestamp?.toDate() || new Date(),
       }));
+      // Ordenar chats pelo timestamp da última mensagem
+      chatsList.sort((a, b) => b.lastMessageTimestamp - a.lastMessageTimestamp);
       setChats(chatsList);
-
-      // Contar mensagens não lidas de chats não abertos
-      const updateUnreadCount = async () => {
-        let totalUnread = 0;
-        for (const chat of chatsList) {
-          // Verifica se o chat nunca foi aberto ou se tem mensagens mais recentes que a última visualização
-          if (!chat.lastSeen || 
-              (chat.lastMessageTimestamp?.toDate() > chat.lastSeen[currentUser.id])) {
-            const lastSeenTime = chat.lastSeen?.[currentUser.id] || new Date(0);
-            
-            // Primeiro, pegamos todas as mensagens após a última visualização
-            const messagesQuery = query(
-              collection(db, 'chats', chat.id, 'messages'),
-              orderBy('timestamp', 'desc')
-            );
-            
-            const unreadSnapshot = await getDocs(messagesQuery);
-            
-            // Depois filtramos localmente para contar apenas mensagens não lidas de outros usuários
-            const unreadCount = unreadSnapshot.docs.reduce((count, doc) => {
-              const data = doc.data();
-              if (data.senderId !== currentUser.id && 
-                  !data.read &&
-                  data.timestamp?.toDate() > lastSeenTime) {
-                return count + 1;
-              }
-              return count;
-            }, 0);
-            
-            totalUnread += unreadCount;
-          }
-        }
-        setUnreadCount(totalUnread);
-      };
-      
-      updateUnreadCount();
     });
 
     return () => unsubscribe();
   }, [currentUser]);
 
-  // Sincronizar mídia offline quando voltar online
-  useEffect(() => {
-    const syncOfflineMedia = async () => {
-      if (navigator.onLine && offlineMediaQueue.length > 0) {
-        for (const fileId of offlineMediaQueue) {
-          try {
-            const mediaData = await mediaStorage.getItem(fileId);
-            if (mediaData) {
-              const fileRef = ref(storage, `files/${mediaData.chatId}/${fileId}`);
-              await uploadBytes(fileRef, mediaData.file);
-              const fileUrl = await getDownloadURL(fileRef);
-
-              // Atualizar a mensagem com a URL do arquivo
-              const q = query(
-                collection(db, 'chats', mediaData.chatId, 'messages'),
-                where('localFileId', '==', fileId)
-              );
-              const snapshot = await getDocs(q);
-              if (!snapshot.empty) {
-                await updateDoc(doc(db, 'chats', mediaData.chatId, 'messages', snapshot.docs[0].id), {
-                  fileUrl,
-                  localFileId: null
-                });
-              }
-
-              await mediaStorage.removeItem(fileId);
-            }
-          } catch (error) {
-            console.error('Erro ao sincronizar mídia:', error);
-          }
-        }
-        setOfflineMediaQueue([]);
-      }
-    };
-
-    window.addEventListener('online', syncOfflineMedia);
-    return () => window.removeEventListener('online', syncOfflineMedia);
-  }, [offlineMediaQueue]);
-
-  // Carregar mensagens do chat ativo e marcar como lidas
+  // Carregar mensagens do chat ativo
   useEffect(() => {
     if (!activeChat) {
       setMessages([]);
@@ -241,41 +157,13 @@ const WorkflowChat = ({ currentUser }) => {
       orderBy('timestamp', 'asc')
     );
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const messagesList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         timestamp: doc.data().timestamp?.toDate() || new Date()
       }));
       setMessages(messagesList);
-
-      // Marcar mensagens como lidas
-      const unreadMessages = snapshot.docs.filter(doc => 
-        !doc.data().read && doc.data().senderId !== currentUser.id
-      );
-
-      for (const doc of unreadMessages) {
-        await updateDoc(doc.ref, { read: true });
-      }
-
-      // Se houver mensagens não lidas e o chat não estiver aberto, mostrar notificação
-      if (!isOpen && unreadMessages.length > 0) {
-        const lastMessage = unreadMessages[unreadMessages.length - 1].data();
-        const senderName = lastMessage.senderName;
-        const messageText = lastMessage.type === 'text' 
-          ? lastMessage.text 
-          : `${senderName} enviou um${lastMessage.type === 'image' ? 'a foto' : lastMessage.type === 'video' ? ' vídeo' : ' arquivo'}`;
-
-        if (Notification.permission === 'granted') {
-          new Notification('Nova mensagem', {
-            body: `${senderName}: ${messageText}`,
-            icon: '/logo.png',
-            badge: '/favicon.svg',
-            tag: activeChat.id,
-            renotify: true
-          });
-        }
-      }
     });
 
     return () => unsubscribe();
@@ -316,16 +204,9 @@ const WorkflowChat = ({ currentUser }) => {
 
       await addDoc(collection(db, 'chats', activeChat.id, 'messages'), messageData);
 
-      // Atualiza o chat com a última mensagem e marca como não visto pelos outros participantes
-      const lastSeen = activeChat.participants.reduce((acc, participantId) => {
-        acc[participantId] = participantId === currentUser.id ? new Date() : null;
-        return acc;
-      }, {});
-
       await updateDoc(doc(db, 'chats', activeChat.id), {
         lastMessage: audioBlob ? '🎤 Áudio' : newMessage,
-        lastMessageTimestamp: serverTimestamp(),
-        lastSeen
+        lastMessageTimestamp: serverTimestamp()
       });
 
       setNewMessage('');
@@ -343,29 +224,9 @@ const WorkflowChat = ({ currentUser }) => {
     if (!file || !activeChat) return;
 
     try {
-      // Primeiro, salvamos no armazenamento local
-      const fileId = `${Date.now()}_${file.name}`;
-      await mediaStorage.setItem(fileId, {
-        file,
-        type,
-        chatId: activeChat.id,
-        timestamp: Date.now()
-      });
-
-      // Tentamos fazer upload para o Firebase
-      let fileUrl = null;
-      try {
-        const fileRef = ref(storage, `files/${activeChat.id}/${fileId}`);
-        await uploadBytes(fileRef, file);
-        fileUrl = await getDownloadURL(fileRef);
-        
-        // Se o upload for bem sucedido, removemos do armazenamento local
-        await mediaStorage.removeItem(fileId);
-      } catch (error) {
-        console.log('Erro no upload, arquivo ficará no cache local:', error);
-        // Adicionamos à fila de upload offline
-        setOfflineMediaQueue(prev => [...prev, fileId]);
-      }
+      const fileRef = ref(storage, `files/${activeChat.id}/${Date.now()}_${file.name}`);
+      await uploadBytes(fileRef, file);
+      const fileUrl = await getDownloadURL(fileRef);
 
       const messageData = {
         senderId: currentUser.id,
@@ -375,11 +236,10 @@ const WorkflowChat = ({ currentUser }) => {
         type: type,
         fileUrl,
         fileName: file.name,
-        fileSize: file.size,
-        localFileId: fileUrl ? null : fileId // Se não tiver URL, usamos o ID local
+        fileSize: file.size
       };
 
-      const messageRef = await addDoc(collection(db, 'chats', activeChat.id, 'messages'), messageData);
+      await addDoc(collection(db, 'chats', activeChat.id, 'messages'), messageData);
 
       const typeEmoji = {
         image: '📷',
@@ -568,29 +428,31 @@ const WorkflowChat = ({ currentUser }) => {
     }
   };
 
+  const [buttonPos, setButtonPos] = useState(buttonPosition);
+
   return (
     <>
-      <div className="fixed right-6 bottom-6 z-[9999]">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className={`relative p-4 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110
-            ${isOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-[#1D9BF0] hover:bg-[#1a8cd8]'}`}
-        >
-          {isOpen ? (
-            <X className="w-6 h-6 text-white" />
-          ) : (
-            <MessageCircle className="w-6 h-6 text-white" />
-          )}
-          {!isOpen && unreadCount > 0 && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[22px] h-[22px] flex items-center justify-center px-1 border-2 border-white">
-              {unreadCount}
-            </div>
-          )}
-        </button>
-      </div>
+      <ChatButton
+        isOpen={isOpen}
+        onClick={() => setIsOpen(!isOpen)}
+        position={buttonPos}
+        onPositionChange={setButtonPos}
+      />
 
       {isOpen && (
-        <div className="fixed right-6 bottom-24 w-[420px] rounded-lg shadow-xl overflow-hidden z-[9998] workflow-chat-container h-[80vh] flex flex-col bg-[#36393f]">
+        <div 
+          className="fixed w-[420px] rounded-lg shadow-xl overflow-hidden z-[9998] workflow-chat-container h-[80vh] flex flex-col bg-[#36393f]"
+          style={{
+            // Posicionamento horizontal
+            ...(buttonPos.x < window.innerWidth / 2
+              ? { left: `${buttonPos.x + 70}px` } // Se o botão estiver na metade esquerda, abre à direita
+              : { right: `${window.innerWidth - buttonPos.x + 20}px` }), // Se estiver na direita, abre à esquerda
+            
+            // Posicionamento vertical
+            ...(buttonPos.y < window.innerHeight / 2
+              ? { top: `${buttonPos.y + 70}px` } // Se estiver na metade superior, abre abaixo
+              : { bottom: `${window.innerHeight - buttonPos.y + 20}px` }) // Se estiver na metade inferior, abre acima
+          }}>
           {showProfile && activeChat ? (
             <>
               <div className="p-3 bg-[#1d9bf0] border-b flex items-center gap-3">
@@ -738,12 +600,7 @@ const WorkflowChat = ({ currentUser }) => {
                     <h3 className="font-medium text-white">Conversas</h3>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => {
-                          setShowNewGroup(true);
-                          setActiveChat(null); // Fecha o chat ativo se houver
-                          setSearchTerm(''); // Limpa a busca
-                          setSearchResults({ chats: [], users: [] }); // Limpa os resultados
-                        }}
+                        onClick={() => setShowNewGroup(true)}
                         className="text-white hover:text-white/80 transition-colors p-2"
                         title="Novo Grupo"
                       >
@@ -756,31 +613,7 @@ const WorkflowChat = ({ currentUser }) => {
 
               {showNewGroup ? (
                 <div className="flex-1 overflow-auto p-4 bg-[#1f2936]">
-                  <div className="flex items-center gap-3 mb-4">
-                    <button
-                      onClick={() => {
-                        setShowNewGroup(false);
-                        setSelectedUsers([]);
-                        setNewGroupName('');
-                        // Recarrega a lista de chats
-                        const q = query(
-                          collection(db, 'chats'),
-                          where('participants', 'array-contains', currentUser.id)
-                        );
-                        getDocs(q).then((snapshot) => {
-                          const chatsList = snapshot.docs.map(doc => ({
-                            id: doc.id,
-                            ...doc.data(),
-                            lastMessage: doc.data().lastMessage || '',
-                            timestamp: doc.data().timestamp?.toDate() || new Date()
-                          }));
-                          setSearchResults({ chats: chatsList, users: [] });
-                        });
-                      }}
-                      className="text-white hover:text-white/80 transition-colors"
-                    >
-                      <ArrowLeft className="w-5 h-5" />
-                    </button>
+                  <div className="mb-4">
                     <input
                       type="text"
                       placeholder="Nome do grupo"
@@ -1095,7 +928,7 @@ const WorkflowChat = ({ currentUser }) => {
                                 {chatName}
                               </h4>
                               <span className="text-xs text-[#72767d] ml-2 flex-shrink-0">
-                                {chat.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {formatLastMessageTime(chat.lastMessageTimestamp)}
                               </span>
                             </div>
                             <p className="text-sm text-[#72767d] truncate">

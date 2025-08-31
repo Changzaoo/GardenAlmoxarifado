@@ -1,13 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Regra padrão - negar todo acesso por padrão
+    match /{document=**} {
+      allow read, write: if false;
+    }
     // Funções auxiliares de segurança
     function isAuthenticated() {
       return request.auth != null;
     }
     
     function isAdmin() {
-      return isAuthenticated() && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nivel > 2;
+      return isAuthenticated() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nivel > 2;
     }
     
     function isOwner(userId) {
@@ -15,39 +20,57 @@ service cloud.firestore {
     }
     
     function isValidTimestamp() {
-      return request.time.toMillis() <= (request.resource.data.timestamp + 300000) // 5 minutos de tolerância
-         && request.time.toMillis() >= (request.resource.data.timestamp - 300000);
+      return request.resource.data.keys().hasAll(['timestamp']) &&
+             request.time.toMillis() <= (request.resource.data.timestamp + 300000) && // 5 minutos de tolerância
+             request.time.toMillis() >= (request.resource.data.timestamp - 300000);
     }
     
     function hasMinLevel(minLevel) {
-      return isAuthenticated() && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nivel >= minLevel;
+      return isAuthenticated() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nivel >= minLevel;
     }
 
     // Regras para templates de tarefas
     match /templates/{templateId} {
       allow read: if isAuthenticated();
-      allow create, update: if hasMinLevel(2);
+      allow create, update: if hasMinLevel(2) && request.resource.data.keys().hasAll(['title', 'description', 'createdBy']);
       allow delete: if hasMinLevel(2);
     }
     
-    // Regras para usuários
+    // Regras para usuários - coleção mais crítica
     match /usuarios/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAdmin();
-      allow update: if isAdmin() || isOwner(userId);
+      allow read: if isAuthenticated() && (isAdmin() || isOwner(userId));
+      allow create: if isAdmin() && request.resource.data.keys().hasAll(['nome', 'email', 'nivel', 'dataCriacao']);
+      allow update: if (isAdmin() || isOwner(userId)) && 
+                   (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['nivel']) || isAdmin());
       allow delete: if isAdmin();
     }
     
     // Regras para inventário
     match /inventario/{itemId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() && isValidTimestamp();
+      allow create: if isAdmin() && isValidTimestamp() && 
+                   request.resource.data.keys().hasAll(['nome', 'quantidade', 'categoria', 'status']);
+      allow update: if isAdmin() && isValidTimestamp() && 
+                   request.resource.data.keys().hasAll(['nome', 'quantidade', 'categoria', 'status']);
+      allow delete: if isAdmin();
     }
     
+    // Regras para documentos legais
+    match /legal/{documentoId} {
+      allow read: if isAuthenticated();
+      allow create: if hasMinLevel(2) && 
+                   request.resource.data.keys().hasAll(['titulo', 'tipo', 'conteudo', 'versao', 'status', 'dataCriacao', 'criadoPor']);
+      allow update: if hasMinLevel(2) && 
+                   request.resource.data.keys().hasAll(['titulo', 'tipo', 'conteudo', 'versao', 'status', 'dataCriacao', 'criadoPor']);
+      allow delete: if hasMinLevel(2);
+    }
+
     // Regras para empréstimos
     match /emprestimos/{emprestimoId} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin() && isValidTimestamp();
+      allow create: if isAdmin() && isValidTimestamp() && 
+                   request.resource.data.keys().hasAll(['funcionarioId', 'ferramentaId', 'dataEmprestimo', 'dataDevolucaoPrevista']);
       allow update: if isAdmin() && isValidTimestamp();
       allow delete: if isAdmin();
     }
@@ -55,50 +78,36 @@ service cloud.firestore {
     // Regras para verificações mensais
     match /verificacoes_mensais/{verificacaoId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() && isValidTimestamp();
+      allow create: if isAdmin() && isValidTimestamp() && 
+                   request.resource.data.keys().hasAll(['data', 'responsavel', 'itens']);
+      allow update: if isAdmin() && isValidTimestamp();
+      allow delete: if false; // Não permitir exclusão de verificações mensais
     }
     
     // Regras para ferramentas danificadas
     match /ferramentas_danificadas/{id} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() && isValidTimestamp();
+      allow create: if isAdmin() && isValidTimestamp() && 
+                   request.resource.data.keys().hasAll(['ferramentaId', 'dataDano', 'descricao', 'reportadoPor']);
+      allow update: if isAdmin() && isValidTimestamp();
+      allow delete: if isAdmin();
     }
     
     // Regras para ferramentas perdidas
     match /ferramentas_perdidas/{id} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() && isValidTimestamp();
+      allow create: if isAdmin() && isValidTimestamp() && 
+                   request.resource.data.keys().hasAll(['ferramentaId', 'dataPerda', 'descricao', 'reportadoPor']);
+      allow update: if isAdmin() && isValidTimestamp();
+      allow delete: if isAdmin();
     }
     
-    // Regras para histórico
+    // Regras para histórico - imutável após criação
     match /historico/{id} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin() && isValidTimestamp();
+      allow create: if isAdmin() && isValidTimestamp() && 
+                   request.resource.data.keys().hasAll(['tipo', 'data', 'descricao', 'usuario']);
       allow update, delete: if false; // Histórico não deve ser modificado
-    }
-    // Regras para chats
-    match /chats/{chatId} {
-      allow read: if isAuthenticated() && 
-        request.auth.uid in resource.data.participants;
-      allow create: if isAuthenticated() && 
-        request.auth.uid in request.resource.data.participants;
-      allow update: if isAuthenticated() && 
-        request.auth.uid in resource.data.participants;
-      allow delete: if isAuthenticated() && 
-        request.auth.uid in resource.data.participants;
-        
-      // Regras para mensagens dentro de cada chat
-      match /messages/{messageId} {
-        allow read: if isAuthenticated() && 
-          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        allow create: if isAuthenticated() && 
-          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        allow update: if isAuthenticated() && (
-          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
-        );
-        allow delete: if false; // Mensagens não podem ser deletadas
-      }
     }
   }
 }

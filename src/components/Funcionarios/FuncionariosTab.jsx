@@ -4,7 +4,6 @@ import { Users, Trash2, Plus, Edit, Camera } from 'lucide-react';
 import { storage } from '../../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '../ToastProvider';
-import ExportImportButtons from '../common/ExportImportButtons';
 
 const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
@@ -95,17 +94,17 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
           {!isFuncionario && !readonly && (
-            <form onSubmit={handleAdicionar} className="flex gap-2">
+            <form onSubmit={handleAdicionar} className="flex gap-1">
               <input
                 type="text"
                 placeholder="Nome"
                 value={novoFuncionario.nome}
                 onChange={e => setNovoFuncionario({ ...novoFuncionario, nome: e.target.value })}
-                className="form-input px-3 py-2 rounded border"
+                className="form-input px-2 py-1 rounded border w-28"
                 required
               />
               <input
@@ -113,7 +112,7 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
                 placeholder="Cargo"
                 value={novoFuncionario.cargo}
                 onChange={e => setNovoFuncionario({ ...novoFuncionario, cargo: e.target.value })}
-                className="form-input px-3 py-2 rounded border"
+                className="form-input px-2 py-1 rounded border w-28"
                 required
               />
               <input
@@ -124,33 +123,27 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
                   const onlyNums = e.target.value.replace(/[^0-9]/g, '');
                   setNovoFuncionario({ ...novoFuncionario, telefone: onlyNums });
                 }}
-                className="form-input px-3 py-2 rounded border"
+                className="form-input px-2 py-1 rounded border w-24"
                 required
                 maxLength={15}
               />
-              <button type="submit" className="btn-primary flex items-center gap-2 px-4 py-2 rounded bg-green-600 text-white" disabled={loading}>
-                <Plus className="w-4 h-4" /> Adicionar
+              <button type="submit" className="btn-primary flex items-center gap-1 px-2 py-1 rounded bg-green-600 text-white text-sm" disabled={loading}>
+                <Plus className="w-3 h-3" /> Adicionar
               </button>
             </form>
           )}
         </div>
-        {!readonly && (
-          <ExportImportButtons
-            colecao="funcionarios"
-            onSuccess={(message) => showToast(message, 'success')}
-            onError={(message) => showToast(message, 'error')}
-          />
-        )}
+
       </div>
 
       <table className="min-w-full divide-y divide-gray-200">
         <thead>
           <tr>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Foto</th>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cargo</th>
-            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Telefone</th>
-            <th className="px-4 py-2"></th>
+            <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Foto</th>
+            <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+            <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Cargo</th>
+            <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Tel.</th>
+            <th className="px-2 py-1"></th>
           </tr>
         </thead>
         <tbody>
@@ -169,10 +162,10 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
                   </div>
                 )}
               </td>
-              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{func.nome}</td>
-              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{func.cargo}</td>
-              <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{func.telefone}</td>
-              <td className="px-4 py-2 flex gap-2">
+              <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900 dark:text-white">{func.nome}</td>
+              <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900 dark:text-white">{func.cargo}</td>
+              <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900 dark:text-white">{func.telefone}</td>
+              <td className="px-2 py-1 flex gap-1">
                 {!isFuncionario && !readonly && (
                   <>
                     <button onClick={() => handleEditar(func)} className="text-blue-600 hover:text-blue-800">

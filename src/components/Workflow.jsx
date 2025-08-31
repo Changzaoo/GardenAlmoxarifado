@@ -3,8 +3,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs } fr
 import { ToastProvider } from './ToastProvider';
 import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
 import LegalTab from './Legal/LegalTab';
-import { Shield, Scale, Globe, Menu as MenuIcon, X } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Shield } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './ThemeProvider';
@@ -13,6 +12,7 @@ import UserProfileModal from './Auth/UserProfileModal';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
 import { useNotifications } from '../hooks/useNotifications';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { Menu as MenuIcon, X, Scale, BarChart3 } from 'lucide-react';
 import InventarioTab from './Inventario/InventarioTab';
 import MeuInventarioTab from './Inventario/MeuInventarioTab';
 import { inventarioInicial } from '../data/inventarioInicial';
@@ -27,6 +27,8 @@ import ComprasTab from './Compras/ComprasTab';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
 import TarefasTab from './Tarefas/TarefasTab';
 import { AuthContext, useAuth } from '../hooks/useAuth';
+import AnalyticsTab from './Analytics/AnalyticsTab';
+import AnalyticsProvider from './Analytics/AnalyticsProvider';
 // Icons
 import { 
   Package,
@@ -36,7 +38,6 @@ import {
   AlertTriangle,
   Calendar,
   Search,
-  BarChart3,
   Settings,
   Lock,
   User,
@@ -672,7 +673,7 @@ const LoginForm = () => {
             <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">WorkFlow</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Gerenciamento de Ferramentas</p>
+          
 
         </div>
 
@@ -893,9 +894,6 @@ const AlmoxarifadoSistema = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
-  const [showLegalModal, setShowLegalModal] = useState(false);
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
-  const { t, i18n } = useTranslation();
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -1357,9 +1355,9 @@ const AlmoxarifadoSistema = () => {
   const abas = [
     { 
       id: 'dashboard', 
-      nome: 'Dashboard', 
-      icone: BarChart3,
-      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
+      nome: 'Dashboard',
+      icone: Package,
+      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas nível 4 pode ver estatísticas
     },
     { 
       id: 'tarefas', 
@@ -1430,8 +1428,11 @@ const AlmoxarifadoSistema = () => {
     }
   ].filter(aba => aba.permissao());
 
-  // Permissão para aba de usuários (apenas ADMIN)
+  // Permissão para aba de usuários (apenas nível 4)
   const podeVerUsuarios = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
+  
+  // Permissão para aba legal (todos podem ver, nível 1 apenas visualiza)
+  const podeEditarLegal = usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -1478,7 +1479,6 @@ const AlmoxarifadoSistema = () => {
                 <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-12 mr-3" />
                 <div>
                   <h1 className="text-lg font-bold text-gray-900 dark:text-white">WorkFlow</h1>
-                  <p className="text-xs text-gray-500 dark:text-[#71767B]">Gerenciamento de Ferramentas</p>
                 </div>
               </div>
             </div>
@@ -1491,7 +1491,7 @@ const AlmoxarifadoSistema = () => {
 
           <div className="flex-1 overflow-y-auto py-4 px-2">
             <div className="space-y-1">
-            {abas.filter(aba => aba.permissao()).map((aba) => {
+              {abas.filter(aba => aba.permissao()).map((aba) => {
               const Icone = aba.icone;
               return (
                 <button
@@ -1517,67 +1517,22 @@ const AlmoxarifadoSistema = () => {
                 </button>
               );
             })}
-
-            {podeVerUsuarios && (
-              <button
-                onClick={() => {
-                  setAbaAtiva('usuarios');
-                  if (isMobile) {
-                    setMenuOpen(false);
-                  }
-                }}
-                className={`w-full flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-base transition-all duration-200 ${
-                  abaAtiva === 'usuarios'
-                    ? 'bg-[#1D9BF0] text-white'
-                    : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
-                }`}
-              >
-                <UserCog className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
-                  abaAtiva === 'usuarios' 
-                    ? 'text-white' 
-                    : 'text-gray-900 dark:text-[#E7E9EA] group-hover:text-[#1D9BF0]'
-                }`} />
-                <span>Usuários do Sistema</span>
-              </button>
-            )}
-
-            {usuario?.nivel >= NIVEIS_PERMISSAO.LEGAL && (
-              <button
-                onClick={() => {
-                  setAbaAtiva('legal');
-                  if (isMobile) {
-                    setMenuOpen(false);
-                  }
-                }}
-                className={`w-full flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-base transition-all duration-200 ${
-                  abaAtiva === 'legal'
-                    ? 'bg-[#1D9BF0] text-white'
-                    : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
-                }`}
-              >
-                <Shield className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
-                  abaAtiva === 'legal' 
-                    ? 'text-white' 
-                    : 'text-gray-900 dark:text-[#E7E9EA] group-hover:text-[#1D9BF0]'
-                }`} />
-                <span>Gestão Legal</span>
-              </button>
-            )}
+          
           </div>
         </div>
 
-        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 p-4 border-t dark:border-[#2F3336] bg-white dark:bg-black`}>
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
+        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-2 px-4 border-t dark:border-[#2F3336] bg-white dark:bg-black`}>
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
               {usuario.photoURL ? (
                 <img src={usuario.photoURL} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <User className="w-full h-full p-2 text-gray-600 dark:text-[#71767B]" />
+                <User className="w-full h-full p-1.5 text-gray-600 dark:text-[#71767B]" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`${isMobile ? 'text-base' : 'text-sm'} font-bold text-gray-900 dark:text-[#E7E9EA] truncate`}>{usuario.nome}</p>
-              <p className="text-sm text-gray-500 dark:text-[#71767B] truncate">
+              <p className="text-sm font-bold text-gray-900 dark:text-[#E7E9EA] truncate leading-tight">{usuario.nome}</p>
+              <p className="text-xs text-gray-500 dark:text-[#71767B] truncate leading-tight">
                 {usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 
                   NIVEIS_LABELS[usuario.nivel] : 
                   (usuario.cargo || NIVEIS_LABELS[usuario.nivel])}
@@ -1586,61 +1541,62 @@ const AlmoxarifadoSistema = () => {
             <div className="flex items-center space-x-1">
               <button
                 onClick={logout}
-                className="p-2 rounded-full hover:bg-red-500/10 transition-colors"
+                className="p-1.5 rounded-full hover:bg-red-500/10 transition-colors"
                 title="Sair"
               >
-                <LogOut className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
+                <LogOut className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
               </button>
               <button
                 onClick={() => setShowProfileModal(true)}
-                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Editar perfil"
               >
-                <Edit className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
+                <Edit className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
               </button>
+            </div>
+          </div>
+          
+          {/* Botões de Suporte e Usuários */}
+          <div className="mt-1.5">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setShowHelpModal(true)}
                 className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Ajuda"
               >
-                <HelpCircle className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-[#E7E9EA]"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
               </button>
-              <button
-                onClick={() => setShowLegalModal(true)}
-                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                title="Informações Legais"
-              >
-                <Scale className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
-              </button>
-              <div className="relative">
+              {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
+                <>
                 <button
-                  onClick={() => setShowLanguageMenu(prev => !prev)}
+                  onClick={() => {
+                    setAbaAtiva('usuarios');
+                  }}
                   className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                  title={t('common.language')}
+                  title="Usuários"
                 >
-                  <Globe className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} text-gray-900 dark:text-[#E7E9EA]`} />
+                  <Users className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
                 </button>
-                <div className={`absolute right-0 mt-2 py-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 ${showLanguageMenu ? 'block' : 'hidden'}`}>
-                  <button
-                    onClick={() => { i18n.changeLanguage('pt'); setShowLanguageMenu(false); }}
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                  >
-                    Português
-                  </button>
-                  <button
-                    onClick={() => { i18n.changeLanguage('es'); setShowLanguageMenu(false); }}
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                  >
-                    Español
-                  </button>
-                  <button
-                    onClick={() => { i18n.changeLanguage('en'); setShowLanguageMenu(false); }}
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                  >
-                    English
-                  </button>
-                </div>
-              </div>
+                <button
+                  onClick={() => {
+                    setAbaAtiva('analytics');
+                  }}
+                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                  title="Estatísticas"
+                >
+                  <BarChart3 className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                </button>
+                </>
+              )}
+              <button
+                onClick={() => {
+                  setAbaAtiva('legal');
+                }}
+                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                title="Legal"
+              >
+                <Scale className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+              </button>
             </div>
           </div>
         </div>
@@ -1661,20 +1617,20 @@ const AlmoxarifadoSistema = () => {
         </div>
       )}
 
-      {/* Legal Modal */}
-      {showLegalModal && (
-        <div className="fixed inset-0 z-50">
-          <LegalTab onClose={() => setShowLegalModal(false)} />
-        </div>
-      )}
-
       <main className={`${isMobile ? 'pt-16' : 'pl-64'} w-full min-h-screen bg-white dark:bg-black`}>
         <div className="max-w-5xl mx-auto px-4">
           <div className="py-3">
-            <div className="flex items-center justify-between sticky top-0 z-10 bg-white/80 dark:bg-black/80 backdrop-blur-md py-3 mb-4 border-b border-gray-100 dark:border-[#2F3336]">
 
-            </div>
-            
+            {abaAtiva === 'analytics' && (
+              usuario?.nivel >= NIVEIS_PERMISSAO.GERENTE ? (
+                <AnalyticsTab />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para visualizar as análises do sistema." />
+              )
+            )}
+
+            {abaAtiva === 'legal' && <LegalTab />}
+
             {abaAtiva === 'dashboard' && <Dashboard stats={stats} />}
             
             {abaAtiva === 'verificacao-mensal' && <VerificacaoMensalTab />}
@@ -1834,8 +1790,10 @@ const Seed = () => {
   return (
     <AuthProvider>
       <ToastProvider>
-        <App />
-        <PWAUpdateAvailable />
+        <AnalyticsProvider>
+          <App />
+          <PWAUpdateAvailable />
+        </AnalyticsProvider>
       </ToastProvider>
     </AuthProvider>
   );

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, CheckCircle, AlertCircle, ClipboardList, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { db } from '../../firebaseConfig';
-import { collection, query, where, getDocs, addDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, deleteDoc, orderBy } from 'firebase/firestore';
+import HistoricoVerificacoes from './HistoricoVerificacoes';
 import Button from '../common/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ToastProvider';
@@ -15,6 +16,9 @@ const VerificacaoMensalTab = () => {
   const [loading, setLoading] = useState(false);
   const [quantidades, setQuantidades] = useLocalStorage('verificacao-mensal-quantidades', {});
   const [itemParaRemover, setItemParaRemover] = useState(null);
+  const [mostrarHistorico, setMostrarHistorico] = useState(false);
+  const [historicoVerificacoes, setHistoricoVerificacoes] = useState([]);
+  const [quantidadesMesAnterior, setQuantidadesMesAnterior] = useState({});
   const { usuario } = useAuth();
   const { showToast } = useToast();
 
@@ -22,6 +26,23 @@ const VerificacaoMensalTab = () => {
     carregarInventario();
     carregarVerificacoes();
   }, [mesAtual]);
+
+  const carregarHistorico = async () => {
+    try {
+      const verificacoesRef = collection(db, 'verificacoes_mensais');
+      const q = query(verificacoesRef, orderBy('mes', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const todasVerificacoes = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setHistoricoVerificacoes(todasVerificacoes);
+      setMostrarHistorico(true);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+      showToast('Erro ao carregar histórico. Verifique sua conexão.', 'error');
+    }
+  };
 
   const carregarInventario = async () => {
     try {
@@ -51,6 +72,7 @@ const VerificacaoMensalTab = () => {
 
   const carregarVerificacoes = async () => {
     try {
+      // Carregar verificações do mês atual
       const verificacoesRef = collection(db, 'verificacoes_mensais');
       const q = query(verificacoesRef, where('mes', '==', mesAtual));
       const querySnapshot = await getDocs(q);
@@ -59,6 +81,21 @@ const VerificacaoMensalTab = () => {
         ...doc.data()
       }));
       setVerificacoes(verificacoesData);
+
+      // Carregar verificações do mês anterior
+      const [ano, mes] = mesAtual.split('-');
+      const mesAnterior = mes === '01' 
+        ? `${parseInt(ano) - 1}-12`
+        : `${ano}-${String(parseInt(mes) - 1).padStart(2, '0')}`;
+      
+      const qAnterior = query(verificacoesRef, where('mes', '==', mesAnterior));
+      const snapshotAnterior = await getDocs(qAnterior);
+      if (!snapshotAnterior.empty) {
+        const verificacaoAnterior = snapshotAnterior.docs[0].data();
+        setQuantidadesMesAnterior(verificacaoAnterior.itens || {});
+      } else {
+        setQuantidadesMesAnterior({});
+      }
 
       // Atualizar o estado dos itens verificados preservando as quantidades locais
       if (verificacoesData.length > 0) {
@@ -139,10 +176,10 @@ const VerificacaoMensalTab = () => {
         await addDoc(collection(db, 'verificacoes_mensais'), verificacaoData);
       }
 
-      alert('Verificação mensal salva com sucesso!');
+      showToast('Verificação mensal salva com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao salvar verificação:', error);
-      alert('Erro ao salvar verificação. Tente novamente.');
+      showToast('Erro ao salvar verificação. Tente novamente.', 'error');
     } finally {
       setLoading(false);
     }
@@ -188,7 +225,13 @@ const VerificacaoMensalTab = () => {
             Verificação Mensal
           </h2>
           <div className="flex items-center gap-2 ml-4">
-            <CalendarIcon className="w-5 h-5 text-gray-500" />
+            <button
+              onClick={carregarHistorico}
+              className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded transition-colors"
+              title="Ver histórico de verificações"
+            >
+              <CalendarIcon className="w-5 h-5 text-gray-500" />
+            </button>
             <input
               type="month"
               value={mesAtual}
@@ -196,6 +239,12 @@ const VerificacaoMensalTab = () => {
               className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
             />
           </div>
+          {mostrarHistorico && (
+            <HistoricoVerificacoes
+              verificacoes={historicoVerificacoes}
+              onClose={() => setMostrarHistorico(false)}
+            />
+          )}
         </div>
         <Button
           onClick={salvarVerificacao}
@@ -216,6 +265,9 @@ const VerificacaoMensalTab = () => {
                 Ferramenta
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-32">
+                Quantidade Mês Anterior
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-32">
                 Quantidade no Mês
               </th>
               <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-40">
@@ -228,6 +280,9 @@ const VerificacaoMensalTab = () => {
               <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                   {item.nome}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                  {quantidadesMesAnterior[item.id]?.quantidade || '0'}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                   <div className="flex items-center space-x-2">

@@ -126,9 +126,17 @@ const Chat = () => {
     });
   };
 
+  // Estado para armazenar a posição do botão de chat
+  const [chatButtonPosition, setChatButtonPosition] = useState({ x: -1, y: -1 });
+
   return (
     <>
-      <ChatButton isOpen={isOpen} onClick={() => setIsOpen(!isOpen)} />
+      <ChatButton 
+        isOpen={isOpen} 
+        onClick={() => setIsOpen(!isOpen)}
+        position={chatButtonPosition}
+        onPositionChange={setChatButtonPosition}
+      />
       <ChatWindow
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
@@ -140,6 +148,7 @@ const Chat = () => {
         onSendMessage={sendMessage}
         onCreateGroup={createGroupChat}
         onCreateIndividualChat={createIndividualChat}
+        buttonPosition={chatButtonPosition}
       />
     </>
   );

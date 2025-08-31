@@ -4,6 +4,7 @@ export const themes = {
     colors: {
       // Backgrounds
       background: '#15202B',
+      backgroundSecondary: '#192734',
       card: '#192734',
       input: '#253341',
       hover: '#20304A',
@@ -25,6 +26,8 @@ export const themes = {
       text: '#FFFFFF',
       textSecondary: '#8899A6',
       textMuted: '#536471',
+      textAccent: '#1DA1F2',
+      textAccent: '#1DA1F2',
       
       // Borders
       border: '#38444D',

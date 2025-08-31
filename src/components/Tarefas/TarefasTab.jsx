@@ -6,7 +6,6 @@ import { Plus, Star, PauseCircle, PlayCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import CriarTarefa from './CriarTarefa';
 import DetalheTarefa from './DetalheTarefa';
-import RatingDialog from './RatingDialog';
 
 const NIVEIS_PERMISSAO = {
   FUNCIONARIO: 1,
@@ -22,9 +21,6 @@ const TarefasTab = ({ funcionarios = [] }) => {
   const [filtro, setFiltro] = useState('todas');
   const [tarefaSelecionada, setTarefaSelecionada] = useState(null);
   const [temposDecorridos, setTemposDecorridos] = useState({});
-  const [showRatingDialog, setShowRatingDialog] = useState(false);
-  const [tarefaParaAvaliar, setTarefaParaAvaliar] = useState(null);
-  const [tipoAvaliacao, setTipoAvaliacao] = useState(null); // 'supervisor' ou 'colaborador'
 
   useEffect(() => {
     const q = query(collection(db, 'tarefas'), orderBy('dataCriacao', 'desc'));
@@ -75,20 +71,6 @@ const TarefasTab = ({ funcionarios = [] }) => {
     return () => clearInterval(interval);
   }, [tarefas]);
 
-  const handleIniciarTarefa = async (tarefaId) => {
-    try {
-      const tarefa = tarefas.find(t => t.id === tarefaId);
-      await updateDoc(doc(db, 'tarefas', tarefaId), {
-        status: 'em_andamento',
-        dataInicio: new Date().toISOString()
-      });
-      showToast('Tarefa iniciada com sucesso!', 'success');
-    } catch (error) {
-      console.error('Erro ao iniciar tarefa:', error);
-      showToast('Erro ao iniciar tarefa', 'error');
-    }
-  };
-
   const handlePausarTarefa = async (tarefaId) => {
     try {
       const tarefa = tarefas.find(t => t.id === tarefaId);
@@ -107,26 +89,6 @@ const TarefasTab = ({ funcionarios = [] }) => {
     }
   };
 
-  const handleContinuarTarefa = async (tarefaId) => {
-    try {
-      const tarefa = tarefas.find(t => t.id === tarefaId);
-      
-      // Calcular o tempo total até agora
-      const tempoAtual = tarefa.tempoPausado || 0;
-      
-      await updateDoc(doc(db, 'tarefas', tarefaId), {
-        status: 'em_andamento',
-        dataContinuacao: new Date().toISOString(),
-        dataInicio: new Date().toISOString(),
-        tempoPausado: tempoAtual // Mantém o tempo pausado acumulado
-      });
-      showToast('Tarefa retomada com sucesso!', 'success');
-    } catch (error) {
-      console.error('Erro ao retomar tarefa:', error);
-      showToast('Erro ao retomar tarefa', 'error');
-    }
-  };
-
   const handleConcluirTarefa = async (tarefaId, avaliacao, comentario) => {
     try {
       const tarefa = tarefas.find(t => t.id === tarefaId);
@@ -136,7 +98,7 @@ const TarefasTab = ({ funcionarios = [] }) => {
         status: 'concluida',
         dataConclusao: new Date().toISOString(),
         tempoTotal,
-        notaTarefa: avaliacao, // Nota que o funcionário dá para a tarefa
+        avaliacao,
         comentarioFuncionario: comentario
       });
       showToast('Tarefa concluída com sucesso!', 'success');
@@ -146,50 +108,26 @@ const TarefasTab = ({ funcionarios = [] }) => {
     }
   };
 
-  const handleAvaliacaoSupervisor = async (tarefaId, avaliacao, comentario) => {
-    if (usuario.nivel < NIVEIS_PERMISSAO.SUPERVISOR) return;
-
-    try {
-      await updateDoc(doc(db, 'tarefas', tarefaId), {
-        notaFuncionario: Number(avaliacao), // Nota que o supervisor dá para o funcionário
-        comentarioSupervisor: comentario,
-        dataAvaliacaoSupervisor: new Date().toISOString()
-      });
-      showToast('Avaliação adicionada com sucesso!', 'success');
-    } catch (error) {
-      console.error('Erro ao adicionar avaliação:', error);
-      showToast('Erro ao adicionar avaliação', 'error');
-    }
-  };
-
   const calcularTempoTotal = (tarefa) => {
     if (!tarefa.dataInicio) return 0;
     
-    let tempoTotal = 0;
-    
     if (tarefa.status === 'em_andamento') {
-      const inicioData = new Date(tarefa.dataInicio);
-      tempoTotal = new Date() - inicioData;
-      
-      // Subtrair o tempo pausado acumulado
-      if (tarefa.tempoPausado) {
-        tempoTotal -= tarefa.tempoPausado;
-      }
-      
-      return tempoTotal;
+      return temposDecorridos[tarefa.id] || 0;
     }
     
+    let tempoTotal = 0;
+    const inicioData = new Date(tarefa.dataInicio);
+    
     if (tarefa.status === 'concluida') {
-      const inicioData = new Date(tarefa.dataInicio);
       const fimData = new Date(tarefa.dataConclusao);
       tempoTotal = fimData - inicioData;
-      
-      // Subtrair o tempo pausado acumulado
-      if (tarefa.tempoPausado) {
-        tempoTotal -= tarefa.tempoPausado;
-      }
     } else if (tarefa.status === 'pausada') {
-      return tarefa.tempoPausado || 0; // Retorna o tempo acumulado até a pausa
+      const pausaData = new Date(tarefa.dataPausa);
+      tempoTotal = pausaData - inicioData;
+    }
+    
+    if (tarefa.tempoPausado) {
+      tempoTotal -= tarefa.tempoPausado;
     }
     
     return tempoTotal;
@@ -254,201 +192,166 @@ const TarefasTab = ({ funcionarios = [] }) => {
     >
       <div className="flex justify-between items-start mb-3">
         <h3 className="text-lg font-medium text-white">{tarefa.titulo}</h3>
-        <div className="flex flex-col items-end">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            tarefa.status === 'pendente' ? 'bg-yellow-500/10 text-yellow-500' :
-            tarefa.status === 'em_andamento' ? 'bg-blue-500/10 text-blue-500' :
-            tarefa.status === 'pausada' ? 'bg-orange-500/10 text-orange-500' :
-            'bg-green-500/10 text-green-500'
-          }`}>
-            {tarefa.status === 'pendente' ? 'Pendente' :
-             tarefa.status === 'em_andamento' ? 'Em Andamento' :
-             tarefa.status === 'pausada' ? 'Pausada' :
-             'Concluída'}
-          </span>
-          {tarefa.dataInicio && (
-            <div className="text-sm text-[#8899A6] mt-2">
-              Tempo {tarefa.status === 'concluida' ? 'total' : 'decorrido'}: {' '}
-              <span className="text-white">
-                {formatarTempo(tarefa.status === 'concluida' ? tarefa.tempoTotal : calcularTempoTotal(tarefa))}
-              </span>
-            </div>
-          )}
-          <div className="flex flex-col items-end gap-2 mt-2">
-            {/* Nota do supervisor (dada pelo colaborador) - visível apenas para supervisores */}
-            {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
-              <div>
-                <div className="text-xs text-[#8899A6] mb-1">Supervisor:</div>
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-4 h-4 ${
-                        tarefa.status === 'concluida' && i < (tarefa.notaFuncionario || 0)
-                          ? 'text-yellow-500 fill-yellow-500'
-                          : 'text-[#38444D]'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Nota da tarefa (dada pelo colaborador) */}
-            <div>
-              <div className="text-xs text-[#8899A6] mb-1">Colaborador:</div>
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      tarefa.status === 'concluida' && i < (tarefa.notaTarefa || 0)
-                        ? 'text-yellow-500 fill-yellow-500'
-                        : 'text-[#38444D]'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Nota Final (média das avaliações) */}
-            {tarefa.status === 'concluida' && tarefa.notaTarefa && tarefa.notaFuncionario && (
-              <div className="mt-2 border-t border-[#38444D] pt-2">
-                <div className="text-xs text-[#8899A6] mb-1">Nota Final:</div>
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => {
-                    const notaMedia = (tarefa.notaTarefa + tarefa.notaFuncionario) / 2;
-                    const starFill = i < Math.floor(notaMedia);
-                    const starHalf = !starFill && i < Math.ceil(notaMedia) && notaMedia % 1 >= 0.5;
-                    
-                    return (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          starFill
-                            ? 'text-yellow-500 fill-yellow-500'
-                            : starHalf
-                            ? 'text-yellow-500 fill-yellow-500 opacity-50'
-                            : 'text-[#38444D]'
-                        }`}
-                      />
-                    );
-                  })}
-                  <span className="text-xs text-[#8899A6] ml-1">
-                    ({((tarefa.notaTarefa + tarefa.notaFuncionario) / 2).toFixed(1)})
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          tarefa.status === 'pendente' ? 'bg-yellow-500/10 text-yellow-500' :
+          tarefa.status === 'em_andamento' ? 'bg-blue-500/10 text-blue-500' :
+          tarefa.status === 'pausada' ? 'bg-orange-500/10 text-orange-500' :
+          'bg-green-500/10 text-green-500'
+        }`}>
+          {tarefa.status === 'pendente' ? 'Pendente' :
+           tarefa.status === 'em_andamento' ? 'Em Andamento' :
+           tarefa.status === 'pausada' ? 'Pausada' :
+           'Concluída'}
+        </span>
       </div>
 
       <p className="text-[#8899A6] mb-4">{tarefa.descricao}</p>
 
-      <div className="flex gap-2 mt-4">
-        {/* Botão Iniciar para tarefas pendentes */}
-        {tarefa.status === 'pendente' && (
+      {/* Tempo Estimado */}
+      <div className="text-sm text-[#8899A6] mb-4">
+        Tempo estimado: <span className="text-white">{tarefa.tempoEstimado || 'Não definido'}</span>
+      </div>
+
+      {/* Avaliações */}
+      <div className="flex flex-col items-end gap-2 mt-2 mb-4">
+        {/* Nota do supervisor (dada pelo colaborador) - visível apenas para supervisores */}
+        {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
+          <div>
+            <div className="text-xs text-[#8899A6] mb-1">Supervisor:</div>
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-4 h-4 ${
+                    tarefa.status === 'concluida' && i < (tarefa.notaFuncionario || 0)
+                      ? 'text-yellow-500 fill-yellow-500'
+                      : 'text-[#38444D]'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Nota da tarefa (dada pelo colaborador) */}
+        <div>
+          <div className="text-xs text-[#8899A6] mb-1">Colaborador:</div>
+          <div className="flex items-center gap-1">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className={`w-4 h-4 ${
+                  tarefa.status === 'concluida' && i < (tarefa.notaTarefa || 0)
+                    ? 'text-yellow-500 fill-yellow-500'
+                    : 'text-[#38444D]'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Nota Final (média das avaliações) */}
+        {tarefa.status === 'concluida' && tarefa.notaTarefa && tarefa.notaFuncionario && (
+          <div className="mt-2 border-t border-[#38444D] pt-2">
+            <div className="text-xs text-[#8899A6] mb-1">Nota Final:</div>
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => {
+                const notaMedia = (tarefa.notaTarefa + tarefa.notaFuncionario) / 2;
+                const starFill = i < Math.floor(notaMedia);
+                const starHalf = !starFill && i < Math.ceil(notaMedia) && notaMedia % 1 >= 0.5;
+                
+                return (
+                  <Star
+                    key={i}
+                    className={`w-4 h-4 ${
+                      starFill || starHalf ? 'text-yellow-500 fill-yellow-500' : 'text-[#38444D]'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {tarefa.dataInicio && (
+        <div className="text-sm text-[#8899A6] mb-4">
+          Tempo {tarefa.status === 'concluida' ? 'total' : 'decorrido'}: {' '}
+          <span className="text-white">
+            {formatarTempo(tarefa.status === 'concluida' ? tarefa.tempoTotal : calcularTempoTotal(tarefa))}
+          </span>
+        </div>
+      )}
+
+      {tarefa.status !== 'concluida' && (
+        <div className="flex gap-2 mt-4">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleIniciarTarefa(tarefa.id);
+              handlePausarTarefa(tarefa.id);
             }}
-            className="flex-1 py-2 px-4 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center justify-center gap-2"
+            className="flex-1 py-2 px-4 bg-[#F7C52B] text-white rounded-full hover:bg-[#e0b226] transition-colors flex items-center justify-center gap-2"
           >
-            <PlayCircle className="w-4 h-4" />
-            Iniciar
+            <PauseCircle className="w-4 h-4" />
+            Pausar
           </button>
-        )}
-
-        {/* Botões para tarefas em andamento */}
-        {tarefa.status === 'em_andamento' && (
-          <>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePausarTarefa(tarefa.id);
-              }}
-              className="flex-1 py-2 px-4 bg-[#F7C52B] text-white rounded-full hover:bg-[#e0b226] transition-colors flex items-center justify-center gap-2"
-            >
-              <PauseCircle className="w-4 h-4" />
-              Pausar
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setTarefaParaAvaliar(tarefa);
-                setTipoAvaliacao('supervisor');
-                setShowRatingDialog(true);
-              }}
-              className="flex-1 py-2 px-4 bg-[#00BA7C] text-white rounded-full hover:bg-[#00a36d] transition-colors flex items-center justify-center gap-2"
-            >
-              <CheckCircle className="w-4 h-4" />
-              Concluir
-            </button>
-          </>
-        )}
-
-        {/* Botão de Avaliar Tarefa para tarefas concluídas (usuário) */}
-        {tarefa.status === 'concluida' && !tarefa.notaTarefa && tarefa.funcionarioId === usuario.uid && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setTarefaParaAvaliar(tarefa);
-              setTipoAvaliacao('supervisor');
-              setShowRatingDialog(true);
+              const avaliacao = prompt('Avalie a tarefa de 1 a 5 estrelas:');
+              const comentario = prompt('Deixe um comentário sobre a tarefa:');
+              if (avaliacao && comentario) {
+                handleConcluirTarefa(tarefa.id, Number(avaliacao), comentario);
+              }
             }}
             className="flex-1 py-2 px-4 bg-[#00BA7C] text-white rounded-full hover:bg-[#00a36d] transition-colors flex items-center justify-center gap-2"
           >
-            <Star className="w-4 h-4" />
-            Avaliar Tarefa
+            <CheckCircle className="w-4 h-4" />
+            Concluir
           </button>
-        )}
-
-        {/* Botão de Avaliar para tarefas concluídas (apenas supervisor) */}
-        {tarefa.status === 'concluida' && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && !tarefa.notaFuncionario && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setTarefaParaAvaliar(tarefa);
-              setTipoAvaliacao('colaborador');
-              setShowRatingDialog(true);
-            }}
-            className="flex-1 py-2 px-4 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center justify-center gap-2"
-          >
-            <Star className="w-4 h-4" />
-            Avaliar Colaborador
-          </button>
-        )}
-
-        {/* Botão Continuar para tarefas pausadas */}
-        {tarefa.status === 'pausada' && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleContinuarTarefa(tarefa.id);
-            }}
-            className="flex-1 py-2 px-4 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center justify-center gap-2"
-          >
-            <PlayCircle className="w-4 h-4" />
-            Continuar
-          </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-4">
+      {/* Header e Filtros */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Tarefas</h1>
-          <p className="text-[#8899A6]">
-            {usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO
-              ? "Suas tarefas atribuídas"
-              : "Gerencie as tarefas do almoxarifado"}
-          </p>
+        <div className="flex items-center gap-4">
+          <div>          
+            <p className="text-[#8899A6]">
+              {usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO
+                }
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+              <button
+                onClick={() => setFiltro('todas')}
+                className={`px-4 py-2 rounded-full ${
+                  filtro === 'todas'
+                    ? 'bg-[#1DA1F2] text-white'
+                    : 'text-[#8899A6] hover:bg-[#1D9BF0]/10'
+                }`}
+              >
+                Todas
+              </button>
+            )}
+            
+            {usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+              <button
+                onClick={() => setFiltro('minhas')}
+                className={`px-4 py-2 rounded-full ${
+                  filtro === 'minhas'
+                    ? 'bg-[#1DA1F2] text-white'
+                    : 'text-[#8899A6] hover:bg-[#1D9BF0]/10'
+                }`}
+              >
+                Minhas Tarefas
+              </button>
+            )}
+          </div>
         </div>
         {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
           <button
@@ -461,41 +364,12 @@ const TarefasTab = ({ funcionarios = [] }) => {
         )}
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-2">
-        {usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
-          <button
-            onClick={() => setFiltro('todas')}
-            className={`px-4 py-2 rounded-full ${
-              filtro === 'todas'
-                ? 'bg-[#1DA1F2] text-white'
-                : 'text-[#8899A6] hover:bg-[#1D9BF0]/10'
-            }`}
-          >
-            Todas
-          </button>
-        )}
-        
-        {usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
-          <button
-            onClick={() => setFiltro('minhas')}
-            className={`px-4 py-2 rounded-full ${
-              filtro === 'minhas'
-                ? 'bg-[#1DA1F2] text-white'
-                : 'text-[#8899A6] hover:bg-[#1D9BF0]/10'
-            }`}
-          >
-            Minhas Tarefas
-          </button>
-        )}
-      </div>
-
       {/* Seções de Tarefas */}
-      <div className="space-y-8">
+      <div className="space-y-4">
         {/* Em Andamento */}
         {tarefasEmAndamentoFiltradas.length > 0 && (
           <div>
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center">
+            <h2 className="text-xl font-bold text-white mb-3 flex items-center">
               <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
               Em Andamento ({tarefasEmAndamentoFiltradas.length})
             </h2>
@@ -508,7 +382,7 @@ const TarefasTab = ({ funcionarios = [] }) => {
         {/* Pendentes */}
         {tarefasPendentesFiltradas.length > 0 && (
           <div>
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center">
+            <h2 className="text-xl font-bold text-white mb-3 flex items-center">
               <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
               Pendentes ({tarefasPendentesFiltradas.length})
             </h2>
@@ -521,7 +395,7 @@ const TarefasTab = ({ funcionarios = [] }) => {
         {/* Pausadas */}
         {tarefasPausadasFiltradas.length > 0 && (
           <div>
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center">
+            <h2 className="text-xl font-bold text-white mb-3 flex items-center">
               <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
               Pausadas ({tarefasPausadasFiltradas.length})
             </h2>
@@ -559,24 +433,6 @@ const TarefasTab = ({ funcionarios = [] }) => {
           onClose={() => setTarefaSelecionada(null)}
         />
       )}
-
-      {/* Rating Dialog */}
-      <RatingDialog
-        isOpen={showRatingDialog}
-        onClose={() => {
-          setShowRatingDialog(false);
-          setTarefaParaAvaliar(null);
-          setTipoAvaliacao(null);
-        }}
-        onSubmit={(avaliacao, comentario) => {
-          if (tipoAvaliacao === 'supervisor') {
-            handleConcluirTarefa(tarefaParaAvaliar.id, avaliacao, comentario);
-          } else if (tipoAvaliacao === 'colaborador') {
-            handleAvaliacaoSupervisor(tarefaParaAvaliar.id, avaliacao, comentario);
-          }
-        }}
-        title={tipoAvaliacao === 'supervisor' ? 'Avaliar Supervisor' : 'Avaliar Colaborador'}
-      />
     </div>
   );
 };

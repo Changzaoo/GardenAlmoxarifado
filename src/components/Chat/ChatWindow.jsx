@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Users, Plus, ArrowLeft } from 'lucide-react';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
-const ChatWindow = ({ isOpen, onClose, currentUser }) => {
+const ChatWindow = ({ isOpen, onClose, currentUser, buttonPosition }) => {
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -86,7 +86,14 @@ const ChatWindow = ({ isOpen, onClose, currentUser }) => {
   );
 
   return isOpen ? (
-    <div className={`fixed right-6 bottom-24 w-80 rounded-lg shadow-xl overflow-hidden z-[9998] ${classes.card}`}>
+    <div 
+      className={`fixed w-80 rounded-lg shadow-xl overflow-hidden z-[9998] ${classes.card}`}
+      style={{
+        left: buttonPosition?.x < window.innerWidth / 2 ? buttonPosition?.x : undefined,
+        right: buttonPosition?.x >= window.innerWidth / 2 ? window.innerWidth - buttonPosition?.x - 70 : undefined,
+        top: buttonPosition?.y < window.innerHeight / 2 ? buttonPosition?.y + 80 : undefined,
+        bottom: buttonPosition?.y >= window.innerHeight / 2 ? window.innerHeight - buttonPosition?.y : undefined,
+      }}>
       <ChatHeader />
       
       {showNewGroup ? (

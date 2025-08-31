@@ -64,10 +64,10 @@ const ListaEmprestimos = ({
           <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar por colaborador ou ferramenta..."
+            placeholder="     Buscar por colaborador ou ferramenta..."
             value={filtroEmprestimos}
             onChange={(e) => setFiltroEmprestimos(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] text-center dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
+            className="pl-12 pr-4 py-2 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] text-left dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
           />
         </div>
       </div>

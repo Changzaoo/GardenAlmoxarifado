@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import Footer from './Footer';
 import { useAuth } from '../../hooks/useAuth';
 import UserProfileModal from '../Auth/UserProfileModal';
 import FullscreenPrompt from '../FullscreenPrompt';
@@ -18,7 +17,6 @@ const Layout = () => {
     <div className="flex min-h-screen bg-[#15202B] text-white">
       {/* Sidebar */}
       <Sidebar onProfileClick={() => setShowProfileModal(true)} />
-      <Footer />
 
       {/* Main Content */}
       <main className="flex-1 md:ml-64 transition-all duration-300 ease-in-out">

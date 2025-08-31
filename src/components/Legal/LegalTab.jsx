@@ -1,53 +1,170 @@
-import React, { useState } from 'react';
-import { Shield, FileText, Activity, UserCheck, Database, Clock } from 'lucide-react';
-import TermosResponsabilidadeList from './TermosResponsabilidadeList';
-import AuditLogViewer from './AuditLogViewer';
-import LGPDConsent from './LGPDConsent';
-import DataRetentionPanel from './DataRetentionPanel';
-import ComplianceReport from './ComplianceReport';
+import React, { useState, useEffect } from 'react';
+import { Shield, FileText, Book, UserCheck, PlusIcon } from 'lucide-react';
+import { db } from '../../firebaseConfig';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../ToastProvider';
+import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 
-const LegalTab = ({ usuario }) => {
-  const [activeSubTab, setActiveSubTab] = useState('termos');
+const LegalTab = () => {
+  const { usuario } = useAuth();
+  const { showToast } = useToast();
+  const [activeTab, setActiveTab] = useState('termos');
+  const [documentos, setDocumentos] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [refresh, setRefresh] = useState(0);
+  const [formData, setFormData] = useState({
+    titulo: '',
+    conteudo: '',
+    tipo: 'termo',
+    dataPublicacao: new Date().toISOString(),
+    versao: '1.0',
+    status: 'ativo',
+    versoes: []
+  });
 
-  const subTabs = [
-    { id: 'termos', label: 'Termos', icon: FileText },
-    { id: 'audit', label: 'Auditoria', icon: Activity },
+  // Apenas usuários de nível LEGAL podem editar
+  const canEdit = usuario?.nivel === NIVEIS_PERMISSAO.LEGAL;
+
+  const tabs = [
+    { id: 'termos', label: 'Termos de Uso', icon: FileText },
+    { id: 'politicas', label: 'Políticas', icon: Book },
     { id: 'lgpd', label: 'LGPD', icon: Shield },
-    { id: 'retention', label: 'Retenção', icon: Clock },
-    { id: 'compliance', label: 'Compliance', icon: UserCheck }
+    { id: 'conformidade', label: 'Conformidade', icon: UserCheck }
   ];
+  
+  // Verifica se o usuário é nível 1 (apenas visualização)
+  const isViewOnly = usuario?.nivel === 1;
+
+  useEffect(() => {
+    const fetchDocumentos = async () => {
+      try {
+        const q = query(
+          collection(db, 'legal'),
+          where('status', '==', 'ativo')
+        );
+        const querySnapshot = await getDocs(q);
+        const docs = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setDocumentos(docs);
+      } catch (error) {
+        console.error('Erro ao buscar documentos:', error);
+        showToast('Erro ao carregar documentos legais', 'error');
+      }
+    };
+
+    fetchDocumentos();
+  }, [showToast, refresh]);
+
+  const handleNewVersion = (doc) => {
+    setFormData({
+      ...doc,
+      versao: `${parseFloat(doc.versao) + 0.1}.0`,
+      versoes: [...(doc.versoes || []), {
+        versao: doc.versao,
+        conteudo: doc.conteudo,
+        dataCriacao: doc.dataCriacao,
+        criadoPor: doc.criadoPor
+      }]
+    });
+    setIsModalOpen(true);
+  };
 
   return (
-    <div className="bg-[#192734] rounded-2xl shadow-sm p-6 border border-[#38444D]">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-white mb-2">Gestão Legal</h2>
-        <p className="text-[#8899A6]">Gerenciamento de documentos legais e conformidade</p>
-      </div>
-
-      <div className="flex space-x-4 mb-6 border-b border-[#38444D]">
-        {subTabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveSubTab(tab.id)}
-            className={"flex items-center px-4 py-2 " + (
-              activeSubTab === tab.id
-                ? "text-[#1DA1F2] border-b-2 border-[#1DA1F2]"
-                : "text-[#8899A6] hover:text-white"
+    <div className="space-y-6">
+      <form className="bg-[#192734] p-6 rounded-lg border border-[#38444D]">
+        {/* Botões de ação */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex space-x-4">
+            {canEdit && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-4 py-2 bg-[#1DA1F2] text-white rounded-md hover:bg-[#1a91da] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] flex items-center space-x-2"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  <span>Novo texto legal</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {}}
+                  className="px-4 py-2 bg-[#2C3C4C] text-white rounded-md hover:bg-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#38444D] flex items-center space-x-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Adicionar documentos padrão</span>
+                </button>
+              </>
             )}
-          >
-            <tab.icon className="w-4 h-4 mr-2" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+          </div>
+        </div>
 
-      <div className="mt-4">
-        {activeSubTab === 'termos' && <TermosResponsabilidadeList usuario={usuario} />}
-        {activeSubTab === 'audit' && <AuditLogViewer usuario={usuario} />}
-        {activeSubTab === 'lgpd' && <LGPDConsent usuario={usuario} />}
-        {activeSubTab === 'retention' && <DataRetentionPanel usuario={usuario} />}
-        {activeSubTab === 'compliance' && <ComplianceReport usuario={usuario} />}
-      </div>
+        {/* Tabs - com suporte a modo retrato */}
+        <div className="w-full overflow-x-auto mt-6">
+          <div className="flex flex-nowrap min-w-max border-b border-[#38444D]">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex shrink-0 items-center px-4 py-2 ${
+                  activeTab === tab.id
+                    ? "text-[#1DA1F2] border-b-2 border-[#1DA1F2]"
+                    : "text-[#8899A6] hover:text-white"
+                }`}
+              >
+                <tab.icon className="w-4 h-4 mr-2 shrink-0" />
+                <span className="whitespace-nowrap">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Lista de documentos */}
+        <div className="mt-6">
+          <div className="space-y-4">
+            {documentos
+              .filter(doc => {
+                switch (activeTab) {
+                  case 'termos': return doc.tipo === 'termo';
+                  case 'politicas': return doc.tipo === 'politica';
+                  case 'lgpd': return doc.tipo === 'lgpd';
+                  case 'conformidade': return doc.tipo === 'conformidade';
+                  default: return false;
+                }
+              })
+              .map(doc => (
+                <div key={doc.id} className="bg-[#253341] p-4 rounded-lg border border-[#38444D]">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-white font-medium">{doc.titulo}</h4>
+                      <p className="text-[#8899A6] text-sm mt-1">Versão atual: {doc.versao}</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-[#8899A6] text-sm">
+                        {new Date(doc.dataCriacao).toLocaleDateString()}
+                      </div>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => handleNewVersion(doc)}
+                          className="px-2 py-1 bg-[#2C3C4C] text-white text-sm rounded hover:bg-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#38444D]"
+                        >
+                          Nova versão
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 text-white whitespace-pre-wrap">
+                    {doc.conteudo}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      </form>
     </div>
   );
 };

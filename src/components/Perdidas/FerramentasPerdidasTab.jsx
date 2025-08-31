@@ -205,20 +205,35 @@ const FerramentasPerdidasTab = ({
         {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className={`w-4 h-4 absolute left-3 top-3 ${colors.textSecondary}`} />
+            <div className="absolute inset-y-0 left-0 flex items-center z-10">
+              <Search className={`w-5 h-5 ml-3 ${colors.textSecondary}`} />
+            </div>
+            <div className="absolute inset-y-0 left-14 flex items-center pointer-events-none">
+              {!filtro && (
+                <span className={`text-gray-500`}>
+                  Buscar por ferramenta, descrição, responsável ou local...
+                </span>
+              )}
+            </div>
             <input
               type="text"
-              placeholder="Buscar por ferramenta, descrição, responsável ou local..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className={`pl-10 w-full px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent`}
+              className={`
+                pl-12 w-full py-2 
+                ${classes.input} 
+                focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent
+              `}
             />
           </div>
           
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="w-full md:w-48 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+            className="w-full md:w-48 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none hover:bg-[#2C3D4F] [&>option]:bg-[#192734] [&>option:hover]:bg-[#2C3D4F] [&>option:checked]:bg-[#2C3D4F]"
+            style={{
+              backgroundColor: '#253341',
+            }}
           >
             <option value="todos" className="bg-[#192734]">Todos os Status</option>
             <option value="buscando" className="bg-[#192734]">Buscando</option>

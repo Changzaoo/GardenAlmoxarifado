@@ -105,7 +105,7 @@ const HistoricoEmprestimosTab = ({
         <div className="flex justify-between items-center">
           <button
             onClick={() => setShowFiltros(!showFiltros)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg shadow-sm hover:bg-blue-600 transition-colors"
           >
             <Filter className="w-4 h-4" />
             Filtros
@@ -115,28 +115,28 @@ const HistoricoEmprestimosTab = ({
 
       {/* Painel de Filtros */}
       {showFiltros && (
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Buscar</label>
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   value={filtros.busca}
                   onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
-                  placeholder="Buscar por funcionário ou ferramenta..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="    Buscar por funcionário ou ferramenta..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
               <select
                 value={filtros.status}
                 onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2"
               >
                 <option value="todos">Todos os Status</option>
                 <option value="emprestado">Emprestados</option>
@@ -145,12 +145,12 @@ const HistoricoEmprestimosTab = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data Início</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data Início</label>
               <input
                 type="date"
                 value={filtros.dataInicio}
                 onChange={(e) => setFiltros(prev => ({ ...prev, dataInicio: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
           </div>
@@ -181,7 +181,7 @@ const HistoricoEmprestimosTab = ({
                 </tr>
               ) : (
                 emprestimosFiltrados.map(emprestimo => (
-                  <tr key={emprestimo.id} className="border-b hover:bg-gray-50">
+                  <tr key={emprestimo.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="py-3 px-2 font-medium">{emprestimo.nomeFuncionario || emprestimo.colaborador || '-'}</td>
                     <td className="py-3 px-2 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${

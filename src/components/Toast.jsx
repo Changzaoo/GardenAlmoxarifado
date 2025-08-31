@@ -22,6 +22,13 @@ const VARIANTS = {
     textColor: 'text-yellow-800',
     borderColor: 'border-yellow-200',
     iconColor: 'text-yellow-600'
+  },
+  info: {
+    icon: AlertCircle,
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-800',
+    borderColor: 'border-blue-200',
+    iconColor: 'text-blue-600'
   }
 };
 

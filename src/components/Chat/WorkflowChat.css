@@ -2,6 +2,21 @@
   background-color: #1f2936;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   max-width: 90vw;
+  max-height: 90vh;
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  z-index: 1000;
+}
+
+@media (orientation: portrait) and (max-width: 768px) {
+  .workflow-chat-container {
+    max-width: 95vw;
+    width: 95vw;
+    max-height: 80vh;
+    bottom: 70px;
+    right: 8px;
+  }
 }
 
 .workflow-chat-messages {

@@ -272,33 +272,47 @@ const ComprasTab = ({
       <div className={`${classes.card} p-4 space-y-4`}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className={`w-4 h-4 absolute left-3 top-3 ${colors.textSecondary}`} />
+            <div className="absolute inset-y-0 left-0 flex items-center z-10">
+              <Search className={`w-5 h-5 ml-3 ${colors.textSecondary}`} />
+            </div>
+            <div className="absolute inset-y-0 left-14 flex items-center pointer-events-none">
+              {!filtro && (
+                <span className="text-gray-500">
+                  Pesquisar compras...
+                </span>
+              )}
+            </div>
             <input
               type="text"
-              placeholder="Pesquisar compras..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className={classes.searchInput}
+              className={`${classes.searchInput} pl-12`}
             />
           </div>
           <select
             value={statusFiltro}
             onChange={(e) => setStatusFiltro(e.target.value)}
-            className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+            className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none hover:bg-[#2C3D4F] [&>option]:bg-[#192734] [&>option:hover]:bg-[#2C3D4F] [&>option:checked]:bg-[#2C3D4F]"
+            style={{
+              backgroundColor: '#253341',
+            }}
           >
-            <option value="todos" className="bg-[#192734]">Todos os status</option>
+            <option value="todos" className="!bg-[#192734]">Todos os status</option>
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+              <option key={value} value={value} className="!bg-[#192734]">{label}</option>
             ))}
           </select>
           <select
             value={prioridadeFiltro}
             onChange={(e) => setPrioridadeFiltro(e.target.value)}
-            className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+            className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none hover:bg-[#2C3D4F] [&>option]:bg-[#192734] [&>option:hover]:bg-[#2C3D4F] [&>option:checked]:bg-[#2C3D4F]"
+            style={{
+              backgroundColor: '#253341',
+            }}
           >
-            <option value="todas" className="bg-[#192734]">Todas as prioridades</option>
+            <option value="todas" className="!bg-[#192734]">Todas as prioridades</option>
             {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+              <option key={value} value={value} className="!bg-[#192734]">{label}</option>
             ))}
           </select>
           <div className={`text-sm ${colors.textSecondary} flex items-center`}>

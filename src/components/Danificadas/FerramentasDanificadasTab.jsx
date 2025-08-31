@@ -163,22 +163,33 @@ const FerramentasDanificadasTab = ({
         {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-[3] relative">
-            <Search className={`w-4 h-4 absolute left-3 top-3 ${colors.textSecondary}`} />
+            <div className="absolute inset-y-0 left-0 flex items-center z-10">
+              <Search className={`w-5 h-5 ml-3 ${colors.textSecondary}`} />
+            </div>
+            <div className="absolute inset-y-0 left-14 flex items-center pointer-events-none">
+              {!filtro && (
+                <span className="text-gray-500">
+                  Buscar por ferramenta, problema ou responsável...
+                </span>
+              )}
+            </div>
             <input
               type="text"
-              placeholder="Buscar por ferramenta, problema ou responsável..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors"
+              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 pl-12 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors"
             />
           </div>
           
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="md:w-48 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none hover:bg-[#192734]"
+            className="md:w-48 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none hover:bg-[#2C3D4F] [&>option]:bg-[#192734] [&>option:hover]:bg-[#2C3D4F] [&>option:checked]:bg-[#2C3D4F]"
+            style={{
+              backgroundColor: '#253341'
+            }}
           >
-            <option value="todos" className="bg-[#192734]">Todos os Status</option>
+            <option value="todos" className="!bg-[#192734]">Todos os Status</option>
             <option value="aguardando">Aguardando Reparo</option>
             <option value="em_reparo">Em Reparo</option>
             <option value="reparado">Reparado</option>
