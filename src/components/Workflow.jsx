@@ -855,12 +855,12 @@ const LoadingScreen = () => {
     <div className="min-h-screen bg-gradient-to-br from-[#ebf8ff] to-[#e6f7ff] dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
       <div className="text-center">
         <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
-          <img src="/logo.png" alt="Logo Garden Tools" className="w-full h-full object-contain animate-pulse" />
+          <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain animate-pulse" />
         </div>
 
         <div className="flex items-center justify-center gap-2 mb-4">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <p className="text-gray-600 dark:text-gray-300">Iniciando Garden Tools...</p>
+          <p className="text-gray-600 dark:text-gray-300">Iniciando WorkFlow...</p>
         </div>
         <div className="w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>

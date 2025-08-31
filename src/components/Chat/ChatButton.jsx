@@ -106,15 +106,54 @@ const ChatButton = ({ isOpen, onClick, position: externalPosition, onPositionCha
 
   // Manipuladores para mobile (touch events)
   const handleTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    
     const touch = e.touches[0];
-    setIsDragging(true);
+    const rect = buttonRef.current.getBoundingClientRect();
     setDragStart({
-      x: touch.clientX - position.x,
-      y: touch.clientY - position.y
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top
     });
-  };
-
-  const handleTouchMove = (e) => {
+    mouseDownTimeRef.current = Date.now();
+    setHasMoved(false);
+    
+    const handleTouchMove = (e) => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault(); // Prevent scrolling
+      
+      const touch = e.touches[0];
+      if (!isDragging) {
+        const deltaX = Math.abs(touch.clientX - dragStart.x);
+        const deltaY = Math.abs(touch.clientY - dragStart.y);
+        
+        // Only start dragging if movement is significant
+        if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+          setIsDragging(true);
+          setHasMoved(true);
+        }
+      }
+      
+      if (isDragging) {
+        const newX = Math.max(0, Math.min(touch.clientX - dragStart.x, window.innerWidth - rect.width));
+        const newY = Math.max(0, Math.min(touch.clientY - dragStart.y, window.innerHeight - rect.height));
+        setPosition({ x: newX, y: newY });
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      
+      const clickDuration = Date.now() - mouseDownTimeRef.current;
+      if (clickDuration < CLICK_THRESHOLD && !hasMoved) {
+        onClick();
+      }
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  };  const handleTouchMove = (e) => {
     if (!isDragging) return;
     const touch = e.touches[0];
     
