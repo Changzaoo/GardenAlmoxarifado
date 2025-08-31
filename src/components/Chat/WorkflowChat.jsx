@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { 
   MessageCircle, X, Search, Users, Send, 
   ArrowLeft, Check, CheckCheck, MoreVertical,
@@ -62,6 +63,7 @@ const formatLastMessageTime = (timestamp) => {
 const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 86, y: window.innerHeight - 86 } }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeChat, setActiveChat] = useState(null);
+  const isMobile = useIsMobile();
   const [messages, setMessages] = useState([]);
   const [chats, setChats] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -442,7 +444,8 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
       {isOpen && (
         <div 
           className="fixed w-[420px] rounded-lg shadow-xl overflow-hidden z-[9998] workflow-chat-container h-[80vh] flex flex-col bg-[#36393f]"
-          style={{
+          data-mobile-chat="true"
+          style={isMobile ? {} : {
             // Posicionamento horizontal
             ...(buttonPos.x < window.innerWidth / 2
               ? { left: `${buttonPos.x + 70}px` } // Se o botão estiver na metade esquerda, abre à direita
