@@ -1,0 +1,1371 @@
+import React, { useState } from 'react';
+import { formatarData, formatarDataHora } from '../../utils/dateUtils';
+import { format } from 'date-fns';
+import EmprestimoCard from './EmprestimoCard';
+import {
+  Search,
+  Clock,
+  CheckCircle,
+  Trash2,
+  CircleDotDashed,
+  LayoutGrid,
+  Table
+} from 'lucide-react';
+import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
+import DevolucaoParcialModal from './DevolucaoParcialModal';
+
+const HistoricoEmprestimosTab = ({ 
+  emprestimos = [], 
+  devolverFerramentas = () => {},
+  removerEmprestimo = () => {},
+  atualizarDisponibilidade = () => true
+}) => {
+  const [filtros, setFiltros] = useState({
+    funcionario: '',
+    ferramenta: '',
+    periodo: 'todos',
+    status: 'todos'
+  });
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' ou 'table'
+  const [showDevolucaoModal, setShowDevolucaoModal] = useState(false);
+  const [showDevolucaoParcialModal, setShowDevolucaoParcialModal] = useState(false);
+  const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
+  const [emprestimoParaDevolucaoParcial, setEmprestimoParaDevolucaoParcial] = useState(null);
+
+  const isWithinPeriod = (date, period) => {
+    if (!date) return false;
+    const today = new Date();
+    const empDate = new Date(date);
+    
+    switch (period) {
+      case 'hoje':
+        return empDate.getDate() === today.getDate() &&
+               empDate.getMonth() === today.getMonth() &&
+               empDate.getFullYear() === today.getFullYear();
+      case 'semana':
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        return empDate >= weekAgo;
+      case 'mes':
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(today.getMonth() - 1);
+        return empDate >= monthAgo;
+      default:
+        return true;
+    }
+  };
+
+  const emprestimosFiltrados = (emprestimos || [])
+    .filter(emp => {
+      if (!emp || !emp.dataEmprestimo) return false;
+      
+      // Filtra por período
+      if (!isWithinPeriod(emp.dataEmprestimo, filtros.periodo)) return false;
+
+      // Filtra por status
+      if (filtros.status !== 'todos' && emp.status !== filtros.status) return false;
+
+      // Filtra por funcionário
+      if (filtros.funcionario && !emp.nomeFuncionario.toLowerCase().includes(filtros.funcionario.toLowerCase())) {
+        return false;
+      }
+
+      // Filtra por ferramenta
+      if (filtros.ferramenta && !emp.ferramentas.some(f => 
+        f.nome.toLowerCase().includes(filtros.ferramenta.toLowerCase())
+      )) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Ordena por data/hora de empréstimo mais recente primeiro
+      const dataA = a?.dataEmprestimo ? new Date(a.dataEmprestimo) : new Date();
+      const dataB = b?.dataEmprestimo ? new Date(b.dataEmprestimo) : new Date();
+      return dataB - dataA;
+    });
+
+  const handleDevolverFerramentas = (id) => {
+    const emprestimo = emprestimos.find(e => e.id === id);
+    if (!emprestimo) return;
+
+    if (emprestimo.ferramentas?.length > 1) {
+      setEmprestimoParaDevolucaoParcial(emprestimo);
+      setShowDevolucaoParcialModal(true);
+    } else {
+      setSelectedEmprestimo(emprestimo);
+      setShowDevolucaoModal(true);
+    }
+  };
+
+  const handleDevolverFerramentasParcial = (emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros) => {
+    if (!emprestimo || !ferramentasSelecionadas.length) return;
+
+    devolverFerramentas(emprestimo.id, ferramentasSelecionadas, devolvidoPorTerceiros);
+    setShowDevolucaoParcialModal(false);
+    setEmprestimoParaDevolucaoParcial(null);
+  };
+
+  const handleConfirmDevolucao = async (devolvidoPorTerceiros) => {
+    try {
+      if (!selectedEmprestimo) return;
+
+      await devolverFerramentas(selectedEmprestimo.id, selectedEmprestimo.ferramentas, devolvidoPorTerceiros);
+      setSelectedEmprestimo(null);
+      setShowDevolucaoModal(false);
+    } catch (error) {
+      console.error('Erro ao devolver ferramentas:', error);
+    }
+  };
+
+  const handleRemoverEmprestimo = (id) => {
+    if (window.confirm('Tem certeza que deseja remover este registro?')) {
+      removerEmprestimo(id);
+    }
+  };
+
+  // Verifica se há ferramentas emprestadas
+  const temFerramentasEmprestadas = (emprestimo) => {
+    return emprestimo.ferramentas && emprestimo.ferramentas.length > 0;
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#192734] rounded-lg shadow-lg p-6">
+      {/* Filtros */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por funcionário..."
+            value={filtros.funcionario}
+            onChange={(e) => setFiltros(prev => ({ ...prev, funcionario: e.target.value }))}
+            className="pl-10 pr-4 py-2 w-full bg-[#253341] border border-[#38444D] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+          />
+        </div>
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por ferramenta..."
+            value={filtros.ferramenta}
+            onChange={(e) => setFiltros(prev => ({ ...prev, ferramenta: e.target.value }))}
+            className="pl-10 pr-4 py-2 w-full bg-[#253341] border border-[#38444D] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+          />
+        </div>
+        <select
+          value={filtros.periodo}
+          onChange={(e) => setFiltros(prev => ({ ...prev, periodo: e.target.value }))}
+          className="px-4 py-2 bg-[#253341] border border-[#38444D] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+        >
+          <option value="todos">Todos os períodos</option>
+          <option value="hoje">Hoje</option>
+          <option value="semana">Últimos 7 dias</option>
+          <option value="mes">Último mês</option>
+        </select>
+        <select
+          value={filtros.status}
+          onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
+          className="px-4 py-2 bg-[#253341] border border-[#38444D] text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+        >
+          <option value="todos">Todos os status</option>
+          <option value="emprestado">Não devolvidos</option>
+          <option value="devolvido">Devolvidos</option>
+        </select>
+      </div>
+
+      {/* Toggles de visualização */}
+      <div className="flex justify-end mb-4">
+        <div className="flex items-center space-x-2 bg-[#253341] rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('cards')}
+            className={`px-3 py-1 rounded-md flex items-center space-x-2 ${
+              viewMode === 'cards' 
+                ? 'bg-[#192734] text-[#1DA1F2]' 
+                : 'text-gray-400 hover:text-[#1DA1F2]'
+            }`}
+          >
+            <LayoutGrid size={16} />
+            <span>Cards</span>
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-3 py-1 rounded-md flex items-center space-x-2 ${
+              viewMode === 'table' 
+                ? 'bg-[#192734] text-[#1DA1F2]' 
+                : 'text-gray-400 hover:text-[#1DA1F2]'
+            }`}
+          >
+            <Table size={16} />
+            <span>Tabela</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Lista de empréstimos */}
+      {viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+          {emprestimosFiltrados.map(emprestimo => (
+            <div key={emprestimo.id} className="bg-[#192734] rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all">
+              <div className="p-4">
+                <div className="flex justify-between items-start mb-4">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    emprestimo.status === 'devolvido'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    <div className="flex items-center space-x-1">
+                      {emprestimo.status === 'devolvido' ? (
+                        <><CheckCircle size={14} /><span>Devolvido</span></>
+                      ) : (
+                        <><Clock size={14} /><span>Em andamento</span></>
+                      )}
+                    </div>
+                  </span>
+                  <span className="text-sm text-gray-400">
+                    {formatarDataHora(emprestimo.dataEmprestimo)}
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center text-white">
+                    <div className="text-lg font-medium">{emprestimo.nomeFuncionario}</div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-gray-400">Ferramentas:</div>
+                    <div className="ml-2 space-y-1">
+                      {emprestimo.ferramentas.map((f, idx) => (
+                        <div key={idx} className="text-sm text-white flex items-center space-x-2">
+                          <span className="w-1.5 h-1.5 bg-[#1DA1F2] rounded-full"></span>
+                          <span>{f.nome} ({f.quantidade})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {emprestimo.status !== 'devolvido' && (
+                    <div className="flex space-x-2 mt-4">
+                      <button
+                        onClick={() => handleDevolverFerramentas(emprestimo.id)}
+                        className="flex items-center space-x-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors"
+                      >
+                        <CheckCircle size={14} />
+                        <span>Devolver</span>
+                      </button>
+                      {emprestimo.ferramentas.length > 1 && (
+                        <button
+                          onClick={() => {
+                            setEmprestimoParaDevolucaoParcial(emprestimo);
+                            setShowDevolucaoParcialModal(true);
+                          }}
+                          className="flex items-center space-x-1 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+                        >
+                          <CircleDotDashed size={14} />
+                          <span>Parcial</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleRemoverEmprestimo(emprestimo.id)}
+                        className="flex items-center space-x-1 px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
+                      >
+                        <Trash2 size={14} />
+                        <span>Remover</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {emprestimo.dataDevolucao && (
+                    <div className="text-sm text-gray-400 mt-2">
+                      Devolvido em: {formatarDataHora(emprestimo.dataDevolucao)}
+                      {emprestimo.devolvidoPorTerceiros && (
+                        <div className="text-orange-500 mt-1">
+                          Devolvido por terceiros
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#38444D]">
+                <th className="text-left py-3 px-2 text-gray-400">Colaborador</th>
+                <th className="text-left py-3 px-2 text-gray-400">Status</th>
+                <th className="text-left py-3 px-2 text-gray-400">Ferramentas</th>
+                <th className="text-left py-3 px-2 text-gray-400">Retirada</th>
+                <th className="text-left py-3 px-2 text-gray-400">Devolução</th>
+                <th className="text-left py-3 px-2 text-gray-400">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {emprestimosFiltrados.map(emprestimo => (
+                <tr 
+                  key={emprestimo.id} 
+                  className="border-b border-[#38444D] hover:bg-[#22303C] transition-colors"
+                >
+                  <td className="py-3 px-2 text-white">{emprestimo.nomeFuncionario}</td>
+                  <td className="py-3 px-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      emprestimo.status === 'devolvido'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {emprestimo.status === 'devolvido' ? (
+                        <><CheckCircle size={14} className="mr-1" />Devolvido</>
+                      ) : (
+                        <><Clock size={14} className="mr-1" />Em andamento</>
+                      )}
+                    </span>
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="flex flex-col space-y-1">
+                      {emprestimo.ferramentas.map((f, idx) => (
+                        <span key={idx} className="text-sm text-white">
+                          {f.nome} ({f.quantidade})
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="py-3 px-2 text-white">
+                    {formatarDataHora(emprestimo.dataEmprestimo)}
+                  </td>
+                  <td className="py-3 px-2 text-white">
+                    {emprestimo.dataDevolucao ? (
+                      <div>
+                        {formatarDataHora(emprestimo.dataDevolucao)}
+                        {emprestimo.devolvidoPorTerceiros && (
+                          <div className="text-xs text-orange-500 mt-1">
+                            Devolvido por terceiros
+                          </div>
+                        )}
+                      </div>
+                    ) : '-'}
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="flex space-x-2">
+                      {emprestimo.status !== 'devolvido' && (
+                        <>
+                          <button
+                            onClick={() => handleDevolverFerramentas(emprestimo.id)}
+                            className="p-1 text-green-500 hover:bg-green-100/10 rounded"
+                            title="Devolver todas as ferramentas"
+                          >
+                            <CheckCircle size={16} />
+                          </button>
+                          {emprestimo.ferramentas.length > 1 && (
+                            <button
+                              onClick={() => {
+                                setEmprestimoParaDevolucaoParcial(emprestimo);
+                                setShowDevolucaoParcialModal(true);
+                              }}
+                              className="p-1 text-blue-500 hover:bg-blue-100/10 rounded"
+                              title="Devolução parcial"
+                            >
+                              <CircleDotDashed size={16} />
+                            </button>
+                          )}
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleRemoverEmprestimo(emprestimo.id)}
+                        className="p-1 text-red-500 hover:bg-red-100/10 rounded"
+                        title="Remover empréstimo"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Modais */}
+      {showDevolucaoModal && selectedEmprestimo && (
+        <DevolucaoTerceirosModal
+          onClose={() => {
+            setSelectedEmprestimo(null);
+            setShowDevolucaoModal(false);
+          }}
+          onConfirm={handleConfirmDevolucao}
+        />
+      )}
+
+      {showDevolucaoParcialModal && emprestimoParaDevolucaoParcial && (
+        <DevolucaoParcialModal
+          emprestimo={emprestimoParaDevolucaoParcial}
+          onClose={() => {
+            setEmprestimoParaDevolucaoParcial(null);
+            setShowDevolucaoParcialModal(false);
+          }}
+          onConfirm={(ferramentasSelecionadas, devolvidoPorTerceiros) => 
+            handleDevolverFerramentasParcial(
+              emprestimoParaDevolucaoParcial,
+              ferramentasSelecionadas,
+              devolvidoPorTerceiros
+            )
+          }
+        />
+      )}
+    </div>
+  );
+};
+
+export default HistoricoEmprestimosTab;
+
+  const isWithinPeriod = (date, period) => {
+    if (!date) return false;
+    const today = new Date();
+    const empDate = new Date(date);
+    
+    switch (period) {
+      case 'hoje':
+        return empDate.getDate() === today.getDate() &&
+               empDate.getMonth() === today.getMonth() &&
+               empDate.getFullYear() === today.getFullYear();
+      case 'semana':
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        return empDate >= weekAgo;
+      case 'mes':
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(today.getMonth() - 1);
+        return empDate >= monthAgo;
+      default:
+        return true;
+    }
+  };
+
+  const emprestimosFiltrados = (emprestimos || [])
+    .filter(emp => {
+      if (!emp || !emp.dataEmprestimo) return false;
+      
+      // Filtra por período
+      if (!isWithinPeriod(emp.dataEmprestimo, filtros.periodo)) return false;
+
+      // Filtra por status
+      if (filtros.status !== 'todos' && emp.status !== filtros.status) return false;
+
+      // Filtra por funcionário
+      if (filtros.funcionario && !emp.nomeFuncionario.toLowerCase().includes(filtros.funcionario.toLowerCase())) {
+        return false;
+      }
+
+      // Filtra por ferramenta
+      if (filtros.ferramenta && !emp.ferramentas.some(f => 
+        f.nome.toLowerCase().includes(filtros.ferramenta.toLowerCase())
+      )) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Ordena por data/hora de empréstimo mais recente primeiro
+      const dataA = a?.dataEmprestimo ? new Date(a.dataEmprestimo) : new Date();
+      const dataB = b?.dataEmprestimo ? new Date(b.dataEmprestimo) : new Date();
+      return dataB - dataA;
+    });
+
+  const handleDevolverFerramentas = (id) => {
+    const emprestimo = emprestimos.find(e => e.id === id);
+    if (!emprestimo) return;
+
+    if (emprestimo.ferramentas?.length > 1) {
+      setEmprestimoParaDevolucaoParcial(emprestimo);
+      setShowDevolucaoParcialModal(true);
+    } else {
+      setSelectedEmprestimo(emprestimo);
+      setShowDevolucaoModal(true);
+    }
+  };
+
+  const handleConfirmDevolucao = async (devolvidoPorTerceiros) => {
+    try {
+      if (!selectedEmprestimo) return;
+
+      await devolverFerramentas(selectedEmprestimo.id, selectedEmprestimo.ferramentas, devolvidoPorTerceiros);
+      setSelectedEmprestimo(null);
+      setShowDevolucaoModal(false);
+    } catch (error) {
+      console.error('Erro ao devolver ferramentas:', error);
+    }
+  };
+
+  const handleDevolverFerramentasParcial = (emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros) => {
+    if (!emprestimo || !ferramentasSelecionadas.length) return;
+
+    devolverFerramentas(emprestimo.id, ferramentasSelecionadas, devolvidoPorTerceiros);
+    setShowDevolucaoParcialModal(false);
+    setEmprestimoParaDevolucaoParcial(null);
+  };
+
+  const handleRemoverEmprestimo = (id) => {
+    if (window.confirm('Tem certeza que deseja remover este registro?')) {
+      removerEmprestimo(id);
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      {/* Filtros */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por funcionário..."
+            value={filtros.funcionario}
+            onChange={(e) => setFiltros(prev => ({ ...prev, funcionario: e.target.value }))}
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg"
+          />
+        </div>
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por ferramenta..."
+            value={filtros.ferramenta}
+            onChange={(e) => setFiltros(prev => ({ ...prev, ferramenta: e.target.value }))}
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg"
+          />
+        </div>
+        <select
+          value={filtros.periodo}
+          onChange={(e) => setFiltros(prev => ({ ...prev, periodo: e.target.value }))}
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+        >
+          <option value="todos">Todos os períodos</option>
+          <option value="hoje">Hoje</option>
+          <option value="semana">Últimos 7 dias</option>
+          <option value="mes">Último mês</option>
+        </select>
+        <select
+          value={filtros.status}
+          onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+        >
+          <option value="todos">Todos os status</option>
+          <option value="emprestado">Não devolvidos</option>
+          <option value="devolvido">Devolvidos</option>
+        </select>
+      </div>
+
+      {/* Toggles de visualização */}
+      <div className="flex justify-end mb-4">
+        <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('cards')}
+            className={`px-3 py-1 rounded-md flex items-center space-x-2 ${viewMode === 'cards' 
+              ? 'bg-white dark:bg-gray-600 shadow' 
+              : 'text-gray-600 dark:text-gray-300'}`}
+          >
+            <LayoutGrid size={16} />
+            <span>Cards</span>
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-3 py-1 rounded-md flex items-center space-x-2 ${viewMode === 'table' 
+              ? 'bg-white dark:bg-gray-600 shadow' 
+              : 'text-gray-600 dark:text-gray-300'}`}
+          >
+            <Table size={16} />
+            <span>Tabela</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Lista de empréstimos */}
+      {viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {emprestimosFiltrados.map(emprestimo => (
+            <EmprestimoCard
+              key={emprestimo.id}
+              emprestimo={emprestimo}
+              onDevolucao={() => handleDevolverFerramentas(emprestimo.id)}
+              onDevolucaoParcial={() => {
+                setEmprestimoParaDevolucaoParcial(emprestimo);
+                setShowDevolucaoParcialModal(true);
+              }}
+              onRemover={() => handleRemoverEmprestimo(emprestimo.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-3 px-2">Colaborador</th>
+                <th className="text-left py-3 px-2">Status</th>
+                <th className="text-left py-3 px-2">Ferramentas</th>
+                <th className="text-left py-3 px-2">Retirada</th>
+                <th className="text-left py-3 px-2">Devolução</th>
+                <th className="text-left py-3 px-2">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {emprestimosFiltrados.map(emprestimo => (
+                <tr key={emprestimo.id} className="border-b hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <td className="py-3 px-2">{emprestimo.nomeFuncionario}</td>
+                  <td className="py-3 px-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      emprestimo.status === 'devolvido' 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {emprestimo.status === 'devolvido' ? (
+                        <CheckCircle size={14} className="mr-1" />
+                      ) : (
+                        <Clock size={14} className="mr-1" />
+                      )}
+                      {emprestimo.status === 'devolvido' ? 'Devolvido' : 'Em andamento'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="flex flex-col">
+                      {emprestimo.ferramentas.map((f, idx) => (
+                        <span key={idx} className="text-sm">
+                          {f.nome}
+                          {f.quantidade > 1 && ` (${f.quantidade})`}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="py-3 px-2">{formatarDataHora(emprestimo.dataEmprestimo)}</td>
+                  <td className="py-3 px-2">
+                    {emprestimo.dataDevolucao ? formatarDataHora(emprestimo.dataDevolucao) : '-'}
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="flex space-x-2">
+                      {emprestimo.status !== 'devolvido' && (
+                        <>
+                          <button
+                            onClick={() => handleDevolverFerramentas(emprestimo.id)}
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                            title="Devolver todas as ferramentas"
+                          >
+                            <CheckCircle size={16} className="text-green-500" />
+                          </button>
+                          {emprestimo.ferramentas.length > 1 && (
+                            <button
+                              onClick={() => {
+                                setEmprestimoParaDevolucaoParcial(emprestimo);
+                                setShowDevolucaoParcialModal(true);
+                              }}
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                              title="Devolução parcial"
+                            >
+                              <CircleDotDashed size={16} className="text-blue-500" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleRemoverEmprestimo(emprestimo.id)}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                        title="Remover empréstimo"
+                      >
+                        <Trash2 size={16} className="text-red-500" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Modais */}
+      {showDevolucaoModal && selectedEmprestimo && (
+        <DevolucaoTerceirosModal
+          onClose={() => {
+            setSelectedEmprestimo(null);
+            setShowDevolucaoModal(false);
+          }}
+          onConfirm={handleConfirmDevolucao}
+        />
+      )}
+
+      {showDevolucaoParcialModal && emprestimoParaDevolucaoParcial && (
+        <DevolucaoParcialModal
+          emprestimo={emprestimoParaDevolucaoParcial}
+          onClose={() => {
+            setEmprestimoParaDevolucaoParcial(null);
+            setShowDevolucaoParcialModal(false);
+          }}
+          onConfirm={(ferramentasSelecionadas, devolvidoPorTerceiros) => 
+            handleDevolverFerramentasParcial(
+              emprestimoParaDevolucaoParcial,
+              ferramentasSelecionadas,
+              devolvidoPorTerceiros
+            )
+          }
+        />
+      )}
+    </div>
+  );
+};
+
+export default HistoricoEmprestimosTab;
+import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, LayoutGrid, Table } from 'lucide-react';
+import { formatarData, formatarDataHora } from '../../utils/dateUtils';
+import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
+import DevolucaoParcialModal from './DevolucaoParcialModal';
+import EmprestimoCard from './EmprestimoCard';
+
+const HistoricoEmprestimosTab = ({ 
+  emprestimos = [], 
+  devolverFerramentas = () => {},
+  removerEmprestimo = () => {},
+  atualizarDisponibilidade = () => true
+}) => {
+  const [filtros, setFiltros] = useState({
+    funcionario: '',
+    ferramenta: '',
+    periodo: 'todos',
+    status: 'todos'
+  });
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' ou 'table'
+  const [showDevolucaoModal, setShowDevolucaoModal] = useState(false);
+  const [showDevolucaoParcialModal, setShowDevolucaoParcialModal] = useState(false);
+  const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
+  const [emprestimoParaDevolucaoParcial, setEmprestimoParaDevolucaoParcial] = useState(null);
+
+  const isWithinPeriod = (date, period) => {
+    if (!date) return false;
+    const today = new Date();
+    const empDate = new Date(date);
+    
+    switch (period) {
+      case 'hoje':
+        return empDate.getDate() === today.getDate() &&
+               empDate.getMonth() === today.getMonth() &&
+               empDate.getFullYear() === today.getFullYear();
+      case 'semana':
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        return empDate >= weekAgo;
+      case 'mes':
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(today.getMonth() - 1);
+        return empDate >= monthAgo;
+      default:
+        return true;
+    }
+  };
+
+  const emprestimosFiltrados = (emprestimos || [])
+    .filter(emp => {
+      if (!emp || !emp.dataEmprestimo) return false;
+      
+      // Filtra por período
+      if (!isWithinPeriod(emp.dataEmprestimo, filtros.periodo)) return false;
+
+      // Filtra por status
+      if (filtros.status !== 'todos' && emp.status !== filtros.status) return false;
+
+      // Filtra por funcionário
+      if (filtros.funcionario && !emp.nomeFuncionario.toLowerCase().includes(filtros.funcionario.toLowerCase())) {
+        return false;
+      }
+
+      // Filtra por ferramenta
+      if (filtros.ferramenta && !emp.ferramentas.some(f => 
+        f.nome.toLowerCase().includes(filtros.ferramenta.toLowerCase())
+      )) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Ordena por data/hora de empréstimo mais recente primeiro
+      const dataA = a?.dataEmprestimo ? new Date(a.dataEmprestimo) : new Date();
+      const dataB = b?.dataEmprestimo ? new Date(b.dataEmprestimo) : new Date();
+      return dataB - dataA;
+    });
+
+  const handleDevolverFerramentas = (id) => {
+    const emprestimo = emprestimos.find(e => e.id === id);
+    if (!emprestimo) return;
+
+    if (emprestimo.ferramentas?.length > 1) {
+      setEmprestimoParaDevolucaoParcial(emprestimo);
+      setShowDevolucaoParcialModal(true);
+    } else {
+      setSelectedEmprestimo(emprestimo);
+      setShowDevolucaoModal(true);
+    }
+  };
+
+  const handleConfirmDevolucao = async (devolvidoPorTerceiros) => {
+    try {
+      if (!selectedEmprestimo) return;
+
+      await devolverFerramentas(selectedEmprestimo.id, selectedEmprestimo.ferramentas, devolvidoPorTerceiros);
+      setSelectedEmprestimo(null);
+      setShowDevolucaoModal(false);
+    } catch (error) {
+      console.error('Erro ao devolver ferramentas:', error);
+    }
+  };
+
+  const handleDevolverFerramentasParcial = (emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros) => {
+    if (!emprestimo || !ferramentasSelecionadas.length) return;
+
+    devolverFerramentas(emprestimo.id, ferramentasSelecionadas, devolvidoPorTerceiros);
+    setShowDevolucaoParcialModal(false);
+    setEmprestimoParaDevolucaoParcial(null);
+  };
+
+  const handleRemoverEmprestimo = (id) => {
+    if (window.confirm('Tem certeza que deseja remover este registro?')) {
+      removerEmprestimo(id);
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      {/* Filtros */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por funcionário..."
+            value={filtros.funcionario}
+            onChange={(e) => setFiltros(prev => ({ ...prev, funcionario: e.target.value }))}
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg"
+          />
+        </div>
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por ferramenta..."
+            value={filtros.ferramenta}
+            onChange={(e) => setFiltros(prev => ({ ...prev, ferramenta: e.target.value }))}
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg"
+          />
+        </div>
+        <select
+          value={filtros.periodo}
+          onChange={(e) => setFiltros(prev => ({ ...prev, periodo: e.target.value }))}
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+        >
+          <option value="todos">Todos os períodos</option>
+          <option value="hoje">Hoje</option>
+          <option value="semana">Últimos 7 dias</option>
+          <option value="mes">Último mês</option>
+        </select>
+        <select
+          value={filtros.status}
+          onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+        >
+          <option value="todos">Todos os status</option>
+          <option value="emprestado">Não devolvidos</option>
+          <option value="devolvido">Devolvidos</option>
+        </select>
+      </div>
+
+      {/* Toggles de visualização */}
+      <div className="flex justify-end mb-4">
+        <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('cards')}
+            className={`px-3 py-1 rounded-md flex items-center space-x-2 ${viewMode === 'cards' 
+              ? 'bg-white dark:bg-gray-600 shadow' 
+              : 'text-gray-600 dark:text-gray-300'}`}
+          >
+            <LayoutGrid size={16} />
+            <span>Cards</span>
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-3 py-1 rounded-md flex items-center space-x-2 ${viewMode === 'table' 
+              ? 'bg-white dark:bg-gray-600 shadow' 
+              : 'text-gray-600 dark:text-gray-300'}`}
+          >
+            <Table size={16} />
+            <span>Tabela</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Lista de empréstimos */}
+      {viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {emprestimosFiltrados.map(emprestimo => (
+            <EmprestimoCard
+              key={emprestimo.id}
+              emprestimo={emprestimo}
+              onDevolucao={() => handleDevolverFerramentas(emprestimo.id)}
+              onDevolucaoParcial={() => {
+                setEmprestimoParaDevolucaoParcial(emprestimo);
+                setShowDevolucaoParcialModal(true);
+              }}
+              onRemover={() => handleRemoverEmprestimo(emprestimo.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-3 px-2">Colaborador</th>
+                <th className="text-left py-3 px-2">Status</th>
+                <th className="text-left py-3 px-2">Ferramentas</th>
+                <th className="text-left py-3 px-2">Retirada</th>
+                <th className="text-left py-3 px-2">Devolução</th>
+                <th className="text-left py-3 px-2">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {emprestimosFiltrados.map(emprestimo => (
+                <tr key={emprestimo.id} className="border-b hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <td className="py-3 px-2">{emprestimo.nomeFuncionario}</td>
+                  <td className="py-3 px-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      emprestimo.status === 'devolvido' 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {emprestimo.status === 'devolvido' ? (
+                        <CheckCircle size={14} className="mr-1" />
+                      ) : (
+                        <Clock size={14} className="mr-1" />
+                      )}
+                      {emprestimo.status === 'devolvido' ? 'Devolvido' : 'Em andamento'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="flex flex-col">
+                      {emprestimo.ferramentas.map((f, idx) => (
+                        <span key={idx} className="text-sm">
+                          {f.nome}
+                          {f.quantidade > 1 && ` (${f.quantidade})`}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="py-3 px-2">{formatarDataHora(emprestimo.dataEmprestimo)}</td>
+                  <td className="py-3 px-2">
+                    {emprestimo.dataDevolucao ? formatarDataHora(emprestimo.dataDevolucao) : '-'}
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="flex space-x-2">
+                      {emprestimo.status !== 'devolvido' && (
+                        <>
+                          <button
+                            onClick={() => handleDevolverFerramentas(emprestimo.id)}
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                          >
+                            <CheckCircle size={16} className="text-green-500" />
+                          </button>
+                          {emprestimo.ferramentas.length > 1 && (
+                            <button
+                              onClick={() => {
+                                setEmprestimoParaDevolucaoParcial(emprestimo);
+                                setShowDevolucaoParcialModal(true);
+                              }}
+                              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                            >
+                              <CircleDotDashed size={16} className="text-blue-500" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleRemoverEmprestimo(emprestimo.id)}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                      >
+                        <Trash2 size={16} className="text-red-500" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Modais */}
+      {showDevolucaoModal && selectedEmprestimo && (
+        <DevolucaoTerceirosModal
+          onClose={() => {
+            setSelectedEmprestimo(null);
+            setShowDevolucaoModal(false);
+          }}
+          onConfirm={handleConfirmDevolucao}
+        />
+      )}
+
+      {showDevolucaoParcialModal && emprestimoParaDevolucaoParcial && (
+        <DevolucaoParcialModal
+          emprestimo={emprestimoParaDevolucaoParcial}
+          onClose={() => {
+            setEmprestimoParaDevolucaoParcial(null);
+            setShowDevolucaoParcialModal(false);
+          }}
+          onConfirm={(ferramentasSelecionadas, devolvidoPorTerceiros) => 
+            handleDevolverFerramentasParcial(
+              emprestimoParaDevolucaoParcial,
+              ferramentasSelecionadas,
+              devolvidoPorTerceiros
+            )
+          }
+        />
+      )}
+    </div>
+  );
+};
+
+export default HistoricoEmprestimosTab;
+  const [filtros, setFiltros] = useState({
+    funcionario: '',
+    ferramenta: '',
+    periodo: 'todos',
+    status: 'todos'
+  });
+  const [showDevolucaoModal, setShowDevolucaoModal] = useState(false);
+  const [showDevolucaoParcialModal, setShowDevolucaoParcialModal] = useState(false);
+  const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
+  const [emprestimoParaDevolucaoParcial, setEmprestimoParaDevolucaoParcial] = useState(null);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' ou 'table'
+
+  const isWithinPeriod = (date, period) => {
+    if (!date) return false;
+    const today = new Date();
+    const empDate = new Date(date);
+    
+    switch (period) {
+      case 'hoje':
+        return empDate.getDate() === today.getDate() &&
+               empDate.getMonth() === today.getMonth() &&
+               empDate.getFullYear() === today.getFullYear();
+      case 'semana':
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        return empDate >= weekAgo;
+      case 'mes':
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(today.getMonth() - 1);
+        return empDate >= monthAgo;
+      default:
+        return true;
+    }
+  };
+
+  const emprestimosFiltrados = (emprestimos || [])
+    .filter(emp => {
+      if (!emp || !emp.dataEmprestimo) return false;
+      
+      // Filtra por período
+      if (!isWithinPeriod(emp.dataEmprestimo, filtros.periodo)) return false;
+
+      // Filtra por status
+      if (filtros.status !== 'todos' && emp.status !== filtros.status) return false;
+
+      // Filtra por funcionário
+      if (filtros.funcionario && !emp.nomeFuncionario.toLowerCase().includes(filtros.funcionario.toLowerCase())) {
+        return false;
+      }
+
+      // Filtra por ferramenta
+      if (filtros.ferramenta && !emp.ferramentas.some(f => 
+        f.nome.toLowerCase().includes(filtros.ferramenta.toLowerCase())
+      )) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Ordena por data/hora de empréstimo mais recente primeiro
+      const dataA = a?.dataEmprestimo ? new Date(a.dataEmprestimo) : new Date();
+      const dataB = b?.dataEmprestimo ? new Date(b.dataEmprestimo) : new Date();
+      return dataB - dataA;
+    });
+
+  const handleDevolverFerramentas = (id) => {
+    const emprestimo = emprestimos.find(e => e.id === id);
+    if (!emprestimo) return;
+
+    if (emprestimo.ferramentas?.length > 1) {
+      setEmprestimoParaDevolucaoParcial(emprestimo);
+      setShowDevolucaoParcialModal(true);
+    } else {
+      setSelectedEmprestimo(id);
+      setShowDevolucaoModal(true);
+    }
+  };
+
+  const handleDevolverFerramentasParcial = (emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros) => {
+    if (!emprestimo || !ferramentasSelecionadas.length) return;
+
+    const ferramentasNaoDevolvidas = emprestimo.ferramentas.filter(
+      f => !ferramentasSelecionadas.find(fs => fs.id === f.id)
+    );
+
+    // Atualiza o empréstimo removendo apenas as ferramentas selecionadas
+    if (ferramentasNaoDevolvidas.length === 0) {
+      // Se todas as ferramentas foram selecionadas, marca como totalmente devolvido
+      devolverFerramentas(emprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros);
+    } else {
+      // Se ainda há ferramentas não devolvidas, atualiza o registro mantendo apenas elas
+      const atualizacao = {
+        ferramentas: ferramentasNaoDevolvidas,
+        ferramentasParcialmenteDevolvidas: [
+          ...(emprestimo.ferramentasParcialmenteDevolvidas || []),
+          {
+            ferramentas: ferramentasSelecionadas,
+            dataDevolucao: new Date().toISOString(),
+            devolvidoPorTerceiros
+          }
+        ]
+      };
+      
+      if (typeof devolverFerramentas === 'function') {
+        devolverFerramentas(emprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros, atualizacao);
+      }
+    }
+    setShowDevolucaoParcialModal(false);
+    setEmprestimoParaDevolucaoParcial(null);
+  };
+
+  const handleConfirmDevolucao = async (devolvidoPorTerceiros) => {
+    try {
+      if (typeof devolverFerramentas === 'function') {
+        await devolverFerramentas(selectedEmprestimo, atualizarDisponibilidade, devolvidoPorTerceiros);
+        setSelectedEmprestimo(null);
+        setShowDevolucaoModal(false);
+      } else {
+        console.error('devolverFerramentas não é uma função');
+      }
+    } catch (error) {
+      console.error('Erro ao devolver ferramentas:', error);
+    }
+  };
+
+  const handleRemoverEmprestimo = (id) => {
+    if (window.confirm('Tem certeza que deseja remover este registro?')) {
+      removerEmprestimo(id, atualizarDisponibilidade);
+    }
+  };
+
+  // Verifica se há ferramentas emprestadas no array de ferramentas
+  const temFerramentasEmprestadas = (emprestimo) => {
+    return emprestimo.ferramentas && emprestimo.ferramentas.length > 0;
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex gap-4 items-center">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar por colaborador ou ferramenta..."
+              value={filtroEmprestimos}
+              onChange={(e) => setFiltroEmprestimos(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] text-center dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
+            />
+          </div>
+          <select
+            value={filtroPeriodo}
+            onChange={(e) => setFiltroPeriodo(e.target.value)}
+            className="border border-gray-300 dark:border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            <option value="todos">Todos os períodos</option>
+            <option value="hoje">Hoje</option>
+            <option value="semana">Últimos 7 dias</option>
+            <option value="mes">Último mês</option>
+          </select>
+          <select
+            value={filtroStatus}
+            onChange={(e) => setFiltroStatus(e.target.value)}
+            className="border border-gray-300 dark:border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            <option value="todos">Todos os status</option>
+            <option value="emprestado">Não devolvidos</option>
+            <option value="devolvido">Devolvidos</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Toggles de visualização */}
+      <div className="flex justify-end mb-4">
+        <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('cards')}
+            className={`px-3 py-1 rounded-md ${viewMode === 'cards' 
+              ? 'bg-white dark:bg-gray-600 shadow' 
+              : 'text-gray-600 dark:text-gray-300'}`}
+          >
+            Cards
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`px-3 py-1 rounded-md ${viewMode === 'table' 
+              ? 'bg-white dark:bg-gray-600 shadow' 
+              : 'text-gray-600 dark:text-gray-300'}`}
+          >
+            Tabela
+          </button>
+        </div>
+      </div>
+
+      {viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {emprestimosFiltrados.map(emprestimo => (
+            <EmprestimoCard
+              key={emprestimo.id}
+              emprestimo={emprestimo}
+              onDevolucao={() => handleDevolverFerramentas(emprestimo.id)}
+              onDevolucaoParcial={() => {
+                setEmprestimoParaDevolucaoParcial(emprestimo);
+                setShowDevolucaoParcialModal(true);
+              }}
+              onRemover={() => handleRemoverEmprestimo(emprestimo.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-3 px-2">Colaborador</th>
+                <th className="text-left py-3 px-2">Status</th>
+                <th className="text-left py-3 px-2">Ações</th>
+                <th className="text-left py-3 px-2">Ferramentas</th>
+                <th className="text-left py-3 px-2">Retirada</th>
+                <th className="text-left py-3 px-2">Devolução</th>
+              </tr>
+            </thead>
+            <tbody>
+              {emprestimosFiltrados.map(emprestimo => (
+                <tr key={emprestimo.id} className="border-b hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                <td className="py-3 px-2 font-medium">{emprestimo.nomeFuncionario || emprestimo.colaborador || '-'}</td>
+                <td className="py-3 px-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    emprestimo.status === 'emprestado'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {emprestimo.status === 'emprestado' ? (
+                      <><Clock className="w-3 h-3 inline mr-1" />Emprestado</>
+                    ) : (
+                      <><CheckCircle className="w-3 h-3 inline mr-1" />Devolvido</>
+                    )}
+                  </span>
+                </td>
+                <td className="py-3 px-2">
+                  <div className="flex gap-2">
+                    {emprestimo.status === 'emprestado' && temFerramentasEmprestadas(emprestimo) && (
+                      <button
+                        onClick={() => handleDevolverFerramentas(emprestimo.id)}
+                        className="text-green-600 hover:text-green-800 p-1 transition-colors duration-200 rounded hover:bg-green-100 dark:hover:bg-green-900"
+                        title="Marcar como devolvido"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleRemoverEmprestimo(emprestimo.id)}
+                      className="text-red-600 hover:text-red-800 p-1 transition-colors duration-200 rounded hover:bg-red-100 dark:hover:bg-red-900"
+                      title="Remover registro"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+                <td className="py-3 px-2 text-sm">
+                  <div className="max-w-xs">
+                    {Array.isArray(emprestimo?.ferramentas) ? (
+                      emprestimo.ferramentas.map((ferramenta, idx) => (
+                        <div key={idx} className="text-sm flex items-center gap-2 mb-1">
+                          <span className="font-medium">{ferramenta.nome}</span>
+                          {ferramenta.quantidade > 1 && (
+                            <span className="text-gray-500">({ferramenta.quantidade} unidades)</span>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500">Sem ferramentas</div>
+                    )}
+                  </div>
+                </td>
+                <td className="py-3 px-2 text-sm">
+                  {formatarDataHora(emprestimo.dataEmprestimo)}
+                </td>
+                <td className="py-3 px-2 text-sm">
+                  {emprestimo.dataDevolucao ? (
+                    <div>
+                      <div>{formatarDataHora(emprestimo.dataDevolucao)}</div>
+                      {emprestimo.devolvidoPorTerceiros && (
+                        <div className="text-xs text-orange-600 mt-1">
+                          Devolvido por terceiros
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {showDevolucaoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <DevolucaoTerceirosModal
+            onClose={() => {
+              setShowDevolucaoModal(false);
+              setSelectedEmprestimo(null);
+            }}
+            onConfirm={handleConfirmDevolucao}
+          />
+        </div>
+      )}
+
+      {showDevolucaoParcialModal && emprestimoParaDevolucaoParcial && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <DevolucaoParcialModal
+            emprestimo={emprestimoParaDevolucaoParcial}
+            onClose={() => {
+              setShowDevolucaoParcialModal(false);
+              setEmprestimoParaDevolucaoParcial(null);
+            }}
+            onConfirm={(ferramentasSelecionadas, devolvidoPorTerceiros) => {
+              handleDevolverFerramentasParcial(
+                emprestimoParaDevolucaoParcial,
+                ferramentasSelecionadas,
+                devolvidoPorTerceiros
+              );
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default HistoricoEmprestimosTab;

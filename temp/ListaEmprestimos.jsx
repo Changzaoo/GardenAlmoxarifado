@@ -145,14 +145,14 @@ const ListaEmprestimos = ({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-4 items-center">
-          <div className="relative flex-1 min-w-[350px]">
+          <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar por colaborador ou ferramenta..."
               value={filtroEmprestimos}
               onChange={(e) => setFiltroEmprestimos(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
+              className="pl-10 pr-4 py-2 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] text-center dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
             />
           </div>
           <select

@@ -9,7 +9,9 @@ const InventarioTab = ({
   inventario,
   emprestimos,
   adicionarItem,
-  removerItem
+  removerItem,
+  atualizarItem,
+  obterDetalhesEmprestimos
 }) => {
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 1; // NÍVEL 1 = FUNCIONÁRIO
@@ -25,7 +27,9 @@ const InventarioTab = ({
         inventario={inventario}
         emprestimos={emprestimos}
         removerItem={removerItem}
+        atualizarItem={atualizarItem}
         readonly={isFuncionario}
+        obterDetalhesEmprestimos={obterDetalhesEmprestimos}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs, getDoc, query, where } from 'firebase/firestore';
 import { ToastProvider } from './ToastProvider';
 import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
 import LegalTab from './Legal/LegalTab';
@@ -990,23 +990,227 @@ const AlmoxarifadoSistema = () => {
     snapshot();
   };
 
-  // Função para corrigir campo 'disponivel' no inventário do Firestore
+  // Função para corrigir campos 'disponivel' e 'emUso' no inventário do Firestore
   const corrigirInventario = async () => {
-    const snapshot = await getDocs(collection(db, 'inventario'));
-    for (const docItem of snapshot.docs) {
+    // Primeiro, reseta todos os campos do inventário
+    const snapshotInventario = await getDocs(collection(db, 'inventario'));
+    for (const docItem of snapshotInventario.docs) {
       const data = docItem.data();
       if (data.quantidade !== undefined) {
         await updateDoc(doc(db, 'inventario', docItem.id), {
-          disponivel: data.quantidade
+          disponivel: data.quantidade,
+          emUso: 0
         });
       }
     }
-    alert('Inventário corrigido: campo "disponivel" atualizado!');
+
+    // Depois, calcula os itens em uso baseado nos empréstimos ativos
+    const snapshotEmprestimos = await getDocs(query(
+      collection(db, 'emprestimos'),
+      where('status', '==', 'emprestado')
+    ));
+
+    // Mapa para agregar as quantidades em uso
+    const emUsoMap = new Map();
+
+    // Soma todas as ferramentas em uso
+    for (const emprestimoDoc of snapshotEmprestimos.docs) {
+      const emprestimo = emprestimoDoc.data();
+      if (emprestimo.ferramentas && Array.isArray(emprestimo.ferramentas)) {
+        for (const ferramenta of emprestimo.ferramentas) {
+          const nome = typeof ferramenta === 'string' ? ferramenta : ferramenta.nome;
+          const quantidade = typeof ferramenta === 'string' ? 1 : (ferramenta.quantidade || 1);
+          const nomeNormalizado = nome.trim().toLowerCase();
+          emUsoMap.set(nomeNormalizado, (emUsoMap.get(nomeNormalizado) || 0) + quantidade);
+        }
+      }
+    }
+
+    // Atualiza o inventário com as quantidades em uso
+    for (const docItem of snapshotInventario.docs) {
+      const data = docItem.data();
+      const nomeNormalizado = data.nome.trim().toLowerCase();
+      const emUso = emUsoMap.get(nomeNormalizado) || 0;
+      const disponivel = data.quantidade - emUso;
+
+      await updateDoc(doc(db, 'inventario', docItem.id), {
+        disponivel: Math.max(0, disponivel),
+        emUso
+      });
+    }
+
+    alert('Inventário corrigido: campos "disponivel" e "emUso" atualizados!');
+  };
+
+  // Função para obter detalhes de quem está com cada item
+  const obterDetalhesEmprestimos = (itemNome) => {
+    try {
+      console.log('Buscando detalhes para:', itemNome);
+      const nomeNormalizado = itemNome.trim().toLowerCase();
+      let quantidadeEmUso = 0;
+      const detalhes = [];
+
+      // Filtra apenas empréstimos ativos
+      const emprestimosAtivos = emprestimos.filter(emp => emp.status === 'emprestado');
+      console.log('Empréstimos ativos encontrados:', emprestimosAtivos.length);
+
+      emprestimosAtivos.forEach(emp => {
+        if (emp.ferramentas && Array.isArray(emp.ferramentas)) {
+          const ferramentasDoItem = emp.ferramentas.filter(f => {
+            const nome = typeof f === 'string' ? f : f.nome;
+            return nome.trim().toLowerCase() === nomeNormalizado;
+          });
+
+          if (ferramentasDoItem.length > 0) {
+            console.log('Encontrado em empréstimo:', emp.id);
+            ferramentasDoItem.forEach(f => {
+              const quantidade = typeof f === 'string' ? 1 : (f.quantidade || 1);
+              quantidadeEmUso += quantidade;
+              
+              detalhes.push({
+                colaborador: emp.colaborador,
+                quantidade: quantidade,
+                dataRetirada: emp.dataRetirada,
+                horaRetirada: emp.horaRetirada
+              });
+            });
+          }
+        }
+      });
+
+      // Log detalhado para debug
+      console.log(`Estado atual de "${itemNome}":`, {
+        nomeNormalizado,
+        quantidadeEmUso,
+        detalhes
+      });
+      
+      return detalhes;
+    } catch (error) {
+      console.error('Erro ao obter detalhes dos empréstimos:', error);
+      return [];
+    }
+  };
+
+  // Função para corrigir estado específico de um item
+  const corrigirEstadoItem = async (itemNome) => {
+    try {
+      // Normaliza o nome do item
+      const nomeNormalizado = itemNome.trim().toLowerCase();
+      
+      // Encontra o item no inventário
+      const itemInventario = inventario.find(item => 
+        item.nome.trim().toLowerCase() === nomeNormalizado
+      );
+      
+      if (!itemInventario) {
+        console.log('Item não encontrado no inventário:', itemNome);
+        return;
+      }
+      
+      // Calcula quantos estão em uso nos empréstimos ativos
+      const emprestimosAtivos = emprestimos.filter(emp => emp.status === 'emprestado');
+      console.log(`Verificando ${emprestimosAtivos.length} empréstimos ativos para ${itemNome}`);
+      
+      let quantidadeEmUso = 0;
+      const detalhesEmprestimos = [];
+      
+      emprestimosAtivos.forEach(emp => {
+        if (emp.ferramentas && Array.isArray(emp.ferramentas)) {
+          const ferramentasDoItem = emp.ferramentas.filter(f => {
+            const nome = typeof f === 'string' ? f : f.nome;
+            return nome.trim().toLowerCase() === nomeNormalizado;
+          });
+          
+          if (ferramentasDoItem.length > 0) {
+            ferramentasDoItem.forEach(f => {
+              const quantidade = typeof f === 'string' ? 1 : (f.quantidade || 1);
+              quantidadeEmUso += quantidade;
+              
+              detalhesEmprestimos.push({
+                id: emp.id,
+                colaborador: emp.colaborador,
+                quantidade: quantidade,
+                dataEmprestimo: emp.dataEmprestimo
+              });
+            });
+          }
+        }
+      });
+      
+      console.log('Detalhes dos empréstimos encontrados:', detalhesEmprestimos);
+      
+      // Atualiza o item no Firestore
+      const atualizacao = {
+        emUso: quantidadeEmUso,
+        disponivel: itemInventario.quantidade - quantidadeEmUso
+      };
+      
+      console.log(`Atualizando estado de "${itemNome}":`, {
+        ...atualizacao,
+        quantidade: itemInventario.quantidade,
+        detalhesEmprestimos
+      });
+      
+      await updateDoc(doc(db, 'inventario', itemInventario.id), atualizacao);
+      
+      return {
+        sucesso: true,
+        detalhes: detalhesEmprestimos,
+        estado: atualizacao
+      };
+    } catch (error) {
+      console.error('Erro ao corrigir estado do item:', error);
+      return {
+        sucesso: false,
+        erro: error.message
+      };
+    }
   };
 
   // ===== EMPRÉSTIMOS =====
   const [emprestimos, setEmprestimos] = useState([]);
   const [emprestimosCarregados, setEmprestimosCarregados] = useState(false);
+  
+  // Função para debug do estado atual dos empréstimos
+  const debugEmprestimos = () => {
+    if (!emprestimos || emprestimos.length === 0) {
+      console.log('Nenhum empréstimo carregado');
+      return;
+    }
+
+    const emprestimosAtivos = emprestimos.filter(e => e.status === 'emprestado');
+    console.log('Estado atual dos empréstimos:');
+    console.log('Total:', emprestimos.length);
+    console.log('Ativos:', emprestimosAtivos.length);
+
+    // Debug específico para facas de bolso
+    const emprestimosFacas = emprestimosAtivos.filter(e => 
+      e.ferramentas && Array.isArray(e.ferramentas) &&
+      e.ferramentas.some(f => {
+        const nome = typeof f === 'string' ? f : f.nome;
+        return nome.trim().toLowerCase() === 'faca de bolso';
+      })
+    );
+
+    if (emprestimosFacas.length > 0) {
+      console.log('Empréstimos de facas de bolso:');
+      emprestimosFacas.forEach(emp => {
+        const facas = emp.ferramentas.find(f => {
+          const nome = typeof f === 'string' ? f : f.nome;
+          return nome.trim().toLowerCase() === 'faca de bolso';
+        });
+        console.log({
+          id: emp.id,
+          colaborador: emp.colaborador,
+          status: emp.status,
+          quantidade: typeof facas === 'string' ? 1 : (facas.quantidade || 1)
+        });
+      });
+    } else {
+      console.log('Nenhum empréstimo ativo de facas de bolso encontrado');
+    }
+  };
   
   useEffect(() => {
     setEmprestimosCarregados(false);
@@ -1017,7 +1221,37 @@ const AlmoxarifadoSistema = () => {
         unsubscribe = onSnapshot(collection(db, 'emprestimos'), (snapshot) => {
           try {
             const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log('Empréstimos carregados:', {
+            console.log('Empréstimos carregados:', lista.length);
+            
+            // Debug de empréstimos ativos
+            const emprestimosAtivos = lista.filter(e => e.status === 'emprestado');
+            console.log('Empréstimos ativos:', emprestimosAtivos.length);
+            
+            // Debug específico para facas de bolso
+            const emprestimosFacas = emprestimosAtivos.filter(e => 
+              e.ferramentas && Array.isArray(e.ferramentas) &&
+              e.ferramentas.some(f => {
+                const nome = typeof f === 'string' ? f : f.nome;
+                const nomeNormalizado = nome.trim().toLowerCase();
+                return nomeNormalizado === 'faca de bolso';
+              })
+            );
+            
+            if (emprestimosFacas.length > 0) {
+              console.log('Empréstimos de facas de bolso encontrados:', emprestimosFacas.length);
+              emprestimosFacas.forEach(emp => {
+                const facas = emp.ferramentas.filter(f => {
+                  const nome = typeof f === 'string' ? f : f.nome;
+                  return nome.trim().toLowerCase() === 'faca de bolso';
+                });
+                console.log('Detalhes do empréstimo:', {
+                  colaborador: emp.colaborador,
+                  status: emp.status,
+                  facas: facas
+                });
+              });
+            }
+            console.log('Dados dos empréstimos:', {
               quantidade: lista.length,
               primeiro: lista[0],
               ultimo: lista[lista.length - 1]
@@ -1055,21 +1289,23 @@ const AlmoxarifadoSistema = () => {
         ...emprestimo,
         dataEmprestimo: new Date().toISOString(),
         colaborador: emprestimo.nomeFuncionario,
-        nomeFerramentas: emprestimo.ferramentas.map(f => f.nome)
+        nomeFerramentas: emprestimo.ferramentas.map(f => f.nome),
+        status: 'emprestado'
       };
-      const docRef = await addDoc(collection(db, 'emprestimos'), emprestimoData);
-
-      // Atualiza o campo 'disponivel' do inventário para cada ferramenta emprestada
-      if (emprestimo.ferramentas && Array.isArray(emprestimo.ferramentas)) {
-        for (const nomeFerramenta of emprestimo.ferramentas) {
-          const item = inventario.find(i => i.nome === nomeFerramenta);
-          if (item && item.disponivel > 0) {
-            await updateDoc(doc(db, 'inventario', item.id), {
-              disponivel: item.disponivel - 1
-            });
-          }
+      
+      // Verifica disponibilidade antes de adicionar
+      for (const ferramenta of emprestimo.ferramentas) {
+        const itemInventario = inventario.find(i => i.nome === ferramenta.nome);
+        if (!itemInventario || itemInventario.disponivel < ferramenta.quantidade) {
+          throw new Error(`Quantidade indisponível para ${ferramenta.nome}`);
         }
       }
+
+      const docRef = await addDoc(collection(db, 'emprestimos'), emprestimoData);
+
+      // Atualiza a disponibilidade das ferramentas
+      await atualizarDisponibilidadeFerramentas(emprestimo.ferramentas, 'emprestar');
+      
       return docRef;
     } catch (error) {
       console.error('Erro ao adicionar empréstimo:', error);
@@ -1101,22 +1337,137 @@ const AlmoxarifadoSistema = () => {
     }
   };
 
-  // Função para marcar empréstimo como devolvido
-  const devolverFerramentas = async (id, atualizarDisponibilidade, devolvidoPorTerceiros = false) => {
+  // Função para atualizar a disponibilidade das ferramentas
+  const atualizarDisponibilidadeFerramentas = async (ferramentas, operacao) => {
     try {
-      // Atualiza status e data/hora de devolução
-      await atualizarEmprestimo(id, {
-        status: 'devolvido',
-        dataDevolucao: new Date().toISOString(),
-        devolvidoPorTerceiros
+      console.log('Atualizando disponibilidade:', {
+        ferramentas,
+        operacao
       });
-      // Atualiza disponibilidade das ferramentas se necessário
-      if (typeof atualizarDisponibilidade === 'function') {
-        await atualizarDisponibilidade(id);
+
+      for (const ferramenta of ferramentas) {
+        // Trata tanto string quanto objeto com nome/quantidade
+        const nome = typeof ferramenta === 'string' ? ferramenta : ferramenta.nome;
+        const quantidade = typeof ferramenta === 'string' ? 1 : (ferramenta.quantidade || 1);
+        
+        // Normaliza o nome para busca
+        const nomeNormalizado = nome.trim().toLowerCase();
+        console.log(`Processando ferramenta: "${nome}" (${quantidade})`);
+        
+        // Busca o item no inventário
+        const itemInventario = inventario.find(item => item.nome.trim().toLowerCase() === nomeNormalizado);
+        
+        if (itemInventario) {
+          console.log('Estado atual:', {
+            nome: itemInventario.nome,
+            quantidade: itemInventario.quantidade,
+            disponivel: itemInventario.disponivel,
+            emUso: itemInventario.emUso || 0
+          });
+
+          // Calcula novos valores considerando os limites
+          const novaDisponibilidade = operacao === 'devolver'
+            ? Math.min(itemInventario.quantidade, (itemInventario.disponivel || 0) + quantidade)
+            : Math.max(0, (itemInventario.disponivel || 0) - quantidade);
+          
+          const novoEmUso = operacao === 'devolver'
+            ? Math.max(0, (itemInventario.emUso || 0) - quantidade)
+            : Math.min(itemInventario.quantidade, (itemInventario.emUso || 0) + quantidade);
+
+          const atualizacao = {
+            disponivel: novaDisponibilidade,
+            emUso: novoEmUso
+          };
+
+          console.log('Atualizando para:', atualizacao);
+          
+          await updateDoc(doc(db, 'inventario', itemInventario.id), atualizacao);
+        } else {
+          console.warn(`Item não encontrado no inventário: ${nome}`);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar disponibilidade:', error);
+      throw error;
+    }
+  };
+
+  // Função para marcar empréstimo como devolvido
+  const devolverFerramentas = async (id, atualizarDisponibilidade, devolvidoPorTerceiros = false, atualizacaoParcial = null) => {
+    try {
+      console.log('Iniciando devolução:', {
+        id,
+        devolvidoPorTerceiros,
+        parcial: !!atualizacaoParcial
+      });
+
+      const emprestimoRef = doc(db, 'emprestimos', id);
+      const emprestimoSnapshot = await getDoc(emprestimoRef);
+      
+      if (!emprestimoSnapshot.exists()) {
+        throw new Error('Empréstimo não encontrado');
+      }
+
+      const emprestimo = emprestimoSnapshot.data();
+      console.log('Empréstimo encontrado:', {
+        id: emprestimoSnapshot.id,
+        colaborador: emprestimo.colaborador,
+        status: emprestimo.status,
+        ferramentas: emprestimo.ferramentas
+      });
+
+      if (atualizacaoParcial) {
+        console.log('Processando devolução parcial:', atualizacaoParcial);
+        
+        // Filtra as ferramentas que serão devolvidas
+        const ferramentasDevolvidas = emprestimo.ferramentas.filter(
+          f => !atualizacaoParcial.ferramentas.find(nf => {
+            const idMatch = nf.id === f.id;
+            console.log(`Comparando ferramentas: ${f.nome || f} - permanece: ${idMatch}`);
+            return idMatch;
+          })
+        );
+        
+        console.log('Ferramentas a devolver:', ferramentasDevolvidas);
+        
+        // Atualiza disponibilidade das ferramentas devolvidas
+        await atualizarDisponibilidadeFerramentas(ferramentasDevolvidas, 'devolver');
+        
+        // Atualiza o empréstimo com as ferramentas restantes
+        const atualizacao = {
+          ...atualizacaoParcial,
+          dataUltimaAtualizacao: new Date().toISOString()
+        };
+        
+        console.log('Atualizando empréstimo para:', atualizacao);
+        await updateDoc(emprestimoRef, atualizacao);
+      } else {
+        console.log('Processando devolução completa');
+        
+        // Atualiza disponibilidade de todas as ferramentas
+        await atualizarDisponibilidadeFerramentas(emprestimo.ferramentas, 'devolver');
+        
+        const atualizacao = {
+          status: 'devolvido',
+          dataDevolucao: new Date().toISOString(),
+          devolvidoPorTerceiros,
+          dataUltimaAtualizacao: new Date().toISOString()
+        };
+        
+        console.log('Atualizando empréstimo para:', atualizacao);
+        await updateDoc(emprestimoRef, atualizacao);
+      }
+      
+      console.log('Devolução concluída com sucesso');
+      
+      // Recarrega o estado do item após a devolução
+      for (const ferramenta of emprestimo.ferramentas) {
+        const nome = typeof ferramenta === 'string' ? ferramenta : ferramenta.nome;
+        await corrigirEstadoItem(nome);
       }
     } catch (error) {
       console.error('Erro ao devolver ferramentas:', error);
-      alert('Erro ao marcar como devolvido. Tente novamente.');
+      throw new Error(`Erro ao devolver ferramentas: ${error.message}`);
     }
   };
 
@@ -1650,6 +2001,7 @@ const AlmoxarifadoSistema = () => {
                 atualizarItem={atualizarItem}
                 reimportarInventario={reimportarInventario}
                 corrigirInventario={corrigirInventario}
+                obterDetalhesEmprestimos={obterDetalhesEmprestimos}
               />
             )}
             
@@ -1732,7 +2084,9 @@ const AlmoxarifadoSistema = () => {
               PermissionChecker.canView(usuario?.nivel) ? (
                 <HistoricoEmprestimosTab
                   emprestimos={emprestimos}
-                  funcionarios={funcionarios}
+                  devolverFerramentas={devolverFerramentas}
+                  removerEmprestimo={removerEmprestimo}
+                  atualizarDisponibilidade={() => true}
                   inventario={inventario}
                 />
               ) : (
