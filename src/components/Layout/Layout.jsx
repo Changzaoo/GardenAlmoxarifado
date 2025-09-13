@@ -4,6 +4,8 @@ import Sidebar from './Sidebar';
 import { useAuth } from '../../hooks/useAuth';
 import UserProfileModal from '../Auth/UserProfileModal';
 import FullscreenPrompt from '../FullscreenPrompt';
+import { NotificationBadge } from '../NotificationBadge';
+import AdminTestBot from '../Admin/AdminTestBot';
 
 const Layout = () => {
   const { usuario } = useAuth();
@@ -21,6 +23,9 @@ const Layout = () => {
       {/* Main Content */}
       <main className="flex-1 md:ml-64 transition-all duration-300 ease-in-out">
         <div className="relative p-4 md:p-6 max-w-7xl mx-auto md:z-auto z-0">
+          <div className="fixed top-4 right-4 z-50">
+            <NotificationBadge />
+          </div>
           <Outlet />
         </div>
       </main>
@@ -36,6 +41,9 @@ const Layout = () => {
 
       {/* Fullscreen Prompt */}
       <FullscreenPrompt />
+
+      {/* Admin Test Bot */}
+      <AdminTestBot />
     </div>
   );
 };

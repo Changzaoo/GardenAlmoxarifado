@@ -12,7 +12,7 @@ const NIVEIS_PERMISSAO = {
   ADMIN: 3
 };
 
-const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
+const DetalheTarefa = ({ tarefa, onClose, onConcluir }) => {
   const { usuario } = useAuth();
   const { showToast } = useToast();
   const [tempoDecorrido, setTempoDecorrido] = React.useState(0);
@@ -94,31 +94,26 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">{tarefa.titulo}</h2>
           <div className="flex items-center gap-2">
-            {/* Botões de ação apenas se não estiver em modo somente leitura */}
-            {!readOnly && (
-              <>
-                {/* Botão de concluir para funcionários e supervisores */}
-                {usuario.nivel >= NIVEIS_PERMISSAO.FUNCIONARIO && tarefa.status !== 'concluida' && (
-                  <button
-                    onClick={() => onConcluir?.(tarefa)}
-                    className="px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center gap-2"
-                  >
-                    <Star className="w-4 h-4" />
-                    Concluir e Avaliar
-                  </button>
-                )}
-                
-                {/* Botão de excluir para supervisores */}
-                {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
-                  <button
-                    onClick={handleDeletarTarefa}
-                    className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
-                    title="Excluir tarefa"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                )}
-              </>
+            {/* Botão de concluir para funcionários e supervisores */}
+            {usuario.nivel >= NIVEIS_PERMISSAO.FUNCIONARIO && tarefa.status !== 'concluida' && (
+              <button
+                onClick={() => onConcluir?.(tarefa)}
+                className="px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center gap-2"
+              >
+                <Star className="w-4 h-4" />
+                Concluir e Avaliar
+              </button>
+            )}
+            
+            {/* Botão de excluir para supervisores */}
+            {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
+              <button
+                onClick={handleDeletarTarefa}
+                className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
+                title="Excluir tarefa"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
             )}
             <button
               onClick={onClose}
@@ -131,13 +126,6 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
         </div>
 
         <div className="space-y-6">
-          {/* ID da Tarefa */}
-          <div className="mb-4">
-            <span className="px-3 py-1 bg-[#253341] text-[#8899A6] rounded text-sm">
-              #{tarefa.id}
-            </span>
-          </div>
-
           {/* Status e Prioridade */}
           <div className="flex flex-wrap gap-3">
             <span
@@ -268,8 +256,8 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
                 </div>
               )}
 
-              {/* Avaliação do Supervisor - Visível apenas para níveis acima de funcionário */}
-              {tarefa.avaliacaoSupervisor && usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+              {/* Avaliação do Supervisor */}
+              {tarefa.avaliacaoSupervisor && (
                 <div className="border border-[#38444D] rounded-lg p-4">
                   <div className="text-[#8899A6] text-sm mb-2">Avaliação do Supervisor</div>
                   <div className="flex items-center gap-1 mb-2">

@@ -73,23 +73,21 @@ const ItemCard = ({ item, onRemover, onEditar, detalhesEmprestimos }) => {
           </div>
           <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
             <span>Disponível</span>
-            <span className="font-medium">
-              {item.disponivel} ({Math.round((item.disponivel / item.quantidade) * 100)}%)
-            </span>
+            <span className="font-medium">{item.disponivel}</span>
           </div>
         </div>
 
         {/* Barra de Progresso */}
         <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mb-4">
           <div
-            className={`h-2 rounded-full transition-all duration-300 ${
+            className={`h-2 rounded-full ${
               item.disponivel === 0
                 ? 'bg-red-500'
                 : item.disponivel < item.quantidade * 0.3
                 ? 'bg-yellow-500'
                 : 'bg-green-500'
             }`}
-            style={{ width: `${Math.round((item.disponivel / item.quantidade) * 100)}%` }}
+            style={{ width: `${(item.disponivel / item.quantidade) * 100}%` }}
           />
         </div>
 
@@ -111,11 +109,10 @@ const ItemCard = ({ item, onRemover, onEditar, detalhesEmprestimos }) => {
                     className="text-xs p-2 rounded bg-gray-50 dark:bg-gray-600/50 border border-gray-100 dark:border-gray-600"
                   >
                     <div className="font-medium text-gray-900 dark:text-white">
-                      {emp.nomeFuncionario || emp.funcionario || emp.colaborador}
+                      {emp.funcionario}
                     </div>
                     <div className="text-gray-500 dark:text-gray-400">
-                      Desde {emp.dataEmprestimo ? new Date(emp.dataEmprestimo).toLocaleDateString('pt-BR') : 'Data não disponível'}
-                      {emp.horaEmprestimo ? ` às ${emp.horaEmprestimo}` : ''}
+                      Desde {new Date(emp.data).toLocaleDateString()}
                     </div>
                   </div>
                 ))}

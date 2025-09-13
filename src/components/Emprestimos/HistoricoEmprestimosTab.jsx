@@ -22,6 +22,8 @@ const HistoricoEmprestimosTab = ({
   const [showDevolucaoParcialModal, setShowDevolucaoParcialModal] = useState(false);
   const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
   const [emprestimoParaDevolucaoParcial, setEmprestimoParaDevolucaoParcial] = useState(null);
+  const [showConfirmacaoExclusao, setShowConfirmacaoExclusao] = useState(false);
+  const [emprestimoParaExcluir, setEmprestimoParaExcluir] = useState(null);
   const { usuario } = useAuth();
   
   const temPermissaoEdicao = usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
@@ -133,10 +135,22 @@ const HistoricoEmprestimosTab = ({
     }
   };
 
-  const handleRemoverEmprestimo = (id) => {
-    if (window.confirm('Tem certeza que deseja remover este registro?')) {
-      removerEmprestimo(id, atualizarDisponibilidade);
+  const handleRemoverEmprestimo = (emprestimo) => {
+    setEmprestimoParaExcluir(emprestimo);
+    setShowConfirmacaoExclusao(true);
+  };
+
+  const confirmarExclusao = () => {
+    if (emprestimoParaExcluir) {
+      removerEmprestimo(emprestimoParaExcluir.id, atualizarDisponibilidade);
     }
+    setShowConfirmacaoExclusao(false);
+    setEmprestimoParaExcluir(null);
+  };
+
+  const cancelarExclusao = () => {
+    setShowConfirmacaoExclusao(false);
+    setEmprestimoParaExcluir(null);
   };
 
   // Verifica se há ferramentas emprestadas no array de ferramentas
@@ -148,14 +162,14 @@ const HistoricoEmprestimosTab = ({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-4 items-center">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <div className="relative flex-1 min-w-[350px]">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar por colaborador ou ferramenta..."
+              placeholder="       Buscar por colaborador ou ferramenta..."
               value={filtroEmprestimos}
               onChange={(e) => setFiltroEmprestimos(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] text-center dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
+              className="w-full h-10 pl-10 pr-4 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white dark:placeholder-gray-500 text-sm"
             />
           </div>
           <select
@@ -214,7 +228,7 @@ const HistoricoEmprestimosTab = ({
                     </button>
                   )}
                   <button
-                    onClick={() => handleRemoverEmprestimo(emprestimo.id)}
+                    onClick={() => handleRemoverEmprestimo(emprestimo)}
                     className="text-red-600 hover:text-red-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-red-100 dark:hover:bg-red-900"
                     title="Remover registro"
                   >
@@ -373,6 +387,39 @@ const HistoricoEmprestimosTab = ({
               );
             }}
           />
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showConfirmacaoExclusao && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#253341] rounded-lg p-6 max-w-md w-full border border-[#38444D]">
+            <h3 className="text-lg font-medium text-white mb-4">
+              Confirmar Exclusão
+            </h3>
+            <p className="text-[#8899A6] mb-6">
+              Tem certeza que deseja excluir este registro de empréstimo do histórico?
+              {emprestimoParaExcluir?.nomeFuncionario && (
+                <span className="block mt-2">
+                  Empréstimo de: <span className="text-white">{emprestimoParaExcluir.nomeFuncionario}</span>
+                </span>
+              )}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cancelarExclusao}
+                className="px-4 py-2 text-sm rounded-lg bg-[#38444D] text-white hover:bg-[#454F59] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarExclusao}
+                className="px-4 py-2 text-sm rounded-lg bg-[#F4212E] text-white hover:bg-[#E01D29] transition-colors"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

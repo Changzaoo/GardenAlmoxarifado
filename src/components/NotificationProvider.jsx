@@ -20,6 +20,75 @@ export const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const { requestPermission, isSupported } = useNotificationSetup();
 
+  const handleNewNotification = (notification) => {
+    setNotifications(prev => {
+      // Verifica se a notificação já existe
+      const exists = prev.some(n => n.id === notification.id);
+      if (!exists) {
+        // Adiciona a nova notificação ao início do array
+        const newNotifications = [notification, ...prev];
+        // Atualiza o contador de não lidas
+        setUnreadCount(count => count + 1);
+        return newNotifications;
+      }
+      return prev;
+    });
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId
+            ? { ...notification, lida: true }
+            : notification
+        )
+      );
+      setUnreadCount(count => Math.max(0, count - 1));
+
+      // Atualiza o status no Firestore dependendo do tipo de notificação
+      const notification = notifications.find(n => n.id === notificationId);
+      if (notification) {
+        const collectionName = notification.tipo === 'legal' ? 'legal' :
+                             notification.tipo === 'tarefa' ? 'tarefas' :
+                             notification.tipo === 'mensagem' ? 'mensagens' :
+                             notification.tipo === 'transferencia' ? 'transferencias' : null;
+        
+        if (collectionName) {
+          const docRef = doc(db, collectionName, notificationId);
+          if (notification.tipo === 'legal') {
+            await updateDoc(docRef, {
+              visualizadoPor: arrayUnion(usuario.id)
+            });
+          } else {
+            await updateDoc(docRef, { lida: true });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao marcar notificação como lida:', error);
+    }
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+    setUnreadCount(0);
+  };
+
+  return (
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        unreadCount,
+        markAsRead,
+        clearNotifications,
+      }}
+    >
+      {children}
+    </NotificationContext.Provider>
+  );
+};
+
   // Solicitar permissão para notificações quando o usuário fizer login
   useEffect(() => {
     if (usuario && isSupported) {
@@ -29,6 +98,8 @@ export const NotificationProvider = ({ children }) => {
 
   useEffect(() => {
     if (!usuario?.id) return;
+
+    const unsubscribe = [];
 
     // Inscreve-se para notificações de documentos legais
     const legalQuery = query(
@@ -48,6 +119,140 @@ export const NotificationProvider = ({ children }) => {
     const mensagensQuery = query(
       collection(db, 'mensagens'),
       where('destinatario', '==', usuario.id),
+      where('lida', '==', false)
+    );
+
+    // Inscreve-se para notificações de estoque baixo
+    const estoqueQuery = query(
+      collection(db, 'inventario'),
+      where('quantidadeAtual', '<=', 5)  // Notifica quando quantidade estiver baixa
+    );
+
+    // Inscreve-se para notificações de transferências
+    const transferenciasQuery = query(
+      collection(db, 'transferencias'),
+      where('destinatario', '==', usuario.id),
+      where('status', '==', 'pendente')
+    );
+
+    // Listener para documentos legais
+    unsubscribe.push(
+      onSnapshot(legalQuery, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const notification = {
+              id: change.doc.id,
+              tipo: 'legal',
+              titulo: 'Novo documento legal',
+              mensagem: `Um novo documento legal requer sua atenção`,
+              data: change.doc.data().dataCriacao,
+              lida: false
+            };
+            handleNewNotification(notification);
+          }
+        });
+      })
+    );
+
+    // Listener para tarefas
+    unsubscribe.push(
+      onSnapshot(tarefasQuery, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const tarefa = change.doc.data();
+            const notification = {
+              id: change.doc.id,
+              tipo: 'tarefa',
+              titulo: 'Nova tarefa atribuída',
+              mensagem: `Você foi mencionado na tarefa: ${tarefa.titulo}`,
+              data: tarefa.dataCriacao,
+              lida: false
+            };
+            handleNewNotification(notification);
+          }
+        });
+      })
+    );
+
+    // Listener para mensagens
+    unsubscribe.push(
+      onSnapshot(mensagensQuery, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const mensagem = change.doc.data();
+            const notification = {
+              id: change.doc.id,
+              tipo: 'mensagem',
+              titulo: 'Nova mensagem',
+              mensagem: `Nova mensagem de ${mensagem.remetenteName}`,
+              data: mensagem.dataCriacao,
+              lida: false
+            };
+            handleNewNotification(notification);
+          }
+        });
+      })
+    );
+
+    // Listener para estoque baixo
+    unsubscribe.push(
+      onSnapshot(estoqueQuery, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const item = change.doc.data();
+            const notification = {
+              id: change.doc.id,
+              tipo: 'estoque',
+              titulo: 'Estoque Baixo',
+              mensagem: `O item ${item.nome} está com estoque baixo (${item.quantidadeAtual} unidades)`,
+              data: serverTimestamp(),
+              lida: false
+            };
+            handleNewNotification(notification);
+          }
+        });
+      })
+    );
+
+    // Listener para transferências
+    unsubscribe.push(
+      onSnapshot(transferenciasQuery, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const transferencia = change.doc.data();
+            const notification = {
+              id: change.doc.id,
+              tipo: 'transferencia',
+              titulo: 'Nova transferência pendente',
+              mensagem: `Você tem uma nova transferência pendente de ${transferencia.remetenteName}`,
+              data: transferencia.dataCriacao,
+              lida: false
+            };
+            handleNewNotification(notification);
+          }
+        });
+      })
+    );
+
+    // Cleanup function
+    return () => {
+      unsubscribe.forEach(unsub => unsub());
+    };
+      where('lida', '==', false)
+    );
+
+    // Inscreve-se para notificações de estoque baixo
+    const estoqueQuery = query(
+      collection(db, 'inventario'),
+      where('quantidadeAtual', '<=', 5)  // Notifica quando quantidade estiver baixa
+    );
+
+    // Inscreve-se para notificações de transferências
+    const transferenciasQuery = query(
+      collection(db, 'transferencias'),
+      where('destinatario', '==', usuario.id),
+      where('status', '==', 'pendente')
+    );
       where('lida', '==', false)
     );
 

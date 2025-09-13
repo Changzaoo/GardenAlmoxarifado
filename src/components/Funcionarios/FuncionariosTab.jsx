@@ -4,6 +4,7 @@ import { Users, Trash2, Plus, Edit, Camera } from 'lucide-react';
 import { storage } from '../../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '../ToastProvider';
+import FuncionarioProfile from './FuncionarioProfile';
 
 const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
@@ -14,6 +15,7 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
   const [modalConfirmacao, setModalConfirmacao] = useState(false);
   const [funcionarioParaExcluir, setFuncionarioParaExcluir] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState(null);
   const fileInputRef = useRef();
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
@@ -94,17 +96,17 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+    <div className="bg-[#15202B] p-4 rounded-xl">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           {!isFuncionario && !readonly && (
-            <form onSubmit={handleAdicionar} className="flex gap-1">
+            <form onSubmit={handleAdicionar} className="flex gap-2">
               <input
                 type="text"
                 placeholder="Nome"
                 value={novoFuncionario.nome}
                 onChange={e => setNovoFuncionario({ ...novoFuncionario, nome: e.target.value })}
-                className="form-input px-2 py-1 rounded border w-28"
+                className="px-4 py-2 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] w-36"
                 required
               />
               <input
@@ -112,7 +114,7 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
                 placeholder="Cargo"
                 value={novoFuncionario.cargo}
                 onChange={e => setNovoFuncionario({ ...novoFuncionario, cargo: e.target.value })}
-                className="form-input px-2 py-1 rounded border w-28"
+                className="px-4 py-2 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] w-36"
                 required
               />
               <input
@@ -123,11 +125,11 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
                   const onlyNums = e.target.value.replace(/[^0-9]/g, '');
                   setNovoFuncionario({ ...novoFuncionario, telefone: onlyNums });
                 }}
-                className="form-input px-2 py-1 rounded border w-24"
+                className="px-4 py-2 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] w-36"
                 required
                 maxLength={15}
               />
-              <button type="submit" className="btn-primary flex items-center gap-1 px-2 py-1 rounded bg-green-600 text-white text-sm" disabled={loading}>
+              <button type="submit" className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-[#1a91da] transition-colors text-sm" disabled={loading}>
                 <Plus className="w-3 h-3" /> Adicionar
               </button>
             </form>
@@ -136,75 +138,86 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
 
       </div>
 
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead>
-          <tr>
-            <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Foto</th>
-            <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-            <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Cargo</th>
-            <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Tel.</th>
-            <th className="px-2 py-1"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome)).map((func) => (
-            <tr key={func.id} className="bg-white dark:bg-gray-800">
-              <td className="px-4 py-2 whitespace-nowrap">
-                {func.photoURL ? (
-                  <img 
-                    src={func.photoURL} 
-                    alt={func.nome} 
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-gray-500" />
-                  </div>
-                )}
-              </td>
-              <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900 dark:text-white">{func.nome}</td>
-              <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900 dark:text-white">{func.cargo}</td>
-              <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900 dark:text-white">{func.telefone}</td>
-              <td className="px-2 py-1 flex gap-1">
-                {!isFuncionario && !readonly && (
-                  <>
-                    <button onClick={() => handleEditar(func)} className="text-blue-600 hover:text-blue-800">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => confirmarExclusao(func)} className="text-red-600 hover:text-red-800">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+        {[...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome)).map((func) => (
+          <div 
+            key={func.id} 
+            className="bg-[#192734] p-4 rounded-xl border border-[#38444D] hover:border-[#1DA1F2] transition-colors cursor-pointer"
+            onClick={() => setFuncionarioSelecionado(func)}
+          >
+            <div className="flex flex-col items-center">
+              {func.photoURL ? (
+                <img 
+                  src={func.photoURL} 
+                  alt={func.nome} 
+                  className="w-20 h-20 rounded-full object-cover mb-3"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-[#253341] flex items-center justify-center mb-3">
+                  <Users className="w-10 h-10 text-[#8899A6]" />
+                </div>
+              )}
+              
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-white mb-1">{func.nome}</h3>
+                <p className="text-sm text-[#8899A6] mb-1">{func.cargo}</p>
+                <p className="text-sm text-[#8899A6] mb-3">{func.telefone}</p>
+              </div>
+
+              {!isFuncionario && !readonly && (
+                <div className="flex gap-3 mt-2">
+                  <button 
+                    onClick={() => handleEditar(func)} 
+                    className="flex items-center gap-1 px-3 py-1.5 bg-[#1DA1F2] text-white rounded-lg hover:bg-[#1a91da] transition-colors text-sm"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Editar
+                  </button>
+                  <button 
+                    onClick={() => confirmarExclusao(func)} 
+                    className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Excluir
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Modal de Perfil do Funcionário */}
+      {funcionarioSelecionado && (
+        <FuncionarioProfile
+          funcionario={funcionarioSelecionado}
+          onClose={() => setFuncionarioSelecionado(null)}
+        />
+      )}
 
       {!isFuncionario && editando && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Editar Funcionário</h3>
+          <div className="bg-[#192734] rounded-2xl max-w-md w-full mx-4 p-6 border border-[#38444D]">
+            <h3 className="text-xl font-semibold text-white mb-6">Editar Funcionário</h3>
             <div className="space-y-4">
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-6">
                 <div className="relative">
                   {preview ? (
                     <img 
                       src={preview} 
                       alt="Preview" 
-                      className="w-24 h-24 rounded-full object-cover"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-[#38444D]"
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
-                      <Users className="w-12 h-12 text-gray-400" />
+                    <div className="w-32 h-32 rounded-full bg-[#253341] flex items-center justify-center border-4 border-[#38444D]">
+                      <Users className="w-16 h-16 text-[#8899A6]" />
                     </div>
                   )}
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full p-2 hover:bg-blue-700"
+                    className="absolute bottom-0 right-0 bg-[#1DA1F2] text-white rounded-full p-2.5 hover:bg-[#1a91da] transition-colors"
                   >
-                    <Camera className="w-4 h-4" />
+                    <Camera className="w-5 h-5" />
                   </button>
                   <input
                     type="file"
@@ -221,27 +234,36 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
                 placeholder="Nome"
                 value={formEdit.nome}
                 onChange={e => setFormEdit({ ...formEdit, nome: e.target.value })}
-                className="form-input w-full"
+                className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
               />
               <input
                 type="text"
                 placeholder="Cargo"
                 value={formEdit.cargo}
                 onChange={e => setFormEdit({ ...formEdit, cargo: e.target.value })}
-                className="form-input w-full"
+                className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
               />
               <input
                 type="text"
                 placeholder="Telefone"
                 value={formEdit.telefone}
                 onChange={e => setFormEdit({ ...formEdit, telefone: e.target.value.replace(/[^0-9]/g, '') })}
-                className="form-input w-full"
+                className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
                 maxLength={15}
               />
             </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <button onClick={() => setEditando(null)} className="px-4 py-2 bg-gray-100 rounded-lg">Cancelar</button>
-              <button onClick={handleSalvarEdicao} className="px-4 py-2 bg-blue-600 text-white rounded-lg" disabled={loading}>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setEditando(null)}
+                className="px-4 py-2 text-[#8899A6] bg-[#253341] hover:bg-[#192734] rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSalvarEdicao}
+                className="px-4 py-2 bg-[#1DA1F2] hover:bg-[#1a91da] text-white rounded-lg transition-colors"
+                disabled={loading}
+              >
                 {loading ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
@@ -251,28 +273,28 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
 
       {modalConfirmacao && funcionarioParaExcluir && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+          <div className="bg-[#192734] rounded-2xl p-6 w-full max-w-md border border-[#38444D]">
+            <h3 className="text-xl font-semibold text-white mb-4">
               Confirmar Exclusão
             </h3>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-[#8899A6] mb-4">
               Tem certeza que deseja excluir o funcionário "{funcionarioParaExcluir.nome}"?
               Esta ação não pode ser desfeita.
             </p>
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => {
                   setModalConfirmacao(false);
                   setFuncionarioParaExcluir(null);
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm text-[#8899A6] bg-[#253341] hover:bg-[#192734] rounded-lg transition-colors"
                 disabled={loading}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleRemover}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700"
+                className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                 disabled={loading}
               >
                 {loading ? 'Excluindo...' : 'Excluir'}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, X, Save, Trash2 } from 'lucide-react';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import CompraCard from './CompraCard';
 
@@ -77,6 +77,7 @@ const ComprasTab = ({
     descricao: '',
     quantidade: 1,
     valorUnitario: '',
+    valorFrete: '',
     fornecedor: '',
     prioridade: PRIORIDADES.MEDIA,
     solicitante: '',
@@ -104,7 +105,7 @@ const ComprasTab = ({
   const estatisticas = comprasFiltradas.reduce((acc, compra) => {
     acc.total++;
     acc[compra.status] = (acc[compra.status] || 0) + 1;
-    acc.valorTotal += compra.quantidade * compra.valorUnitario;
+    acc.valorTotal += (compra.quantidade * compra.valorUnitario) + (compra.valorFrete || 0);
     return acc;
   }, {
     total: 0,
@@ -123,6 +124,7 @@ const ComprasTab = ({
       descricao: compra.descricao,
       quantidade: compra.quantidade,
       valorUnitario: compra.valorUnitario,
+      valorFrete: compra.valorFrete || '',
       fornecedor: compra.fornecedor || '',
       prioridade: compra.prioridade,
       solicitante: compra.solicitante,
@@ -202,7 +204,7 @@ const ComprasTab = ({
         {!readonly && (
           <button
             onClick={() => setModalAberto(true)}
-            className={`${classes.buttonPrimary} flex items-center gap-2`}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nova Compra
@@ -251,7 +253,7 @@ const ComprasTab = ({
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8899A6]" />
             <input
               type="text"
-              placeholder="Pesquisar compras..."
+              placeholder="     Pesquisar compras..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
               className="h-10 w-full pl-10 pr-4 bg-[#253341] border border-[#38444D] rounded-full text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] text-sm"
@@ -380,6 +382,21 @@ const ComprasTab = ({
 
                 <div>
                   <label className={`block text-sm font-medium ${colors.text} mb-2`}>
+                    Valor do Frete
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={novaCompra.valorFrete}
+                    onChange={(e) => setNovaCompra({ ...novaCompra, valorFrete: e.target.value })}
+                    className={`${classes.input} w-full`}
+                    placeholder="Deixe vazio para frete grátis"
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Fornecedor
                   </label>
                   <input
@@ -389,22 +406,6 @@ const ComprasTab = ({
                     className={`${classes.input} w-full`}
                     placeholder="Nome do fornecedor"
                   />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
-                    Prioridade *
-                  </label>
-                  <select
-                    value={novaCompra.prioridade}
-                    onChange={(e) => setNovaCompra({ ...novaCompra, prioridade: e.target.value })}
-                    className={`${classes.input} w-full`}
-                    required
-                  >
-                    {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
                 </div>
 
                 <div>
@@ -427,10 +428,38 @@ const ComprasTab = ({
                   <select
                     value={novaCompra.status}
                     onChange={(e) => setNovaCompra({ ...novaCompra, status: e.target.value })}
-                    className={`${classes.input} w-full`}
+                    className={`${classes.input} w-full h-[38px] appearance-none bg-[#253341] dark:bg-gray-700 border border-[#38444D] dark:border-gray-600 rounded-lg px-4 text-white dark:text-gray-200`}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238899A6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 10px center',
+                      backgroundSize: '20px'
+                    }}
                   >
                     {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
+                      <option key={value} value={value} className="bg-[#253341] dark:bg-gray-700">{label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
+                    Prioridade *
+                  </label>
+                  <select
+                    value={novaCompra.prioridade}
+                    onChange={(e) => setNovaCompra({ ...novaCompra, prioridade: e.target.value })}
+                    className={`${classes.input} w-full h-[38px] appearance-none bg-[#253341] dark:bg-gray-700 border border-[#38444D] dark:border-gray-600 rounded-lg px-4 text-white dark:text-gray-200`}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238899A6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 10px center',
+                      backgroundSize: '20px'
+                    }}
+                    required
+                  >
+                    {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
+                      <option key={value} value={value} className="bg-[#253341] dark:bg-gray-700">{label}</option>
                     ))}
                   </select>
                 </div>
@@ -479,15 +508,26 @@ const ComprasTab = ({
                       status: STATUS_COMPRAS.SOLICITADO
                     });
                   }}
-                  className={classes.buttonSecondary}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#F7F9F9] bg-[#253341] border border-[#38444D] rounded-lg hover:bg-[#1e2732] transition-colors duration-200"
                 >
+                  <X className="w-4 h-4" />
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className={classes.buttonPrimary}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#F7F9F9] bg-[#1D9BF0] rounded-lg hover:bg-[#1a8cd8] transition-colors duration-200"
                 >
-                  {compraEditando ? 'Salvar Alterações' : 'Adicionar Compra'}
+                  {compraEditando ? (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Salvar Alterações
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Adicionar Compra
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -508,14 +548,16 @@ const ComprasTab = ({
             <div className="flex justify-end gap-3">
               <button
                 onClick={cancelarExclusao}
-                className={classes.buttonSecondary}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#F7F9F9] bg-[#253341] border border-[#38444D] rounded-lg hover:bg-[#1e2732] transition-colors duration-200"
               >
+                <X className="w-4 h-4" />
                 Cancelar
               </button>
               <button
                 onClick={confirmarExclusao}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#F7F9F9] bg-[#f4212e] rounded-lg hover:bg-[#dc1e29] transition-colors duration-200"
               >
+                <Trash2 className="w-4 h-4" />
                 Excluir
               </button>
             </div>

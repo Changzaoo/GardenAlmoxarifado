@@ -29,6 +29,7 @@ import TarefasTab from './Tarefas/TarefasTab';
 import { AuthContext, useAuth } from '../hooks/useAuth';
 import AnalyticsTab from './Analytics/AnalyticsTab';
 import AnalyticsProvider from './Analytics/AnalyticsProvider';
+import ProfileTab from './Profile/ProfileTab';
 // Icons
 import { 
   Package,
@@ -41,6 +42,7 @@ import {
   Settings,
   Lock,
   User,
+  UserCircle,
   Plus,
   Edit,
   Trash2,
@@ -902,7 +904,7 @@ const AlmoxarifadoSistema = () => {
   // Define a aba inicial baseada no nível do usuário
   useEffect(() => {
     if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
-      setAbaAtiva('meu-inventario');
+      setAbaAtiva('meu-perfil');
     } else {
       setAbaAtiva('dashboard');
     }
@@ -1069,9 +1071,10 @@ const AlmoxarifadoSistema = () => {
               
               detalhes.push({
                 colaborador: emp.colaborador,
+                funcionario: emp.colaborador,
                 quantidade: quantidade,
-                dataRetirada: emp.dataRetirada,
-                horaRetirada: emp.horaRetirada
+                dataEmprestimo: emp.dataRetirada ? emp.dataRetirada : emp.dataEmprestimo,
+                horaEmprestimo: emp.horaRetirada ? emp.horaRetirada : emp.horaEmprestimo
               });
             });
           }
@@ -1313,9 +1316,50 @@ const AlmoxarifadoSistema = () => {
     }
   };
 
-  const removerEmprestimo = async (id) => {
+  const removerEmprestimo = async (id, atualizarDisponibilidade = true) => {
     if (!PermissionChecker.canManageOperational(usuario?.nivel)) {
       throw new Error('Sem permissão para remover empréstimos');
+    }
+
+    try {
+      // Buscar o empréstimo antes de remover
+      const emprestimoRef = doc(db, 'emprestimos', id);
+      const emprestimoSnap = await getDoc(emprestimoRef);
+      
+      if (!emprestimoSnap.exists()) {
+        throw new Error('Empréstimo não encontrado');
+      }
+
+      const emprestimo = emprestimoSnap.data();
+      
+      // Se o empréstimo estava ativo (não devolvido), retornar as ferramentas ao inventário
+      if (emprestimo.status === 'emprestado' && atualizarDisponibilidade) {
+        for (const ferramenta of emprestimo.ferramentas) {
+          const nome = typeof ferramenta === 'string' ? ferramenta : ferramenta.nome;
+          const quantidade = typeof ferramenta === 'string' ? 1 : (ferramenta.quantidade || 1);
+          
+          // Buscar o item no inventário
+          const itemInventario = inventario.find(item => 
+            item.nome.trim().toLowerCase() === nome.trim().toLowerCase()
+          );
+          
+          if (itemInventario) {
+            // Retornar a quantidade ao inventário
+            await updateDoc(doc(db, 'inventario', itemInventario.id), {
+              disponivel: (itemInventario.disponivel || 0) + quantidade,
+              emUso: Math.max(0, (itemInventario.emUso || 0) - quantidade)
+            });
+          }
+        }
+      }
+      
+      // Remover o empréstimo
+      await deleteDoc(emprestimoRef);
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao remover empréstimo:', error);
+      throw error;
     }
     try {
       return await deleteDoc(doc(db, 'emprestimos', id));
@@ -1391,6 +1435,8 @@ const AlmoxarifadoSistema = () => {
       throw error;
     }
   };
+
+  // A função removerEmprestimo foi movida para cima
 
   // Função para marcar empréstimo como devolvido
   const devolverFerramentas = async (id, atualizarDisponibilidade, devolvidoPorTerceiros = false, atualizacaoParcial = null) => {
@@ -1710,11 +1756,17 @@ const AlmoxarifadoSistema = () => {
       icone: Package,
       permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas nível 4 pode ver estatísticas
     },
+    {
+      id: 'meu-perfil',
+      nome: 'Meu Perfil',
+      icone: UserCircle,
+      permissao: () => true // Visível para todos os níveis
+    },
     { 
       id: 'tarefas', 
       nome: 'Tarefas', 
       icone: ClipboardCheck,
-      permissao: () => true // Visível para todos os níveis
+      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Apenas nível 2 (Supervisor) ou superior
     },
     { 
       id: 'meu-inventario', 
@@ -1983,6 +2035,8 @@ const AlmoxarifadoSistema = () => {
             {abaAtiva === 'legal' && <LegalTab />}
 
             {abaAtiva === 'dashboard' && <Dashboard stats={stats} />}
+            
+            {abaAtiva === 'meu-perfil' && <ProfileTab />}
             
             {abaAtiva === 'verificacao-mensal' && <VerificacaoMensalTab />}
 

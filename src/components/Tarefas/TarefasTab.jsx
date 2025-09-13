@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
-import { Plus, Star, PauseCircle, PlayCircle, CheckCircle } from 'lucide-react';
+import { 
+  Plus, Star, PauseCircle, PlayCircle, CheckCircle, Clock, CircleDotDashed, 
+  Pause, Loader, Trash2, Calendar, User, AlertCircle, Search 
+} from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import CriarTarefa from './CriarTarefa';
 import DetalheTarefa from './DetalheTarefa';
+import AvaliacaoTarefaModal from './AvaliacaoTarefaModal';
+import ConfirmDialog from '../common/ConfirmDialog';
+import { formatarDataHora } from '../../utils/dateUtils';
 
 const NIVEIS_PERMISSAO = {
   FUNCIONARIO: 1,
@@ -13,17 +19,35 @@ const NIVEIS_PERMISSAO = {
   ADMIN: 3
 };
 
-const TarefasTab = ({ funcionarios = [] }) => {
+const TarefasTab = ({ 
+  funcionarios = [], 
+  showOnlyUserTasks = false, 
+  showAddButton = true, 
+  userFilter = null, 
+  readOnly = false,
+  defaultFiltros = null
+}) => {
   const { usuario } = useAuth();
   const { showToast } = useToast();
   const [tarefas, setTarefas] = useState([]);
   const [showCriarTarefa, setShowCriarTarefa] = useState(false);
-  const [filtro, setFiltro] = useState('todas');
+  const [filtroStatus, setFiltroStatus] = useState(defaultFiltros?.status || 'todas');
+  const [filtroPeriodo, setFiltroPeriodo] = useState(defaultFiltros?.periodo || 'todos');
+  const [filtroAvaliacao, setFiltroAvaliacao] = useState(defaultFiltros?.avaliacao || 'todas');
   const [tarefaSelecionada, setTarefaSelecionada] = useState(null);
   const [temposDecorridos, setTemposDecorridos] = useState({});
+  const [showAvaliacaoModal, setShowAvaliacaoModal] = useState(false);
+  const [tarefaParaAvaliacao, setTarefaParaAvaliacao] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [quantidadeExibida, setQuantidadeExibida] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const q = query(collection(db, 'tarefas'), orderBy('dataCriacao', 'desc'));
+    const q = query(
+      collection(db, 'tarefas'),
+      orderBy('dataCriacao', 'desc')
+    );
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const tarefasData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -31,7 +55,6 @@ const TarefasTab = ({ funcionarios = [] }) => {
       }));
       setTarefas(tarefasData);
       
-      // Inicializar tempos decorridos
       const temposIniciais = {};
       tarefasData.forEach(tarefa => {
         if (tarefa.status === 'em_andamento' && tarefa.dataInicio) {
@@ -49,7 +72,6 @@ const TarefasTab = ({ funcionarios = [] }) => {
     return () => unsubscribe();
   }, []);
 
-  // Atualizar tempos a cada segundo
   useEffect(() => {
     const interval = setInterval(() => {
       setTemposDecorridos(prevTempos => {
@@ -71,6 +93,33 @@ const TarefasTab = ({ funcionarios = [] }) => {
     return () => clearInterval(interval);
   }, [tarefas]);
 
+  const calcularTempoTotal = (tarefa) => {
+    if (!tarefa.dataInicio) return 0;
+    
+    const dataInicio = new Date(tarefa.dataInicio);
+    const dataFim = new Date();
+    let tempoTotal = dataFim - dataInicio;
+    
+    if (tarefa.tempoPausado) {
+      tempoTotal -= tarefa.tempoPausado;
+    }
+    
+    return tempoTotal;
+  };
+
+  const handleIniciarTarefa = async (tarefaId) => {
+    try {
+      await updateDoc(doc(db, 'tarefas', tarefaId), {
+        status: 'em_andamento',
+        dataInicio: new Date().toISOString()
+      });
+      showToast('Tarefa iniciada com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao iniciar tarefa:', error);
+      showToast('Erro ao iniciar tarefa', 'error');
+    }
+  };
+
   const handlePausarTarefa = async (tarefaId) => {
     try {
       const tarefa = tarefas.find(t => t.id === tarefaId);
@@ -89,51 +138,69 @@ const TarefasTab = ({ funcionarios = [] }) => {
     }
   };
 
-  const handleConcluirTarefa = async (tarefaId, avaliacao, comentario) => {
+  const handleConcluirTarefa = async () => {
+    if (!tarefaParaAvaliacao) return;
+    
     try {
-      const tarefa = tarefas.find(t => t.id === tarefaId);
-      const tempoTotal = calcularTempoTotal(tarefa);
-      
-      await updateDoc(doc(db, 'tarefas', tarefaId), {
+      const tarefaRef = doc(db, 'tarefas', tarefaParaAvaliacao.id);
+      const tempoTotal = calcularTempoTotal(tarefaParaAvaliacao);
+
+      // Primeiro atualizamos o status da tarefa
+      await updateDoc(tarefaRef, {
         status: 'concluida',
         dataConclusao: new Date().toISOString(),
-        tempoTotal,
-        avaliacao,
-        comentarioFuncionario: comentario
+        tempoTotal
       });
+
+      // Se o usuário é funcionário, mostramos o modal de autoavaliação
+      if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
+        setShowAvaliacaoModal(true);
+      }
+      // Se for supervisor ou admin, mostramos o modal de avaliação
+      else if (usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR) {
+        setShowAvaliacaoModal(true);
+      }
+
       showToast('Tarefa concluída com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao concluir tarefa:', error);
       showToast('Erro ao concluir tarefa', 'error');
+      setTarefaParaAvaliacao(null);
     }
   };
 
-  const calcularTempoTotal = (tarefa) => {
-    if (!tarefa.dataInicio) return 0;
-    
-    if (tarefa.status === 'em_andamento') {
-      return temposDecorridos[tarefa.id] || 0;
+  const handleAvaliacaoSubmit = async (avaliacao, comentario) => {
+    if (!tarefaParaAvaliacao) return;
+
+    try {
+      const tarefaRef = doc(db, 'tarefas', tarefaParaAvaliacao.id);
+      const updateData = {};
+
+      if (usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
+        updateData.avaliacaoFuncionario = avaliacao;
+        updateData.comentarioFuncionario = comentario;
+      } else if (usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR) {
+        updateData.avaliacaoSupervisor = avaliacao;
+        updateData.comentarioSupervisor = comentario;
+      }
+
+      await updateDoc(tarefaRef, updateData);
+      showToast('Avaliação registrada com sucesso!', 'success');
+      
+      if (usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
+        setShowAvaliacaoModal(false);
+      }
+      
+      setTarefaParaAvaliacao(null);
+      setTarefaSelecionada(null);
+    } catch (error) {
+      console.error('Erro ao registrar avaliação:', error);
+      showToast('Erro ao registrar avaliação', 'error');
     }
-    
-    let tempoTotal = 0;
-    const inicioData = new Date(tarefa.dataInicio);
-    
-    if (tarefa.status === 'concluida') {
-      const fimData = new Date(tarefa.dataConclusao);
-      tempoTotal = fimData - inicioData;
-    } else if (tarefa.status === 'pausada') {
-      const pausaData = new Date(tarefa.dataPausa);
-      tempoTotal = pausaData - inicioData;
-    }
-    
-    if (tarefa.tempoPausado) {
-      tempoTotal -= tarefa.tempoPausado;
-    }
-    
-    return tempoTotal;
   };
 
   const formatarTempo = (ms) => {
+    if (!ms) return '-';
     const segundos = Math.floor(ms / 1000);
     const minutos = Math.floor(segundos / 60);
     const horas = Math.floor(minutos / 60);
@@ -142,287 +209,427 @@ const TarefasTab = ({ funcionarios = [] }) => {
       return `${horas}h ${minutos % 60}m`;
     } else if (minutos > 0) {
       return `${minutos}m ${segundos % 60}s`;
-    } else {
-      return `${segundos}s`;
+    }
+    return `${segundos}s`;
+  };
+
+  const isUserAssigned = (tarefa) => {
+    const checkName = (name1, name2) => {
+      if (!name1 || !name2) return false;
+      return name1.toLowerCase() === name2.toLowerCase();
+    };
+
+    if (userFilter) {
+      return checkName(tarefa.funcionario, userFilter) || 
+             checkName(tarefa.responsavel, userFilter) ||
+             tarefa.funcionariosIds?.some(id => checkName(id, userFilter));
+    }
+    return checkName(tarefa.funcionario, usuario?.nome) || 
+           checkName(tarefa.responsavel, usuario?.nome) ||
+           tarefa.funcionariosIds?.some(id => checkName(id, usuario?.nome));
+  };
+
+  const getStatusInfo = (tarefa) => {
+    switch(tarefa.status) {
+      case 'pendente':
+        return {
+          icon: <Clock className="w-3 h-3 mr-1" />,
+          text: 'Pendente',
+          bgColor: 'bg-yellow-100',
+          textColor: 'text-yellow-800'
+        };
+      case 'em_andamento':
+        return {
+          icon: <PlayCircle className="w-3 h-3 mr-1" />,
+          text: 'Em Andamento',
+          bgColor: 'bg-blue-100',
+          textColor: 'text-blue-800'
+        };
+      case 'pausada':
+        return {
+          icon: <PauseCircle className="w-3 h-3 mr-1" />,
+          text: 'Pausada',
+          bgColor: 'bg-orange-100',
+          textColor: 'text-orange-800'
+        };
+      case 'concluida':
+        return {
+          icon: <CheckCircle className="w-3 h-3 mr-1" />,
+          text: 'Concluída',
+          bgColor: 'bg-green-100',
+          textColor: 'text-green-800'
+        };
+      default:
+        return {
+          icon: <AlertCircle className="w-3 h-3 mr-1" />,
+          text: 'Status Desconhecido',
+          bgColor: 'bg-gray-100',
+          textColor: 'text-gray-800'
+        };
     }
   };
 
-  // Separar tarefas por status
-  const tarefasPendentes = tarefas.filter(t => t.status === 'pendente');
-  const tarefasEmAndamento = tarefas.filter(t => t.status === 'em_andamento');
-  const tarefasPausadas = tarefas.filter(t => t.status === 'pausada');
-  const tarefasConcluidas = tarefas.filter(t => t.status === 'concluida');
-
-  // Filtrar tarefas
-  const filtrarTarefas = (tarefasLista) => {
-    return tarefasLista.filter(tarefa => {
-      const isUserAssigned = tarefa.funcionariosIds?.includes(usuario.nome) || 
-                            tarefa.funcionarios?.some(f => f.nome === usuario.nome);
-
-      if (usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
-        return isUserAssigned;
-      }
-
-      switch (filtro) {
-        case 'minhas':
-          return isUserAssigned;
-        case 'todas':
-        default:
-          return true;
-      }
-    });
+  const isWithinPeriod = (date, period) => {
+    if (!date) return false;
+    const taskDate = new Date(date);
+    const today = new Date();
+    
+    switch (period) {
+      case 'hoje':
+        return taskDate.getDate() === today.getDate() &&
+               taskDate.getMonth() === today.getMonth() &&
+               taskDate.getFullYear() === today.getFullYear();
+      case 'semana':
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        return taskDate >= weekAgo;
+      case 'mes':
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(today.getMonth() - 1);
+        return taskDate >= monthAgo;
+      default:
+        return true;
+    }
   };
 
-  // Aplicar filtros
-  const tarefasPendentesFiltradas = filtrarTarefas(tarefasPendentes);
-  const tarefasEmAndamentoFiltradas = filtrarTarefas(tarefasEmAndamento);
-  const tarefasPausadasFiltradas = filtrarTarefas(tarefasPausadas);
-  const tarefasConcluidasFiltradas = filtrarTarefas(tarefasConcluidas);
-
-  const renderTarefaCard = (tarefa) => (
-    <div
-      key={tarefa.id}
-      onClick={() => setTarefaSelecionada(tarefa)}
-      className={`bg-[#192734] p-4 rounded-xl border border-[#38444D] cursor-pointer hover:border-[#1DA1F2] transition-colors ${
-        tarefa.status === 'pendente' ? 'border-l-4 border-l-yellow-500' :
-        tarefa.status === 'em_andamento' ? 'border-l-4 border-l-blue-500' :
-        tarefa.status === 'pausada' ? 'border-l-4 border-l-orange-500' :
-        'border-l-4 border-l-green-500'
-      }`}
-    >
-      <div className="flex justify-between items-start mb-3">
-        <h3 className="text-lg font-medium text-white">{tarefa.titulo}</h3>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          tarefa.status === 'pendente' ? 'bg-yellow-500/10 text-yellow-500' :
-          tarefa.status === 'em_andamento' ? 'bg-blue-500/10 text-blue-500' :
-          tarefa.status === 'pausada' ? 'bg-orange-500/10 text-orange-500' :
-          'bg-green-500/10 text-green-500'
-        }`}>
-          {tarefa.status === 'pendente' ? 'Pendente' :
-           tarefa.status === 'em_andamento' ? 'Em Andamento' :
-           tarefa.status === 'pausada' ? 'Pausada' :
-           'Concluída'}
-        </span>
-      </div>
-
-      <p className="text-[#8899A6] mb-4">{tarefa.descricao}</p>
-
-      {/* Tempo Estimado */}
-      <div className="text-sm text-[#8899A6] mb-4">
-        Tempo estimado: <span className="text-white">{tarefa.tempoEstimado || 'Não definido'}</span>
-      </div>
-
-      {/* Avaliações */}
-      <div className="flex flex-col items-end gap-2 mt-2 mb-4">
-        {/* Nota do supervisor (dada pelo colaborador) - visível apenas para supervisores */}
-        {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
-          <div>
-            <div className="text-xs text-[#8899A6] mb-1">Supervisor:</div>
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-4 h-4 ${
-                    tarefa.status === 'concluida' && i < (tarefa.notaFuncionario || 0)
-                      ? 'text-yellow-500 fill-yellow-500'
-                      : 'text-[#38444D]'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Nota da tarefa (dada pelo colaborador) */}
-        <div>
-          <div className="text-xs text-[#8899A6] mb-1">Colaborador:</div>
-          <div className="flex items-center gap-1">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`w-4 h-4 ${
-                  tarefa.status === 'concluida' && i < (tarefa.notaTarefa || 0)
-                    ? 'text-yellow-500 fill-yellow-500'
-                    : 'text-[#38444D]'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Nota Final (média das avaliações) */}
-        {tarefa.status === 'concluida' && tarefa.notaTarefa && tarefa.notaFuncionario && (
-          <div className="mt-2 border-t border-[#38444D] pt-2">
-            <div className="text-xs text-[#8899A6] mb-1">Nota Final:</div>
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => {
-                const notaMedia = (tarefa.notaTarefa + tarefa.notaFuncionario) / 2;
-                const starFill = i < Math.floor(notaMedia);
-                const starHalf = !starFill && i < Math.ceil(notaMedia) && notaMedia % 1 >= 0.5;
-                
-                return (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      starFill || starHalf ? 'text-yellow-500 fill-yellow-500' : 'text-[#38444D]'
-                    }`}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {tarefa.dataInicio && (
-        <div className="text-sm text-[#8899A6] mb-4">
-          Tempo {tarefa.status === 'concluida' ? 'total' : 'decorrido'}: {' '}
-          <span className="text-white">
-            {formatarTempo(tarefa.status === 'concluida' ? tarefa.tempoTotal : calcularTempoTotal(tarefa))}
-          </span>
-        </div>
-      )}
-
-      {tarefa.status !== 'concluida' && (
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePausarTarefa(tarefa.id);
-            }}
-            className="flex-1 py-2 px-4 bg-[#F7C52B] text-white rounded-full hover:bg-[#e0b226] transition-colors flex items-center justify-center gap-2"
-          >
-            <PauseCircle className="w-4 h-4" />
-            Pausar
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const avaliacao = prompt('Avalie a tarefa de 1 a 5 estrelas:');
-              const comentario = prompt('Deixe um comentário sobre a tarefa:');
-              if (avaliacao && comentario) {
-                handleConcluirTarefa(tarefa.id, Number(avaliacao), comentario);
-              }
-            }}
-            className="flex-1 py-2 px-4 bg-[#00BA7C] text-white rounded-full hover:bg-[#00a36d] transition-colors flex items-center justify-center gap-2"
-          >
-            <CheckCircle className="w-4 h-4" />
-            Concluir
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  const tarefasFiltradas = tarefas
+    .filter(tarefa => {
+      // Filtro de usuário
+      if (showOnlyUserTasks && !isUserAssigned(tarefa)) return false;
+      
+      // Filtro de status
+      if (filtroStatus !== 'todas' && tarefa.status !== filtroStatus) return false;
+      
+      // Filtro de período (baseado na data de criação)
+      if (filtroPeriodo !== 'todos' && !isWithinPeriod(tarefa.dataCriacao, filtroPeriodo)) return false;
+      
+      // Filtro de avaliação
+      if (filtroAvaliacao !== 'todas') {
+        const avaliacaoSupervisor = Number(tarefa.avaliacaoSupervisor);
+        switch (filtroAvaliacao) {
+          case 'excelente':
+            if (avaliacaoSupervisor < 5) return false;
+            break;
+          case 'boa':
+            if (avaliacaoSupervisor < 4 || avaliacaoSupervisor >= 5) return false;
+            break;
+          case 'regular':
+            if (avaliacaoSupervisor < 3 || avaliacaoSupervisor >= 4) return false;
+            break;
+          case 'ruim':
+            if (avaliacaoSupervisor >= 3) return false;
+            break;
+          case 'pendente':
+            if (tarefa.status === 'concluida' && avaliacaoSupervisor) return false;
+            break;
+        }
+      }
+      
+      // Filtro de pesquisa
+      if (searchTerm) {
+        const termLower = searchTerm.toLowerCase();
+        return tarefa.titulo.toLowerCase().includes(termLower) ||
+               tarefa.descricao?.toLowerCase().includes(termLower) ||
+               tarefa.funcionario?.toLowerCase().includes(termLower);
+      }
+      
+      return true;
+    })
+    .slice(0, quantidadeExibida);
 
   return (
-    <div className="space-y-4">
-      {/* Header e Filtros */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <div>          
-            <p className="text-[#8899A6]">
-              {usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO
-                }
-            </p>
+    <div className="space-y-6">
+      {/* Barra de Filtros */}
+      <div className="bg-white dark:bg-[#1E2732] rounded-lg shadow-md border border-gray-200 dark:border-[#38444D] p-4">
+        <div className="flex flex-wrap gap-4">
+          {/* Busca */}
+          <div className="relative flex-1 min-w-[250px]">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar tarefas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-10 pl-10 pr-4 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white"
+            />
           </div>
-          <div className="flex gap-2">
-            {usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+
+          {/* Filtros */}
+          <div className="grid grid-cols-3 gap-4 w-full">
+            {/* Status */}
+            <select
+              value={filtroStatus}
+              onChange={(e) => setFiltroStatus(e.target.value)}
+              className="w-full border border-gray-300 dark:border-[#38444D] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
+            >
+              <option value="todas">Todos os status</option>
+              <option value="pendente">Pendentes</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="pausada">Pausadas</option>
+              <option value="concluida">Concluídas</option>
+            </select>
+
+            {/* Período */}
+            <select
+              value={filtroPeriodo}
+              onChange={(e) => setFiltroPeriodo(e.target.value)}
+              className="w-full border border-gray-300 dark:border-[#38444D] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
+            >
+              <option value="todos">Todos os períodos</option>
+              <option value="hoje">Hoje</option>
+              <option value="semana">Últimos 7 dias</option>
+              <option value="mes">Último mês</option>
+            </select>
+
+            {/* Avaliação */}
+            <select
+              value={filtroAvaliacao}
+              onChange={(e) => setFiltroAvaliacao(e.target.value)}
+              className="w-full border border-gray-300 dark:border-[#38444D] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
+            >
+              <option value="todas">Todas as avaliações</option>
+              <option value="excelente">Excelente (5★)</option>
+              <option value="boa">Boa (4★)</option>
+              <option value="regular">Regular (3★)</option>
+              <option value="ruim">Ruim (≤ 2★)</option>
+              <option value="pendente">Pendente de avaliação</option>
+            </select>
+
+            {/* Botão Nova Tarefa */}
+            {showAddButton && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
               <button
-                onClick={() => setFiltro('todas')}
-                className={`px-4 py-2 rounded-full ${
-                  filtro === 'todas'
-                    ? 'bg-[#1DA1F2] text-white'
-                    : 'text-[#8899A6] hover:bg-[#1D9BF0]/10'
-                }`}
+                onClick={() => setShowCriarTarefa(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-[#1a91da] transition-colors"
               >
-                Todas
-              </button>
-            )}
-            
-            {usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
-              <button
-                onClick={() => setFiltro('minhas')}
-                className={`px-4 py-2 rounded-full ${
-                  filtro === 'minhas'
-                    ? 'bg-[#1DA1F2] text-white'
-                    : 'text-[#8899A6] hover:bg-[#1D9BF0]/10'
-                }`}
-              >
-                Minhas Tarefas
+                <Plus className="w-4 h-4" /> Nova Tarefa
               </button>
             )}
           </div>
         </div>
-        {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
+      </div>
+
+      {/* Modal dos Cards */}
+      <div className="bg-gray-100 dark:bg-[#15202B] rounded-lg shadow-md border border-gray-200 dark:border-[#38444D] p-6">
+        {tarefasFiltradas.length === 0 ? (
+          <div className="bg-[#192734] rounded-xl p-6 text-center border border-[#38444D]">
+            <Clock className="w-12 h-12 text-[#8899A6] mx-auto mb-3" />
+            <p className="text-[#8899A6]">{
+              searchTerm
+                ? 'Nenhuma tarefa encontrada para esta busca'
+                : userFilter
+                  ? `Nenhuma tarefa encontrada para ${userFilter}`
+                  : 'Nenhuma tarefa encontrada'
+            }</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {tarefasFiltradas.map(tarefa => {
+              const statusInfo = getStatusInfo(tarefa);
+              return (
+              <div
+                key={tarefa.id}
+                className="bg-[#192734] rounded-xl p-6 border border-[#38444D] hover:border-[#1DA1F2] transition-colors cursor-pointer"
+                onClick={() => setTarefaSelecionada(tarefa)}
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-0.5 bg-[#253341] text-[#8899A6] rounded text-xs">
+                          #{tarefa.id.slice(-6)}
+                        </span>
+                        <h3 className="text-lg font-semibold text-white">
+                          {tarefa.titulo}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                        {statusInfo.icon}
+                        <span>{statusInfo.text}</span>
+                        {!readOnly && tarefa.status === 'em_andamento' && (
+                          <span className="text-[#1DA1F2] font-medium ml-2">
+                            {formatarTempo(temposDecorridos[tarefa.id])}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {tarefa.descricao && (
+                    <div className="mb-4">
+                      <p className="text-sm text-[#8899A6] line-clamp-2">
+                        {tarefa.descricao}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex flex-wrap gap-2">
+                        {[...(tarefa.funcionariosIds || []), tarefa.funcionario]
+                          .filter(Boolean)
+                          .map((func, idx) => (
+                            <div 
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-[#253341] rounded-full text-sm text-[#8899A6]"
+                            >
+                              <User className="w-3 h-3" />
+                              {func}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {tarefa.prioridade && (
+                      <div className="flex items-center gap-2 mt-4">
+                        <span className="text-sm text-[#8899A6]">Prioridade:</span>
+                        <span className={`text-sm ${
+                          tarefa.prioridade === 'alta' ? 'text-red-500' :
+                          tarefa.prioridade === 'média' ? 'text-[#1DA1F2]' :
+                          'text-green-500'
+                        }`}>
+                          {tarefa.prioridade.charAt(0).toUpperCase() + tarefa.prioridade.slice(1)}
+                        </span>
+                      </div>
+                    )}
+
+                    {tarefa.status === 'concluida' && (
+                      <div className="space-y-2 mt-4">
+                        {tarefa.avaliacaoSupervisor && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-[#8899A6]">Supervisor:</span>
+                            <div className="flex items-center">
+                              {[...Array(5)].map((_, index) => (
+                                <Star
+                                  key={index}
+                                  className={`w-3.5 h-3.5 ${
+                                    index < tarefa.avaliacaoSupervisor
+                                      ? 'text-yellow-400 fill-yellow-400'
+                                      : 'text-[#38444D]'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {tarefa.avaliacaoFuncionario && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-[#8899A6]">Funcionário:</span>
+                            <div className="flex items-center">
+                              {[...Array(5)].map((_, index) => (
+                                <Star
+                                  key={index}
+                                  className={`w-3.5 h-3.5 ${
+                                    index < tarefa.avaliacaoFuncionario
+                                      ? 'text-yellow-400 fill-yellow-400'
+                                      : 'text-[#38444D]'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 text-sm text-[#8899A6]">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>Criada em {formatarDataHora(tarefa.dataCriacao)}</span>
+                    </div>
+                  </div>
+
+                  {!readOnly && (
+                    <div className="mt-4 flex justify-end gap-2">
+                      {tarefa.status === 'pendente' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleIniciarTarefa(tarefa.id);
+                          }}
+                          className="px-3 py-1 text-sm bg-[#1DA1F2] text-white rounded-full flex items-center gap-1 hover:bg-[#1a91da] transition-colors"
+                        >
+                          <PlayCircle className="w-4 h-4" />
+                          Iniciar
+                        </button>
+                      )}
+
+                      {tarefa.status === 'em_andamento' && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePausarTarefa(tarefa.id);
+                            }}
+                            className="px-3 py-1 text-sm bg-[#F7BE38] text-white rounded-full flex items-center gap-1 hover:bg-[#f0b730] transition-colors"
+                          >
+                            <Pause className="w-4 h-4" />
+                            Pausar
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTarefaParaAvaliacao(tarefa);
+                              handleConcluirTarefa();
+                            }}
+                            className="px-3 py-1 text-sm bg-[#4CAF50] text-white rounded-full flex items-center gap-1 hover:bg-[#43a047] transition-colors"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Concluir
+                          </button>
+                        </>
+                      )}
+
+                      {tarefa.status === 'pausada' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleIniciarTarefa(tarefa.id);
+                          }}
+                          className="px-3 py-1 text-sm bg-[#1DA1F2] text-white rounded-full flex items-center gap-1 hover:bg-[#1a91da] transition-colors"
+                        >
+                          <PlayCircle className="w-4 h-4" />
+                          Retomar
+                        </button>
+                      )}
+
+                      {tarefa.status === 'concluida' && !tarefa.avaliacaoSupervisor && usuario?.nivel >= 2 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTarefaParaAvaliacao(tarefa);
+                            setShowAvaliacaoModal(true);
+                          }}
+                          className="px-3 py-1 text-sm bg-[#1DA1F2] text-white rounded-full flex items-center gap-1 hover:bg-[#1a91da] transition-colors"
+                        >
+                          <Star className="w-4 h-4" />
+                          Avaliar
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          </div>
+        )}
+      </div>
+
+      {quantidadeExibida < tarefas.length && (
+        <div className="flex justify-center mt-6">
           <button
-            onClick={() => setShowCriarTarefa(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors"
+            onClick={() => setQuantidadeExibida(prev => prev + 10)}
+            className="px-4 py-2 text-[#1DA1F2] hover:bg-[#1DA1F2]/10 rounded-lg transition-colors"
           >
-            <Plus className="w-5 h-5" />
-            Nova Tarefa
+            Carregar mais
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Seções de Tarefas */}
-      <div className="space-y-4">
-        {/* Em Andamento */}
-        {tarefasEmAndamentoFiltradas.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-white mb-3 flex items-center">
-              <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-              Em Andamento ({tarefasEmAndamentoFiltradas.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tarefasEmAndamentoFiltradas.map(renderTarefaCard)}
-            </div>
-          </div>
-        )}
-
-        {/* Pendentes */}
-        {tarefasPendentesFiltradas.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-white mb-3 flex items-center">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-              Pendentes ({tarefasPendentesFiltradas.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tarefasPendentesFiltradas.map(renderTarefaCard)}
-            </div>
-          </div>
-        )}
-
-        {/* Pausadas */}
-        {tarefasPausadasFiltradas.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-white mb-3 flex items-center">
-              <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-              Pausadas ({tarefasPausadasFiltradas.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tarefasPausadasFiltradas.map(renderTarefaCard)}
-            </div>
-          </div>
-        )}
-
-        {/* Concluídas */}
-        {tarefasConcluidasFiltradas.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-              Concluídas ({tarefasConcluidasFiltradas.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tarefasConcluidasFiltradas.map(renderTarefaCard)}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Modais */}
       {showCriarTarefa && (
-        <CriarTarefa 
-          onClose={() => setShowCriarTarefa(false)} 
+        <CriarTarefa
+          onClose={() => setShowCriarTarefa(false)}
           funcionarios={funcionarios}
         />
       )}
@@ -431,6 +638,46 @@ const TarefasTab = ({ funcionarios = [] }) => {
         <DetalheTarefa
           tarefa={tarefaSelecionada}
           onClose={() => setTarefaSelecionada(null)}
+          tempoDecorrido={temposDecorridos[tarefaSelecionada.id]}
+          onConcluir={
+            !readOnly 
+              ? () => {
+                  setTarefaParaAvaliacao(tarefaSelecionada);
+                  handleConcluirTarefa();
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {showAvaliacaoModal && tarefaParaAvaliacao && (
+        <AvaliacaoTarefaModal
+          isOpen={showAvaliacaoModal}
+          onClose={() => {
+            setShowAvaliacaoModal(false);
+            setTarefaParaAvaliacao(null);
+          }}
+          onConfirm={handleAvaliacaoSubmit}
+          titulo={usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR ? "Avaliar Tarefa" : "Autoavaliação"}
+          tipoAvaliacao={usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR ? "supervisor" : "colaborador"}
+        />
+      )}
+
+      {showConfirmDelete && (
+        <ConfirmDialog
+          message="Tem certeza que deseja excluir esta tarefa?"
+          onConfirm={async () => {
+            try {
+              await deleteDoc(doc(db, 'tarefas', tarefaSelecionada.id));
+              showToast('Tarefa excluída com sucesso!', 'success');
+              setTarefaSelecionada(null);
+            } catch (error) {
+              console.error('Erro ao excluir tarefa:', error);
+              showToast('Erro ao excluir tarefa', 'error');
+            }
+            setShowConfirmDelete(false);
+          }}
+          onCancel={() => setShowConfirmDelete(false)}
         />
       )}
     </div>

@@ -40,17 +40,17 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
   };
 
   return (
-    <div className="bg-[#192734] rounded-2xl shadow-lg p-6 border border-[#38444D]">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8899A6]" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar por item..."
               value={filtroInventario}
               onChange={(e) => setFiltroInventario(e.target.value)}
-              className="h-10 pl-10 pr-4 bg-[#253341] border border-[#38444D] rounded-full text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] text-sm"
+              className="w-full h-10 pl-10 pr-4 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
             />
           </div>
           
@@ -59,8 +59,7 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
             <select
               value={filtroCategoria}
               onChange={(e) => setFiltroCategoria(e.target.value)}
-              className="bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] text-sm [&>option]:bg-[#253341] hover:bg-[#2C3C4C]"
-              style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+              className="border border-gray-300 dark:border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <option value="">Todas as categorias</option>
               <option value="Ferramentas">Ferramentas</option>
@@ -69,24 +68,24 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
               <option value="Outros">Outros</option>
             </select>
 
-            <div className="flex items-center gap-2 bg-[#253341] border border-[#38444D] rounded-full p-1">
+            <div className="flex items-center gap-2 border border-gray-300 dark:border-[#38444D] rounded-lg p-1 bg-white dark:bg-[#253341]">
               <button
                 onClick={() => setOrdenacao('nome-asc')}
-                className={`p-2 rounded-full transition-colors ${ordenacao === 'nome-asc' ? 'bg-[#1DA1F2] text-white' : 'text-[#8899A6] hover:text-white'}`}
+                className={`p-2 rounded-lg transition-colors ${ordenacao === 'nome-asc' ? 'bg-[#1D9BF0] text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 title="Ordenar por nome (A-Z)"
               >
                 <SortAsc className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setOrdenacao('nome-desc')}
-                className={`p-2 rounded-full transition-colors ${ordenacao === 'nome-desc' ? 'bg-[#1DA1F2] text-white' : 'text-[#8899A6] hover:text-white'}`}
+                className={`p-2 rounded-lg transition-colors ${ordenacao === 'nome-desc' ? 'bg-[#1D9BF0] text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 title="Ordenar por nome (Z-A)"
               >
                 <SortDesc className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setOrdenacao(ordenacao === 'qtd-asc' ? 'qtd-desc' : 'qtd-asc')}
-                className={`p-2 rounded-full transition-colors ${ordenacao.startsWith('qtd-') ? 'bg-[#1DA1F2] text-white' : 'text-[#8899A6] hover:text-white'}`}
+                className={`p-2 rounded-lg transition-colors ${ordenacao.startsWith('qtd-') ? 'bg-[#1D9BF0] text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 title="Ordenar por quantidade"
               >
                 <Filter className="w-4 h-4" />
@@ -97,7 +96,7 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
       </div>
 
       {/* Lista de Itens */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {inventarioOrdenado.map(item => (
           <ItemCard 
             key={item.id} 

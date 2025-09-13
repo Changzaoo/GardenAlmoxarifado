@@ -6,6 +6,7 @@ const ModalEditarItem = ({ item, onSalvar, onFechar }) => {
     nome: '',
     categoria: '',
     quantidade: 0,
+    disponivel: 0,
   });
 
   useEffect(() => {
@@ -14,6 +15,7 @@ const ModalEditarItem = ({ item, onSalvar, onFechar }) => {
         nome: item.nome,
         categoria: item.categoria,
         quantidade: item.quantidade,
+        disponivel: item.disponivel || 0,
       });
     }
   }, [item]);
@@ -77,6 +79,25 @@ const ModalEditarItem = ({ item, onSalvar, onFechar }) => {
               min="1"
               value={formData.quantidade}
               onChange={(e) => setFormData({ ...formData, quantidade: parseInt(e.target.value) || 0 })}
+              className="w-full bg-[#192734] border border-[#38444D] text-white placeholder-[#8899A6] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#8899A6] mb-1">
+              Quantidade Disponível
+            </label>
+            <input
+              type="number"
+              min="0"
+              max={formData.quantidade}
+              value={formData.disponivel}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 0;
+                const limitedValue = Math.min(value, formData.quantidade);
+                setFormData({ ...formData, disponivel: limitedValue });
+              }}
               className="w-full bg-[#192734] border border-[#38444D] text-white placeholder-[#8899A6] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
               required
             />
