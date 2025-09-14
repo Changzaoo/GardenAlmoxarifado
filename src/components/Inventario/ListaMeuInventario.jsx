@@ -237,13 +237,17 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
                           {emprestimo.ferramentas?.length} {emprestimo.ferramentas?.length === 1 ? 'Ferramenta' : 'Ferramentas'}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-[#8899A6]">
-                        <Clock className="w-4 h-4" />
-                        <span>
-                          {emprestimo.status === 'devolvido'
-                            ? `Devolvido em ${formatarData(emprestimo.dataDevolucao)}`
-                            : `Em uso desde ${formatarData(emprestimo.dataEmprestimo)}`}
-                        </span>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                          <Clock className="w-4 h-4" />
+                          <span>Retirada em {formatarDataHora(emprestimo.dataEmprestimo)}</span>
+                        </div>
+                        {emprestimo.status === 'devolvido' && (
+                          <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Devolvido em {formatarDataHora(emprestimo.dataDevolucao)}</span>
+                          </div>
+                        )}
                       </div>
                       <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 ${
                         emprestimo.status === 'devolvido'
