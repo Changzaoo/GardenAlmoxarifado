@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Phone, Briefcase, Star, CheckCircle, Package, Search, Clock, MessageSquare, Wrench } from 'lucide-react';
+import { X, Users, Phone, Briefcase, Star, CheckCircle, Package, Search, Clock, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';

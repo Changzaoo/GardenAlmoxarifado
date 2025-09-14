@@ -1,12 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Users, Trash2, Plus, Edit, Camera } from 'lucide-react';
-import { storage } from '../../firebaseConfig';
+import { Users, Trash2, Plus, Edit, Camera, Star, Wrench, CheckCircle, Clock, Phone } from 'lucide-react';
+import { storage, db } from '../../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '../ToastProvider';
 import FuncionarioProfile from './FuncionarioProfile';
 
-const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
+// Função para formatar número de telefone
+const formatarTelefone = (telefone) => {
+  const cleaned = telefone.replace(/\D/g, '');
+  let match = cleaned.match(/^(\d{2})(\d{4,5})(\d{4})$/);
+  if (match) {
+    return `(${match[1]}) ${match[2]}-${match[3]}`;
+  }
+  return telefone;
+};
+
+const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -16,9 +27,152 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
   const [funcionarioParaExcluir, setFuncionarioParaExcluir] = useState(null);
   const [preview, setPreview] = useState(null);
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [funcionariosStats, setFuncionariosStats] = useState({});
+  const [filtroAtual, setFiltroAtual] = useState('nome');
   const fileInputRef = useRef();
+
+  // Funções de ordenação
+  const ordenarPorNome = (a, b) => a.nome.localeCompare(b.nome);
+  const ordenarPorAvaliacao = (a, b) => (
+    (funcionariosStats[b.id]?.mediaAvaliacao || 0) - (funcionariosStats[a.id]?.mediaAvaliacao || 0)
+  );
+  const ordenarPorTarefasConcluidas = (a, b) => (
+    (funcionariosStats[b.id]?.tarefasConcluidas || 0) - (funcionariosStats[a.id]?.tarefasConcluidas || 0)
+  );
+  const ordenarPorEmprestimos = (a, b) => (
+    (funcionariosStats[b.id]?.emprestimosAtivos || 0) - (funcionariosStats[a.id]?.emprestimosAtivos || 0)
+  );
+
+  // Função para obter a função de ordenação atual
+  const getFuncaoOrdenacao = () => {
+    switch (filtroAtual) {
+      case 'avaliacao':
+        return ordenarPorAvaliacao;
+      case 'tarefas':
+        return ordenarPorTarefasConcluidas;
+      case 'emprestimos':
+        return ordenarPorEmprestimos;
+      default:
+        return ordenarPorNome;
+    }
+  };
+
+  // Função para filtrar funcionários
+  const filtrarFuncionarios = (funcionarios) => {
+    if (!funcionarios) return [];
+    const searchLower = searchTerm.toLowerCase();
+    return funcionarios.filter(func => {
+      return func.nome?.toLowerCase().includes(searchLower) ||
+             func.cargo?.toLowerCase().includes(searchLower) ||
+             func.telefone?.includes(searchTerm) ||
+             func.email?.toLowerCase().includes(searchLower) ||
+             func.matricula?.toLowerCase().includes(searchLower) ||
+             func.setor?.toLowerCase().includes(searchLower);
+    });
+  };
+
+  // Processar funcionários com filtro e ordenação
+  const funcionariosFiltrados = filtrarFuncionarios(funcionarios);
+
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
+
+  // Buscar estatísticas dos funcionários
+  useEffect(() => {
+    const fetchFuncionariosStats = async () => {
+      const stats = {};
+      
+      for (const func of funcionarios) {
+        const tarefasRef = collection(db, 'tarefas');
+        const emprestimosRef = collection(db, 'emprestimos');
+        
+        // 1. Buscar todas as tarefas do funcionário em diferentes campos
+        const [
+          funcionariosIdsSnap,
+          funcionarioSnap,
+          funcionarioLowerSnap,
+          responsavelSnap,
+          responsavelLowerSnap
+        ] = await Promise.all([
+          getDocs(query(tarefasRef, where('funcionariosIds', 'array-contains', func.nome))),
+          getDocs(query(tarefasRef, where('funcionario', '==', func.nome))),
+          getDocs(query(tarefasRef, where('funcionario', '==', func.nome.toLowerCase()))),
+          getDocs(query(tarefasRef, where('responsavel', '==', func.nome))),
+          getDocs(query(tarefasRef, where('responsavel', '==', func.nome.toLowerCase())))
+        ]);
+        
+        let tarefasConcluidas = 0;
+        let tarefasEmAndamento = 0;
+        let somaAvaliacoes = 0;
+        let totalAvaliacoes = 0;
+        
+        // 2. Processar dados das tarefas
+        const processarTarefas = (snapshot) => {
+          snapshot.forEach(doc => {
+            const tarefa = doc.data();
+            if (tarefa.status === 'concluida') {
+              tarefasConcluidas++;
+              if (tarefa.avaliacaoSupervisor) {
+                somaAvaliacoes += Number(tarefa.avaliacaoSupervisor);
+                totalAvaliacoes++;
+              }
+            } else if (tarefa.status === 'em_andamento') {
+              tarefasEmAndamento++;
+            }
+          });
+        };
+        
+        processarTarefas(funcionariosIdsSnap);
+        processarTarefas(funcionarioSnap);
+        processarTarefas(funcionarioLowerSnap);
+        processarTarefas(responsavelSnap);
+        processarTarefas(responsavelLowerSnap);
+
+        // 3. Buscar todos os empréstimos do funcionário
+        const [
+          emprestimosIdSnap,
+          emprestimosNomeSnap,
+          emprestimosColabSnap,
+          emprestimosRespSnap,
+          emprestimosRespLowerSnap
+        ] = await Promise.all([
+          getDocs(query(emprestimosRef, where('funcionarioId', '==', String(func.id)))),
+          getDocs(query(emprestimosRef, where('funcionario', '==', func.nome))),
+          getDocs(query(emprestimosRef, where('colaborador', '==', func.nome))),
+          getDocs(query(emprestimosRef, where('responsavel', '==', func.nome))),
+          getDocs(query(emprestimosRef, where('responsavel', '==', func.nome.toLowerCase())))
+        ]);
+
+        // 4. Contar empréstimos ativos únicos
+        const emprestimosAtivos = new Set([
+          ...emprestimosIdSnap.docs,
+          ...emprestimosNomeSnap.docs,
+          ...emprestimosColabSnap.docs,
+          ...emprestimosRespSnap.docs,
+          ...emprestimosRespLowerSnap.docs
+        ]
+          .map(doc => ({id: doc.id, ...doc.data()}))
+          .filter(emp => emp.status === 'ativo' || emp.status === 'emprestado')
+        ).size;
+
+        stats[func.id] = {
+          emprestimosAtivos,
+          mediaAvaliacao: totalAvaliacoes > 0 ? (somaAvaliacoes / totalAvaliacoes).toFixed(1) : 0,
+          tarefasConcluidas,
+          tarefasEmAndamento
+        };
+      }
+
+      setFuncionariosStats(stats);
+    };
+
+    if (funcionarios.length > 0) {
+      fetchFuncionariosStats();
+    }
+  }, [funcionarios]);
+
+  // Remover: Função movida para cima
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
@@ -49,8 +203,13 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
 
   const handleEditar = (func) => {
     setEditando(func);
-    setFormEdit({ nome: func.nome, cargo: func.cargo, telefone: func.telefone, photoURL: func.photoURL });
-    setPreview(func.photoURL);
+    setFormEdit({
+      nome: func.nome || '',
+      cargo: func.cargo || '',
+      telefone: func.telefone || '',
+      photoURL: func.photoURL || null // usando null em vez de undefined
+    });
+    setPreview(func.photoURL || null);
   };
 
   const handleAdicionar = async (e) => {
@@ -67,14 +226,30 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
   };
 
   const handleSalvarEdicao = async () => {
-    setLoading(true);
-    await atualizarFuncionario(editando.id, {
-      ...formEdit,
-      photoURL: formEdit.photoURL || editando.photoURL
-    });
-    setEditando(null);
-    setPreview(null);
-    setLoading(false);
+    try {
+      setLoading(true);
+      // Criamos um objeto com os campos obrigatórios
+      const dadosAtualizados = {
+        nome: formEdit.nome,
+        cargo: formEdit.cargo,
+        telefone: formEdit.telefone
+      };
+
+      // Só incluímos a photoURL se ela existir
+      if (formEdit.photoURL || editando.photoURL) {
+        dadosAtualizados.photoURL = formEdit.photoURL || editando.photoURL;
+      }
+
+      await atualizarFuncionario(editando.id, dadosAtualizados);
+      setEditando(null);
+      setPreview(null);
+      showToast('Funcionário atualizado com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao atualizar funcionário:', error);
+      showToast('Erro ao atualizar funcionário', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const confirmarExclusao = (funcionario) => {
@@ -97,7 +272,8 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
 
   return (
     <div className="bg-[#15202B] p-4 rounded-xl">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col gap-4 mb-4">
+        {/* Formulário de Adição */}
         <div className="flex items-center gap-2">
           {!isFuncionario && !readonly && (
             <form onSubmit={handleAdicionar} className="flex gap-2">
@@ -119,8 +295,8 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
               />
               <input
                 type="text"
-                placeholder="Telefone"
-                value={novoFuncionario.telefone}
+                placeholder="(00) 00000-0000"
+                value={novoFuncionario.telefone ? formatarTelefone(novoFuncionario.telefone) : ''}
                 onChange={e => {
                   const onlyNums = e.target.value.replace(/[^0-9]/g, '');
                   setNovoFuncionario({ ...novoFuncionario, telefone: onlyNums });
@@ -138,50 +314,226 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
 
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-        {[...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome)).map((func) => (
+      {/* Barra de Busca e Filtros */}
+      <div className="flex justify-between items-center mb-4">
+        {/* Botões de Filtro */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFiltroAtual('nome')}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+              filtroAtual === 'nome'
+                ? 'bg-[#1DA1F2] text-white'
+                : 'bg-[#192734] text-[#8899A6] hover:bg-[#253341]'
+            }`}
+          >
+            Nome
+          </button>
+          <button
+            onClick={() => setFiltroAtual('avaliacao')}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+              filtroAtual === 'avaliacao'
+                ? 'bg-[#1DA1F2] text-white'
+                : 'bg-[#192734] text-[#8899A6] hover:bg-[#253341]'
+            }`}
+          >
+            Mais Avaliados
+          </button>
+          <button
+            onClick={() => setFiltroAtual('tarefas')}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+              filtroAtual === 'tarefas'
+                ? 'bg-[#1DA1F2] text-white'
+                : 'bg-[#192734] text-[#8899A6] hover:bg-[#253341]'
+            }`}
+          >
+            Mais Tarefas Concluídas
+          </button>
+          <button
+            onClick={() => setFiltroAtual('emprestimos')}
+            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+              filtroAtual === 'emprestimos'
+                ? 'bg-[#1DA1F2] text-white'
+                : 'bg-[#192734] text-[#8899A6] hover:bg-[#253341]'
+            }`}
+          >
+            Mais Empréstimos
+          </button>
+        </div>
+
+        {/* Campo de Busca */}
+        <div className="w-96">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar funcionários..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 pl-12 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+            />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8899A6]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {[...funcionariosFiltrados].sort(getFuncaoOrdenacao()).map((func) => (
           <div 
             key={func.id} 
-            className="bg-[#192734] p-4 rounded-xl border border-[#38444D] hover:border-[#1DA1F2] transition-colors cursor-pointer"
+            className="bg-[#192734] rounded-2xl overflow-hidden border border-[#38444D] hover:border-[#1DA1F2] transition-colors cursor-pointer group"
             onClick={() => setFuncionarioSelecionado(func)}
           >
-            <div className="flex flex-col items-center">
-              {func.photoURL ? (
-                <img 
-                  src={func.photoURL} 
-                  alt={func.nome} 
-                  className="w-20 h-20 rounded-full object-cover mb-3"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-[#253341] flex items-center justify-center mb-3">
-                  <Users className="w-10 h-10 text-[#8899A6]" />
+            {/* Header com foto e ações */}
+            <div className="relative bg-[#1DA1F2]/10 p-4">
+              {!isFuncionario && !readonly && (
+                <div className="absolute top-2 right-2 flex gap-1.5">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditar(func);
+                    }}
+                    className="p-1.5 bg-[#192734] text-[#1DA1F2] hover:bg-[#1DA1F2]/20 rounded-lg transition-colors shadow-md"
+                    title="Editar funcionário"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      confirmarExclusao(func);
+                    }}
+                    className="p-1.5 bg-[#192734] text-red-500 hover:bg-red-500/20 rounded-lg transition-colors shadow-md"
+                    title="Excluir funcionário"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
-              
-              <div className="text-center">
-                <h3 className="text-lg font-semibold text-white mb-1">{func.nome}</h3>
-                <p className="text-sm text-[#8899A6] mb-1">{func.cargo}</p>
-                <p className="text-sm text-[#8899A6] mb-3">{func.telefone}</p>
+
+              <div className="flex items-center gap-4">
+                {func.photoURL ? (
+                  <img 
+                    src={func.photoURL} 
+                    alt={func.nome} 
+                    className="w-20 h-20 rounded-2xl object-cover border-2 border-[#38444D]"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-[#253341] border-2 border-[#38444D] flex items-center justify-center flex-shrink-0">
+                    <Users className="w-10 h-10 text-[#8899A6]" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-bold text-white truncate mb-1">{func.nome}</h3>
+                  {func.matricula && (
+                    <p className="text-sm text-[#8899A6] mb-1">Mat: {func.matricula}</p>
+                  )}
+                  <p className="text-[#1DA1F2] font-medium truncate">{func.cargo || 'Cargo não definido'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-4 space-y-4">
+              {/* Linha 1: Avaliação e Empréstimos */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#253341] rounded-xl p-3">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                    <div>
+                      <span className="text-lg font-bold text-white">
+                        {funcionariosStats[func.id]?.mediaAvaliacao || '0.0'}
+                      </span>
+                      <p className="text-xs text-[#8899A6]">Avaliações</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#253341] rounded-xl p-3">
+                  <div className="flex items-center gap-2">
+                    <Wrench className={`w-5 h-5 ${
+                      funcionariosStats[func.id]?.emprestimosAtivos > 0 
+                        ? 'text-[#1DA1F2]' 
+                        : 'text-[#8899A6]'
+                    }`} />
+                    <div>
+                      <span className="text-lg font-bold text-white">
+                        {funcionariosStats[func.id]?.emprestimosAtivos || 0}
+                      </span>
+                      <p className="text-xs text-[#8899A6]">Empréstimos</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {!isFuncionario && !readonly && (
-                <div className="flex gap-3 mt-2">
-                  <button 
-                    onClick={() => handleEditar(func)} 
-                    className="flex items-center gap-1 px-3 py-1.5 bg-[#1DA1F2] text-white rounded-lg hover:bg-[#1a91da] transition-colors text-sm"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Editar
-                  </button>
-                  <button 
-                    onClick={() => confirmarExclusao(func)} 
-                    className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Excluir
-                  </button>
+              {/* Linha 2: Tarefas */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#253341] rounded-xl p-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <div>
+                      <span className="text-lg font-bold text-white">
+                        {funcionariosStats[func.id]?.tarefasConcluidas || 0}
+                      </span>
+                      <p className="text-xs text-[#8899A6]">Concluídas</p>
+                    </div>
+                  </div>
                 </div>
-              )}
+
+                <div className="bg-[#253341] rounded-xl p-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-[#1DA1F2]" />
+                    <div>
+                      <span className="text-lg font-bold text-white">
+                        {funcionariosStats[func.id]?.tarefasEmAndamento || 0}
+                      </span>
+                      <p className="text-xs text-[#8899A6]">Em Andamento</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Linha 3: Informações de Contato */}
+              <div className="space-y-2 pt-3 border-t border-[#38444D]">
+                {func.setor && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#8899A6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m4 0v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4" />
+                    </svg>
+                    <span className="text-[#8899A6]">{func.setor}</span>
+                  </div>
+                )}
+                {func.email && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#8899A6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                    </svg>
+                    <span className="text-[#8899A6] truncate">{func.email}</span>
+                  </div>
+                )}
+                {func.telefone && (
+                  <div className="flex items-center gap-2 text-sm bg-[#253341] rounded-xl p-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#1DA1F2]/10 flex items-center justify-center">
+                      <Phone className="w-4 h-4 text-[#1DA1F2]" />
+                    </div>
+                    <div>
+                      <span className="text-[#8899A6] text-xs">Telefone</span>
+                      <p className="text-white font-medium">{formatarTelefone(func.telefone)}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -248,8 +600,10 @@ const FuncionariosTab = ({ funcionarios, adicionarFuncionario, removerFuncionari
                 placeholder="Telefone"
                 value={formEdit.telefone}
                 onChange={e => setFormEdit({ ...formEdit, telefone: e.target.value.replace(/[^0-9]/g, '') })}
+                value={formEdit.telefone ? formatarTelefone(formEdit.telefone) : ''}
                 className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
                 maxLength={15}
+                placeholder="(00) 00000-0000"
               />
             </div>
             <div className="flex justify-end gap-3 mt-6">

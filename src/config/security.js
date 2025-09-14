@@ -2,6 +2,26 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+// Funções de ofuscação
+export const obscure = (str) => {
+  try {
+    return btoa(encodeURIComponent(str)).split('').reverse().join('');
+  } catch {
+    return str;
+  }
+};
+
+export const deobscure = (str) => {
+  try {
+    return decodeURIComponent(atob(str.split('').reverse().join('')));
+  } catch {
+    return str;
+  }
+};
+
+// Gerador de nomes de classes e IDs ofuscados
+const generateObfuscatedName = () => '_' + Math.random().toString(36).slice(2);
+
 export const SECURITY_CONFIG = {
   // Authentication settings
   auth: {
@@ -16,6 +36,34 @@ export const SECURITY_CONFIG = {
       preventReuse: 5 // Last 5 passwords
     },
     sessionTimeout: 30 * 60 * 1000, // 30 minutes
+  },
+
+  // Proteções contra DevTools
+  devTools: {
+    enabled: true, // Ativa/desativa todas as proteções contra DevTools
+    preventInspect: true, // Impede a inspeção de elementos
+    preventConsole: true, // Bloqueia acesso ao console
+    preventSourceMap: true, // Remove source maps em produção
+    clearDataOnDetection: true, // Limpa dados locais quando DevTools é detectado
+    checkInterval: 1000, // Intervalo de verificação em milissegundos
+    sizeThreshold: 160, // Diferença máxima permitida entre outer e inner size
+  },
+
+  // Ofuscação de código
+  obfuscation: {
+    enabled: true,
+    classNames: {
+      container: generateObfuscatedName(),
+      header: generateObfuscatedName(),
+      content: generateObfuscatedName(),
+      button: generateObfuscatedName(),
+      input: generateObfuscatedName(),
+    },
+    dataAttributes: {
+      role: generateObfuscatedName(),
+      state: generateObfuscatedName(),
+      id: generateObfuscatedName(),
+    }
   },
   
   // Rate limiting settings

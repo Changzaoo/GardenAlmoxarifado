@@ -1,5 +1,6 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs, getDoc, query, where } from 'firebase/firestore';
+import { useDevToolsProtection } from '../hooks/useDevToolsProtection';
 import { ToastProvider } from './ToastProvider';
 import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
 import LegalTab from './Legal/LegalTab';
@@ -61,6 +62,70 @@ import {
   Upload,
   LogOut
 } from 'lucide-react';
+
+// Função para bloquear teclas de atalho e menu de contexto
+const useSecurityBlock = () => {
+  const handleKeyDown = useCallback((e) => {
+    // Lista de teclas a serem bloqueadas
+    const blockedKeys = [
+      'F12', // DevTools
+      'I',   // Ctrl+Shift+I (DevTools)
+      'J',   // Ctrl+Shift+J (Console)
+      'U',   // Ctrl+U (View Source)
+      'S',   // Ctrl+S (Save)
+      'P',   // Ctrl+P (Print)
+    ];
+
+    // Bloquear F12
+    if (e.key === 'F12' || e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+
+    // Bloquear combinações com Ctrl+Shift
+    if (e.ctrlKey && e.shiftKey && blockedKeys.includes(e.key)) {
+      e.preventDefault();
+      return false;
+    }
+
+    // Bloquear Ctrl+U
+    if (e.ctrlKey && e.key === 'u') {
+      e.preventDefault();
+      return false;
+    }
+  }, []);
+
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault();
+    return false;
+  }, []);
+
+  useEffect(() => {
+    // Adicionar listeners
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('contextmenu', handleContextMenu);
+
+    // Detectar DevTools via debugger
+    function detectDevTools() {
+      const widthThreshold = window.outerWidth - window.innerWidth > 160;
+      const heightThreshold = window.outerHeight - window.innerHeight > 160;
+      
+      if (widthThreshold || heightThreshold) {
+        // DevTools está provavelmente aberto
+        window.location.reload();
+      }
+    }
+
+    const interval = setInterval(detectDevTools, 1000);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('contextmenu', handleContextMenu);
+      clearInterval(interval);
+    };
+  }, [handleKeyDown, handleContextMenu]);
+};
 
 // ===== SISTEMA DE COOKIES =====
 const CookieManager = {
@@ -1772,7 +1837,7 @@ const AlmoxarifadoSistema = () => {
       id: 'meu-inventario', 
       nome: 'Meu Inventário', 
       icone: ToolCase,
-      permissao: () => true // Visível para todos os níveis
+      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Apenas nível 2 (Supervisor) ou superior
     },
     { 
       id: 'inventario', 
@@ -2181,6 +2246,7 @@ const AlmoxarifadoSistema = () => {
 
 // Componente principal da aplicação
 const App = () => {
+  useDevToolsProtection();
   const { usuario, isLoading } = useAuth();
 
   if (isLoading) {
@@ -2194,6 +2260,9 @@ const App = () => {
 const Seed = () => {
   // Inicializar hook de notificações
   useNotifications();
+  
+  // Ativar bloqueios de segurança
+  useSecurityBlock();
   
   return (
     <AuthProvider>
