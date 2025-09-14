@@ -66,7 +66,16 @@ import {
 
 // Função para bloquear teclas de atalho e menu de contexto
 const useSecurityBlock = () => {
+  const { usuario } = useAuth();
+  const isAdmin = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
+
   const handleKeyDown = useCallback((e) => {
+    // Se for admin, permite todas as teclas
+    if (isAdmin) {
+      console.log('Admin detected, allowing all keys');
+      return true;
+    }
+
     // Lista de teclas a serem bloqueadas
     const blockedKeys = [
       'F12', // DevTools
@@ -94,38 +103,48 @@ const useSecurityBlock = () => {
       e.preventDefault();
       return false;
     }
-  }, []);
+  }, [isAdmin]);
 
   const handleContextMenu = useCallback((e) => {
+    // Se for admin, permite o menu de contexto
+    if (isAdmin) {
+      console.log('Admin detected, allowing context menu');
+      return true;
+    }
+    
     e.preventDefault();
     return false;
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
-    // Adicionar listeners
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('contextmenu', handleContextMenu);
+    console.log('Security block effect running, isAdmin:', isAdmin);
+    
+    if (!isAdmin) {
+      // Adicionar listeners apenas se não for admin
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('contextmenu', handleContextMenu);
 
-    // Detectar DevTools via debugger
-    function detectDevTools() {
-      const widthThreshold = window.outerWidth - window.innerWidth > 160;
-      const heightThreshold = window.outerHeight - window.innerHeight > 160;
-      
-      if (widthThreshold || heightThreshold) {
-        // DevTools está provavelmente aberto
-        window.location.reload();
+      // Detectar DevTools via debugger apenas para não-admins
+      function detectDevTools() {
+        const widthThreshold = window.outerWidth - window.innerWidth > 160;
+        const heightThreshold = window.outerHeight - window.innerHeight > 160;
+        
+        if (widthThreshold || heightThreshold) {
+          // DevTools está provavelmente aberto
+          window.location.reload();
+        }
       }
+
+      const interval = setInterval(detectDevTools, 1000);
+
+      // Cleanup
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('contextmenu', handleContextMenu);
+        clearInterval(interval);
+      };
     }
-
-    const interval = setInterval(detectDevTools, 1000);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('contextmenu', handleContextMenu);
-      clearInterval(interval);
-    };
-  }, [handleKeyDown, handleContextMenu]);
+  }, [handleKeyDown, handleContextMenu, isAdmin]);
 };
 
 // ===== SISTEMA DE COOKIES =====
@@ -846,72 +865,7 @@ const Dashboard = ({ stats, firebaseStatus }) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <Package className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Inventário</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{inventario?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 dark:bg-green-900 rounded">
-              <ClipboardList className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Empréstimos Ativos</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{emprestimos?.filter(e => e.status !== 'devolvido').length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded">
-              <Users className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Funcionários</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{funcionarios?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
-          <div className="flex items-center">
-            <div className="p-2 bg-red-100 dark:bg-red-900 rounded">
-              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Danificadas</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{ferramentasDanificadas?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
-          <div className="flex items-center">
-            <div className="p-2 bg-red-100 dark:bg-red-900 rounded">
-              <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Perdidas</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{ferramentasPerdidas?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-700/20">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded">
-              <ShoppingCart className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Compras</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{compras?.length || 0}</p>
-            </div>
-          </div>
-        </div>
+        {/* Dashboard content will be added here */}
       </div>
     </div>
   );
