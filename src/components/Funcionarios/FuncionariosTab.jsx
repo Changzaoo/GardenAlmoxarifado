@@ -315,78 +315,46 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
       </div>
 
       {/* Barra de Busca e Filtros */}
-      <div className="flex justify-between items-center mb-4">
-        {/* Botões de Filtro */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFiltroAtual('nome')}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-              filtroAtual === 'nome'
-                ? 'bg-[#1DA1F2] text-white'
-                : 'bg-[#192734] text-[#8899A6] hover:bg-[#253341]'
-            }`}
-          >
-            Nome
-          </button>
-          <button
-            onClick={() => setFiltroAtual('avaliacao')}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-              filtroAtual === 'avaliacao'
-                ? 'bg-[#1DA1F2] text-white'
-                : 'bg-[#192734] text-[#8899A6] hover:bg-[#253341]'
-            }`}
-          >
-            Mais Avaliados
-          </button>
-          <button
-            onClick={() => setFiltroAtual('tarefas')}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-              filtroAtual === 'tarefas'
-                ? 'bg-[#1DA1F2] text-white'
-                : 'bg-[#192734] text-[#8899A6] hover:bg-[#253341]'
-            }`}
-          >
-            Mais Tarefas Concluídas
-          </button>
-          <button
-            onClick={() => setFiltroAtual('emprestimos')}
-            className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-              filtroAtual === 'emprestimos'
-                ? 'bg-[#1DA1F2] text-white'
-                : 'bg-[#192734] text-[#8899A6] hover:bg-[#253341]'
-            }`}
-          >
-            Mais Empréstimos
-          </button>
-        </div>
+      <div className="flex items-center gap-4 mb-4">
+        {/* Dropdown de Filtro */}
+        <select
+          value={filtroAtual}
+          onChange={(e) => setFiltroAtual(e.target.value)}
+          className="bg-[#192734] text-[#8899A6] hover:bg-[#253341] hover:text-white px-3 py-2 rounded-lg text-sm border border-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#192734] dark:text-[#8899A6] dark:border-[#38444D] dark:hover:bg-[#253341] dark:hover:text-white transition-colors cursor-pointer w-[200px]"
+        >
+          <option value="nome">Nome</option>
+          <option value="avaliacao">Mais Avaliados</option>
+          <option value="tarefas">Mais Tarefas</option>
+          <option value="emprestimos">Mais Empréstimos</option>
+        </select>
 
         {/* Campo de Busca */}
-        <div className="w-96">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar funcionários..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 pl-12 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+        <div className="relative w-36">
+          <input
+            type="text"
+            placeholder="         Buscar..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 pl-12 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+          />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8899A6]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8899A6]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
+          </svg>
         </div>
       </div>
+
+      {/* Lista de Funcionários */}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {[...funcionariosFiltrados].sort(getFuncaoOrdenacao()).map((func) => (
@@ -597,13 +565,11 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
               />
               <input
                 type="text"
-                placeholder="Telefone"
-                value={formEdit.telefone}
-                onChange={e => setFormEdit({ ...formEdit, telefone: e.target.value.replace(/[^0-9]/g, '') })}
+                placeholder="(00) 00000-0000"
                 value={formEdit.telefone ? formatarTelefone(formEdit.telefone) : ''}
+                onChange={e => setFormEdit({ ...formEdit, telefone: e.target.value.replace(/[^0-9]/g, '') })}
                 className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
                 maxLength={15}
-                placeholder="(00) 00000-0000"
               />
             </div>
             <div className="flex justify-end gap-3 mt-6">

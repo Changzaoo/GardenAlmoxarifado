@@ -136,15 +136,17 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
       <div 
-        className="bg-[#192734] rounded-2xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        className="bg-[#192734] rounded-2xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto relative"
         onClick={e => e.stopPropagation()}
       >
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-[#8899A6] hover:text-white transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
+        <div className="sticky top-0 right-0 z-10 flex justify-end p-4 bg-[#192734]">
+          <button 
+            onClick={onClose}
+            className="text-[#8899A6] hover:text-white transition-colors p-2 hover:bg-[#253341] rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         <div className="relative">
           <div className="h-32 bg-[#1DA1F2]/10"></div>

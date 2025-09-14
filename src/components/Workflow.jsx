@@ -30,6 +30,7 @@ import TarefasTab from './Tarefas/TarefasTab';
 import { AuthContext, useAuth } from '../hooks/useAuth';
 import AnalyticsTab from './Analytics/AnalyticsTab';
 import AnalyticsProvider from './Analytics/AnalyticsProvider';
+import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 // Icons
 import { 
@@ -1815,12 +1816,7 @@ const AlmoxarifadoSistema = () => {
 
   // Configuração das abas baseada em permissões
   const abas = [
-    { 
-      id: 'dashboard', 
-      nome: 'Dashboard',
-      icone: Package,
-      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas nível 4 pode ver estatísticas
-    },
+    
     {
       id: 'meu-perfil',
       nome: 'Meu Perfil',
@@ -2035,7 +2031,6 @@ const AlmoxarifadoSistema = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-[#E7E9EA]"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
               </button>
               {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
-                <>
                 <button
                   onClick={() => {
                     setAbaAtiva('usuarios');
@@ -2045,6 +2040,19 @@ const AlmoxarifadoSistema = () => {
                 >
                   <Users className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
                 </button>
+              )}
+              {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+                <button
+                  onClick={() => {
+                    setAbaAtiva('dashboard');
+                  }}
+                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                  title="Dashboard"
+                >
+                  <BarChart3 className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                </button>
+              )}
+              {usuario?.nivel >= NIVEIS_PERMISSAO.ADMIN && (
                 <button
                   onClick={() => {
                     setAbaAtiva('analytics');
@@ -2052,9 +2060,8 @@ const AlmoxarifadoSistema = () => {
                   className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                   title="Estatísticas"
                 >
-                  <BarChart3 className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                  <Package className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
                 </button>
-                </>
               )}
               <button
                 onClick={() => {
@@ -2088,6 +2095,14 @@ const AlmoxarifadoSistema = () => {
       <main className={`${isMobile ? 'pt-16' : 'pl-64'} w-full min-h-screen bg-white dark:bg-black`}>
         <div className="max-w-5xl mx-auto px-4">
           <div className="py-3">
+
+            {abaAtiva === 'dashboard' && (
+              usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO ? (
+                <DashboardTab stats={stats} />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para visualizar o dashboard." />
+              )
+            )}
 
             {abaAtiva === 'analytics' && (
               usuario?.nivel >= NIVEIS_PERMISSAO.GERENTE ? (
