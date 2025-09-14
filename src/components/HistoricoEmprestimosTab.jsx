@@ -183,8 +183,17 @@ const HistoricoEmprestimosTab = () => {
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Barra de pesquisa */}
       <div className="bg-white p-4 rounded-lg shadow">
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Pesquisar em todo o histórico..."
+            className="w-full px-2 py-1 md:px-4 md:py-2 text-sm md:text-base rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Filtros */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Data Início</label>
@@ -237,11 +246,11 @@ const HistoricoEmprestimosTab = () => {
             <select
               value={filtros.status}
               onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-              className="mt-1 block w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
             >
-              <option value="todos" className="bg-[#192734]">Todos</option>
-              <option value="ativos" className="bg-[#192734]">Ativos</option>
-              <option value="devolvidos" className="bg-[#192734]">Devolvidos</option>
+              <option value="todos">Todos</option>
+              <option value="ativos">Ativos</option>
+              <option value="devolvidos">Devolvidos</option>
             </select>
           </div>
           <div>
@@ -249,7 +258,7 @@ const HistoricoEmprestimosTab = () => {
             <select
               value={filtros.ordenacao}
               onChange={(e) => setFiltros(prev => ({ ...prev, ordenacao: e.target.value }))}
-              className="mt-1 block w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
             >
               <option value="recentes">Mais Recentes</option>
               <option value="antigos">Mais Antigos</option>

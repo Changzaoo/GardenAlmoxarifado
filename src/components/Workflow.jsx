@@ -106,10 +106,29 @@ const useSecurityBlock = () => {
   }, [isAdmin]);
 
   const handleContextMenu = useCallback((e) => {
-    // Se for admin, permite o menu de contexto
+    // Se for admin, permite copiar o HTML do elemento
     if (isAdmin) {
-      console.log('Admin detected, allowing context menu');
-      return true;
+      e.preventDefault(); // Previne o menu padrão mesmo para admin
+      
+      // Obtém o elemento clicado
+      const elementoClicado = e.target;
+      
+      // Obtém o HTML do elemento
+      const htmlDoElemento = elementoClicado.outerHTML;
+      
+      // Copia para a área de transferência
+      navigator.clipboard.writeText(htmlDoElemento)
+        .then(() => {
+          // Feedback visual para o admin
+          alert('HTML copiado para a área de transferência!');
+          console.log('HTML copiado:', htmlDoElemento);
+        })
+        .catch(err => {
+          console.error('Erro ao copiar HTML:', err);
+          alert('Erro ao copiar HTML. Verifique o console.');
+        });
+      
+      return false;
     }
     
     e.preventDefault();
@@ -1978,7 +1997,12 @@ const AlmoxarifadoSistema = () => {
           <div className="mt-1.5">
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setShowHelpModal(true)}
+                onClick={() => {
+                  setShowHelpModal(true);
+                  if (isMobile) {
+                    setMenuOpen(false);
+                  }
+                }}
                 className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Ajuda"
               >
@@ -1988,6 +2012,9 @@ const AlmoxarifadoSistema = () => {
                 <button
                   onClick={() => {
                     setAbaAtiva('usuarios');
+                    if (isMobile) {
+                      setMenuOpen(false);
+                    }
                   }}
                   className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                   title="Usuários"
@@ -1999,6 +2026,9 @@ const AlmoxarifadoSistema = () => {
                 <button
                   onClick={() => {
                     setAbaAtiva('dashboard');
+                    if (isMobile) {
+                      setMenuOpen(false);
+                    }
                   }}
                   className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                   title="Dashboard"
@@ -2006,20 +2036,12 @@ const AlmoxarifadoSistema = () => {
                   <BarChart3 className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
                 </button>
               )}
-              {usuario?.nivel >= NIVEIS_PERMISSAO.ADMIN && (
-                <button
-                  onClick={() => {
-                    setAbaAtiva('analytics');
-                  }}
-                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                  title="Estatísticas"
-                >
-                  <Package className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
-                </button>
-              )}
               <button
                 onClick={() => {
                   setAbaAtiva('legal');
+                  if (isMobile) {
+                    setMenuOpen(false);
+                  }
                 }}
                 className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Legal"
