@@ -4,11 +4,12 @@ import { useDevToolsProtection } from '../hooks/useDevToolsProtection';
 import { ToastProvider } from './ToastProvider';
 import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
 import LegalTab from './Legal/LegalTab';
+import SupportTab from './Support/SupportTab';
 import { Shield } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './ThemeProvider';
-import SupportTab from './Support/SupportTab';
+
 import UserProfileModal from './Auth/UserProfileModal';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
 import { useNotifications } from '../hooks/useNotifications';
@@ -934,7 +935,6 @@ const AlmoxarifadoSistema = () => {
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -1857,15 +1857,13 @@ const AlmoxarifadoSistema = () => {
       icone: History,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
-    { 
+    {
       id: 'historico-transferencias', 
       nome: 'Histórico de Transferências', 
       icone: ArrowRight,
       permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR
     }
-  ].filter(aba => aba.permissao());
-
-  // Permissão para aba de usuários (apenas nível 4)
+  ].filter(aba => aba.permissao());  // Permissão para aba de usuários (apenas nível 4)
   const podeVerUsuarios = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
   
   // Permissão para aba legal (todos podem ver, nível 1 apenas visualiza)
@@ -1998,7 +1996,7 @@ const AlmoxarifadoSistema = () => {
             <div className="flex items-center gap-1">
               <button
                 onClick={() => {
-                  setShowHelpModal(true);
+                  setAbaAtiva('suporte');
                   if (isMobile) {
                     setMenuOpen(false);
                   }
@@ -2061,12 +2059,7 @@ const AlmoxarifadoSistema = () => {
         userId={usuario.id}
       />
 
-      {/* Help Modal */}
-      {showHelpModal && (
-        <div className="fixed inset-0 z-50">
-          <SupportTab onClose={() => setShowHelpModal(false)} />
-        </div>
-      )}
+
 
       <main className={`${isMobile ? 'pt-16' : 'pl-64'} w-full min-h-screen bg-white dark:bg-black`}>
         <div className="max-w-5xl mx-auto px-4">
@@ -2226,6 +2219,10 @@ const AlmoxarifadoSistema = () => {
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar as tarefas." />
               )
+            )}
+
+            {abaAtiva === 'suporte' && (
+              <SupportTab />
             )}
           </div>
         </div>

@@ -23,7 +23,7 @@ const DevolucaoFerramentasModal = ({ emprestimo, onConfirm, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#192734] rounded-lg shadow-lg max-w-xl w-full p-6">
+      <div className="bg-gray-100 dark:bg-[#192734] rounded-lg shadow-lg max-w-xl w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Devolução de Ferramentas
@@ -40,7 +40,7 @@ const DevolucaoFerramentasModal = ({ emprestimo, onConfirm, onClose }) => {
         </div>
 
         <div className="space-y-4">
-          <div className="border border-[#1D9BF0]/20 bg-[#1D9BF0]/10 dark:bg-[#1D9BF0]/5 rounded-lg p-4 mb-4">
+          <div className="border border-[#1D9BF0]/20 bg-[#1D9BF0]/20 dark:bg-[#1D9BF0]/10 rounded-lg p-4 mb-4">
             <div className="flex gap-2 items-start">
               <AlertTriangle className="w-5 h-5 text-[#1D9BF0] mt-0.5" />
               <div className="space-y-2">
@@ -62,8 +62,8 @@ const DevolucaoFerramentasModal = ({ emprestimo, onConfirm, onClose }) => {
                 key={index}
                 className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
                   ferramentasSelecionadas.includes(ferramenta)
-                    ? 'border-[#1D9BF0] bg-[#1D9BF0]/10 dark:bg-[#1D9BF0]/5'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-[#1D9BF0]'
+                    ? 'border-[#1D9BF0] bg-[#1D9BF0]/20 dark:bg-[#1D9BF0]/10'
+                    : 'border-gray-300 dark:border-gray-700 hover:border-[#1D9BF0] bg-gray-50 dark:bg-gray-800'
                 }`}
                 onClick={() => handleToggleFerramenta(ferramenta)}
               >

@@ -136,44 +136,60 @@ const CriarTarefa = ({ onClose }) => {
             <label htmlFor="funcionarios" className="block text-sm font-medium text-[#8899A6] mb-1">
               Funcionários Responsáveis
             </label>
-            <div className="relative">
-              <select
-                id="funcionarios"
-                multiple
-                value={formData.funcionariosIds}
-                onChange={(e) => {
-                  const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                  setFormData({ ...formData, funcionariosIds: selectedOptions });
-                }}
-                className="w-full bg-[#253341] border border-[#38444D] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors min-h-[120px]"
-                required
-              >
-                <option value="Jonathan" className="bg-[#192734] p-2">Jonathan</option>
-                <option value="Ruan" className="bg-[#192734] p-2">Ruan</option>
-                <option value="Lucas" className="bg-[#192734] p-2">Lucas</option>
-                <option value="Anderson" className="bg-[#192734] p-2">Anderson</option>
-                <option value="Ezequiel" className="bg-[#192734] p-2">Ezequiel</option>
-                <option value="Fabian" className="bg-[#192734] p-2">Fabian</option>
-                <option value="Luan" className="bg-[#192734] p-2">Luan</option>
-                <option value="Moisés" className="bg-[#192734] p-2">Moisés</option>
-                <option value="Robson" className="bg-[#192734] p-2">Robson</option>
-                <option value="Claudio" className="bg-[#192734] p-2">Claudio</option>
-                <option value="Adriano" className="bg-[#192734] p-2">Adriano</option>
-                <option value="João" className="bg-[#192734] p-2">João</option>
-                <option value="Nilton" className="bg-[#192734] p-2">Nilton</option>
-                <option value="Carlos" className="bg-[#192734] p-2">Carlos</option>
-                <option value="Marcelo" className="bg-[#192734] p-2">Marcelo</option>
-                <option value="Alex" className="bg-[#192734] p-2">Alex</option>
-                <option value="Bryan" className="bg-[#192734] p-2">Bryan</option>
-                <option value="Vinicius" className="bg-[#192734] p-2">Vinicius</option>
-                <option value="Israel" className="bg-[#192734] p-2">Israel</option>
-                <option value="Ramon" className="bg-[#192734] p-2">Ramon</option>
-                <option value="David" className="bg-[#192734] p-2">David</option>
-                <option value="Marcos Paulo" className="bg-[#192734] p-2">Marcos Paulo</option>
-              </select>
-              <p className="text-[#8899A6] text-xs mt-1">
-                Pressione CTRL (ou CMD no Mac) e clique para selecionar múltiplos funcionários
-              </p>
+            <div className="space-y-3">
+              <div className="relative">
+                <select
+                  id="funcionarios"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value && !formData.funcionariosIds.includes(e.target.value)) {
+                      setFormData({
+                        ...formData,
+                        funcionariosIds: [...formData.funcionariosIds, e.target.value]
+                      });
+                    }
+                    e.target.value = ""; // Reset select após selecionar
+                  }}
+                  className="w-full bg-[#253341] border border-[#38444D] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors"
+                  required={formData.funcionariosIds.length === 0}
+                >
+                  <option value="" className="bg-[#192734]">Selecione os funcionários</option>
+                  {["Adriano", "Alex", "Anderson", "Bryan", "Carlos", "Claudio", "David",
+                    "Ezequiel", "Fabian", "Israel", "João", "Jonathan", "Lucas", "Luan",
+                    "Marcelo", "Marcos Paulo", "Moisés", "Nilton", "Ramon", "Robson", "Ruan",
+                    "Vinicius"].filter(nome => !formData.funcionariosIds.includes(nome))
+                    .map(nome => (
+                      <option key={nome} value={nome} className="bg-[#192734] p-2">{nome}</option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              {/* Lista de funcionários selecionados */}
+              {formData.funcionariosIds.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.funcionariosIds.map((nome) => (
+                    <div
+                      key={nome}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-[#253341] border border-[#38444D] rounded-full text-white text-sm"
+                    >
+                      {nome}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            funcionariosIds: formData.funcionariosIds.filter(n => n !== nome)
+                          });
+                        }}
+                        className="ml-1 p-1 hover:text-red-500 rounded-full transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

@@ -33,18 +33,18 @@ const CriarTemplate = ({ onClose, templateParaEditar }) => {
       return;
     }
 
-    let sucesso;
+    let resultado;
     if (templateParaEditar) {
-      sucesso = await atualizarTemplatePersonalizado(templateParaEditar.id, formData);
-      if (sucesso) {
+      resultado = await atualizarTemplatePersonalizado(templateParaEditar.id, formData);
+      if (resultado.success) {
         showToast('Template atualizado com sucesso!', 'success');
         onClose();
       } else {
         showToast('Erro ao atualizar template', 'error');
       }
     } else {
-      sucesso = await salvarTemplatePersonalizado(formData);
-      if (sucesso) {
+      resultado = await salvarTemplatePersonalizado(formData);
+      if (resultado) {
         showToast('Template salvo com sucesso!', 'success');
         onClose();
       } else {

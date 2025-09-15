@@ -11,6 +11,7 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
   const [templatesPersonalizados, setTemplatesPersonalizados] = useState([]);
   const [showCriarTemplate, setShowCriarTemplate] = useState(false);
   const [templateParaEditar, setTemplateParaEditar] = useState(null);
+  const [confirmExclusao, setConfirmExclusao] = useState({ show: false, templateId: null });
 
   // Carregar templates personalizados
   useEffect(() => {
@@ -26,20 +27,33 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
     }
   }, [showToast]);
 
-  // Combinar templates do sistema e personalizados
-  const todasTarefas = [...TAREFAS_PREDEFINIDAS, ...templatesPersonalizados];
+  const [mostrarTemplatesSistema, setMostrarTemplatesSistema] = useState(false);
+
+  // Filtrar templates do sistema que já foram personalizados
+  const templatesSistemaFiltrados = TAREFAS_PREDEFINIDAS.filter(template => {
+    return !templatesPersonalizados.some(t => t.originalId === template.id);
+  });
+
+  // Combinar templates baseado na escolha do usuário
+  const todasTarefas = mostrarTemplatesSistema 
+    ? [...templatesSistemaFiltrados, ...templatesPersonalizados]
+    : templatesPersonalizados;
+  
   const tiposTarefa = [...new Set(todasTarefas.map(t => t.tipo))].sort();
 
   const handleExcluirTemplate = async (e, templateId) => {
     e.stopPropagation();
-    if (window.confirm('Tem certeza que deseja excluir este modelo?')) {
-      const sucesso = await excluirTemplatePersonalizado(templateId);
-      if (sucesso) {
-        showToast('Modelo excluído com sucesso!', 'success');
-      } else {
-        showToast('Erro ao excluir modelo', 'error');
-      }
+    setConfirmExclusao({ show: true, templateId });
+  };
+
+  const confirmarExclusao = async () => {
+    const sucesso = await excluirTemplatePersonalizado(confirmExclusao.templateId);
+    if (sucesso) {
+      showToast('Modelo excluído com sucesso!', 'success');
+    } else {
+      showToast('Erro ao excluir modelo', 'error');
     }
+    setConfirmExclusao({ show: false, templateId: null });
   };
 
   return (
@@ -51,21 +65,32 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
             <p className="text-sm text-[#8899A6]">Escolha um modelo existente ou crie um novo</p>
           </div>
           <div className="flex items-center gap-2">
-            {usuario.nivel >= 2 && (
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-[#8899A6] hover:text-white cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={mostrarTemplatesSistema}
+                  onChange={(e) => setMostrarTemplatesSistema(e.target.checked)}
+                  className="w-4 h-4 rounded border-[#38444D] text-[#1DA1F2] focus:ring-[#1DA1F2] focus:ring-offset-0 bg-[#253341]"
+                />
+                <span className="text-sm">Mostrar modelos do sistema</span>
+              </label>
+              {usuario.nivel >= 2 && (
+                <button
+                  onClick={() => setShowCriarTemplate(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Criar Modelo
+                </button>
+              )}
               <button
-                onClick={() => setShowCriarTemplate(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors"
+                onClick={onClose}
+                className="p-2 text-[#8899A6] hover:text-white hover:bg-white/10 rounded-full transition-colors"
               >
-                <Plus className="w-4 h-4" />
-                Criar Modelo
+                &times;
               </button>
-            )}
-            <button
-              onClick={onClose}
-              className="p-2 text-[#8899A6] hover:text-white hover:bg-white/10 rounded-full transition-colors"
-            >
-              &times;
-            </button>
+            </div>
           </div>
         </div>
 
@@ -98,7 +123,7 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
                           <Flag className="w-3 h-3 inline-block mr-1" />
                           {tarefa.prioridade.charAt(0).toUpperCase() + tarefa.prioridade.slice(1)}
                         </span>
-                        {tarefa.personalizado && usuario.nivel >= 2 && (
+                        {usuario.nivel >= 2 && (
                           <div className="flex items-center gap-1">
                             <button
                               onClick={(e) => {
@@ -107,17 +132,19 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
                                 setShowCriarTemplate(true);
                               }}
                               className="p-1 text-[#1DA1F2] hover:bg-[#1DA1F2]/10 rounded-full transition-colors"
-                              title="Editar modelo"
+                              title={tarefa.personalizado ? "Editar modelo" : "Criar cópia personalizada"}
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={(e) => handleExcluirTemplate(e, tarefa.id)}
-                              className="p-1 text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
-                              title="Excluir modelo"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {tarefa.personalizado && (
+                              <button
+                                onClick={(e) => handleExcluirTemplate(e, tarefa.id)}
+                                className="p-1 text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
+                                title="Excluir modelo"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -144,6 +171,32 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
             }} 
             templateParaEditar={templateParaEditar}
           />
+        )}
+
+        {/* Modal de Confirmação de Exclusão */}
+        {confirmExclusao.show && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+            <div className="bg-[#192734] rounded-xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-white mb-4">Confirmar Exclusão</h3>
+              <p className="text-[#8899A6] mb-6">
+                Tem certeza que deseja excluir este modelo de tarefa? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmExclusao({ show: false, templateId: null })}
+                  className="px-4 py-2 text-[#8899A6] hover:text-white transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarExclusao}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

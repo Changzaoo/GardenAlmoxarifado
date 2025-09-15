@@ -42,15 +42,35 @@ export const excluirTemplatePersonalizado = async (templateId) => {
 // Atualizar template personalizado
 export const atualizarTemplatePersonalizado = async (templateId, novosDados) => {
   try {
+    // Se é um template do sistema, criar uma cópia no Firebase
+    const templateSistema = TAREFAS_PREDEFINIDAS.find(t => t.id === templateId);
+    if (templateSistema) {
+      // Criar uma nova versão personalizada do template
+      const novoTemplate = {
+        ...templateSistema,
+        ...novosDados,
+        originalId: templateId, // Guardar referência do template original
+        dataCriacao: new Date().toISOString(),
+        dataAtualizacao: new Date().toISOString(),
+        personalizado: true
+      };
+      delete novoTemplate.id; // Remover ID original para criar um novo no Firebase
+      
+      // Salvar no Firebase
+      const docRef = await addDoc(collection(db, 'templates'), novoTemplate);
+      return { success: true, newId: docRef.id };
+    }
+
+    // Se não é do sistema, atualizar normalmente
     const templateRef = doc(db, 'templates', templateId);
     await updateDoc(templateRef, {
       ...novosDados,
       dataAtualizacao: new Date().toISOString()
     });
-    return true;
+    return { success: true };
   } catch (error) {
     console.error('Erro ao atualizar template:', error);
-    return false;
+    return { success: false };
   }
 };
 

@@ -1,5 +1,8 @@
 import React from 'react';
 import { BarChart3, Users, Wrench, AlertTriangle, AlertCircle, ShoppingCart, CheckCircle } from 'lucide-react';
+import ToolUsageStats from './StatisticsCards/ToolUsageStats';
+import TimeAnalysisStats from './StatisticsCards/TimeAnalysisStats';
+import TaskAnalysisStats from './StatisticsCards/TaskAnalysisStats';
 
 const DashboardCard = ({ title, value, icon: Icon, color }) => (
   <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D] hover:border-[#1DA1F2] transition-colors">
@@ -76,6 +79,23 @@ const DashboardTab = ({ stats }) => {
           value={comprasConcluidas}
           icon={CheckCircle}
           color="bg-emerald-500/20"
+        />
+      </div>
+
+      {/* Análises Detalhadas */}
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <ToolUsageStats 
+          emprestimos={stats.emprestimos} 
+          inventario={stats.inventario}
+        />
+        
+        <TimeAnalysisStats 
+          emprestimos={stats.emprestimos}
+        />
+        
+        <TaskAnalysisStats 
+          emprestimos={stats.emprestimos}
+          funcionarios={stats.funcionarios}
         />
       </div>
     </div>
