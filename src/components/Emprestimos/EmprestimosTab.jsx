@@ -1,11 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { Search, CheckCircle, Trash2, Clock, User, Wrench, X, Plus } from 'lucide-react';
+import { Search, CheckCircle, Trash2, Clock, User, Wrench, X, Plus, Pencil } from 'lucide-react';
 import DevolucaoModal from './DevolucaoModal';
 import DevolucaoParcialModal from './DevolucaoParcialModal';
 import ConfirmacaoModal from '../common/ConfirmacaoModal';
 import NovoEmprestimo from './NovoEmprestimo';
 
-const EmprestimoCard = ({ emprestimo, onDevolucao, onDevolucaoParcial, onRemover }) => {
+const EmprestimoCard = ({ emprestimo, onDevolucao, onDevolucaoParcial, onRemover, onUpdateObservacoes }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [observacoes, setObservacoes] = useState(emprestimo.observacoes || '');
+  const textareaRef = React.useRef(null);
+
   const getFuncionarioNome = (emprestimo) => {
     return emprestimo.funcionario?.nome || 
            emprestimo.nomeFuncionario || 
@@ -17,6 +21,41 @@ const EmprestimoCard = ({ emprestimo, onDevolucao, onDevolucaoParcial, onRemover
     if (!ferramenta) return 'Ferramenta não encontrada';
     return typeof ferramenta === 'object' ? ferramenta.nome : ferramenta;
   };
+
+  const handleObservacoesUpdate = () => {
+    if (observacoes !== emprestimo.observacoes) {
+      onUpdateObservacoes(emprestimo.id, observacoes);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleObservacoesUpdate();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setObservacoes(emprestimo.observacoes || '');
+    }
+  };
+
+  const adjustTextareaHeight = (textarea) => {
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+  };
+
+  React.useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      adjustTextareaHeight(textareaRef.current);
+    }
+  }, [isEditing]);
+
+  React.useEffect(() => {
+    setObservacoes(emprestimo.observacoes || '');
+  }, [emprestimo.observacoes]);
 
   return (
     <div className="bg-[#253341] rounded-xl p-4 flex flex-col h-full">
@@ -51,6 +90,57 @@ const EmprestimoCard = ({ emprestimo, onDevolucao, onDevolucaoParcial, onRemover
           </div>
         ))}
       </div>
+
+      {/* Observações */}
+      <div className="mt-3 pt-3 border-t border-[#38444D]">
+        <h5 className="text-[#1DA1F2] text-sm font-medium mb-1">Observações:</h5>
+        {isEditing ? (
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={observacoes}
+              onChange={(e) => {
+                setObservacoes(e.target.value);
+                adjustTextareaHeight(e.target);
+              }}
+              onKeyDown={handleKeyDown}
+              onBlur={handleObservacoesUpdate}
+              placeholder="Digite suas observações..."
+              className="w-full min-h-[60px] px-2 py-1 text-sm text-white bg-[#253341] border border-[#38444D] rounded 
+                         focus:outline-none focus:ring-1 focus:ring-[#1DA1F2] focus:border-[#1DA1F2] resize-none"
+              style={{ overflow: 'hidden' }}
+            />
+            <div className="text-xs text-[#8899A6] mt-1">
+              Pressione Enter para salvar ou Esc para cancelar
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={() => setIsEditing(true)}
+            className="min-h-[32px] px-2 py-1 text-sm rounded cursor-text
+                     hover:bg-[#253341]/50 transition-colors"
+          >
+            <span className={`${emprestimo.observacoes ? 'text-[#8899A6]' : 'text-[#8899A6]/60 italic'}`}>
+              {emprestimo.observacoes || 'Clique para adicionar observações...'}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Data de Devolução */}
+      {emprestimo.dataDevolucao && (
+        <div className="mt-3 pt-3 border-t border-[#38444D] flex items-center gap-2">
+          <Clock className="w-4 h-4 text-[#1DA1F2]" />
+          <span className="text-[#8899A6] text-sm">
+            Devolvido em: {new Date(emprestimo.dataDevolucao).toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </span>
+        </div>
+      )}
 
       {/* Ações */}
       <div className="mt-4 pt-3 border-t border-[#38444D] flex justify-end gap-2">
@@ -116,6 +206,7 @@ const EmprestimosTab = ({
   removerEmprestimo,
   registrarEmprestimo,
   atualizarDisponibilidade,
+  atualizarEmprestimo,
   readonly
 }) => {
   const [filtroEmprestimos, setFiltroEmprestimos] = useState('');
@@ -180,7 +271,7 @@ const EmprestimosTab = ({
       setEmprestimoParaDevolucaoParcial(emprestimo);
       setShowDevolucaoParcialModal(true);
     } else {
-      setSelectedEmprestimo(id);
+      setSelectedEmprestimo(emprestimo); // Passa o objeto do empréstimo em vez do ID
       setShowDevolucaoModal(true);
     }
   };
@@ -218,10 +309,14 @@ const EmprestimosTab = ({
     setEmprestimoParaDevolucaoParcial(null);
   };
 
-  const handleConfirmDevolucao = async (devolvidoPorTerceiros) => {
+  const handleConfirmDevolucao = async (devolvidoPorTerceiros, observacoes = '') => {
     try {
-      if (typeof devolverFerramentas === 'function') {
-        await devolverFerramentas(selectedEmprestimo, atualizarDisponibilidade, devolvidoPorTerceiros);
+      if (typeof devolverFerramentas === 'function' && selectedEmprestimo) {
+        await devolverFerramentas(selectedEmprestimo.id, true, devolvidoPorTerceiros, {
+          observacoes,
+          status: 'devolvido',
+          dataDevolucao: new Date().toISOString()
+        });
         setSelectedEmprestimo(null);
         setShowDevolucaoModal(false);
       }
@@ -241,6 +336,16 @@ const EmprestimosTab = ({
     }
     setShowConfirmacaoExclusao(false);
     setEmprestimoParaExcluir(null);
+  };
+
+  const handleUpdateObservacoes = async (emprestimoId, novasObservacoes) => {
+    try {
+      if (typeof atualizarEmprestimo === 'function') {
+        await atualizarEmprestimo(emprestimoId, { observacoes: novasObservacoes });
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar observações:', error);
+    }
   };
 
   const handleNovoEmprestimo = (dados) => {
@@ -297,6 +402,7 @@ const EmprestimosTab = ({
                     onDevolucao={handleDevolverFerramentas}
                     onDevolucaoParcial={setEmprestimoParaDevolucaoParcial}
                     onRemover={handleRemoverEmprestimo}
+                    onUpdateObservacoes={handleUpdateObservacoes}
                   />
                 ))}
               </div>

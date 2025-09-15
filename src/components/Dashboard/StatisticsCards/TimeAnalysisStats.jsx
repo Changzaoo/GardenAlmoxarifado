@@ -1,9 +1,23 @@
 import React, { useState } from 'react';
-import { Clock, Calendar, ChevronRight, X, User, Package, Trash2, AlertCircle } from 'lucide-react';
+import { Clock, Calendar, ChevronRight, ChevronLeft, X, User, Package, Trash2, AlertCircle } from 'lucide-react';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../firebaseConfig';
 
 const diasDaSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+const mesesDoAno = [
+  { valor: 0, nome: 'Janeiro' },
+  { valor: 1, nome: 'Fevereiro' },
+  { valor: 2, nome: 'Março' },
+  { valor: 3, nome: 'Abril' },
+  { valor: 4, nome: 'Maio' },
+  { valor: 5, nome: 'Junho' },
+  { valor: 6, nome: 'Julho' },
+  { valor: 7, nome: 'Agosto' },
+  { valor: 8, nome: 'Setembro' },
+  { valor: 9, nome: 'Outubro' },
+  { valor: 10, nome: 'Novembro' },
+  { valor: 11, nome: 'Dezembro' }
+];
 
 // Componente de confirmação
 const ConfirmationDialog = ({ isOpen, onClose, onConfirm, message }) => {
@@ -62,14 +76,33 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 };
 
 const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
+  const hoje = new Date();
   const [selectedPeriod, setSelectedPeriod] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
   const [expandedUser, setExpandedUser] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(hoje.getMonth());
+  const [selectedYear, setSelectedYear] = useState(hoje.getFullYear());
   const [confirmationDialog, setConfirmationDialog] = useState({ 
     isOpen: false, 
     emprestimoId: null,
     message: '' 
   });
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  // Fecha o dropdown quando clicar fora dele
+  React.useEffect(() => {
+    if (!isDatePickerOpen) return;
+
+    const handleClickOutside = (event) => {
+      const picker = document.getElementById('date-picker-dropdown');
+      if (picker && !picker.contains(event.target)) {
+        setIsDatePickerOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDatePickerOpen]);
 
   // Função para obter o intervalo de datas da semana
   const getWeekRange = (date) => {
@@ -86,8 +119,15 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
     return `${start.toLocaleDateString('pt-BR', formatOptions)} - ${end.toLocaleDateString('pt-BR', formatOptions)}`;
   };
 
+  // Filtra empréstimos pelo mês e ano selecionados
+  const emprestimosFiltrados = emprestimos.filter(emp => {
+    if (!emp.dataEmprestimo) return false;
+    const data = new Date(emp.dataEmprestimo);
+    return data.getMonth() === selectedMonth && data.getFullYear() === selectedYear;
+  });
+
   // Análise por dias da semana e armazena os empréstimos de cada dia
-  const diasStats = emprestimos.reduce((acc, emp) => {
+  const diasStats = emprestimosFiltrados.reduce((acc, emp) => {
     if (emp.dataEmprestimo) {
       const data = new Date(emp.dataEmprestimo);
       const dia = diasDaSemana[data.getDay()];
@@ -121,14 +161,13 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
     return acc;
   }, {});
 
-  // Obtém as semanas do mês atual
+  // Obtém as semanas do mês selecionado
   const getSemanasDoMes = () => {
-    const hoje = new Date();
-    const ultimoDiaDoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+    const ultimoDiaDoMes = new Date(selectedYear, selectedMonth + 1, 0).getDate();
     const semanas = {};
     
     for (let dia = 1; dia <= ultimoDiaDoMes; dia++) {
-      const data = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+      const data = new Date(selectedYear, selectedMonth, dia);
       const semana = Math.ceil(dia / 7);
       const { start, end } = getWeekRange(data);
       
@@ -144,35 +183,31 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
     return semanas;
   };
 
-  // Análise por semanas do mês e armazena os empréstimos de cada semana
-  const semanaStats = emprestimos.reduce((acc, emp) => {
+  // Análise por semanas do mês selecionado
+  const semanasIniciais = getSemanasDoMes();
+  const semanaStats = emprestimosFiltrados.reduce((acc, emp) => {
     if (emp.dataEmprestimo) {
       const data = new Date(emp.dataEmprestimo);
-      const hoje = new Date();
+      const semana = Math.ceil(data.getDate() / 7);
+      const semanaKey = `Semana ${semana}`;
       
-      // Só considera empréstimos do mês atual
-      if (data.getMonth() === hoje.getMonth() && data.getFullYear() === hoje.getFullYear()) {
-        const semana = Math.ceil(data.getDate() / 7);
-        const semanaKey = `Semana ${semana}`;
-        
-        if (!acc[semanaKey]) {
-          const { start, end } = getWeekRange(data);
-          acc[semanaKey] = {
-            count: 0,
-            emprestimos: [],
-            dateRange: formatDateRange(start, end)
-          };
-        }
-        
-        acc[semanaKey].count += 1;
-        acc[semanaKey].emprestimos.push(emp);
+      if (!acc[semanaKey]) {
+        const { start, end } = getWeekRange(data);
+        acc[semanaKey] = {
+          count: 0,
+          emprestimos: [],
+          dateRange: formatDateRange(start, end)
+        };
       }
+      
+      acc[semanaKey].count += 1;
+      acc[semanaKey].emprestimos.push(emp);
     }
     return acc;
-  }, getSemanasDoMes());
+  }, semanasIniciais);
 
   // Análise de horários e armazena os empréstimos de cada período
-  const horarioStats = emprestimos.reduce((acc, emp) => {
+  const horarioStats = emprestimosFiltrados.reduce((acc, emp) => {
     if (emp.dataEmprestimo) {
       const hora = new Date(emp.dataEmprestimo).getHours();
       const periodo = hora < 12 ? 'Manhã' : hora < 18 ? 'Tarde' : 'Noite';
@@ -204,9 +239,70 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
   return (
     <>
       <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D] hover:border-[#1DA1F2] transition-colors">
-        <div className="flex items-center gap-2 mb-4">
-          <Clock className="w-5 h-5 text-[#1DA1F2]" />
-          <h3 className="text-white font-medium">Análise de Tempo</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#1DA1F2]" />
+            <h3 className="text-white font-medium">Análise de Tempo</h3>
+            <div className="relative ml-2">
+              <button
+                onClick={() => setIsDatePickerOpen(prev => !prev)}
+                className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-1 focus:ring-offset-[#192734]"
+                title="Selecionar período"
+              >
+                <Calendar className="w-5 h-5 text-[#1DA1F2]" />
+              </button>
+              
+              {isDatePickerOpen && (
+                <div id="date-picker-dropdown" className="absolute right-0 mt-2 w-[280px] bg-[#192734] rounded-xl shadow-lg border border-[#38444D] z-50">
+                  <div className="p-3">
+                    {/* Header com ano e navegação */}
+                    <div className="flex items-center justify-between mb-4">
+                      <button 
+                        onClick={() => setSelectedYear(selectedYear - 1)}
+                        className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors text-[#8899A6] hover:text-white"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      
+                      <span className="text-white font-medium">{selectedYear}</span>
+                      
+                      <button 
+                        onClick={() => setSelectedYear(selectedYear + 1)}
+                        className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors text-[#8899A6] hover:text-white"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Grid de meses */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {mesesDoAno.map((mes) => (
+                        <button
+                          key={mes.valor}
+                          onClick={() => {
+                            setSelectedMonth(mes.valor);
+                            setIsDatePickerOpen(false);
+                          }}
+                          className={`
+                            p-2 rounded text-sm font-medium transition-colors
+                            ${selectedMonth === mes.valor 
+                              ? 'bg-[#1DA1F2] text-white' 
+                              : 'text-[#8899A6] hover:bg-[#38444D] hover:text-white'}
+                          `}
+                        >
+                          {mes.nome.substring(0, 3)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="text-[#8899A6] text-sm">
+            {mesesDoAno[selectedMonth].nome} {selectedYear}
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -218,9 +314,10 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                 .filter(([_, stats]) => stats.count > 0)
                 .sort(([_, statsA], [__, statsB]) => statsB.timestamp - statsA.timestamp)
                 .map(([dia, stats]) => {
-                  const hoje = new Date();
                   const diaAtual = diasDaSemana[hoje.getDay()];
-                  const isToday = dia === diaAtual;
+                  const isToday = dia === diaAtual &&
+                                 selectedMonth === hoje.getMonth() &&
+                                 selectedYear === hoje.getFullYear();
                   
                   return (
                     <div
