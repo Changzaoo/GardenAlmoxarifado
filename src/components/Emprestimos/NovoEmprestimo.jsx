@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, Search, Wrench, Trash2 } from 'lucide-react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { Plus, Trash2 } from 'lucide-react';
 import { obterDataAtual, obterHoraAtual } from '../../utils/dateUtils';
+import FerramentaSelector from './FerramentaSelector';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
-import FerramentaSelector from './FerramentaSelector';
 import SugestoesEmprestimo from './SugestoesEmprestimo';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
   const [funcionarios, setFuncionarios] = useState([]);
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState('');
-  const [novoEmprestimo, setNovoEmprestimo] = useState({
-    colaborador: '',
-    ferramentas: []
-  });
 
   // Carregar funcionários
   useEffect(() => {
@@ -36,10 +32,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
   // Adiciona ferramenta à lista com quantidade
   const adicionarFerramenta = (ferramenta, quantidade = 1) => {
     if (!ferramenta) return;
-    const itemInventario = inventario.find(item => 
-      item.nome.toLowerCase() === ferramenta.toLowerCase() && item.disponivel > 0
-    );
-    
+    const itemInventario = inventario.find(item => item.nome.toLowerCase() === ferramenta.toLowerCase() && item.disponivel > 0);
     if (!itemInventario) return;
 
     // Verifica se a ferramenta já existe na lista
@@ -86,7 +79,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
       alert('Por favor, selecione um funcionário');
       return;
     }
-
+    
     if (novoEmprestimo.ferramentas.length === 0) {
       alert('Por favor, selecione pelo menos uma ferramenta');
       return;
@@ -121,7 +114,6 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
         quantidade: f.quantidade
       }))
     };
-
     const emprestimoAdicionado = adicionarEmprestimo(novo, atualizarDisponibilidade);
     if (emprestimoAdicionado) {
       setNovoEmprestimo({
@@ -130,6 +122,10 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
       });
     }
   };
+  const [novoEmprestimo, setNovoEmprestimo] = useState({
+    colaborador: '',
+    ferramentas: []
+  });
 
   const ferramentasDisponiveis = inventario.filter(item => item.disponivel > 0);
 
@@ -160,14 +156,12 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
             {funcionarioSelecionado && (
               <SugestoesEmprestimo funcionarioSelecionado={funcionarioSelecionado} />
             )}
-          </div>
-
+            </div>
           <FerramentaSelector 
             ferramentasDisponiveis={ferramentasDisponiveis}
             onAdicionarFerramenta={adicionarFerramenta}
           />
         </div>
-
         <div>
           <h3 className="font-medium text-gray-700 dark:text-white mb-2">Ferramentas Selecionadas:</h3>
           <div className="border border-gray-200 dark:border-[#38444D] rounded-lg p-3 min-h-32 max-h-[calc(50vh-4rem)] overflow-y-auto">
@@ -202,7 +196,6 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
               </div>
             )}
           </div>
-
           <button
             onClick={handleSubmit}
             disabled={!novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0}

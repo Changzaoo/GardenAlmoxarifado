@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-
-import { Search, CheckCircle, Clock, Trash2, CircleDotDashed } from 'lucide-react';import { Search, CheckCircle, Clock, Trash2, CircleDotDashed } from 'lucide-react';
-
-import { useAuth } from '../../hooks/useAuth';import { useAuth } from '../../hooks/useAuth';
+import { Search, CheckCircle, Clock, Trash2, CircleDotDashed } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 
