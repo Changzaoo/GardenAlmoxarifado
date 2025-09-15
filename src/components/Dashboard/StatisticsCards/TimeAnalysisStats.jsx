@@ -38,9 +38,7 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
       }
     });
 
-    // Filtrar apenas os dias que têm empréstimos
     return Object.values(dayStats)
-      .filter(day => day.count > 0)
       .map(day => ({
         ...day,
         lastDateFormatted: day.lastDate ? new Date(day.lastDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 'N/A',
@@ -61,55 +59,57 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
     // Get the first day of the current month
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
     
-    // Create an array to hold all weeks of the month
-    const weeks = [];
-    
-    // Initialize the first week
+    // Create an array of week ranges for the current month
+    const weekRanges = [];
     let currentWeekStart = new Date(firstDayOfMonth);
     
-    // Adjust to previous Sunday if month doesn't start on Sunday
-    if (currentWeekStart.getDay() !== 0) {
-      currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
-    }
-    
-    // Create all weeks for the month
-    while (weeks.length < 4) {
+    while (currentWeekStart.getMonth() === currentMonth) {
+      const weekStart = new Date(currentWeekStart);
       const weekEnd = new Date(currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
-
-      const weekStats = {
-        start: new Date(currentWeekStart),
-        end: new Date(weekEnd),
-        count: 0,
-        emprestimos: []
-      };
-
-      // Count empréstimos for this week
-      emprestimos.forEach(emp => {
-        if (!emp?.dataEmprestimo) return;
-        
-        const empDate = new Date(emp.dataEmprestimo);
-        if (isNaN(empDate.getTime())) return;
-
-        if (empDate >= weekStats.start && empDate <= weekEnd) {
-          weekStats.count++;
-          weekStats.emprestimos.push(emp);
-        }
+      
+      weekRanges.push({
+        start: weekStart,
+        end: weekEnd,
+        emprestimos: [],
+        count: 0
       });
-
-      // Só adiciona a semana se houver empréstimos
-      if (weekStats.count > 0) {
-        weeks.push({
-          ...weekStats,
-          dateRange: `${weekStats.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - ${weekStats.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
-        });
-      }
-
-      // Move to next week
+      
       currentWeekStart.setDate(currentWeekStart.getDate() + 7);
     }
 
-    return weeks;
+    // Assign loans to the appropriate week
+    emprestimos.forEach(emp => {
+      if (!emp?.dataEmprestimo) return;
+      
+      const loanDate = new Date(emp.dataEmprestimo);
+      if (isNaN(loanDate.getTime())) return;
+      
+      // Only process loans from the current month
+      if (loanDate.getMonth() !== currentMonth || loanDate.getFullYear() !== currentYear) {
+        return;
+      }
+      
+      // Find the week this loan belongs to
+      const weekIndex = weekRanges.findIndex(week => {
+        const loanTime = loanDate.getTime();
+        return loanTime >= week.start.getTime() && loanTime <= week.end.getTime();
+      });
+      
+      if (weekIndex !== -1) {
+        weekRanges[weekIndex].emprestimos.push(emp);
+        weekRanges[weekIndex].count++;
+      }
+    });
+
+    // Return only weeks that have loans
+    return weekRanges
+      .filter(week => week.count > 0)
+      .map(week => ({
+        ...week,
+        dateRange: `${week.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - ${week.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
+      }))
+      .slice(0, 4); // Limit to 4 weeks
   }, [emprestimos]);
 
   const handleItemClick = (data, type, title) => {
@@ -164,27 +164,25 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
 
       <div className="space-y-4">
         {/* Dias da Semana */}
-        {weekdays.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-[#8899A6] text-sm font-medium">Dias mais ativos</h4>
           <div className="space-y-2">
-            <h4 className="text-[#8899A6] text-sm font-medium">Dias mais ativos</h4>
-            <div className="space-y-2">
-              {weekdays.map((day) => (
-                <div key={day.name}>
-                  {renderStatItem({
-                    name: day.displayName,
-                    count: day.count,
-                    onClick: () => handleItemClick(day, 'day', day.name)
-                  })}
-                </div>
-              ))}
-            </div>
+            {weekdays.map((day) => (
+              <div key={day.name}>
+                {renderStatItem({
+                  name: day.displayName,
+                  count: day.count,
+                  onClick: () => handleItemClick(day, 'day', day.name)
+                })}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
         {/* Semanas */}
         {weeklyStats.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-[#8899A6] text-sm font-medium">Semanas do mês</h4>
+            <h4 className="text-[#8899A6] text-sm font-medium">Semanas mais ativas</h4>
             <div className="space-y-2">
               {weeklyStats.map((week, index) => (
                 <div key={week.start.toISOString()}>
