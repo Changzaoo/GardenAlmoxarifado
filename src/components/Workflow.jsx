@@ -1851,18 +1851,7 @@ const AlmoxarifadoSistema = () => {
       icone: AlertCircle,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
-    {
-      id: 'historico-emprestimos',
-      nome: 'Histórico de Empréstimos',
-      icone: History,
-      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
-    },
-    {
-      id: 'historico-transferencias', 
-      nome: 'Histórico de Transferências', 
-      icone: ArrowRight,
-      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR
-    }
+    
   ].filter(aba => aba.permissao());  // Permissão para aba de usuários (apenas nível 4)
   const podeVerUsuarios = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
   
@@ -1975,14 +1964,20 @@ const AlmoxarifadoSistema = () => {
             </div>
             <div className="flex items-center space-x-1">
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                  setMenuOpen(false);
+                }}
                 className="p-1.5 rounded-full hover:bg-red-500/10 transition-colors"
                 title="Sair"
               >
                 <LogOut className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
               </button>
               <button
-                onClick={() => setShowProfileModal(true)}
+                onClick={() => {
+                  setShowProfileModal(true);
+                  setMenuOpen(false);
+                }}
                 className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Editar perfil"
               >
@@ -1997,9 +1992,7 @@ const AlmoxarifadoSistema = () => {
               <button
                 onClick={() => {
                   setAbaAtiva('suporte');
-                  if (isMobile) {
-                    setMenuOpen(false);
-                  }
+                  setMenuOpen(false);
                 }}
                 className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Ajuda"
@@ -2010,9 +2003,7 @@ const AlmoxarifadoSistema = () => {
                 <button
                   onClick={() => {
                     setAbaAtiva('usuarios');
-                    if (isMobile) {
-                      setMenuOpen(false);
-                    }
+                    setMenuOpen(false);
                   }}
                   className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                   title="Usuários"
@@ -2021,25 +2012,43 @@ const AlmoxarifadoSistema = () => {
                 </button>
               )}
               {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
-                <button
-                  onClick={() => {
-                    setAbaAtiva('dashboard');
-                    if (isMobile) {
+                <>
+                  <button
+                    onClick={() => {
+                      setAbaAtiva('dashboard');
                       setMenuOpen(false);
-                    }
-                  }}
-                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                  title="Dashboard"
-                >
-                  <BarChart3 className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
-                </button>
+                    }}
+                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                    title="Dashboard"
+                  >
+                    <BarChart3 className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAbaAtiva('historico-emprestimos');
+                      setMenuOpen(false);
+                    }}
+                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                    title="Histórico de Empréstimos"
+                  >
+                    <History className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAbaAtiva('historico-transferencias');
+                      setMenuOpen(false);
+                    }}
+                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                    title="Histórico de Transferências"
+                  >
+                    <ArrowRight className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                  </button>
+                </>
               )}
               <button
                 onClick={() => {
                   setAbaAtiva('legal');
-                  if (isMobile) {
-                    setMenuOpen(false);
-                  }
+                  setMenuOpen(false);
                 }}
                 className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Legal"

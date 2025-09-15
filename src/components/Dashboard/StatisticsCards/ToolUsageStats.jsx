@@ -2,12 +2,24 @@ import React from 'react';
 import { Wrench, Clock, Award } from 'lucide-react';
 
 const ToolUsageStats = ({ emprestimos, inventario }) => {
-  // Calcula estatísticas de uso de ferramentas
+  // Calcula estatísticas de uso de ferramentas usando o nome em vez do ID
   const toolUsageStats = emprestimos.reduce((acc, emp) => {
-    emp.ferramentas.forEach(ferramenta => {
-      const ferramentaId = typeof ferramenta === 'object' ? ferramenta.id : ferramenta;
-      acc[ferramentaId] = (acc[ferramentaId] || 0) + 1;
-    });
+    if (emp.ferramentas) {
+      emp.ferramentas.forEach(ferramenta => {
+        // Pega o nome da ferramenta, seja ela string ou objeto
+        const nomeFerramenta = typeof ferramenta === 'object' ? 
+          ferramenta.nome : ferramenta;
+        
+        // Normaliza o nome para evitar problemas de case
+        const nomeNormalizado = nomeFerramenta.trim().toLowerCase();
+        
+        // Adiciona a quantidade emprestada (se disponível) ou 1
+        const quantidade = typeof ferramenta === 'object' ? 
+          (ferramenta.quantidade || 1) : 1;
+        
+        acc[nomeNormalizado] = (acc[nomeNormalizado] || 0) + quantidade;
+      });
+    }
     return acc;
   }, {});
 
@@ -15,10 +27,17 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
   const sortedTools = Object.entries(toolUsageStats)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
-    .map(([ferramentaId, count]) => ({
-      ferramenta: inventario.find(f => f.id === ferramentaId) || { nome: 'Ferramenta Removida' },
-      count
-    }));
+    .map(([nomeNormalizado, count]) => {
+      // Encontra a ferramenta no inventário
+      const ferramenta = inventario.find(f => 
+        f.nome.trim().toLowerCase() === nomeNormalizado
+      );
+      
+      return {
+        nome: ferramenta ? ferramenta.nome : nomeNormalizado,
+        count
+      };
+    });
 
   return (
     <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D] hover:border-[#1DA1F2] transition-colors">
@@ -28,11 +47,21 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
       </div>
       <div className="space-y-3">
         {sortedTools.length > 0 ? (
-          sortedTools.map(({ ferramenta, count }, index) => (
-            <div key={ferramenta.id || index} className="flex items-center justify-between">
+          sortedTools.map(({ nome, count }, index) => (
+            <div key={nome} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {index < 3 && <Award className="w-4 h-4 text-yellow-500" />}
-                <span className="text-[#8899A6]">{ferramenta.nome || 'Ferramenta não encontrada'}</span>
+                {index < 3 && (
+                  <Award 
+                    className={`w-4 h-4 ${
+                      index === 0 ? 'text-yellow-500' :
+                      index === 1 ? 'text-gray-400' :
+                      'text-amber-700'
+                    }`} 
+                  />
+                )}
+                <span className="text-[#8899A6]">
+                  {nome.charAt(0).toUpperCase() + nome.slice(1)}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[#1DA1F2]" />

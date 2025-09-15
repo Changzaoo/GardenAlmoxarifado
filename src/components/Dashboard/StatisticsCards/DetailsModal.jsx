@@ -1,19 +1,129 @@
-import React from 'react';
-import { X, Clock, User, Wrench } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { X, Clock, User, Wrench, ChevronLeft } from 'lucide-react';
+
+const EmprestimoCard = ({ emprestimo }) => {
+  const getFerramentaNome = (ferramenta) => {
+    if (!ferramenta) return 'Ferramenta não encontrada';
+    return typeof ferramenta === 'object' ? ferramenta.nome : ferramenta;
+  };
+
+  return (
+    <div className="bg-[#253341] rounded-xl p-4 flex flex-col h-full">
+      {/* Cabeçalho com Data/Hora e Status */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-[#1DA1F2]" />
+          <span className="text-[#8899A6] text-sm">
+            {new Date(emprestimo.dataEmprestimo).toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </span>
+        </div>
+        <span className={`px-2 py-1 rounded text-xs ${
+          emprestimo.status === 'devolvido' ? 'bg-green-500/20 text-green-400' :
+          emprestimo.status === 'emprestado' ? 'bg-blue-500/20 text-blue-400' :
+          'bg-yellow-500/20 text-yellow-400'
+        }`}>
+          {emprestimo.status.charAt(0).toUpperCase() + emprestimo.status.slice(1)}
+        </span>
+      </div>
+
+      {/* Lista de Ferramentas */}
+      <div className="flex-grow space-y-2">
+        {(emprestimo.ferramentas || emprestimo.nomeFerramentas || []).map((ferramenta, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <Wrench className="w-4 h-4 text-[#8899A6]" />
+            <span className="text-[#8899A6] text-sm">{getFerramentaNome(ferramenta)}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Data de Devolução (se houver) */}
+      {emprestimo.dataDevolucao && (
+        <div className="mt-3 pt-3 border-t border-[#38444D] flex items-center gap-2">
+          <Clock className="w-4 h-4 text-[#8899A6]" />
+          <span className="text-[#8899A6] text-sm">
+            Devolvido: {new Date(emprestimo.dataDevolucao).toLocaleString('pt-BR')}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const FuncionarioCard = ({ nome, emprestimos, onClick }) => (
+  <div
+    onClick={onClick}
+    className="bg-[#253341] rounded-xl p-4 cursor-pointer hover:bg-[#2C3E50] transition-colors flex flex-col"
+  >
+    <div className="flex items-center gap-3 mb-2">
+      <User className="w-5 h-5 text-[#1DA1F2]" />
+      <h4 className="text-white font-medium">{nome}</h4>
+    </div>
+    <p className="text-sm text-[#8899A6] mt-auto">
+      {emprestimos.length} empréstimo{emprestimos.length !== 1 ? 's' : ''}
+    </p>
+  </div>
+);
 
 const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
+  const [selectedFuncionario, setSelectedFuncionario] = useState(null);
+
+  const getFuncionarioNome = (emprestimo) => {
+    return emprestimo.funcionario?.nome || 
+           emprestimo.nomeFuncionario || 
+           emprestimo.colaborador || 
+           'Funcionário não encontrado';
+  };
+
+  // Agrupa empréstimos por funcionário
+  const emprestimosAgrupados = useMemo(() => {
+    const grupos = {};
+    
+    details.forEach(emprestimo => {
+      const funcionarioNome = getFuncionarioNome(emprestimo);
+      
+      if (!grupos[funcionarioNome]) {
+        grupos[funcionarioNome] = [];
+      }
+      
+      grupos[funcionarioNome].push(emprestimo);
+    });
+    
+    return Object.entries(grupos).sort(([nomeA], [nomeB]) => nomeA.localeCompare(nomeB));
+  }, [details]);
+
   if (!isOpen) return null;
+
+  const voltarParaLista = () => {
+    setSelectedFuncionario(null);
+  };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-[#192734] rounded-xl border border-[#38444D] p-4 shadow-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+      <div className="bg-[#192734] rounded-xl border border-[#38444D] p-4 shadow-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-white">{title}</h3>
-            {dateRange && (
-              <p className="text-sm text-[#8899A6]">{dateRange}</p>
+          <div className="flex items-center gap-3">
+            {selectedFuncionario && (
+              <button
+                onClick={voltarParaLista}
+                className="p-1 hover:bg-[#253341] rounded-full transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-[#8899A6]" />
+              </button>
             )}
+            <div>
+              <h3 className="text-lg font-semibold text-white">
+                {selectedFuncionario ? selectedFuncionario : title}
+              </h3>
+              {dateRange && !selectedFuncionario && (
+                <p className="text-sm text-[#8899A6]">{dateRange}</p>
+              )}
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -25,63 +135,32 @@ const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
 
         {/* Content */}
         <div className="overflow-y-auto max-h-[calc(80vh-8rem)]">
-          {details.length > 0 ? (
-            <div className="space-y-3">
-              {details.map((emprestimo, index) => (
-                <div
-                  key={emprestimo.id || index}
-                  className="bg-[#253341] p-3 rounded-lg space-y-2"
-                >
-                  {/* Hora e Funcionário */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-[#1DA1F2]" />
-                      <span className="text-white">
-                        {new Date(emprestimo.dataEmprestimo).toLocaleTimeString('pt-BR', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-[#1DA1F2]" />
-                      <span className="text-white">{emprestimo.funcionario?.nome || 'Funcionário não encontrado'}</span>
-                    </div>
-                  </div>
-
-                  {/* Ferramentas */}
-                  <div className="pl-6 space-y-1">
-                    {emprestimo.ferramentas.map((ferramenta, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <Wrench className="w-4 h-4 text-[#8899A6]" />
-                        <span className="text-[#8899A6]">
-                          {typeof ferramenta === 'object' ? ferramenta.nome : 'Ferramenta não encontrada'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Status e Data de Devolução */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className={`px-2 py-1 rounded ${
-                      emprestimo.status === 'devolvido' ? 'bg-green-500/20 text-green-400' :
-                      emprestimo.status === 'emprestado' ? 'bg-blue-500/20 text-blue-400' :
-                      'bg-yellow-500/20 text-yellow-400'
-                    }`}>
-                      {emprestimo.status.charAt(0).toUpperCase() + emprestimo.status.slice(1)}
-                    </span>
-                    {emprestimo.dataDevolucao && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-[#8899A6]" />
-                        <span className="text-[#8899A6]">
-                          Devolvido: {new Date(emprestimo.dataDevolucao).toLocaleString('pt-BR')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+          {emprestimosAgrupados.length > 0 ? (
+            !selectedFuncionario ? (
+              // Grade de Funcionários
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {emprestimosAgrupados.map(([funcionarioNome, emprestimos]) => (
+                  <FuncionarioCard
+                    key={funcionarioNome}
+                    nome={funcionarioNome}
+                    emprestimos={emprestimos}
+                    onClick={() => setSelectedFuncionario(funcionarioNome)}
+                  />
+                ))}
+              </div>
+            ) : (
+              // Grade de Empréstimos do Funcionário Selecionado
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {emprestimosAgrupados
+                  .find(([nome]) => nome === selectedFuncionario)[1]
+                  .map((emprestimo, index) => (
+                    <EmprestimoCard
+                      key={emprestimo.id || index}
+                      emprestimo={emprestimo}
+                    />
+                  ))}
+              </div>
+            )
           ) : (
             <div className="text-center text-[#8899A6] py-8">
               Nenhum empréstimo encontrado neste período.

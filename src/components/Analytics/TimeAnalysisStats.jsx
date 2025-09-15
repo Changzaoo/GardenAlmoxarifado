@@ -1,0 +1,318 @@
+import React, { useState, useMemo } from 'react';
+import { Calendar, ChevronRight, X, ArrowUpRight, ArrowDownLeft, Clock, User, CheckCircle } from 'lucide-react';
+
+const TimeAnalysisStats = ({ emprestimos = [] }) => {
+  const [selectedDetails, setSelectedDetails] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const weekdays = useMemo(() => {
+    if (!Array.isArray(emprestimos)) return [];
+
+    const days = { 
+      0: 'domingo', 
+      1: 'segunda-feira', 
+      2: 'terça-feira', 
+      3: 'quarta-feira', 
+      4: 'quinta-feira', 
+      5: 'sexta-feira', 
+      6: 'sábado' 
+    };
+    
+    const dayStats = Object.keys(days).reduce((acc, dayNum) => {
+      acc[dayNum] = {
+        name: days[dayNum],
+        count: 0,
+        lastDate: null,
+        emprestimos: []
+      };
+      return acc;
+    }, {});
+
+    emprestimos.forEach(emp => {
+      if (!emp?.dataEmprestimo) return;
+
+      const date = new Date(emp.dataEmprestimo);
+      if (isNaN(date.getTime())) return;
+
+      const dayNum = date.getDay().toString();
+      if (dayStats[dayNum]) {
+        dayStats[dayNum].count++;
+        dayStats[dayNum].emprestimos.push(emp);
+        dayStats[dayNum].date = date;
+        
+        if (!dayStats[dayNum].lastDate || new Date(emp.dataEmprestimo) > new Date(dayStats[dayNum].lastDate)) {
+          dayStats[dayNum].lastDate = emp.dataEmprestimo;
+        }
+      }
+    });
+
+    return Object.values(dayStats)
+      .map(day => ({
+        ...day,
+        lastDateFormatted: day.lastDate ? new Date(day.lastDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 'N/A',
+        displayName: day.lastDate 
+          ? `${day.name} (${new Date(day.lastDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })})`
+          : day.name
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [emprestimos]);
+
+  const weeklyStats = useMemo(() => {
+    if (!Array.isArray(emprestimos)) return [];
+
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const weekRanges = [];
+    let currentWeekStart = new Date(firstDayOfMonth);
+    
+    while (currentWeekStart.getMonth() === currentMonth) {
+      const weekStart = new Date(currentWeekStart);
+      const weekEnd = new Date(currentWeekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      
+      weekRanges.push({
+        start: weekStart,
+        end: weekEnd,
+        emprestimos: [],
+        count: 0
+      });
+      
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    }
+
+    emprestimos.forEach(emp => {
+      if (!emp?.dataEmprestimo) return;
+      
+      const loanDate = new Date(emp.dataEmprestimo);
+      if (isNaN(loanDate.getTime())) return;
+      
+      if (loanDate.getMonth() !== currentMonth || loanDate.getFullYear() !== currentYear) {
+        return;
+      }
+      
+      const weekIndex = weekRanges.findIndex(week => {
+        const loanTime = loanDate.getTime();
+        return loanTime >= week.start.getTime() && loanTime <= week.end.getTime();
+      });
+      
+      if (weekIndex !== -1) {
+        weekRanges[weekIndex].emprestimos.push(emp);
+        weekRanges[weekIndex].count++;
+      }
+    });
+
+    return weekRanges
+      .filter(week => week.count > 0)
+      .map(week => ({
+        ...week,
+        dateRange: `${week.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - ${week.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
+      }))
+      .slice(0, 4);
+  }, [emprestimos]);
+
+  const handleItemClick = (data, type, title) => {
+    if (!data) return;
+
+    let dateRange = '';
+    if (type === 'day') {
+      dateRange = data.lastDateFormatted;
+    } else if (type === 'week') {
+      dateRange = data.dateRange;
+    }
+
+    const emprestimosAgrupados = {
+      emprestado: data.emprestimos.filter(emp => emp.status === 'emprestado'),
+      devolvido: data.emprestimos.filter(emp => emp.status === 'devolvido')
+    };
+
+    setSelectedDetails({
+      title: `${title} (${data.count} empréstimos)`,
+      dateRange,
+      emprestimosAgrupados,
+      emprestimos: data.emprestimos || []
+    });
+    setIsModalOpen(true);
+  };
+
+  const renderStatItem = ({ name, count, onClick }) => (
+    <div
+      onClick={onClick}
+      className="flex items-center justify-between p-3 bg-[#253341] rounded-lg cursor-pointer hover:bg-[#2C3E50] transition-colors"
+    >
+      <div className="space-y-1">
+        <h4 className="text-white capitalize">{name}</h4>
+        <p className="text-sm text-[#8899A6]">{count} empréstimos</p>
+      </div>
+      <ChevronRight className="w-5 h-5 text-[#8899A6]" />
+    </div>
+  );
+
+  if (!Array.isArray(emprestimos)) {
+    return (
+      <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D]">
+        <div className="text-[#8899A6] text-center py-4">
+          Dados de empréstimos indisponíveis
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D]">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-blue-500/20 rounded-lg">
+            <Calendar className="w-5 h-5 text-[#1DA1F2]" />
+          </div>
+          <h3 className="text-lg font-semibold text-white">Análise Temporal</h3>
+        </div>
+
+        <div className="space-y-4">
+          {/* Dias da Semana */}
+          <div className="space-y-2">
+            <h4 className="text-[#8899A6] text-sm font-medium">Dias mais ativos</h4>
+            <div className="space-y-2">
+              {weekdays.map((day) => (
+                <div key={day.name}>
+                  {renderStatItem({
+                    name: day.displayName,
+                    count: day.count,
+                    onClick: () => handleItemClick(day, 'day', day.name)
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Semanas */}
+          {weeklyStats.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-[#8899A6] text-sm font-medium">Semanas mais ativas</h4>
+              <div className="space-y-2">
+                {weeklyStats.map((week, index) => (
+                  <div key={week.start.toISOString()}>
+                    {renderStatItem({
+                      name: `${index + 1}ª Semana (${week.dateRange})`,
+                      count: week.count,
+                      onClick: () => handleItemClick(week, 'week', `${index + 1}ª Semana`)
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal de Detalhes */}
+      {isModalOpen && selectedDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#192734] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4">
+              {/* Cabeçalho */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{selectedDetails.title}</h3>
+                  {selectedDetails.dateRange && (
+                    <p className="text-[#8899A6] text-sm">{selectedDetails.dateRange}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-[#1DA1F2] hover:text-[#1A91DA] transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Lista de Empréstimos */}
+              <div className="space-y-6">
+                {/* Empréstimos Ativos */}
+                {selectedDetails.emprestimosAgrupados.emprestado.length > 0 && (
+                  <div>
+                    <h4 className="text-[#1DA1F2] font-medium mb-3 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Ainda Emprestadas ({selectedDetails.emprestimosAgrupados.emprestado.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {selectedDetails.emprestimosAgrupados.emprestado.map((emp, index) => (
+                        <div key={index} className="bg-[#253341] p-3 rounded-lg">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <div className="text-white font-medium">{emp.nomeFerramentas?.join(', ')}</div>
+                              <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                                <User className="w-4 h-4" />
+                                {emp.nomeFuncionario}
+                              </div>
+                            </div>
+                            <div className="text-right text-sm">
+                              <div className="text-[#8899A6]">
+                                {new Date(emp.dataEmprestimo).toLocaleDateString('pt-BR')}
+                              </div>
+                              <div className="text-[#8899A6]">
+                                {new Date(emp.dataEmprestimo).toLocaleTimeString('pt-BR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empréstimos Devolvidos */}
+                {selectedDetails.emprestimosAgrupados.devolvido.length > 0 && (
+                  <div>
+                    <h4 className="text-green-500 font-medium mb-3 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Devolvidas ({selectedDetails.emprestimosAgrupados.devolvido.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {selectedDetails.emprestimosAgrupados.devolvido.map((emp, index) => (
+                        <div key={index} className="bg-[#253341] p-3 rounded-lg">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <div className="text-white font-medium">{emp.nomeFerramentas?.join(', ')}</div>
+                              <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                                <User className="w-4 h-4" />
+                                {emp.nomeFuncionario}
+                              </div>
+                            </div>
+                            <div className="text-right text-sm space-y-1">
+                              <div className="flex items-center justify-end gap-1 text-[#8899A6]">
+                                <ArrowUpRight className="w-3 h-3" />
+                                {new Date(emp.dataEmprestimo).toLocaleTimeString('pt-BR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                              <div className="flex items-center justify-end gap-1 text-green-500">
+                                <ArrowDownLeft className="w-3 h-3" />
+                                {new Date(emp.dataDevolucao).toLocaleTimeString('pt-BR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TimeAnalysisStats;

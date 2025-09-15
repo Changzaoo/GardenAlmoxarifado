@@ -21,9 +21,23 @@ export const useEmprestimos = () => {
             // Garantir que cada item tenha as propriedades necessárias
             const emprestimosValidos = lista.map(emp => {
               // Garantir que todos os campos necessários existam
+              // Processa as informações do funcionário
+              const nomeFuncionario = emp.nomeFuncionario || 
+                                    emp.colaborador || 
+                                    emp.funcionario?.nome || 
+                                    emp.nome_funcionario || 
+                                    'Não identificado';
+
+              // Garante que todos os campos relacionados ao funcionário estejam preenchidos
+              const dadosFuncionario = {
+                nomeFuncionario: nomeFuncionario,
+                colaborador: nomeFuncionario, // Mantém consistência
+                funcionarioId: emp.funcionarioId || emp.funcionario?.id || null
+              };
+
               return {
                 id: emp.id || '',
-                nomeFuncionario: emp.nomeFuncionario || emp.colaborador || 'Não identificado',
+                ...dadosFuncionario,
                 ferramentas: emp.ferramentas || [],
                 dataEmprestimo: emp.dataEmprestimo || new Date().toISOString(),
                 dataDevolucao: emp.dataDevolucao || null,
@@ -53,12 +67,27 @@ export const useEmprestimos = () => {
   // Adicionar novo empréstimo
   const adicionarEmprestimo = async (novoEmprestimo) => {
     try {
-      const id = await emprestimosCollection.add({
+      // Padroniza os dados do funcionário
+      const dadosFuncionario = {
+        nomeFuncionario: novoEmprestimo.nomeFuncionario || novoEmprestimo.colaborador || novoEmprestimo.funcionario?.nome,
+        funcionarioId: novoEmprestimo.funcionarioId || novoEmprestimo.funcionario?.id,
+        colaborador: novoEmprestimo.colaborador || novoEmprestimo.nomeFuncionario || novoEmprestimo.funcionario?.nome,
+      };
+
+      // Verifica se temos informações válidas do funcionário
+      if (!dadosFuncionario.nomeFuncionario) {
+        throw new Error('Informações do funcionário são obrigatórias');
+      }
+
+      const emprestimoData = {
         ...novoEmprestimo,
+        ...dadosFuncionario,
         dataEmprestimo: new Date().toISOString(),
         status: 'emprestado'
-      });
-      return { id, ...novoEmprestimo };
+      };
+
+      const id = await emprestimosCollection.add(emprestimoData);
+      return { id, ...emprestimoData };
     } catch (error) {
       console.error('Erro ao adicionar empréstimo:', error);
       throw error;

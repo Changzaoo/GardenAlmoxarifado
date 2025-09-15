@@ -1,0 +1,135 @@
+import React, { useMemo } from 'react';
+import { X, Clock, User, Wrench } from 'lucide-react';
+
+const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
+  if (!isOpen) return null;
+
+  const getFuncionarioNome = (emprestimo) => {
+    return emprestimo.funcionario?.nome || 
+           emprestimo.nomeFuncionario || 
+           emprestimo.colaborador || 
+           'Funcionário não encontrado';
+  };
+
+  const getFerramentaNome = (ferramenta) => {
+    if (!ferramenta) return 'Ferramenta não encontrada';
+    return typeof ferramenta === 'object' ? ferramenta.nome : ferramenta;
+  };
+
+  // Agrupa empréstimos por funcionário
+  const emprestimosAgrupados = useMemo(() => {
+    const grupos = {};
+    
+    details.forEach(emprestimo => {
+      const funcionarioNome = getFuncionarioNome(emprestimo);
+      
+      if (!grupos[funcionarioNome]) {
+        grupos[funcionarioNome] = [];
+      }
+      
+      // Adiciona o empréstimo ao grupo do funcionário
+      grupos[funcionarioNome].push(emprestimo);
+    });
+    
+    // Converte o objeto em array e ordena por nome do funcionário
+    return Object.entries(grupos).sort(([nomeA], [nomeB]) => nomeA.localeCompare(nomeB));
+  }, [details]);
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+      <div className="bg-[#192734] rounded-xl border border-[#38444D] p-4 shadow-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-white">{title}</h3>
+            {dateRange && (
+              <p className="text-sm text-[#8899A6]">{dateRange}</p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-[#253341] rounded-full transition-colors"
+          >
+            <X className="w-5 h-5 text-[#8899A6]" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="overflow-y-auto max-h-[calc(80vh-8rem)]">
+          {emprestimosAgrupados.length > 0 ? (
+            <div className="space-y-6">
+              {emprestimosAgrupados.map(([funcionarioNome, emprestimos]) => (
+                <div
+                  key={funcionarioNome}
+                  className="bg-[#253341] p-4 rounded-lg space-y-3"
+                >
+                  {/* Cabeçalho do Funcionário */}
+                  <div className="flex items-center gap-2 pb-2 border-b border-[#38444D]">
+                    <User className="w-5 h-5 text-[#1DA1F2]" />
+                    <span className="text-white font-medium">{funcionarioNome}</span>
+                    <span className="text-[#8899A6] text-sm">
+                      ({emprestimos.length} empréstimo{emprestimos.length !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+
+                  {/* Lista de Empréstimos */}
+                  <div className="space-y-3 pl-2">
+                    {emprestimos.map((emprestimo, index) => (
+                      <div key={emprestimo.id || index} className="space-y-2">
+                        {/* Data e Hora do Empréstimo */}
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-[#1DA1F2]" />
+                          <span className="text-[#8899A6]">
+                            {new Date(emprestimo.dataEmprestimo).toLocaleString('pt-BR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                          <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
+                            emprestimo.status === 'devolvido' ? 'bg-green-500/20 text-green-400' :
+                            emprestimo.status === 'emprestado' ? 'bg-blue-500/20 text-blue-400' :
+                            'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {emprestimo.status.charAt(0).toUpperCase() + emprestimo.status.slice(1)}
+                          </span>
+                        </div>
+
+                        {/* Ferramentas do Empréstimo */}
+                        <div className="pl-6 space-y-1">
+                          {(emprestimo.ferramentas || emprestimo.nomeFerramentas || []).map((ferramenta, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <Wrench className="w-4 h-4 text-[#8899A6]" />
+                              <span className="text-[#8899A6]">{getFerramentaNome(ferramenta)}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Data de Devolução (se houver) */}
+                        {emprestimo.dataDevolucao && (
+                          <div className="pl-6 flex items-center gap-2 text-sm">
+                            <Clock className="w-4 h-4 text-[#8899A6]" />
+                            <span className="text-[#8899A6]">
+                              Devolvido: {new Date(emprestimo.dataDevolucao).toLocaleString('pt-BR')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-[#8899A6] py-8">
+              Nenhum empréstimo encontrado neste período.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DetailsModal;
