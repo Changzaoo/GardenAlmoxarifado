@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { AlertTriangle, Plus, Search, Calendar, User, Wrench, FileText } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Calendar, Wrench, FileText } from 'lucide-react';
 import { AuthContext } from '../../hooks/useAuth';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
@@ -17,7 +17,6 @@ const FerramentasDanificadasTab = ({
     nomeItem: '',
     categoria: '',
     descricaoProblema: '',
-    responsavel: '',
     dataOcorrencia: new Date().toISOString().split('T')[0],
     custoReparo: '',
     statusReparo: 'aguardando',
@@ -31,8 +30,7 @@ const FerramentasDanificadasTab = ({
   const ferramentasFiltradas = ferramentasDanificadas.filter(item => {
     const matchFiltro = 
       item.nomeItem.toLowerCase().includes(filtro.toLowerCase()) ||
-      item.descricaoProblema.toLowerCase().includes(filtro.toLowerCase()) ||
-      item.responsavel.toLowerCase().includes(filtro.toLowerCase());
+      item.descricaoProblema.toLowerCase().includes(filtro.toLowerCase());
     
     const matchStatus = filtroStatus === 'todos' || item.statusReparo === filtroStatus;
     
@@ -59,7 +57,6 @@ const FerramentasDanificadasTab = ({
         nomeItem: '',
         categoria: '',
         descricaoProblema: '',
-        responsavel: '',
         dataOcorrencia: new Date().toISOString().split('T')[0],
         custoReparo: '',
         statusReparo: 'aguardando',
@@ -242,12 +239,7 @@ const FerramentasDanificadasTab = ({
                 <p className="text-[#F4212E]">{item.descricaoProblema}</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className={`flex items-center gap-2 ${colors.textSecondary}`}>
-                  <User className="w-4 h-4" />
-                  <span><strong>Responsável:</strong> {item.responsavel}</span>
-                </div>
-                
+              <div className="grid grid-cols-1 gap-3">
                 <div className={`flex items-center gap-2 ${colors.textSecondary}`}>
                   <Calendar className="w-4 h-4" />
                   <span><strong>Data:</strong> {new Date(item.dataOcorrencia).toLocaleDateString('pt-BR')}</span>
@@ -356,26 +348,7 @@ const FerramentasDanificadasTab = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
-                      Responsável pelo Relato
-                    </label>
-                    <select
-                      value={novaFerramenta.responsavel}
-                      onChange={e => setNovaFerramenta({ ...novaFerramenta, responsavel: e.target.value })}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
-                      required
-                    >
-                      <option value="">Selecione o responsável</option>
-                      {Array.isArray(window.funcionarios) && window.funcionarios.length > 0
-                        ? window.funcionarios.map(func => (
-                            <option key={func.id} value={func.nome}>{func.nome}</option>
-                          ))
-                        : null}
-                    </select>
-                  </div>
-                  
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-white text-center mb-2">
                       Data da Ocorrência

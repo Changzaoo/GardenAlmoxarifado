@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Search, CheckCircle, Clock, Trash2, CircleDotDashed } from 'lucide-react';
+import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { formatarDataHora } from '../../utils/formatters';
 import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
 import DevolucaoParcialModal from './DevolucaoParcialModal';
+import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
+import EditarEmprestimoModal from './EditarEmprestimoModal';
 
 const ListaEmprestimos = ({ 
   emprestimos = [], 
@@ -24,9 +26,31 @@ const ListaEmprestimos = ({
   const [showConfirmacaoExclusao, setShowConfirmacaoExclusao] = useState(false);
   const [emprestimoParaExcluir, setEmprestimoParaExcluir] = useState(null);
   const [expandedEmployees, setExpandedEmployees] = useState(new Set());
+  const [editingObservacao, setEditingObservacao] = useState(null);
+  const [observacoesTemp, setObservacoesTemp] = useState({});
+  const [showTransferenciaModal, setShowTransferenciaModal] = useState(false);
+  const [emprestimoParaTransferencia, setEmprestimoParaTransferencia] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [emprestimoParaEditar, setEmprestimoParaEditar] = useState(null);
+  const [funcionarios, setFuncionarios] = useState([]);
   const { usuario } = useAuth();
   
   const temPermissaoEdicao = usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
+
+  // Carrega a lista de funcionários quando necessário
+  const carregarFuncionarios = async () => {
+    try {
+      const funcionariosRef = collection(db, 'funcionarios');
+      const snapshot = await getDocs(funcionariosRef);
+      const funcionariosData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setFuncionarios(funcionariosData);
+    } catch (error) {
+      console.error('Erro ao carregar funcionários:', error);
+    }
+  };
 
   const toggleEmployee = (employee) => {
     const newExpanded = new Set(expandedEmployees);
@@ -94,14 +118,8 @@ const ListaEmprestimos = ({
   const handleDevolverFerramentas = (id) => {
     const emprestimo = emprestimos.find(e => e.id === id);
     if (!emprestimo) return;
-
-    if (emprestimo.ferramentas?.length > 1) {
-      setEmprestimoParaDevolucaoParcial(emprestimo);
-      setShowDevolucaoParcialModal(true);
-    } else {
-      setSelectedEmprestimo(id);
-      setShowDevolucaoModal(true);
-    }
+    setSelectedEmprestimo(emprestimo);
+    setShowDevolucaoModal(true);
   };
 
   const handleDevolverFerramentasParcial = (emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros) => {
@@ -111,9 +129,11 @@ const ListaEmprestimos = ({
       f => !ferramentasSelecionadas.find(fs => fs.id === f.id)
     );
 
+    // Se todas as ferramentas foram selecionadas, marca como totalmente devolvido
     if (ferramentasNaoDevolvidas.length === 0) {
       devolverFerramentas(emprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros);
     } else {
+      // Se ainda há ferramentas não devolvidas, atualiza o registro mantendo apenas elas
       const atualizacao = {
         ferramentas: ferramentasNaoDevolvidas,
         ferramentasParcialmenteDevolvidas: [
@@ -136,11 +156,22 @@ const ListaEmprestimos = ({
 
   const handleConfirmDevolucao = async (devolvidoPorTerceiros) => {
     try {
-      if (typeof devolverFerramentas === 'function') {
-        await devolverFerramentas(selectedEmprestimo, atualizarDisponibilidade, devolvidoPorTerceiros);
-        setSelectedEmprestimo(null);
-        setShowDevolucaoModal(false);
+      if (!selectedEmprestimo) {
+        console.error('Nenhum empréstimo selecionado');
+        return;
       }
+
+      if (typeof devolverFerramentas !== 'function') {
+        console.error('devolverFerramentas não é uma função');
+        return;
+      }
+
+      // Realiza a devolução total do empréstimo
+      console.log('Realizando devolução do empréstimo', selectedEmprestimo.id);
+      await devolverFerramentas(selectedEmprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros);
+
+      setSelectedEmprestimo(null);
+      setShowDevolucaoModal(false);
     } catch (error) {
       console.error('Erro ao devolver ferramentas:', error);
     }
@@ -164,8 +195,144 @@ const ListaEmprestimos = ({
     setEmprestimoParaExcluir(null);
   };
 
+  const handleEditarEmprestimo = (emprestimo) => {
+    setEmprestimoParaEditar(emprestimo);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async (emprestimoEditado) => {
+    try {
+      // Atualiza o empréstimo no Firestore
+      const emprestimoRef = doc(db, 'emprestimos', emprestimoEditado.id);
+      await updateDoc(emprestimoRef, {
+        ferramentas: emprestimoEditado.ferramentas,
+        dataAtualizacao: new Date()
+      });
+
+      // Atualiza a disponibilidade das ferramentas se necessário
+      await atualizarDisponibilidade();
+
+      // Fecha o modal
+      setShowEditModal(false);
+      setEmprestimoParaEditar(null);
+    } catch (error) {
+      console.error('Erro ao salvar edições do empréstimo:', error);
+      alert('Erro ao salvar as alterações. Por favor, tente novamente.');
+    }
+  };
+
+  const handleTransferirFerramentas = (emprestimo) => {
+    console.log('Abrindo modal de transferência:', { emprestimo });
+    setEmprestimoParaTransferencia(emprestimo);
+    carregarFuncionarios();
+    setShowTransferenciaModal(true);
+  };
+
+  const handleConfirmTransferencia = async ({ ferramentas, funcionarioDestino, observacao }) => {
+    try {
+      if (!emprestimoParaTransferencia || !funcionarioDestino || !ferramentas.length) {
+        console.error('Dados inválidos para transferência');
+        return;
+      }
+
+      // Remove as ferramentas selecionadas do empréstimo atual
+      const ferramentasRestantes = emprestimoParaTransferencia.ferramentas.filter(
+        f => !ferramentas.find(fs => fs.id === f.id)
+      );
+
+      // Atualiza o empréstimo original
+      const emprestimoRef = doc(db, 'emprestimos', emprestimoParaTransferencia.id);
+      await updateDoc(emprestimoRef, {
+        ferramentas: ferramentasRestantes,
+        ferramentasTransferidas: arrayUnion({
+          ferramentas,
+          funcionarioDestino,
+          dataTransferencia: new Date().toISOString(),
+          observacao
+        })
+      });
+
+      // Cria um novo empréstimo para o funcionário destino
+      const novoEmprestimo = {
+        funcionarioId: funcionarioDestino,
+        ferramentas,
+        dataEmprestimo: new Date().toISOString(),
+        status: 'emprestado',
+        observacao: `Transferido de ${emprestimoParaTransferencia.nomeFuncionario}. ${observacao ? `Observação: ${observacao}` : ''}`,
+        emprestimoOriginalId: emprestimoParaTransferencia.id
+      };
+
+      // TODO: Implementar criação do novo empréstimo usando a função apropriada do seu sistema
+      // await criarEmprestimo(novoEmprestimo);
+
+      setShowTransferenciaModal(false);
+      setEmprestimoParaTransferencia(null);
+    } catch (error) {
+      console.error('Erro ao transferir ferramentas:', error);
+    }
+  };
+
   const temFerramentasEmprestadas = (emprestimo) => {
     return emprestimo.ferramentas && emprestimo.ferramentas.length > 0;
+  };
+
+  const handleStartEditObservacao = (emprestimo, e) => {
+    e.stopPropagation();
+    setEditingObservacao(emprestimo.id);
+    setObservacoesTemp(prev => ({
+      ...prev,
+      [emprestimo.id]: emprestimo.observacao || ''
+    }));
+  };
+
+  const handleObservacaoChange = (emprestimoId, value) => {
+    setObservacoesTemp(prev => ({
+      ...prev,
+      [emprestimoId]: value
+    }));
+  };
+
+  const handleSaveObservacao = async (emprestimo, e) => {
+    e?.stopPropagation();
+    if (!emprestimo || !temPermissaoEdicao) return;
+
+    try {
+      const novaObservacao = observacoesTemp[emprestimo.id];
+      if (novaObservacao === emprestimo.observacao) {
+        setEditingObservacao(null);
+        return;
+      }
+
+      const emprestimoRef = doc(db, 'emprestimos', emprestimo.id);
+      await updateDoc(emprestimoRef, {
+        observacao: novaObservacao,
+        ultimaAtualizacao: new Date().toISOString(),
+        usuarioUltimaAtualizacao: usuario.email
+      });
+
+      setEditingObservacao(null);
+    } catch (error) {
+      console.error('Erro ao atualizar observação:', error);
+    }
+  };
+
+  const handleCancelEdit = (emprestimoId, e) => {
+    e.stopPropagation();
+    setEditingObservacao(null);
+    setObservacoesTemp(prev => {
+      const newTemp = { ...prev };
+      delete newTemp[emprestimoId];
+      return newTemp;
+    });
+  };
+
+  const handleKeyDown = (emprestimo, e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveObservacao(emprestimo, e);
+    } else if (e.key === 'Escape') {
+      handleCancelEdit(emprestimo.id, e);
+    }
   };
 
   return (
@@ -247,8 +414,8 @@ const ListaEmprestimos = ({
                       <div key={emprestimo.id} className="bg-white dark:bg-gray-700/50 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 pt-4">
                         <div className="px-4 pb-4">
                           <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center gap-2">
-                              <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            <div className="flex flex-col">
+                              <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium self-start ${
                                 emprestimo.status === 'emprestado'
                                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
                                   : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
@@ -259,35 +426,62 @@ const ListaEmprestimos = ({
                                   <><CheckCircle className="w-3 h-3 inline mr-1" />Devolvido</>
                                 )}
                               </div>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {formatarDataHora(emprestimo.dataEmprestimo)}
-                              </span>
+                              <div className="flex items-center gap-1 mt-1">
+                                <Clock className="w-3 h-3 text-gray-400" />
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {formatarDataHora(emprestimo.dataEmprestimo)}
+                                </span>
+                              </div>
                             </div>
                             <div className="flex gap-2">
-                              {emprestimo.status === 'emprestado' && temFerramentasEmprestadas(emprestimo) && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDevolverFerramentas(emprestimo.id);
-                                  }}
-                                  className="text-green-600 hover:text-green-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-green-100 dark:hover:bg-green-900"
-                                  title="Marcar como devolvido"
-                                >
-                                  <CheckCircle className="w-5 h-5" />
-                                </button>
-                              )}
-                              {temPermissaoEdicao && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoverEmprestimo(emprestimo);
-                                  }}
-                                  className="text-red-600 hover:text-red-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-red-100 dark:hover:bg-red-900"
-                                  title="Remover registro"
-                                >
-                                  <Trash2 className="w-5 h-5" />
-                                </button>
-                              )}
+                              <div className="flex gap-2">
+                                {emprestimo.status === 'emprestado' && temFerramentasEmprestadas(emprestimo) && (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditarEmprestimo(emprestimo);
+                                      }}
+                                      className="text-yellow-600 hover:text-yellow-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                                      title="Editar empréstimo"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleTransferirFerramentas(emprestimo);
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900"
+                                      title="Transferir ferramentas"
+                                    >
+                                      <ArrowRightLeft className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDevolverFerramentas(emprestimo.id);
+                                      }}
+                                      className="text-green-600 hover:text-green-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-green-100 dark:hover:bg-green-900"
+                                      title="Marcar como devolvido"
+                                    >
+                                      <CheckCircle className="w-5 h-5" />
+                                    </button>
+                                  </>
+                                )}
+                                {temPermissaoEdicao && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoverEmprestimo(emprestimo);
+                                    }}
+                                    className="text-red-600 hover:text-red-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-red-100 dark:hover:bg-red-900"
+                                    title="Remover registro"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
 
@@ -341,6 +535,65 @@ const ListaEmprestimos = ({
                                 )}
                               </span>
                             </div>
+
+                            <div className="mt-2">
+                              <div className="text-gray-600 dark:text-gray-300">
+                                <span>Observações:</span>
+                              </div>
+                              {editingObservacao === emprestimo.id ? (
+                                <div className="mt-1">
+                                  <textarea
+                                    value={observacoesTemp[emprestimo.id] || ''}
+                                    onChange={(e) => handleObservacaoChange(emprestimo.id, e.target.value)}
+                                    onKeyDown={(e) => handleKeyDown(emprestimo, e)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-y min-h-[60px]"
+                                    placeholder="Digite suas observações aqui..."
+                                    autoFocus
+                                  />
+                                  <div className="flex justify-end gap-2 mt-1">
+                                    <button
+                                      onClick={(e) => handleCancelEdit(emprestimo.id, e)}
+                                      className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    <button
+                                      onClick={(e) => handleSaveObservacao(emprestimo, e)}
+                                      className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    >
+                                      Salvar
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div 
+                                  className={`mt-1 relative group ${temPermissaoEdicao ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded p-1 -m-1' : ''}`}
+                                  onClick={(e) => {
+                                    if (temPermissaoEdicao) {
+                                      handleStartEditObservacao(emprestimo, e);
+                                    }
+                                  }}
+                                >
+                                  <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words min-h-[20px]">
+                                    {emprestimo.observacao || <span className="text-gray-400">Clique para adicionar uma observação</span>}
+                                  </p>
+                                  {emprestimo.ultimaAtualizacao && (
+                                    <div className="mt-1 text-xs text-gray-400">
+                                      Última atualização: {formatarDataHora(emprestimo.ultimaAtualizacao)}
+                                      {emprestimo.usuarioUltimaAtualizacao && (
+                                        <span className="ml-1">por {emprestimo.usuarioUltimaAtualizacao}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {temPermissaoEdicao && (
+                                    <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -353,10 +606,13 @@ const ListaEmprestimos = ({
         ))}
       </div>
 
-      {showDevolucaoModal && (
+      {showDevolucaoModal && selectedEmprestimo && (
         <DevolucaoTerceirosModal 
-          isOpen={showDevolucaoModal}
-          onClose={() => setShowDevolucaoModal(false)}
+          emprestimo={selectedEmprestimo}
+          onClose={() => {
+            setShowDevolucaoModal(false);
+            setSelectedEmprestimo(null);
+          }}
           onConfirm={handleConfirmDevolucao}
         />
       )}
@@ -395,6 +651,30 @@ const ListaEmprestimos = ({
           </div>
         </div>
       )}
+
+      {showTransferenciaModal && emprestimoParaTransferencia && (
+        <TransferenciaFerramentasModal 
+          emprestimo={emprestimoParaTransferencia}
+          funcionarios={funcionarios}
+          onClose={() => {
+            setShowTransferenciaModal(false);
+            setEmprestimoParaTransferencia(null);
+          }}
+          onConfirm={handleConfirmTransferencia}
+        />
+      )}
+
+      {showEditModal && emprestimoParaEditar && (
+        <EditarEmprestimoModal
+          emprestimo={emprestimoParaEditar}
+          onClose={() => {
+            setShowEditModal(false);
+            setEmprestimoParaEditar(null);
+          }}
+          onSave={handleSaveEdit}
+        />
+      )}
+
     </div>
   );
 };
