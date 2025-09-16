@@ -76,46 +76,81 @@ const HistoricoEmprestimosTab = ({
     });
 
   const handleDevolverFerramentas = (id) => {
+    if (!id || !Array.isArray(emprestimos)) {
+      console.error('ID inválido ou empréstimos não é um array:', { id, emprestimos });
+      return;
+    }
+    
     const emprestimo = emprestimos.find(e => e.id === id);
-    if (!emprestimo) return;
+    if (!emprestimo) {
+      console.error('Empréstimo não encontrado com o ID:', id);
+      return;
+    }
 
-    if (emprestimo.ferramentas?.length > 1) {
-      setEmprestimoParaDevolucaoParcial(emprestimo);
+    if (!Array.isArray(emprestimo.ferramentas)) {
+      console.error('Empréstimo sem array de ferramentas válido:', emprestimo);
+      return;
+    }
+
+    // Faz uma cópia profunda do empréstimo para evitar problemas de referência
+    const emprestimoParaDevolver = JSON.parse(JSON.stringify(emprestimo));
+    
+    if (emprestimoParaDevolver.ferramentas.length === 0) {
+      console.error('Empréstimo sem ferramentas para devolver:', emprestimoParaDevolver);
+      return;
+    }
+
+    if (emprestimo.ferramentas.length > 1) {
+      setEmprestimoParaDevolucaoParcial(emprestimoParaDevolver);
       setShowDevolucaoParcialModal(true);
     } else {
-      setSelectedEmprestimo(id);
+      setSelectedEmprestimo(emprestimoParaDevolver);
       setShowDevolucaoModal(true);
     }
   };
 
-  const handleDevolverFerramentasParcial = (emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros) => {
-    if (!emprestimo || !ferramentasSelecionadas.length) return;
+  const handleDevolverFerramentasParcial = async (emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros) => {
+    if (!emprestimo || !Array.isArray(ferramentasSelecionadas) || ferramentasSelecionadas.length === 0) {
+      console.error('Parâmetros inválidos:', { emprestimo, ferramentasSelecionadas });
+      return;
+    }
 
-    const ferramentasNaoDevolvidas = emprestimo.ferramentas.filter(
-      f => !ferramentasSelecionadas.find(fs => fs.id === f.id)
-    );
+    if (!Array.isArray(emprestimo.ferramentas)) {
+      console.error('Empréstimo sem array de ferramentas válido:', emprestimo);
+      return;
+    }
 
-    // Atualiza o empréstimo removendo apenas as ferramentas selecionadas
-    if (ferramentasNaoDevolvidas.length === 0) {
-      // Se todas as ferramentas foram selecionadas, marca como totalmente devolvido
-      devolverFerramentas(emprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros);
-    } else {
-      // Se ainda há ferramentas não devolvidas, atualiza o registro mantendo apenas elas
-      const atualizacao = {
-        ferramentas: ferramentasNaoDevolvidas,
-        ferramentasParcialmenteDevolvidas: [
-          ...(emprestimo.ferramentasParcialmenteDevolvidas || []),
-          {
-            ferramentas: ferramentasSelecionadas,
-            dataDevolucao: new Date().toISOString(),
-            devolvidoPorTerceiros
-          }
-        ]
-      };
-      
-      if (typeof devolverFerramentas === 'function') {
-        devolverFerramentas(emprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros, atualizacao);
+    console.log('Iniciando devolução parcial:', { emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros });
+
+    try {
+      const ferramentasNaoDevolvidas = emprestimo.ferramentas.filter(
+        f => !ferramentasSelecionadas.find(fs => fs.id === f.id)
+      );
+
+      // Atualiza o empréstimo removendo apenas as ferramentas selecionadas
+      if (ferramentasNaoDevolvidas.length === 0) {
+        // Se todas as ferramentas foram selecionadas, marca como totalmente devolvido
+        devolverFerramentas(emprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros);
+      } else {
+        // Se ainda há ferramentas não devolvidas, atualiza o registro mantendo apenas elas
+        const atualizacao = {
+          ferramentas: ferramentasNaoDevolvidas,
+          ferramentasParcialmenteDevolvidas: [
+            ...(emprestimo.ferramentasParcialmenteDevolvidas || []),
+            {
+              ferramentas: ferramentasSelecionadas,
+              dataDevolucao: new Date().toISOString(),
+              devolvidoPorTerceiros
+            }
+          ]
+        };
+        
+        if (typeof devolverFerramentas === 'function') {
+          devolverFerramentas(emprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros, atualizacao);
+        }
       }
+    } catch (error) {
+      console.error('Erro ao fazer devolução parcial:', error);
     }
     setShowDevolucaoParcialModal(false);
     setEmprestimoParaDevolucaoParcial(null);
@@ -123,13 +158,22 @@ const HistoricoEmprestimosTab = ({
 
   const handleConfirmDevolucao = async (devolvidoPorTerceiros) => {
     try {
-      if (typeof devolverFerramentas === 'function') {
-        await devolverFerramentas(selectedEmprestimo, atualizarDisponibilidade, devolvidoPorTerceiros);
-        setSelectedEmprestimo(null);
-        setShowDevolucaoModal(false);
-      } else {
-        console.error('devolverFerramentas não é uma função');
+      if (!selectedEmprestimo) {
+        console.error('Nenhum empréstimo selecionado');
+        return;
       }
+
+      if (typeof devolverFerramentas !== 'function') {
+        console.error('devolverFerramentas não é uma função');
+        return;
+      }
+
+      // Realiza a devolução total do empréstimo
+      console.log('Realizando devolução do empréstimo', selectedEmprestimo.id);
+      await devolverFerramentas(selectedEmprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros);
+
+      setSelectedEmprestimo(null);
+      setShowDevolucaoModal(false);
     } catch (error) {
       console.error('Erro ao devolver ferramentas:', error);
     }
@@ -155,7 +199,11 @@ const HistoricoEmprestimosTab = ({
 
   // Verifica se há ferramentas emprestadas no array de ferramentas
   const temFerramentasEmprestadas = (emprestimo) => {
-    return emprestimo.ferramentas && emprestimo.ferramentas.length > 0;
+    if (!emprestimo || typeof emprestimo !== 'object') {
+      console.error('Empréstimo inválido:', emprestimo);
+      return false;
+    }
+    return Array.isArray(emprestimo.ferramentas) && emprestimo.ferramentas.length > 0;
   };
 
   return (
@@ -359,9 +407,10 @@ const HistoricoEmprestimosTab = ({
         ))}
       </div>
 
-      {showDevolucaoModal && (
+      {showDevolucaoModal && selectedEmprestimo && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <DevolucaoTerceirosModal
+            emprestimo={selectedEmprestimo}
             onClose={() => {
               setShowDevolucaoModal(false);
               setSelectedEmprestimo(null);
@@ -371,7 +420,7 @@ const HistoricoEmprestimosTab = ({
         </div>
       )}
 
-      {showDevolucaoParcialModal && emprestimoParaDevolucaoParcial && (
+      {showDevolucaoParcialModal && emprestimoParaDevolucaoParcial && Array.isArray(emprestimoParaDevolucaoParcial.ferramentas) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <DevolucaoParcialModal
             emprestimo={emprestimoParaDevolucaoParcial}
