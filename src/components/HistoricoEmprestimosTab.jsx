@@ -12,12 +12,14 @@ import {
   RefreshCw,
   Download,
   Clock,
-  ArrowUpDown
+  ArrowUpDown,
+  X
 } from 'lucide-react';
 
 const HistoricoEmprestimosTab = () => {
   const [emprestimos, setEmprestimos] = useState([]);
   const [filteredEmprestimos, setFilteredEmprestimos] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filtros, setFiltros] = useState({
     dataInicio: '',
@@ -183,21 +185,63 @@ const HistoricoEmprestimosTab = () => {
         </div>
       </div>
 
-      {/* Barra de pesquisa */}
+      {/* Barra de pesquisa e Filtros */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <div className="mb-4">
+        {/* Barra de pesquisa com botão de filtro */}
+        <div className="relative flex items-center mb-4">
           <input
             type="text"
             placeholder="Pesquisar em todo o histórico..."
             className="w-full px-2 py-1 md:px-4 md:py-2 text-sm md:text-base rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
           />
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="absolute right-2 p-2 text-gray-500 hover:text-gray-700 md:hidden"
+          >
+            <Filter className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Filtros */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Data Início</label>
-            <div className="mt-1 relative">
+        {/* Container modal para filtros em mobile */}
+        <div className={`
+          fixed inset-0 z-50 md:relative md:inset-auto
+          ${showFilters ? 'flex' : 'hidden md:block'}
+        `}>
+          {/* Overlay escuro em mobile */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 md:hidden"
+            onClick={() => setShowFilters(false)}
+          />
+          
+          {/* Conteúdo do modal em mobile, conteúdo normal em desktop */}
+          <div className={`
+            relative w-full md:w-auto
+            bg-white md:bg-transparent
+            p-4 md:p-0
+            ${showFilters ? 'mt-16 md:mt-0' : ''}
+            rounded-t-2xl md:rounded-none
+            shadow-lg md:shadow-none
+            z-10 md:z-auto
+            transform transition-transform duration-300 ease-in-out
+            ${showFilters ? 'translate-y-0' : 'translate-y-full'}
+            md:transform-none
+          `}>
+            {/* Cabeçalho do modal em mobile */}
+            <div className="flex items-center justify-between mb-4 md:hidden">
+              <h3 className="text-lg font-medium">Filtros</h3>
+              <button 
+                onClick={() => setShowFilters(false)}
+                className="p-2 text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Grid de filtros */}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Data Início</label>
+                <div className="mt-1 relative">
               <input
                 type="date"
                 value={filtros.dataInicio}
