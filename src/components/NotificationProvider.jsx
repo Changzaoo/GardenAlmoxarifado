@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../firebaseConfig';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, arrayUnion, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useNotificationSetup } from '../hooks/useNotificationSetup';
 import { useAuth } from '../hooks/useAuth';
 
@@ -18,21 +18,270 @@ export const NotificationProvider = ({ children }) => {
   const { usuario } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isInstalled, setIsInstalled] = useState(false);
   const { requestPermission, isSupported } = useNotificationSetup();
 
-  const handleNewNotification = (notification) => {
-    setNotifications(prev => {
-      // Verifica se a notificação já existe
-      const exists = prev.some(n => n.id === notification.id);
-      if (!exists) {
-        // Adiciona a nova notificação ao início do array
-        const newNotifications = [notification, ...prev];
-        // Atualiza o contador de não lidas
-        setUnreadCount(count => count + 1);
-        return newNotifications;
+  // Verifica se o app está instalado como PWA
+  const updateAppBadge = (count) => {
+    if (isInstalled && 'setAppBadge' in navigator) {
+      if (count > 0) {
+        navigator.setAppBadge(count).catch((error) => {
+          console.error('Erro ao atualizar badge:', error);
+        });
+      } else {
+        navigator.clearAppBadge().catch((error) => {
+          console.error('Erro ao limpar badge:', error);
+        });
       }
-      return prev;
+    }
+  };
+
+  useEffect(() => {
+    const checkInstallation = () => {
+      if (window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone ||
+          document.referrer.includes('android-app://')) {
+        setIsInstalled(true);
+      }
+    };
+
+    checkInstallation();
+    const handleBeforeInstall = () => setIsInstalled(false);
+    const handleInstalled = () => setIsInstalled(true);
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
+  }, []);
+
+  // Atualiza o badge quando o número de notificações não lidas muda
+  useEffect(() => {
+    updateAppBadge(unreadCount);
+  }, [unreadCount, isInstalled]);
+
+  // Monitor de novas tarefas e empréstimos
+  useEffect(() => {
+    if (!usuario?.id) return;
+
+    // Monitor de tarefas
+    const tarefasRef = collection(db, 'tarefas');
+    const tarefasQuery = query(
+      tarefasRef,
+      where('funcionariosIds', 'array-contains', usuario.nome),
+      orderBy('dataCriacao', 'desc')
+    );
+
+    let lastTaskDate = new Date();
+
+    const unsubscribeTarefas = onSnapshot(tarefasQuery, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const tarefa = { id: change.doc.id, ...change.doc.data() };
+          const tarefaDate = tarefa.dataCriacao?.toDate() || new Date();
+
+          if (tarefaDate > lastTaskDate) {
+            showNativeNotification(tarefa, 'task');
+            
+            const notificationData = {
+              tipo: 'tarefa',
+              titulo: `Nova tarefa atribuída: ${tarefa.titulo}`,
+              conteudo: tarefa.descricao || 'Sem descrição',
+              dataNotificacao: new Date(),
+              lida: false,
+              tarefaId: tarefa.id,
+              destinatarioId: usuario.id
+            };
+
+            handleNewNotification(notificationData);
+          }
+        }
+      });
+
+      lastTaskDate = new Date();
     });
+
+    // Monitor de empréstimos
+    const emprestimosRef = collection(db, 'emprestimos');
+    const emprestimosQuery = query(
+      emprestimosRef,
+      where('funcionario', '==', usuario.nome),
+      where('status', '==', 'emprestado')
+    );
+
+    const unsubscribeEmprestimos = onSnapshot(emprestimosQuery, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const emprestimo = { id: change.doc.id, ...change.doc.data() };
+          
+          // Notificação imediata do empréstimo
+          showNativeNotification({
+            titulo: 'Ferramenta(s) em seu nome',
+            conteudo: `Você possui ${emprestimo.ferramentas.length} ferramenta(s) em seu nome.`,
+            emprestimo
+          }, 'loan');
+
+          const notificationData = {
+            tipo: 'emprestimo',
+            titulo: 'Ferramenta(s) em seu nome',
+            conteudo: `Você possui ${emprestimo.ferramentas.length} ferramenta(s) em seu nome.`,
+            dataNotificacao: new Date(),
+            lida: false,
+            emprestimoId: emprestimo.id,
+            destinatarioId: usuario.id
+          };
+
+          handleNewNotification(notificationData);
+
+          // Agenda notificação para 24h depois
+          setTimeout(() => {
+            if (emprestimo.status === 'emprestado') {
+              showNativeNotification({
+                titulo: 'Lembrete de Devolução',
+                conteudo: `Você ainda possui ${emprestimo.ferramentas.length} ferramenta(s) pendente(s) de devolução.`,
+                emprestimo
+              }, 'loan-reminder');
+
+              const reminderData = {
+                tipo: 'emprestimo-lembrete',
+                titulo: 'Lembrete de Devolução',
+                conteudo: `Você ainda possui ${emprestimo.ferramentas.length} ferramenta(s) pendente(s) de devolução.`,
+                dataNotificacao: new Date(),
+                lida: false,
+                emprestimoId: emprestimo.id,
+                destinatarioId: usuario.id
+              };
+
+              handleNewNotification(reminderData);
+            }
+          }, 24 * 60 * 60 * 1000); // 24 horas
+        }
+      });
+    });
+
+    return () => {
+      unsubscribeTarefas();
+      unsubscribeEmprestimos();
+    };
+  }, [usuario?.id, usuario?.nome]);
+
+  const showNativeNotification = async (notificationData, type = 'message') => {
+    if (!isSupported || !isInstalled) return;
+
+    try {
+      const permission = await requestPermission();
+      if (permission === 'granted') {
+        let title, body, tag;
+
+        switch (type) {
+          case 'task':
+            title = 'Nova Tarefa Atribuída';
+            body = `${notificationData.titulo}\n${notificationData.descricao || ''}`;
+            tag = 'task';
+            break;
+          case 'loan':
+            title = 'Ferramentas em Seu Nome';
+            body = notificationData.conteudo;
+            tag = 'loan';
+            break;
+          case 'loan-reminder':
+            title = '⚠️ Lembrete de Devolução';
+            body = notificationData.conteudo;
+            tag = 'loan-reminder';
+            break;
+          default:
+            title = 'Nova Mensagem';
+            body = notificationData.conteudo;
+            tag = 'message';
+        }
+
+        const options = {
+          body,
+          icon: '/logo.png',
+          badge: '/logo.png',
+          vibrate: [200, 100, 200],
+          tag,
+          requireInteraction: type === 'task', // Tarefas requerem interação do usuário
+          data: notificationData
+        };
+
+        // Criar e mostrar a notificação
+        const notification = new Notification(title, options);
+
+        // Se for mobile e o app estiver instalado, tocar o som padrão
+        if (isInstalled && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+          try {
+            const audio = new Audio();
+            audio.play();
+          } catch (error) {
+            console.log('Erro ao tocar som:', error);
+          }
+        }
+
+        // Adicionar listener de clique na notificação
+        notification.onclick = () => {
+          window.focus();
+          switch (type) {
+            case 'task':
+              // Navegar para a aba de tarefas
+              window.location.href = '/tarefas';
+              break;
+            case 'loan':
+            case 'loan-reminder':
+              // Navegar para a aba de empréstimos
+              window.location.href = '/emprestimos';
+              break;
+            default:
+              // Navegar para a página inicial
+              window.location.href = '/';
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Erro ao mostrar notificação:', error);
+    }
+  };
+
+  const handleNewNotification = async (notification) => {
+    // Adiciona a notificação ao Firestore primeiro
+    try {
+      const notificacoesRef = collection(db, 'notificacoes');
+      const notificationData = {
+        ...notification,
+        dataNotificacao: serverTimestamp(),
+        lida: false
+      };
+
+      // Adiciona a notificação ao Firestore
+      await addDoc(notificacoesRef, notificationData);
+
+      setNotifications(prev => {
+        // Verifica se a notificação já existe
+        const exists = prev.some(n => n.id === notification.id);
+        if (!exists) {
+          // Se for uma notificação de mensagem ou tarefa, mostra a notificação nativa
+          if (notification.tipo === 'mensagem' || notification.tipo === 'tarefa') {
+            showNativeNotification(notification, notification.tipo);
+          }
+
+          // Adiciona a nova notificação ao início do array
+          const newNotifications = [notification, ...prev];
+          
+          // Atualiza o contador de não lidas e o badge
+          const newUnreadCount = unreadCount + 1;
+          setUnreadCount(newUnreadCount);
+          updateAppBadge(newUnreadCount);
+          
+          return newNotifications;
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error('Erro ao salvar notificação:', error);
+    }
   };
 
   const markAsRead = async (notificationId) => {
@@ -44,7 +293,10 @@ export const NotificationProvider = ({ children }) => {
             : notification
         )
       );
-      setUnreadCount(count => Math.max(0, count - 1));
+      
+      const newUnreadCount = Math.max(0, unreadCount - 1);
+      setUnreadCount(newUnreadCount);
+      updateAppBadge(newUnreadCount);
 
       // Atualiza o status no Firestore dependendo do tipo de notificação
       const notification = notifications.find(n => n.id === notificationId);

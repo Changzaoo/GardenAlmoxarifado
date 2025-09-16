@@ -131,13 +131,6 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
         </div>
 
         <div className="space-y-6">
-          {/* ID da Tarefa */}
-          <div className="mb-4">
-            <span className="px-3 py-1 bg-[#253341] text-[#8899A6] rounded text-sm">
-              #{tarefa.id}
-            </span>
-          </div>
-
           {/* Status e Prioridade */}
           <div className="flex flex-wrap gap-3">
             <span

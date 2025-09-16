@@ -1802,12 +1802,7 @@ const AlmoxarifadoSistema = () => {
       icone: ClipboardCheck,
       permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Apenas nível 2 (Supervisor) ou superior
     },
-    { 
-      id: 'meu-inventario', 
-      nome: 'Meu Inventário', 
-      icone: ToolCase,
-      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Apenas nível 2 (Supervisor) ou superior
-    },
+    
     { 
       id: 'inventario', 
       nome: 'Inventário', 

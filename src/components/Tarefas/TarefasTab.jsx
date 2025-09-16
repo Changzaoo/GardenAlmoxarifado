@@ -435,9 +435,6 @@ const TarefasTab = ({
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-0.5 bg-[#253341] text-[#8899A6] rounded text-xs">
-                          #{tarefa.id.slice(-6)}
-                        </span>
                         <h3 className="text-lg font-semibold text-white">
                           {tarefa.titulo}
                         </h3>
