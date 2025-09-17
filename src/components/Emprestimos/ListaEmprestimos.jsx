@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
-import { doc, updateDoc, arrayUnion, collection, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, addDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { formatarDataHora } from '../../utils/formatters';
 import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
-import DevolucaoParcialModal from './DevolucaoParcialModal';
 import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
 
@@ -20,9 +19,7 @@ const ListaEmprestimos = ({
   const [filtroPeriodo, setFiltroPeriodo] = useState('hoje');
   const [filtroStatus, setFiltroStatus] = useState('emprestado');
   const [showDevolucaoModal, setShowDevolucaoModal] = useState(false);
-  const [showDevolucaoParcialModal, setShowDevolucaoParcialModal] = useState(false);
   const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
-  const [emprestimoParaDevolucaoParcial, setEmprestimoParaDevolucaoParcial] = useState(null);
   const [showConfirmacaoExclusao, setShowConfirmacaoExclusao] = useState(false);
   const [emprestimoParaExcluir, setEmprestimoParaExcluir] = useState(null);
   const [expandedEmployees, setExpandedEmployees] = useState(new Set());
@@ -36,6 +33,9 @@ const ListaEmprestimos = ({
   const { usuario } = useAuth();
   
   const temPermissaoEdicao = usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
+
+  // Carrega as devoluções parciais para um empréstimo específico
+
 
   // Carrega a lista de funcionários quando necessário
   const carregarFuncionarios = async () => {
@@ -118,40 +118,68 @@ const ListaEmprestimos = ({
   const handleDevolverFerramentas = (id) => {
     const emprestimo = emprestimos.find(e => e.id === id);
     if (!emprestimo) return;
+
     setSelectedEmprestimo(emprestimo);
     setShowDevolucaoModal(true);
   };
 
-  const handleDevolverFerramentasParcial = (emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros) => {
-    if (!emprestimo || !ferramentasSelecionadas.length) return;
+  const handleDevolverFerramentasParcial = async (emprestimo, ferramentaSelecionada, devolvidoPorTerceiros) => {
+    if (!emprestimo || !ferramentaSelecionada || !ferramentaSelecionada.length) return;
 
-    const ferramentasNaoDevolvidas = emprestimo.ferramentas.filter(
-      f => !ferramentasSelecionadas.find(fs => fs.id === f.id)
-    );
-
-    // Se todas as ferramentas foram selecionadas, marca como totalmente devolvido
-    if (ferramentasNaoDevolvidas.length === 0) {
-      devolverFerramentas(emprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros);
-    } else {
-      // Se ainda há ferramentas não devolvidas, atualiza o registro mantendo apenas elas
-      const atualizacao = {
-        ferramentas: ferramentasNaoDevolvidas,
-        ferramentasParcialmenteDevolvidas: [
-          ...(emprestimo.ferramentasParcialmenteDevolvidas || []),
-          {
-            ferramentas: ferramentasSelecionadas,
-            dataDevolucao: new Date().toISOString(),
-            devolvidoPorTerceiros
-          }
-        ]
-      };
+    try {
+      const emprestimoRef = doc(db, 'emprestimos', emprestimo.id);
+      const dataDevolucao = new Date().toISOString();
       
-      if (typeof devolverFerramentas === 'function') {
-        devolverFerramentas(emprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros, atualizacao);
+      // Remove a ferramenta devolvida do empréstimo original
+      const ferramentasNaoDevolvidas = emprestimo.ferramentas.filter(
+        f => f.id !== ferramentaSelecionada[0].id
+      );
+
+      // Cria um novo documento na coleção de empréstimos parcialmente devolvidos
+      const devolucaoParcialRef = collection(db, 'emprestimos_parciais');
+      await addDoc(devolucaoParcialRef, {
+        emprestimoOriginalId: emprestimo.id,
+        funcionarioId: emprestimo.funcionarioId,
+        nomeFuncionario: emprestimo.nomeFuncionario,
+        ferramenta: ferramentaSelecionada[0],
+        dataDevolucao,
+        devolvidoPorTerceiros,
+        dataEmprestimo: emprestimo.dataEmprestimo
+      });
+
+      // Se não há mais ferramentas, marca o empréstimo como totalmente devolvido
+      if (ferramentasNaoDevolvidas.length === 0) {
+        await updateDoc(emprestimoRef, {
+          ferramentas: [],
+          status: 'devolvido',
+          dataDevolucao,
+          devolvidoPorTerceiros,
+          historicoFerramentas: arrayUnion(...emprestimo.ferramentas.map(f => ({
+            ...f,
+            dataDevolucao,
+            devolvidoPorTerceiros
+          })))
+        });
+      } else {
+        // Atualiza o empréstimo original removendo apenas a ferramenta devolvida
+        await updateDoc(emprestimoRef, {
+          ferramentas: ferramentasNaoDevolvidas,
+          historicoFerramentas: arrayUnion({
+            ...ferramentaSelecionada[0],
+            dataDevolucao,
+            devolvidoPorTerceiros
+          })
+        });
       }
+      
+      // Atualiza a disponibilidade das ferramentas
+      await atualizarDisponibilidade();
+
+
+    } catch (error) {
+      console.error('Erro ao devolver ferramentas:', error);
+      alert('Erro ao devolver ferramentas. Por favor, tente novamente.');
     }
-    setShowDevolucaoParcialModal(false);
-    setEmprestimoParaDevolucaoParcial(null);
   };
 
   const handleConfirmDevolucao = async (devolvidoPorTerceiros) => {
@@ -161,19 +189,22 @@ const ListaEmprestimos = ({
         return;
       }
 
-      if (typeof devolverFerramentas !== 'function') {
-        console.error('devolverFerramentas não é uma função');
-        return;
-      }
+      // Atualiza o empréstimo como devolvido
+      const emprestimoRef = doc(db, 'emprestimos', selectedEmprestimo.id);
+      await updateDoc(emprestimoRef, {
+        status: 'devolvido',
+        dataDevolucao: new Date().toISOString(),
+        devolvidoPorTerceiros
+      });
 
-      // Realiza a devolução total do empréstimo
-      console.log('Realizando devolução do empréstimo', selectedEmprestimo.id);
-      await devolverFerramentas(selectedEmprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros);
+      // Atualiza a disponibilidade das ferramentas
+      await atualizarDisponibilidade();
 
       setSelectedEmprestimo(null);
       setShowDevolucaoModal(false);
     } catch (error) {
       console.error('Erro ao devolver ferramentas:', error);
+      alert('Erro ao devolver as ferramentas. Por favor, tente novamente.');
     }
   };
 
@@ -235,9 +266,9 @@ const ListaEmprestimos = ({
         return;
       }
 
-      // Remove as ferramentas selecionadas do empréstimo atual
+      // Remove a ferramenta selecionada do empréstimo atual
       const ferramentasRestantes = emprestimoParaTransferencia.ferramentas.filter(
-        f => !ferramentas.find(fs => fs.id === f.id)
+        f => f.id !== ferramentas[0].id
       );
 
       // Atualiza o empréstimo original
@@ -245,7 +276,7 @@ const ListaEmprestimos = ({
       await updateDoc(emprestimoRef, {
         ferramentas: ferramentasRestantes,
         ferramentasTransferidas: arrayUnion({
-          ferramentas,
+          ferramentas: [ferramentas[0]], // Agora transferimos apenas uma ferramenta
           funcionarioDestino,
           dataTransferencia: new Date().toISOString(),
           observacao
@@ -255,7 +286,7 @@ const ListaEmprestimos = ({
       // Cria um novo empréstimo para o funcionário destino
       const novoEmprestimo = {
         funcionarioId: funcionarioDestino,
-        ferramentas,
+        ferramentas: [ferramentas[0]], // Agora transferimos apenas uma ferramenta
         dataEmprestimo: new Date().toISOString(),
         status: 'emprestado',
         observacao: `Transferido de ${emprestimoParaTransferencia.nomeFuncionario}. ${observacao ? `Observação: ${observacao}` : ''}`,
@@ -490,24 +521,25 @@ const ListaEmprestimos = ({
                             <div className="space-y-1">
                               {Array.isArray(emprestimo?.ferramentas) ? (
                                 emprestimo.ferramentas.map((ferramenta, idx) => {
-                                  const ferramentaDevolvida = emprestimo.ferramentasParcialmenteDevolvidas?.some(
-                                    devolucao => devolucao.ferramentas.some(f => f.id === ferramenta.id)
-                                  );
+                                  const ferramentaDevolvida = emprestimo.status === 'devolvido';
                                   
                                   return (
                                     <div 
                                       key={idx} 
-                                      className={`flex items-center gap-2 text-sm ${
+                                      className={`flex items-center justify-between text-sm ${
                                         ferramentaDevolvida ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'
                                       }`}
                                     >
-                                      <CircleDotDashed className={`w-3 h-3 ${ferramentaDevolvida ? 'text-gray-400' : ''}`} />
-                                      <span className={ferramentaDevolvida ? 'line-through' : ''}>
-                                        {ferramenta.nome}
-                                        {ferramenta.quantidade > 1 && (
-                                          <span className="text-gray-500 dark:text-gray-400 ml-1">({ferramenta.quantidade} unidades)</span>
-                                        )}
-                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <CircleDotDashed className={`w-3 h-3 ${ferramentaDevolvida ? 'text-gray-400' : ''}`} />
+                                        <span className={ferramentaDevolvida ? 'line-through' : ''}>
+                                          {ferramenta.nome}
+                                          {ferramenta.quantidade > 1 && (
+                                            <span className="text-gray-500 dark:text-gray-400 ml-1">({ferramenta.quantidade} unidades)</span>
+                                          )}
+                                        </span>
+                                      </div>
+
                                     </div>
                                   );
                                 })
@@ -617,17 +649,7 @@ const ListaEmprestimos = ({
         />
       )}
 
-      {showDevolucaoParcialModal && emprestimoParaDevolucaoParcial && (
-        <DevolucaoParcialModal
-          isOpen={showDevolucaoParcialModal}
-          onClose={() => {
-            setShowDevolucaoParcialModal(false);
-            setEmprestimoParaDevolucaoParcial(null);
-          }}
-          onConfirm={handleDevolverFerramentasParcial}
-          emprestimo={emprestimoParaDevolucaoParcial}
-        />
-      )}
+
 
       {showConfirmacaoExclusao && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -2,68 +2,21 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
 const TransferenciaFerramentasModal = ({ onClose, onConfirm, emprestimo, funcionarios }) => {
-  const [selectedTools, setSelectedTools] = useState([]);
   const [selectedFuncionario, setSelectedFuncionario] = useState('');
   const [observacao, setObservacao] = useState('');
-  const [selectedFerramentaId, setSelectedFerramentaId] = useState('');
-
-  // Efeito para atualizar a ferramenta selecionada quando o dropdown muda
-  const handleFerramentaChange = (e) => {
-    const toolId = e.target.value;
-    setSelectedFerramentaId(toolId);
-    if (toolId) {
-      const tool = emprestimo.ferramentas.find(t => t.id === toolId);
-      if (tool && !selectedTools.some(t => t.id === toolId)) {
-        setSelectedTools(prev => [...prev, tool]);
-        setSelectedFerramentaId(''); // Limpa a seleção após adicionar
-      }
-    }
-  };
 
   const handleSubmit = () => {
-    if (selectedTools.length === 0) {
-      alert('Selecione pelo menos uma ferramenta para transferir');
-      return;
-    }
-
     if (!selectedFuncionario) {
-      alert('Selecione um funcionário para receber as ferramentas');
+      alert('Selecione um funcionário para receber a ferramenta');
       return;
     }
 
     onConfirm({
-      ferramentas: selectedTools,
+      ferramentas: emprestimo.ferramentas,
       funcionarioDestino: selectedFuncionario,
       observacao
     });
     onClose();
-  };
-
-  const handleToolSelection = (e) => {
-    const toolId = e.target.value;
-    if (!toolId) return;
-    
-    const tool = emprestimo.ferramentas.find(t => t.id === toolId);
-    console.log('Tool selected:', { toolId, tool, allTools: emprestimo.ferramentas });
-    
-    if (tool) {
-      setSelectedTools(prevTools => {
-        // Verifica se a ferramenta já está selecionada
-        if (prevTools.find(t => t.id === toolId)) {
-          console.log('Tool already selected');
-          return prevTools;
-        }
-        console.log('Adding tool to selection');
-        return [...prevTools, tool];
-      });
-      setSelectedFerramentaId(''); // Reset selection after adding
-    } else {
-      console.log('Tool not found in emprestimo');
-    }
-  };
-
-  const handleRemoveTool = (toolId) => {
-    setSelectedTools(selectedTools.filter(tool => tool.id !== toolId));
   };
 
   return (
@@ -84,45 +37,19 @@ const TransferenciaFerramentasModal = ({ onClose, onConfirm, emprestimo, funcion
         <div className="mb-6 space-y-4">
           <div>
             <h4 className="text-base font-medium text-gray-900 dark:text-white mb-2">
-              Selecione as ferramentas para transferir:
+              Ferramenta a ser transferida:
             </h4>
             <div className="space-y-4">
-              <select
-                value={selectedFerramentaId}
-                onChange={handleFerramentaChange}
-                className="w-full bg-[#253341] border border-[#38444D] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors hover:bg-[#2C3640]"
-              >
-                <option value="" className="bg-[#192734]">Selecione uma ferramenta</option>
-                {emprestimo?.ferramentas
-                  ?.filter(tool => !selectedTools.some(t => t.id === tool.id))
-                  .map(tool => (
-                    <option key={tool.id} value={tool.id} className="bg-[#192734]">
-                      {tool.nome} ({tool.quantidade} {tool.quantidade > 1 ? 'unidades' : 'unidade'})
-                    </option>
-                  ))
-                }
-              </select>
-
-              {selectedTools.length > 0 && (
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {selectedTools.map(tool => (
-                    <div 
-                      key={tool.id} 
-                      className="flex items-center justify-between gap-3 p-2 bg-[#253341] rounded-lg group hover:bg-[#2C3640] transition-colors"
-                    >
-                      <span className="text-sm text-white">
-                        {tool.nome} ({tool.quantidade} {tool.quantidade > 1 ? 'unidades' : 'unidade'})
-                      </span>
-                      <button
-                        onClick={() => handleRemoveTool(tool.id)}
-                        className="text-gray-400 hover:text-white transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+              {emprestimo?.ferramentas.map(tool => (
+                <div
+                  key={tool.id}
+                  className="flex items-center justify-between gap-3 p-2 bg-[#253341] rounded-lg"
+                >
+                  <span className="text-sm text-white">
+                    {tool.nome} ({tool.quantidade} {tool.quantidade > 1 ? 'unidades' : 'unidade'})
+                  </span>
                 </div>
-              )}
+              ))}
             </div>
           </div>
 

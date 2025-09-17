@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { AlertTriangle, Plus, Search, Calendar, Wrench, FileText } from 'lucide-react';
 import { AuthContext } from '../../hooks/useAuth';
+import { toast } from 'react-toastify';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
 const FerramentasDanificadasTab = ({ 
@@ -41,7 +42,22 @@ const FerramentasDanificadasTab = ({
     e.preventDefault();
     
     if (!novaFerramenta.nomeItem || !novaFerramenta.descricaoProblema) {
-      alert('Preencha pelo menos o nome da ferramenta e descrição do problema!');
+      toast.warning('Preencha pelo menos o nome da ferramenta e descrição do problema!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        style: {
+          background: '#192734',
+          color: '#ffffff',
+          borderRadius: '1rem',
+          border: '1px solid #38444D'
+        }
+      });
       return;
     }
 
@@ -64,9 +80,39 @@ const FerramentasDanificadasTab = ({
         prioridade: 'media'
       });
       setModalAberto(false);
-      alert('Ferramenta danificada registrada com sucesso!');
+      toast.success('Ferramenta danificada registrada com sucesso!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        style: {
+          background: '#192734',
+          color: '#ffffff',
+          borderRadius: '1rem',
+          border: '1px solid #38444D'
+        }
+      });
     } else {
-      alert('Erro ao registrar ferramenta danificada. Tente novamente.');
+      toast.error('Erro ao registrar ferramenta danificada. Tente novamente.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        style: {
+          background: '#192734',
+          color: '#ffffff',
+          borderRadius: '1rem',
+          border: '1px solid #38444D'
+        }
+      });
     }
   };
 

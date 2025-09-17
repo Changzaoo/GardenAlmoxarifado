@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 const DevolucaoParcialModal = ({ emprestimo, onClose, onConfirm }) => {
-  const [ferramentasSelecionadas, setFerramentasSelecionadas] = useState([]);
   const [devolvidoPorTerceiros, setDevolvidoPorTerceiros] = useState(false);
 
   // Verificação de segurança para garantir que emprestimo e ferramentas existem
@@ -25,24 +24,10 @@ const DevolucaoParcialModal = ({ emprestimo, onClose, onConfirm }) => {
     );
   }
 
-  const handleToggleFerramentaSelecionada = (ferramenta) => {
-    setFerramentasSelecionadas(prev => {
-      const jaExiste = prev.some(f => f.id === ferramenta.id);
-      if (jaExiste) {
-        return prev.filter(f => f.id !== ferramenta.id);
-      } else {
-        return [...prev, ferramenta];
-      }
-    });
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (ferramentasSelecionadas.length === 0) {
-      alert('Selecione pelo menos uma ferramenta para devolver');
-      return;
-    }
-    onConfirm(ferramentasSelecionadas, devolvidoPorTerceiros);
+    // Como agora só trabalhamos com uma ferramenta por vez, podemos passar diretamente a primeira ferramenta
+    onConfirm(emprestimo.ferramentas, devolvidoPorTerceiros);
   };
 
   return (
@@ -50,26 +35,18 @@ const DevolucaoParcialModal = ({ emprestimo, onClose, onConfirm }) => {
       <h2 className="text-xl font-semibold mb-4 dark:text-white">Devolução de Ferramentas</h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <p className="text-gray-600 dark:text-gray-300 mb-2">Selecione as ferramentas que serão devolvidas:</p>
+          <p className="text-gray-600 dark:text-gray-300 mb-2">Ferramenta a ser devolvida:</p>
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {emprestimo.ferramentas.map((ferramenta) => (
               <div key={ferramenta.id} className="flex items-center">
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={ferramentasSelecionadas.some(f => f.id === ferramenta.id)}
-                    onChange={() => handleToggleFerramentaSelecionada(ferramenta)}
-                    className="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 dark:border-gray-600"
-                  />
-                  <span className="text-gray-700 dark:text-gray-200">
-                    {ferramenta.nome}
-                    {ferramenta.quantidade > 1 && (
-                      <span className="text-gray-500 dark:text-gray-400 ml-2">
-                        ({ferramenta.quantidade} unidades)
-                      </span>
-                    )}
-                  </span>
-                </label>
+                <span className="text-gray-700 dark:text-gray-200">
+                  {ferramenta.nome}
+                  {ferramenta.quantidade > 1 && (
+                    <span className="text-gray-500 dark:text-gray-400 ml-2">
+                      ({ferramenta.quantidade} unidades)
+                    </span>
+                  )}
+                </span>
               </div>
             ))}
           </div>
