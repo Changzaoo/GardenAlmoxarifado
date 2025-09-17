@@ -5,6 +5,7 @@ import { ToastProvider } from './ToastProvider';
 import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
 import LegalTab from './Legal/LegalTab';
 import SupportTab from './Support/SupportTab';
+import RankingTab from './Ranking/RankingTab';
 import { Shield } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
@@ -48,6 +49,7 @@ import {
   UserCircle,
   Plus,
   Edit,
+  Award,
   Trash2,
   Eye,
   EyeOff,
@@ -1558,7 +1560,105 @@ const AlmoxarifadoSistema = () => {
 
   // ===== FUNCIONÁRIOS =====
   const [funcionarios, setFuncionarios] = useState([]);
-  
+  const [funcionariosStats, setFuncionariosStats] = useState({});
+  const [funcionariosPontos, setFuncionariosPontos] = useState({});
+
+  // Carregar funcionários e estatísticas
+  useEffect(() => {
+    // Listener para funcionários
+    const unsubscribeFuncionarios = onSnapshot(collection(db, 'funcionarios'), (snapshot) => {
+      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setFuncionarios(lista);
+    }, (error) => {
+      console.error('Erro no listener dos funcionários:', error);
+    });
+
+    // Listener para estatísticas
+    const unsubscribeStats = onSnapshot(collection(db, 'funcionariosStats'), (snapshot) => {
+      const stats = {};
+      snapshot.docs.forEach(doc => {
+        stats[doc.id] = doc.data();
+      });
+      setFuncionariosStats(stats);
+    });
+
+    // Cleanup dos listeners
+    return () => {
+      unsubscribeFuncionarios();
+      unsubscribeStats();
+    };
+  }, []);
+
+  // Calcular pontuação quando houver mudanças
+  useEffect(() => {
+    if (funcionarios.length && Object.keys(funcionariosStats).length) {
+      const pontos = {};
+      funcionarios.forEach(funcionario => {
+        const stats = funcionariosStats[funcionario.id] || {};
+        
+        const pontosBase = {
+          tarefas: (stats.tarefasConcluidas || 0) * 50,
+          emprestimos: (stats.emprestimosDevolvidos || 0) * 30,
+          avaliacoes: stats.mediaAvaliacoes 
+            ? Math.round((stats.mediaAvaliacoes / 5) * 100) * (stats.totalAvaliacoes || 1) 
+            : 0
+        };
+
+        pontos[funcionario.id] = {
+          totalPoints: pontosBase.tarefas + pontosBase.emprestimos + pontosBase.avaliacoes,
+          detalhamento: pontosBase
+        };
+      });
+      
+      setFuncionariosPontos(pontos);
+    }
+  }, [funcionarios, funcionariosStats]);
+
+  // Carregar funcionários
+  useEffect(() => {
+    if (Object.keys(funcionariosStats).length > 0 && funcionarios.length > 0) {
+      const pontos = {};
+      
+      funcionarios.forEach(funcionario => {
+        const stats = funcionariosStats[funcionario.id] || {};
+        
+        pontos[funcionario.id] = {
+          totalPoints: 0,
+          detalhamento: {
+            tarefas: 0,
+            emprestimos: 0,
+            avaliacoes: 0
+          }
+        };
+
+        // 1. Pontos por tarefas
+        if (stats.tarefasConcluidas) {
+          pontos[funcionario.id].detalhamento.tarefas = stats.tarefasConcluidas * 50;
+        }
+
+        // 2. Pontos por empréstimos devolvidos
+        const pontosEmprestimos = stats.emprestimosDevolvidos ? stats.emprestimosDevolvidos * 30 : 0;
+        pontos[funcionario.id].detalhamento.emprestimos = pontosEmprestimos;
+
+        // 3. Pontos por avaliações
+        if (stats.mediaAvaliacoes && stats.totalAvaliacoes) {
+          const pontosAvaliacoes = Math.round((stats.mediaAvaliacoes / 5) * 100) * stats.totalAvaliacoes;
+          pontos[funcionario.id].detalhamento.avaliacoes = pontosAvaliacoes;
+        }
+
+        // Calcular total
+        pontos[funcionario.id].totalPoints = 
+          pontos[funcionario.id].detalhamento.tarefas +
+          pontos[funcionario.id].detalhamento.emprestimos +
+          pontos[funcionario.id].detalhamento.avaliacoes;
+      });
+
+      setFuncionariosPontos(pontos);
+    }
+  }, [funcionarios, funcionariosStats]);
+
+  // Carregar funcionários
+  // Efeito para carregar funcionários
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'funcionarios'), (snapshot) => {
       const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1566,6 +1666,106 @@ const AlmoxarifadoSistema = () => {
     }, (error) => {
       console.error('Erro no listener dos funcionários:', error);
     });
+    return () => unsubscribe();
+  }, []);
+
+  // Efeito para carregar estatísticas
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'funcionariosStats'), (snapshot) => {
+      const stats = {};
+      snapshot.docs.forEach(doc => {
+        stats[doc.id] = doc.data();
+      });
+      setFuncionariosStats(stats);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Efeito para calcular pontuação
+  useEffect(() => {
+    if (funcionarios.length && Object.keys(funcionariosStats).length) {
+      const pontos = {};
+      funcionarios.forEach(funcionario => {
+        const stats = funcionariosStats[funcionario.id] || {};
+        
+        const pontosBase = {
+          tarefas: (stats.tarefasConcluidas || 0) * 50,
+          emprestimos: (stats.emprestimosDevolvidos || 0) * 30,
+          avaliacoes: stats.mediaAvaliacoes 
+            ? Math.round((stats.mediaAvaliacoes / 5) * 100) * (stats.totalAvaliacoes || 1) 
+            : 0
+        };
+
+        pontos[funcionario.id] = {
+          totalPoints: pontosBase.tarefas + pontosBase.emprestimos + pontosBase.avaliacoes,
+          detalhamento: pontosBase
+        };
+      });
+      
+      setFuncionariosPontos(pontos);
+    }
+  }, [funcionarios, funcionariosStats]);
+    
+    return () => unsubscribe();
+  }, []);
+  
+  // Carregar estatísticas dos funcionários
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'funcionariosStats'), (snapshot) => {
+      const stats = {};
+      snapshot.docs.forEach(doc => {
+        stats[doc.id] = doc.data();
+      });
+      setFuncionariosStats(stats);
+    }, (error) => {
+      console.error('Erro no listener das estatísticas:', error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Calcular pontos dos funcionários
+  useEffect(() => {
+    if (Object.keys(funcionariosStats).length > 0) {
+      const pontos = {};
+      
+      funcionarios.forEach(funcionario => {
+        const stats = funcionariosStats[funcionario.id] || {};
+        
+        pontos[funcionario.id] = {
+          totalPoints: 0,
+          detalhamento: {
+            tarefas: 0,
+            emprestimos: 0,
+            avaliacoes: 0
+          }
+        };
+
+        // 1. Pontos por tarefas
+        if (stats.tarefasConcluidas) {
+          pontos[funcionario.id].detalhamento.tarefas = stats.tarefasConcluidas * 50;
+        }
+
+        // 2. Pontos por empréstimos devolvidos
+        const pontosEmprestimos = stats.emprestimosDevolvidos ? stats.emprestimosDevolvidos * 30 : 0;
+        pontos[funcionario.id].detalhamento.emprestimos = pontosEmprestimos;
+
+        // 3. Pontos por avaliações
+        if (stats.mediaAvaliacoes && stats.totalAvaliacoes) {
+          const pontosAvaliacoes = Math.round((stats.mediaAvaliacoes / 5) * 100) * stats.totalAvaliacoes;
+          pontos[funcionario.id].detalhamento.avaliacoes = pontosAvaliacoes;
+        }
+
+        // Calcular total
+        pontos[funcionario.id].totalPoints = 
+          pontos[funcionario.id].detalhamento.tarefas +
+          pontos[funcionario.id].detalhamento.emprestimos +
+          pontos[funcionario.id].detalhamento.avaliacoes;
+      });
+
+      setFuncionariosPontos(pontos);
+    }
+  }, [funcionarios, funcionariosStats]);
     
     return () => unsubscribe();
   }, []);
@@ -1844,6 +2044,12 @@ const AlmoxarifadoSistema = () => {
       nome: 'Ferramentas Danificadas', 
       icone: AlertTriangle,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
+    },
+    { 
+      id: 'ranking', 
+      nome: 'Ranking', 
+      icone: Award,  // Preciso importar esse ícone
+      permissao: () => true // Visível para todos os níveis
     },
     { 
       id: 'perdidas', 
@@ -2176,6 +2382,14 @@ const AlmoxarifadoSistema = () => {
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar as ferramentas danificadas." />
               )
+            )}
+            
+            {abaAtiva === 'ranking' && (
+              <RankingTab
+                funcionarios={funcionarios}
+                funcionariosStats={funcionariosStats}
+                funcionariosPontos={funcionariosPontos}
+              />
             )}
             
             {abaAtiva === 'perdidas' && (

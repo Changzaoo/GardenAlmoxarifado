@@ -116,10 +116,32 @@ const ListaEmprestimos = ({
   }, {});
 
   const handleDevolverFerramentas = (id) => {
+    if (!id || !Array.isArray(emprestimos)) {
+      console.error('ID inválido ou empréstimos não é um array:', { id, emprestimos });
+      return;
+    }
+    
     const emprestimo = emprestimos.find(e => e.id === id);
-    if (!emprestimo) return;
+    if (!emprestimo) {
+      console.error('Empréstimo não encontrado com o ID:', id);
+      return;
+    }
 
-    setSelectedEmprestimo(emprestimo);
+    if (!Array.isArray(emprestimo.ferramentas)) {
+      console.error('Empréstimo sem array de ferramentas válido:', emprestimo);
+      return;
+    }
+
+    // Faz uma cópia profunda do empréstimo para evitar problemas de referência
+    const emprestimoParaDevolver = JSON.parse(JSON.stringify(emprestimo));
+    
+    if (emprestimoParaDevolver.ferramentas.length === 0) {
+      console.error('Empréstimo sem ferramentas para devolver:', emprestimoParaDevolver);
+      return;
+    }
+
+    console.log('Abrindo modal de devolução para empréstimo:', emprestimoParaDevolver);
+    setSelectedEmprestimo(emprestimoParaDevolver);
     setShowDevolucaoModal(true);
   };
 
@@ -189,17 +211,24 @@ const ListaEmprestimos = ({
         return;
       }
 
-      // Atualiza o empréstimo como devolvido
-      const emprestimoRef = doc(db, 'emprestimos', selectedEmprestimo.id);
-      await updateDoc(emprestimoRef, {
-        status: 'devolvido',
-        dataDevolucao: new Date().toISOString(),
+      if (typeof devolverFerramentas !== 'function') {
+        console.error('devolverFerramentas não é uma função');
+        return;
+      }
+
+      // Realiza a devolução total do empréstimo
+      console.log('Realizando devolução do empréstimo:', {
+        id: selectedEmprestimo.id,
         devolvidoPorTerceiros
       });
+      
+      await devolverFerramentas(
+        selectedEmprestimo.id,
+        atualizarDisponibilidade,
+        devolvidoPorTerceiros
+      );
 
-      // Atualiza a disponibilidade das ferramentas
-      await atualizarDisponibilidade();
-
+      // Limpa os estados após a devolução bem-sucedida
       setSelectedEmprestimo(null);
       setShowDevolucaoModal(false);
     } catch (error) {
@@ -694,6 +723,17 @@ const ListaEmprestimos = ({
             setEmprestimoParaEditar(null);
           }}
           onSave={handleSaveEdit}
+        />
+      )}
+
+      {showDevolucaoModal && selectedEmprestimo && (
+        <DevolucaoTerceirosModal
+          emprestimo={selectedEmprestimo}
+          onClose={() => {
+            setShowDevolucaoModal(false);
+            setSelectedEmprestimo(null);
+          }}
+          onConfirm={handleConfirmDevolucao}
         />
       )}
 
