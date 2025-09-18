@@ -15,6 +15,7 @@ import PWAUpdateAvailable from './PWAUpdateAvailable';
 import { useNotifications } from '../hooks/useNotifications';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { Menu as MenuIcon, X, Scale, BarChart3 } from 'lucide-react';
+import RankingPontos from './Rankings/RankingPontos';
 import InventarioTab from './Inventario/InventarioTab';
 import MeuInventarioTab from './Inventario/MeuInventarioTab';
 import { inventarioInicial } from '../data/inventarioInicial';
@@ -47,6 +48,7 @@ import {
   User,
   UserCircle,
   Plus,
+  Trophy,
   Edit,
   Trash2,
   Eye,
@@ -1796,16 +1798,16 @@ const AlmoxarifadoSistema = () => {
       icone: UserCircle,
       permissao: () => true // Visível para todos os níveis
     },
+    {
+      id: 'ranking',
+      nome: 'Ranking',
+      icone: Trophy,
+      permissao: () => true // Visível para todos os níveis
+    },
     { 
       id: 'tarefas', 
       nome: 'Tarefas', 
       icone: ClipboardCheck,
-      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Apenas nível 2 (Supervisor) ou superior
-    },
-    { 
-      id: 'meu-inventario', 
-      nome: 'Meu Inventário', 
-      icone: ToolCase,
       permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Apenas nível 2 (Supervisor) ou superior
     },
     { 
@@ -2190,6 +2192,10 @@ const AlmoxarifadoSistema = () => {
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar as ferramentas perdidas." />
               )
+            )}
+
+            {abaAtiva === 'ranking' && (
+              <RankingPontos />
             )}
 
             {abaAtiva === 'historico-emprestimos' && (

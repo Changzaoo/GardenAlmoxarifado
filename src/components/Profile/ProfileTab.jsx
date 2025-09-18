@@ -6,7 +6,8 @@ import {
   Package, 
   CheckCircle, 
   ArrowLeft,
-  Calendar
+  Calendar,
+  Trophy
 } from 'lucide-react';
 import MeuInventarioTab from '../Inventario/MeuInventarioTab';
 import TarefasTab from '../Tarefas/TarefasTab';
@@ -15,6 +16,23 @@ import { db } from '../../firebaseConfig';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+const calcularPontuacao = (dados) => {
+  const pontosPorFerramentasDevolvidas = (dados.ferramentasDevolvidas || 0) * 20;
+  const pontosPorTarefasConcluidas = (dados.tarefasConcluidas || 0) * 50;
+  
+  // Calcula pontos por avaliação (5 estrelas = 50 pontos, 4 = 40, 3 = 30, 2 = 20, 1 = 10)
+  const pontosPorAvaliacao = dados.mediaEstrelas ? Math.round(dados.mediaEstrelas * 10) : 0;
+
+  return {
+    total: pontosPorFerramentasDevolvidas + pontosPorTarefasConcluidas + pontosPorAvaliacao,
+    detalhes: {
+      ferramentas: pontosPorFerramentasDevolvidas,
+      tarefas: pontosPorTarefasConcluidas,
+      avaliacao: pontosPorAvaliacao
+    }
+  };
+};
 
 const ProfileTab = () => {
   const { usuario } = useAuth();
@@ -25,8 +43,17 @@ const ProfileTab = () => {
   const [stats, setStats] = useState({
     tarefasConcluidas: 0,
     ferramentasEmprestadas: 0,
+    ferramentasDevolvidas: 0,
     mediaEstrelas: 0,
-    totalAvaliacoes: 0
+    totalAvaliacoes: 0,
+    pontos: {
+      total: 0,
+      detalhes: {
+        ferramentas: 0,
+        tarefas: 0,
+        avaliacao: 0
+      }
+    }
   });
 
   // Carregar cargo do funcionário
@@ -140,11 +167,32 @@ const ProfileTab = () => {
 
         console.log("Ferramentas emprestadas:", emprestimosAtivos);
 
-        setStats({
-          tarefasConcluidas: tarefasConcluidas,
+        const mediaEstrelas = totalAvaliacoes > 0 ? (somaEstrelas / totalAvaliacoes) : 0;
+        let ferramentasDevolvidas = 0;
+        emprestimosSnap.forEach(doc => {
+          const emprestimo = doc.data();
+          if (emprestimo.status === 'devolvido') {
+            ferramentasDevolvidas += emprestimo.ferramentas?.length || 0;
+          }
+        });
+
+        const statsData = {
+          tarefasConcluidas,
           ferramentasEmprestadas: emprestimosAtivos,
-          mediaEstrelas: totalAvaliacoes > 0 ? (somaEstrelas / totalAvaliacoes) : 0,
+          ferramentasDevolvidas,
+          mediaEstrelas,
           totalAvaliacoes
+        };
+
+        const pontuacao = calcularPontuacao({
+          tarefasConcluidas,
+          ferramentasDevolvidas,
+          mediaEstrelas
+        });
+
+        setStats({
+          ...statsData,
+          pontos: pontuacao
         });
       } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
@@ -171,6 +219,12 @@ const ProfileTab = () => {
               <UserCircle className="w-16 h-16 text-gray-400" />
             )}
           </div>
+        </div>
+        
+        {/* Points Display */}
+        <div className="absolute -bottom-12 right-4 flex items-center gap-2 bg-white dark:bg-gray-800 rounded-full px-4 py-2 shadow-md">
+          <Trophy className="w-5 h-5 text-yellow-500" />
+          <div className="text-lg font-semibold">{stats.pontos.total} pontos</div>
         </div>
       </div>
 
@@ -218,6 +272,29 @@ const ProfileTab = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {stats.totalAvaliacoes} {stats.totalAvaliacoes === 1 ? 'Avaliação' : 'Avaliações'}
           </p>
+        </div>
+
+        {/* Points Breakdown */}
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-yellow-500">
+            <Trophy className="w-5 h-5" />
+            <span className="text-lg font-bold">{stats.pontos.total}</span>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Pontuação Total</p>
+          <div className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex justify-between">
+              <span>Ferramentas Devolvidas:</span>
+              <span>{stats.pontos.detalhes.ferramentas} pts</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Tarefas Concluídas:</span>
+              <span>{stats.pontos.detalhes.tarefas} pts</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Avaliações:</span>
+              <span>{stats.pontos.detalhes.avaliacao} pts</span>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Users, Trash2, Plus, Edit, Camera, Star, Wrench, CheckCircle, Clock, Phone } from 'lucide-react';
+import { Users, Trash2, Plus, Edit, Camera, Star, Wrench, CheckCircle, Clock, Phone, Trophy } from 'lucide-react';
 import { storage, db } from '../../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -29,8 +29,24 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [funcionariosStats, setFuncionariosStats] = useState({});
+  const [funcionariosPontos, setFuncionariosPontos] = useState({});
   const [filtroAtual, setFiltroAtual] = useState('nome');
   const fileInputRef = useRef();
+
+  const calcularPontuacao = (dados) => {
+    const pontosPorFerramentasDevolvidas = (dados.ferramentasDevolvidas || 0) * 20;
+    const pontosPorTarefasConcluidas = (dados.tarefasConcluidas || 0) * 50;
+    const pontosPorAvaliacao = dados.mediaAvaliacao ? Math.round(dados.mediaAvaliacao * 10) : 0;
+
+    return {
+      total: pontosPorFerramentasDevolvidas + pontosPorTarefasConcluidas + pontosPorAvaliacao,
+      detalhes: {
+        ferramentas: pontosPorFerramentasDevolvidas,
+        tarefas: pontosPorTarefasConcluidas,
+        avaliacao: pontosPorAvaliacao
+      }
+    };
+  };
 
   // Funções de ordenação
   const ordenarPorNome = (a, b) => a.nome.localeCompare(b.nome);
@@ -43,6 +59,9 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   const ordenarPorEmprestimos = (a, b) => (
     (funcionariosStats[b.id]?.emprestimosAtivos || 0) - (funcionariosStats[a.id]?.emprestimosAtivos || 0)
   );
+  const ordenarPorPontos = (a, b) => (
+    (funcionariosPontos[b.id]?.total || 0) - (funcionariosPontos[a.id]?.total || 0)
+  );
 
   // Função para obter a função de ordenação atual
   const getFuncaoOrdenacao = () => {
@@ -53,6 +72,8 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
         return ordenarPorTarefasConcluidas;
       case 'emprestimos':
         return ordenarPorEmprestimos;
+      case 'pontos':
+        return ordenarPorPontos;
       default:
         return ordenarPorNome;
     }
@@ -156,12 +177,39 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           .filter(emp => emp.status === 'ativo' || emp.status === 'emprestado')
         ).size;
 
-        stats[func.id] = {
+        // Contar ferramentas devolvidas
+        let ferramentasDevolvidas = 0;
+        [emprestimosIdSnap, emprestimosNomeSnap, emprestimosColabSnap, emprestimosRespSnap, emprestimosRespLowerSnap]
+          .forEach(snapshot => {
+            snapshot.docs.forEach(doc => {
+              const emp = doc.data();
+              if (emp.status === 'devolvido') {
+                ferramentasDevolvidas += emp.ferramentas?.length || 0;
+              }
+            });
+          });
+
+        const statsData = {
           emprestimosAtivos,
           mediaAvaliacao: totalAvaliacoes > 0 ? (somaAvaliacoes / totalAvaliacoes).toFixed(1) : 0,
           tarefasConcluidas,
-          tarefasEmAndamento
+          tarefasEmAndamento,
+          ferramentasDevolvidas
         };
+
+        stats[func.id] = statsData;
+
+        // Calcular pontuação
+        const pontuacao = calcularPontuacao({
+          ferramentasDevolvidas,
+          tarefasConcluidas,
+          avaliacao: statsData.mediaAvaliacao
+        });
+
+        setFuncionariosPontos(prev => ({
+          ...prev,
+          [func.id]: pontuacao
+        }));
       }
 
       setFuncionariosStats(stats);
@@ -323,6 +371,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           className="bg-[#192734] text-[#8899A6] hover:bg-[#253341] hover:text-white px-3 py-2 rounded-lg text-sm border border-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#192734] dark:text-[#8899A6] dark:border-[#38444D] dark:hover:bg-[#253341] dark:hover:text-white transition-colors cursor-pointer w-[200px]"
         >
           <option value="nome">Nome</option>
+          <option value="pontos">Mais Pontos</option>
           <option value="avaliacao">Mais Avaliados</option>
           <option value="tarefas">Mais Tarefas</option>
           <option value="emprestimos">Mais Empréstimos</option>
@@ -407,7 +456,13 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                   {func.matricula && (
                     <p className="text-sm text-[#8899A6] mb-1">Mat: {func.matricula}</p>
                   )}
-                  <p className="text-[#1DA1F2] font-medium truncate">{func.cargo || 'Cargo não definido'}</p>
+                  <p className="text-[#1DA1F2] font-medium truncate mb-1">{func.cargo || 'Cargo não definido'}</p>
+                  {funcionariosPontos[func.id] && (
+                    <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded-full w-fit">
+                      <Trophy className="w-4 h-4" />
+                      <span className="text-sm font-semibold">{funcionariosPontos[func.id].total} pontos</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

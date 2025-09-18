@@ -13,6 +13,7 @@ import InventarioTab from './Inventario/InventarioTab';
 import EmprestimosTab from './Emprestimos/EmprestimosTab';
 import HistoricoPage from '../pages/HistoricoPage';
 import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
+import RankingPontos from './Rankings/RankingPontos';
 // Componente para proteger rotas baseado no nível de acesso
 const PrivateRoute = ({ children, requiredLevel }) => {
   const { usuario } = useAuth();
@@ -91,6 +92,11 @@ const AppRoutes = () => {
         <Route path="/historico-emprestimos" element={
           <PrivateRoute requiredLevel={NIVEIS_PERMISSAO.FUNCIONARIO}>
             <HistoricoPage />
+          </PrivateRoute>
+        } />
+        <Route path="/ranking" element={
+          <PrivateRoute requiredLevel={NIVEIS_PERMISSAO.FUNCIONARIO}>
+            <RankingPontos />
           </PrivateRoute>
         } />
         {/* Rota de fallback */}
