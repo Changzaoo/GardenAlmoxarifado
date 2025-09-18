@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit, Package2, CircleUser } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import { doc, updateDoc, collection, getDocs, addDoc, arrayUnion } from 'firebase/firestore';
@@ -8,6 +8,21 @@ import { formatarDataHora } from '../../utils/formatters';
 import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
 import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
+
+// Enum for sorting options
+const SORT_OPTIONS = {
+  MOST_LOANS: 'MOST_LOANS',
+  MOST_ACTIVE: 'MOST_ACTIVE',
+  MOST_COMPLETED: 'MOST_COMPLETED',
+  ALPHABETICAL: 'ALPHABETICAL'
+};
+
+const SORT_LABELS = {
+  [SORT_OPTIONS.MOST_LOANS]: 'Mais Empréstimos',
+  [SORT_OPTIONS.MOST_ACTIVE]: 'Mais Ativos',
+  [SORT_OPTIONS.MOST_COMPLETED]: 'Mais Concluídos',
+  [SORT_OPTIONS.ALPHABETICAL]: 'Ordem Alfabética'
+};
 
 const ListaEmprestimos = ({ 
   emprestimos = [], 
@@ -18,6 +33,30 @@ const ListaEmprestimos = ({
   const [filtroEmprestimos, setFiltroEmprestimos] = useState('');
   const [filtroPeriodo, setFiltroPeriodo] = useState('hoje');
   const [filtroStatus, setFiltroStatus] = useState('emprestado');
+  const [sortBy, setSortBy] = useState(SORT_OPTIONS.ALPHABETICAL);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+
+  const filtrarEmprestimo = (emp) => {
+    if (!emp || !emp.dataEmprestimo) return false;
+
+    // Filtra por período
+    if (!isWithinPeriod(emp.dataEmprestimo, filtroPeriodo)) return false;
+
+    // Filtra por status
+    if (filtroStatus !== 'todos' && emp.status !== filtroStatus) return false;
+
+    // Filtra por texto
+    if (filtroEmprestimos) {
+      const searchTerm = filtroEmprestimos.toLowerCase();
+      const funcionario = (emp.nomeFuncionario || emp.colaborador || '').toLowerCase();
+      const ferramentas = emp.nomeFerramentas || [];
+
+      return funcionario.includes(searchTerm) ||
+             ferramentas.some(f => f.toLowerCase().includes(searchTerm));
+    }
+
+    return true;
+  };
   const [showDevolucaoModal, setShowDevolucaoModal] = useState(false);
   const [selectedEmprestimo, setSelectedEmprestimo] = useState(null);
   const [showConfirmacaoExclusao, setShowConfirmacaoExclusao] = useState(false);
@@ -34,8 +73,39 @@ const ListaEmprestimos = ({
   
   const temPermissaoEdicao = usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
 
-  // Carrega as devoluções parciais para um empréstimo específico
-
+  // Função para ordenar os empréstimos
+  const sortEmprestimos = (emprestimos) => {
+    const clone = [...emprestimos];
+    
+    switch (sortBy) {
+      case SORT_OPTIONS.MOST_LOANS:
+        return clone.sort((a, b) => b.ferramentas.length - a.ferramentas.length);
+      
+      case SORT_OPTIONS.MOST_ACTIVE:
+        return clone.sort((a, b) => {
+          const aActive = a.status === 'emprestado' ? 1 : 0;
+          const bActive = b.status === 'emprestado' ? 1 : 0;
+          return bActive - aActive;
+        });
+      
+      case SORT_OPTIONS.MOST_COMPLETED:
+        return clone.sort((a, b) => {
+          const aCompleted = a.status === 'devolvido' ? 1 : 0;
+          const bCompleted = b.status === 'devolvido' ? 1 : 0;
+          return bCompleted - aCompleted;
+        });
+      
+      case SORT_OPTIONS.ALPHABETICAL:
+        return clone.sort((a, b) => {
+          const nameA = (a.nomeFuncionario || a.colaborador || '').toLowerCase();
+          const nameB = (b.nomeFuncionario || b.colaborador || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+      
+      default:
+        return clone;
+    }
+  };
 
   // Carrega a lista de funcionários quando necessário
   const carregarFuncionarios = async () => {
@@ -86,34 +156,51 @@ const ListaEmprestimos = ({
   };
 
   const emprestimosFiltrados = emprestimos
-    .filter(emp => {
-      if (!emp || !emp.dataEmprestimo) return false;
-      
-      if (!isWithinPeriod(emp.dataEmprestimo, filtroPeriodo)) return false;
-
-      if (filtroStatus !== 'todos' && emp.status !== filtroStatus) return false;
-
-      const funcionario = (emp.nomeFuncionario || emp.colaborador || '').toLowerCase();
-      const ferramentas = emp.nomeFerramentas || [];
-      const filtro = filtroEmprestimos.toLowerCase();
-      
-      return funcionario.includes(filtro) ||
-             ferramentas.some(f => f.toLowerCase().includes(filtro));
-    })
+    .filter(filtrarEmprestimo)
     .sort((a, b) => {
       const dataA = a?.dataEmprestimo ? new Date(a.dataEmprestimo) : new Date();
       const dataB = b?.dataEmprestimo ? new Date(b.dataEmprestimo) : new Date();
       return dataB - dataA;
     });
 
+  // Agrupa empréstimos por funcionário
   const emprestimosPorFuncionario = emprestimosFiltrados.reduce((acc, emp) => {
     const funcionario = emp.nomeFuncionario || emp.colaborador || 'Sem nome';
     if (!acc[funcionario]) {
-      acc[funcionario] = [];
+      acc[funcionario] = {
+        emprestimos: [],
+        totalEmprestimos: 0,
+        emprestimosAtivos: 0,
+        emprestimosDevolvidos: 0
+      };
     }
-    acc[funcionario].push(emp);
+    acc[funcionario].emprestimos.push(emp);
+    acc[funcionario].totalEmprestimos += emp.ferramentas.length;
+    acc[funcionario].emprestimosAtivos += emp.status === 'emprestado' ? 1 : 0;
+    acc[funcionario].emprestimosDevolvidos += emp.status === 'devolvido' ? 1 : 0;
     return acc;
   }, {});
+
+  // Ordena os funcionários com base no critério selecionado
+  const funcionariosOrdenados = Object.entries(emprestimosPorFuncionario)
+    .sort(([funcA, dataA], [funcB, dataB]) => {
+      switch (sortBy) {
+        case SORT_OPTIONS.MOST_LOANS:
+          return dataB.totalEmprestimos - dataA.totalEmprestimos;
+        case SORT_OPTIONS.MOST_ACTIVE:
+          return dataB.emprestimosAtivos - dataA.emprestimosAtivos;
+        case SORT_OPTIONS.MOST_COMPLETED:
+          return dataB.emprestimosDevolvidos - dataA.emprestimosDevolvidos;
+        case SORT_OPTIONS.ALPHABETICAL:
+          return funcA.localeCompare(funcB);
+        default:
+          return 0;
+      }
+    })
+    .reduce((acc, [funcionario, data]) => {
+      acc[funcionario] = data.emprestimos;
+      return acc;
+    }, {});
 
   const handleDevolverFerramentas = (id) => {
     if (!id || !Array.isArray(emprestimos)) {
@@ -398,54 +485,111 @@ const ListaEmprestimos = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-4 items-center">
-          <div className="relative flex-1 min-w-[250px]">
+        <div className="flex gap-4 items-center flex-wrap">
+          <div className="relative w-64">
             <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar colaborador/ferramenta..."
+              placeholder="     Buscar..."
               value={filtroEmprestimos}
               onChange={(e) => setFiltroEmprestimos(e.target.value)}
-              className="w-full h-9 pl-8 pr-3 text-sm border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
+              className="h-[36px] w-full px-4 pl-8 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-[#38444D] rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
             />
           </div>
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="border border-gray-300 dark:border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="h-[36px] w-48 inline-flex items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-[#38444D] rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
           >
-            <option value="todos">Todos os status</option>
+            <option value="todos">Todos</option>
             <option value="emprestado">Não devolvidos</option>
             <option value="devolvido">Devolvidos</option>
           </select>
           <select
             value={filtroPeriodo}
             onChange={(e) => setFiltroPeriodo(e.target.value)}
-            className="border border-gray-300 dark:border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="h-[36px] w-44 inline-flex items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-[#38444D] rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
           >
             <option value="hoje">Hoje</option>
             <option value="semana">Última semana</option>
             <option value="mes">Último mês</option>
-            <option value="todos">Todo o período</option>
+            <option value="todos">Todo período</option>
           </select>
+
+          {/* Sort Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className="h-[36px] inline-flex items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-[#38444D] rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
+            >
+              <span>Ordenar por: {SORT_LABELS[sortBy]}</span>
+              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showSortDropdown && (
+              <>
+                {/* Backdrop */}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowSortDropdown(false)}
+                />
+                
+                {/* Dropdown menu */}
+                <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-20">
+                  <div className="py-1">
+                    {Object.entries(SORT_LABELS).map(([option, label]) => (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          setSortBy(option);
+                          setShowSortDropdown(false);
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm ${
+                          sortBy === option
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Object.entries(emprestimosPorFuncionario).map(([funcionario, emprestimos]) => (
+        {Object.entries(funcionariosOrdenados).map(([funcionario, emprestimos]) => (
           <div 
             key={funcionario} 
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-700 ${
-              expandedEmployees.has(funcionario) ? 'ring-2 ring-gray-300 dark:ring-gray-600' : ''
+            className={`bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/80 rounded-lg shadow p-4 hover:shadow-lg transition-all duration-200 border border-gray-100 dark:border-gray-700/50 ${
+              expandedEmployees.has(funcionario) ? 'ring-2 ring-blue-100 dark:ring-blue-500/30' : ''
             }`}
             onClick={() => toggleEmployee(funcionario)}
           >
             <div className="cursor-pointer">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  {funcionario}
-                </h3>
-                <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+                <div className="flex items-center gap-3">
+                  {funcionarios.find(f => f.nome === funcionario)?.photoURL ? (
+                    <img 
+                      src={funcionarios.find(f => f.nome === funcionario)?.photoURL} 
+                      alt={funcionario} 
+                      className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                    />
+                  ) : (
+                    <CircleUser className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                  )}
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    {funcionario}
+                  </h3>
+                </div>
+                <button className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+                  <Package2 className="w-4 h-4" />
                   {expandedEmployees.has(funcionario) ? '▼' : '▶'}
                 </button>
               </div>
@@ -467,11 +611,11 @@ const ListaEmprestimos = ({
             </div>
             
             {expandedEmployees.has(funcionario) && (
-              <div className="bg-gray-50 dark:bg-gray-700/50 divide-y divide-gray-200 dark:divide-gray-600">
-                <div className="max-h-[32rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                  <div className="space-y-3 p-4 divide-y divide-gray-100 dark:divide-gray-600">
+              <div className="bg-gray-50/50 dark:bg-gray-700/30 divide-y divide-gray-200/50 dark:divide-gray-600/30 mt-4 rounded-lg">
+                <div className="max-h-[32rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                  <div className="space-y-3 p-4 divide-y divide-gray-100/50 dark:divide-gray-600/30">
                     {emprestimos.map(emprestimo => (
-                      <div key={emprestimo.id} className="bg-white dark:bg-gray-700/50 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-all duration-200 pt-4">
+                      <div key={emprestimo.id} className="bg-white/80 dark:bg-gray-700/30 backdrop-blur-sm rounded-lg shadow-sm overflow-hidden hover:shadow-md hover:bg-white dark:hover:bg-gray-700/50 transition-all duration-200 pt-4">
                         <div className="px-4 pb-4">
                           <div className="flex justify-between items-start mb-4">
                             <div className="flex flex-col">
@@ -502,7 +646,7 @@ const ListaEmprestimos = ({
                                         e.stopPropagation();
                                         handleEditarEmprestimo(emprestimo);
                                       }}
-                                      className="text-yellow-600 hover:text-yellow-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-yellow-100 dark:hover:bg-yellow-900"
+                                      className="h-[36px] w-[36px] flex items-center justify-center text-yellow-500 hover:text-yellow-600 transition-colors duration-200 rounded-lg border border-yellow-200 dark:border-yellow-500/20 hover:bg-yellow-50 dark:hover:bg-yellow-500/10 dark:text-yellow-400 dark:hover:text-yellow-300"
                                       title="Editar empréstimo"
                                     >
                                       <Edit className="w-4 h-4" />
@@ -512,7 +656,7 @@ const ListaEmprestimos = ({
                                         e.stopPropagation();
                                         handleTransferirFerramentas(emprestimo);
                                       }}
-                                      className="text-blue-600 hover:text-blue-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900"
+                                      className="h-[36px] w-[36px] flex items-center justify-center text-blue-500 hover:text-blue-600 transition-colors duration-200 rounded-lg border border-blue-200 dark:border-blue-500/20 hover:bg-blue-50 dark:hover:bg-blue-500/10 dark:text-blue-400 dark:hover:text-blue-300"
                                       title="Transferir ferramentas"
                                     >
                                       <ArrowRightLeft className="w-4 h-4" />
@@ -522,7 +666,7 @@ const ListaEmprestimos = ({
                                         e.stopPropagation();
                                         handleDevolverFerramentas(emprestimo.id);
                                       }}
-                                      className="text-green-600 hover:text-green-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-green-100 dark:hover:bg-green-900"
+                                      className="h-[36px] w-[36px] flex items-center justify-center text-green-500 hover:text-green-600 transition-colors duration-200 rounded-lg border border-green-200 dark:border-green-500/20 hover:bg-green-50 dark:hover:bg-green-500/10 dark:text-green-400 dark:hover:text-green-300"
                                       title="Marcar como devolvido"
                                     >
                                       <CheckCircle className="w-5 h-5" />
@@ -535,7 +679,7 @@ const ListaEmprestimos = ({
                                       e.stopPropagation();
                                       handleRemoverEmprestimo(emprestimo);
                                     }}
-                                    className="text-red-600 hover:text-red-800 p-1.5 transition-colors duration-200 rounded-full hover:bg-red-100 dark:hover:bg-red-900"
+                                    className="h-[36px] w-[36px] flex items-center justify-center text-red-500 hover:text-red-600 transition-colors duration-200 rounded-lg border border-red-200 dark:border-red-500/20 hover:bg-red-50 dark:hover:bg-red-500/10 dark:text-red-400 dark:hover:text-red-300"
                                     title="Remover registro"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -688,13 +832,13 @@ const ListaEmprestimos = ({
             <div className="flex justify-end gap-4">
               <button
                 onClick={cancelarExclusao}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                className="h-[36px] px-4 text-gray-700 bg-white border border-gray-300 dark:border-[#38444D] hover:bg-gray-100 rounded-lg transition-colors duration-200"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmarExclusao}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+                className="h-[36px] px-4 bg-red-600 text-white border border-gray-300 dark:border-[#38444D] rounded-lg hover:bg-red-700 transition-colors duration-200"
               >
                 Excluir
               </button>

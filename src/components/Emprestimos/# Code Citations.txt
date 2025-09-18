@@ -1,0 +1,1397 @@
+# Code Citations
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg"
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg"
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg"
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg"
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24"
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24"
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24"
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24"
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide
+```
+
+
+## License: unknown
+https://github.com/novemberkilo/novemberkilo.github.com/blob/23e02db09d460d8e539ca0a21965b75aff22b3a6/posts/scopes-for-empty-relationships/index.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle
+```
+
+
+## License: BSD-2-Clause
+https://github.com/dchest/htmlmin/blob/98308d0533e6a17ce7d882406f64add113f7a76c/htmlmin_test.go
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle
+```
+
+
+## License: unknown
+https://github.com/harttraveller/harttraveller.github.io/blob/96fe319782ecad7e01bc4c927f46d8c82e613af0/pages/core/theme.global.admonition.css
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle
+```
+
+
+## License: unknown
+https://github.com/KrasovD/Crossing_spare/blob/8342dd3c7ad483272e4ffa27a8adf8c483cdb70f/app/templates/sidebar.html
+
+```
+/10">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path 
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path 
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path 
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+  </svg
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+  </svg
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+  </svg
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+  </svg>
+  
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+  </svg>
+  
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+  </svg>
+  
+```
+
+
+## License: MIT
+https://github.com/ng-icons/ng-icons/blob/15538139e68f3de5936becbfb377a5929a2cab54/packages/lucide/src/index.ts
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+  </svg>
+  <
+```
+
+
+## License: unknown
+https://github.com/coniel/minddrop/blob/20fde46519552d4788577841e8666279bdb60557/packages/icons/src/content-icons.min.tsx
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+  </svg>
+  <
+```
+
+
+## License: MIT
+https://github.com/shinokada/svelte-lucide/blob/0999867feb4f2f9e452c0a1bfb2722e45200a0dd/src/lib/UserCircle.svelte
+
+```
+<circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/>
+  </svg>
+  <
+```
+

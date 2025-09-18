@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, User, Wrench, Backpack, HelpCircle, X } from 'lucide-react';
 import { obterDataAtual, obterHoraAtual } from '../../utils/dateUtils';
-import FerramentaSelector from './FerramentaSelector';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
-import SugestoesEmprestimo from './SugestoesEmprestimo';
+import FerramentaSelector from './FerramentaSelector';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
   const [funcionarios, setFuncionarios] = useState([]);
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
 
   // Carregar funcionários
   useEffect(() => {
@@ -131,9 +131,13 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <User className="w-4 h-4" />
+              Funcionário
+            </label>
             <select
               value={novoEmprestimo.colaborador}
               onChange={(e) => {
@@ -141,65 +145,146 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                 setNovoEmprestimo({...novoEmprestimo, colaborador: valor});
                 setFuncionarioSelecionado(valor);
               }}
-              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+              className="h-[36px] w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-[#38444D] rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] transition-colors appearance-none px-4"
               required
             >
-              <option value="" className="bg-[#192734]">Selecione o funcionário</option>
+              <option value="" className="dark:bg-gray-800">Selecione o funcionário</option>
               {[...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome)).map((funcionario) => (
-                <option key={funcionario.id} value={funcionario.nome} className="bg-[#192734]">
+                <option key={funcionario.id} value={funcionario.nome} className="dark:bg-gray-800">
                   {funcionario.nome}
                 </option>
               ))}
             </select>
-
-            {/* Componente de Sugestões */}
-            {funcionarioSelecionado && (
-              <SugestoesEmprestimo funcionarioSelecionado={funcionarioSelecionado} />
-            )}
-            </div>
-          <FerramentaSelector 
-            ferramentasDisponiveis={ferramentasDisponiveis}
-            onAdicionarFerramenta={adicionarFerramenta}
-          />
-        </div>
-        <div>
-          <h3 className="font-medium text-gray-700 dark:text-white mb-2">Ferramentas Selecionadas:</h3>
-          <div className="border border-gray-200 dark:border-[#38444D] rounded-lg p-3 min-h-32 max-h-[calc(50vh-4rem)] overflow-y-auto">
-            {novoEmprestimo.ferramentas.length === 0 ? (
-              <p className="text-gray-400 dark:text-gray-600 text-sm">Nenhuma ferramenta selecionada</p>
-            ) : (
-              <div className="space-y-2">
-                {novoEmprestimo.ferramentas.map((ferramenta, index) => (
-                  <div key={index} className="flex justify-between items-center bg-gray-50 dark:bg-[#192734] p-2 rounded">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm dark:text-white">{ferramenta.nome}</span>
-                      <select
-                        value={ferramenta.quantidade}
-                        onChange={(e) => atualizarQuantidade(ferramenta.nome, e.target.value)}
-                        className="form-select text-lg py-2 px-3 border-gray-300 dark:border-[#38444D] dark:bg-[#253341] dark:text-white rounded w-20"
-                      >
-                        {[...Array(ferramenta.disponivel)].map((_, i) => (
-                          <option key={i + 1} value={i + 1}>
-                            {i + 1}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <button
-                      onClick={() => removerFerramenta(ferramenta.nome)}
-                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Wrench className="w-4 h-4" />
+              Ferramenta
+            </label>
+            <FerramentaSelector 
+              ferramentasDisponiveis={ferramentasDisponiveis}
+              onAdicionarFerramenta={adicionarFerramenta}
+            />
+            <div className="mt-2 flex justify-end">
+              <button
+                onClick={() => setShowHelp(true)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+              >
+                <HelpCircle className="w-4 h-4" />
+                Ajuda
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal de Ajuda */}
+        {showHelp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Como realizar um empréstimo</h3>
+                <button
+                  onClick={() => setShowHelp(false)}
+                  className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 text-sm font-medium">1</div>
+                    <p className="text-gray-600 dark:text-gray-300">Selecione o funcionário responsável pelo empréstimo no campo de funcionário.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 text-sm font-medium">2</div>
+                    <p className="text-gray-600 dark:text-gray-300">No campo de ferramentas, escolha a ferramenta desejada na lista de ferramentas disponíveis.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 text-sm font-medium">3</div>
+                    <p className="text-gray-600 dark:text-gray-300">Após selecionar uma ferramenta, você pode ajustar a quantidade necessária no campo específico.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 text-sm font-medium">4</div>
+                    <p className="text-gray-600 dark:text-gray-300">Repita o processo para adicionar mais ferramentas ao mesmo empréstimo, se necessário.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 text-sm font-medium">5</div>
+                    <p className="text-gray-600 dark:text-gray-300">Você pode alterar a quantidade de qualquer ferramenta já selecionada ou removê-la usando o ícone de lixeira.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 text-sm font-medium">6</div>
+                    <p className="text-gray-600 dark:text-gray-300">Quando estiver tudo pronto, clique em "Registrar Empréstimo" para finalizar.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <button
+                  onClick={() => setShowHelp(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <h3 className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Backpack className="w-4 h-4" />
+              Ferramentas Selecionadas
+            </h3>
+            <div className="border border-gray-200 dark:border-[#38444D] rounded-lg p-4 min-h-[200px] max-h-[calc(50vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800">
+              {novoEmprestimo.ferramentas.length === 0 ? (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-gray-400 dark:text-gray-500 text-sm">Nenhuma ferramenta selecionada</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {novoEmprestimo.ferramentas.map((ferramenta, index) => (
+                    <div 
+                      key={index} 
+                      className="flex flex-col p-3 rounded-lg border border-gray-100 dark:border-[#38444D] bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors min-h-[160px] relative"
+                    >
+                      <div className="flex flex-col h-full">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 break-words mb-auto" title={ferramenta.nome}>
+                          {ferramenta.nome}
+                        </span>
+                        <div className="flex items-center gap-2 mt-3">
+                          <select
+                            value={ferramenta.quantidade}
+                            onChange={(e) => atualizarQuantidade(ferramenta.nome, e.target.value)}
+                            className="h-[36px] w-24 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent px-2 transition-colors ml-auto"
+                          >
+                            {[...Array(ferramenta.disponivel)].map((_, i) => (
+                              <option key={i + 1} value={i + 1}>
+                                {i + 1} un.
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => removerFerramenta(ferramenta.nome)}
+                            className="h-[36px] w-[36px] flex items-center justify-center text-red-500 hover:text-white dark:text-red-400 dark:hover:text-white rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-500 dark:hover:bg-red-500/80 transition-all"
+                            title="Remover ferramenta"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <button
             onClick={handleSubmit}
             disabled={!novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0}
-            className="mt-4 w-full btn-primary flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="h-[36px] w-full flex items-center justify-center gap-2 bg-[#1D9BF0] hover:bg-[#1A8CD8] disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Registrar Empréstimo
