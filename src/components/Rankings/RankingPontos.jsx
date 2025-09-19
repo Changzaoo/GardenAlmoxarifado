@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { Trophy, Star, CheckCircle, ToolCase, Medal, X, ChevronDown, Calendar, AlertCircle } from 'lucide-react';
-import { useToast } from '../../components/ToastProvider';
+import { Trophy, Star, CheckCircle, ToolCase, Medal, ChevronDown, Calendar, X } from 'lucide-react';
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -40,7 +39,6 @@ const getSemanasDoMes = (ano, mes) => {
 };
 
 const RankingPontos = () => {
-  const { showToast } = useToast();
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [periodoAtual, setPeriodoAtual] = useState('geral'); // 'geral', 'mes', 'ano', 'semana'
@@ -50,8 +48,8 @@ const RankingPontos = () => {
   const [showAnoSelector, setShowAnoSelector] = useState(false);
   const [showSemanaSelector, setShowSemanaSelector] = useState(false);
   const [semanaSelected, setSemanaSelected] = useState(0);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState(null);
+  const [selectedFuncionario, setSelectedFuncionario] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
   
   // Calcular as semanas do mês atual
   const semanasDoMes = getSemanasDoMes(anoSelected, mesSelected);
@@ -75,22 +73,7 @@ const RankingPontos = () => {
     setSemanaSelected(0);
   }, [mesSelected, anoSelected]);
 
-  const removerDoRanking = (funcionarioId) => {
-    const funcionario = rankings.find(f => f.id === funcionarioId);
-    if (funcionario) {
-      setFuncionarioSelecionado(funcionario);
-      setShowConfirmDialog(true);
-    }
-  };
 
-  const confirmarRemocao = () => {
-    if (funcionarioSelecionado) {
-      setRankings(prev => prev.filter(f => f.id !== funcionarioSelecionado.id));
-      showToast(`${funcionarioSelecionado.nome} foi removido do ranking com sucesso.`, 'success');
-      setShowConfirmDialog(false);
-      setFuncionarioSelecionado(null);
-    }
-  };
 
   const filtrarPorPeriodo = (dados) => {
     return dados.map(funcionario => {
@@ -319,6 +302,15 @@ const RankingPontos = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      {showDetails && selectedFuncionario && (
+        <DetalhesPontos
+          funcionario={selectedFuncionario}
+          onClose={() => {
+            setShowDetails(false);
+            setSelectedFuncionario(null);
+          }}
+        />
+      )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="flex flex-col gap-2 w-full md:w-auto">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -466,17 +458,26 @@ const RankingPontos = () => {
           <div>
             <p className="text-sm text-yellow-100">Total de Pontos</p>
             <p className="text-2xl font-bold">
-              {filtrarPorPeriodo(rankings).reduce((total, func) => total + func.pontuacao.total, 0)}
+              {filtrarPorPeriodo(rankings)
+                .filter(func => func.pontuacao.total > 0)
+                .reduce((total, func) => total + func.pontuacao.total, 0)}
             </p>
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        {filtrarPorPeriodo(rankings).sort((a, b) => b.pontuacao.total - a.pontuacao.total).map((funcionario, index) => (
+        {filtrarPorPeriodo(rankings)
+          .filter(funcionario => funcionario.pontuacao.total > 0)
+          .sort((a, b) => b.pontuacao.total - a.pontuacao.total)
+          .map((funcionario, index) => (
           <div 
             key={funcionario.id}
-            className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/80 rounded-lg p-4 shadow border border-gray-100 dark:border-gray-700/50 hover:shadow-md transition-all"
+            onClick={() => {
+              setSelectedFuncionario(funcionario);
+              setShowDetails(true);
+            }}
+            className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/80 rounded-lg p-4 shadow border border-gray-100 dark:border-gray-700/50 hover:shadow-md transition-all cursor-pointer"
           >
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center w-12">
@@ -504,16 +505,6 @@ const RankingPontos = () => {
                       {funcionario.pontuacao.total} pontos
                     </p>
                   </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removerDoRanking(funcionario.id);
-                    }}
-                    className="p-1.5 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors"
-                    title="Remover do ranking"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mt-3">
@@ -542,46 +533,107 @@ const RankingPontos = () => {
         ))}
       </div>
 
-      {/* Modal de Confirmação */}
-      {showConfirmDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full mx-4 overflow-hidden shadow-xl">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="bg-red-100 dark:bg-red-500/20 p-2 rounded-full">
-                  <AlertCircle className="w-6 h-6 text-red-500" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Confirmar Remoção
-                </h3>
-              </div>
-              
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
-                Tem certeza que deseja remover <strong>{funcionarioSelecionado?.nome}</strong> do ranking?
-                Esta ação não pode ser desfeita.
-              </p>
 
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowConfirmDialog(false);
-                    setFuncionarioSelecionado(null);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmarRemocao}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
-                >
-                  Remover
-                </button>
+    </div>
+  );
+};
+
+const DetalhesPontos = ({ funcionario, onClose }) => {
+  const { emprestimos, tarefas, avaliacoes } = funcionario;
+
+  const getDataFormatada = (data) => {
+    const date = new Date(data);
+    return date.toLocaleDateString('pt-BR');
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl shadow-xl p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+            Detalhes dos Pontos - {funcionario.nome}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Empréstimos */}
+          <div>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <ToolCase className="w-5 h-5 text-blue-500" />
+              Empréstimos ({emprestimos.length * 20} pontos)
+            </h4>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <div className="space-y-2">
+                {emprestimos.map((emp, index) => (
+                  <div key={index} className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-300">
+                      Data: {getDataFormatada(emp.dataDevolucao)}
+                    </span>
+                    <span className="font-medium text-blue-500">
+                      +{emp.quantidade * 20} pontos
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
+
+          {/* Tarefas */}
+          <div>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              Tarefas ({tarefas.length * 50} pontos)
+            </h4>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <div className="space-y-2">
+                {tarefas.map((tarefa, index) => (
+                  <div key={index} className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-300">
+                      Data: {getDataFormatada(tarefa.dataConclusao)}
+                    </span>
+                    <span className="font-medium text-green-500">+50 pontos</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Avaliações */}
+          <div>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-500" />
+              Avaliações ({avaliacoes.reduce((acc, av) => acc + (av.estrelas * 10), 0)} pontos)
+            </h4>
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <div className="space-y-2">
+                {avaliacoes.map((avaliacao, index) => (
+                  <div key={index} className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-300">
+                      Data: {getDataFormatada(avaliacao.data)}
+                    </span>
+                    <span className="font-medium text-yellow-500">
+                      {avaliacao.estrelas} estrelas (+{avaliacao.estrelas * 10} pontos)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center text-lg font-bold">
+              <span className="text-gray-900 dark:text-white">Total de Pontos:</span>
+              <span className="text-[#1DA1F2]">{funcionario.pontuacao.total} pontos</span>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
