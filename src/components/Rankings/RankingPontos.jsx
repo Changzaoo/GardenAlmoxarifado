@@ -79,9 +79,14 @@ const RankingPontos = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Resetar semana selecionada quando mudar mês ou ano
+  // Selecionar a semana atual do mês ao mudar mês ou ano
   useEffect(() => {
-    setSemanaSelected(0);
+    const hoje = new Date();
+    if (hoje.getMonth() === mesSelected && hoje.getFullYear() === anoSelected) {
+      setSemanaSelected(getWeekNumber(hoje));
+    } else {
+      setSemanaSelected(0);
+    }
   }, [mesSelected, anoSelected]);
 
 
