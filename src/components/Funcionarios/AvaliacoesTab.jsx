@@ -1,111 +1,384 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Calendar, Clock, Plus, X, Check } from 'lucide-react';
-import { collection, addDoc, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { Star, Award, TrendingUp, MessageSquare, AlertTriangle, Calendar, Clock, Check, X, Plus, Trash2 } from 'lucide-react';
+import { useToast } from '../../components/ToastProvider';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { formatarData, formatarHora } from '../../utils/dateUtils';
 import { useAuth } from '../../hooks/useAuth';
+import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
+import { formatarData, formatarHora } from '../../utils/formatters';
 
-const AvaliacoesTab = ({ funcionario }) => {
-  const { usuario } = useAuth();
+function AvaliacoesTab({ funcionario }) {
+  const { usuario, loading } = useAuth();
+  const { showToast } = useToast();
+  const [avaliacaoParaExcluir, setAvaliacaoParaExcluir] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [estatisticas, setEstatisticas] = useState({
+    mediaEstrelas: 0,
+    totalAvaliacoes: 0,
+    avaliacoesPositivas: 0,
+    avaliacoesNegativas: 0,
+    ultimaAvaliacao: null
+  });
+  const [avaliacoesPorTipo, setAvaliacoesPorTipo] = useState({
+    tarefas: { total: 0, media: 0 },
+    desempenho: { total: 0, media: 0 }
+  });
+  
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [novaAvaliacao, setNovaAvaliacao] = useState({
-    data: new Date().toISOString().split('T')[0],
-    hora: new Date().toTimeString().slice(0, 5),
-    estrelas: 0,
-    comentario: '',
-  });
   const [hoverEstrelas, setHoverEstrelas] = useState(0);
+  const dataAtual = new Date();
+  const [novaAvaliacao, setNovaAvaliacao] = useState({
+    data: dataAtual.toISOString().split('T')[0],
+    hora: dataAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    estrelas: 0,
+    comentario: ''
+  });
 
-  // Carregar avaliações existentes
-  useEffect(() => {
-    const carregarAvaliacoes = async () => {
-      try {
-        const avaliacoesRef = collection(db, 'avaliacoes_funcionarios');
-        const q = query(
-          avaliacoesRef,
-          where('funcionarioId', '==', funcionario.id),
-          orderBy('data', 'desc'),
-          orderBy('hora', 'desc')
-        );
-        
-        const snapshot = await getDocs(q);
-        const avaliacoesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        setAvaliacoes(avaliacoesData);
-      } catch (error) {
-        console.error('Erro ao carregar avaliações:', error);
-      }
-    };
+  const temPermissaoDetalhes = !loading && usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
 
-    if (funcionario?.id) {
-      carregarAvaliacoes();
+  const handleDelete = async (avaliacaoId) => {
+    if (!temPermissaoDetalhes) {
+      showToast('Você não tem permissão para excluir avaliações', 'error');
+      return;
     }
-  }, [funcionario?.id]);
+    setAvaliacaoParaExcluir(avaliacaoId);
+    setShowConfirmModal(true);
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const confirmarExclusao = async () => {
     try {
-      const novaAvaliacaoDoc = {
-        ...novaAvaliacao,
-        funcionarioId: funcionario.id,
+      const avaliacaoRef = doc(db, 'avaliacoes', avaliacaoParaExcluir);
+      await deleteDoc(avaliacaoRef);
+      await carregarAvaliacoes();
+      showToast('Avaliação excluída com sucesso!', 'success');
+      setShowConfirmModal(false);
+      setAvaliacaoParaExcluir(null);
+    } catch (error) {
+      console.error('Erro ao excluir avaliação:', error);
+      showToast('Erro ao excluir avaliação. Por favor, tente novamente.', 'error');
+    }
+  };
+
+  const handleSubmit = async () => {
+    console.log('Dados do usuário:', usuario);
+    console.log('Dados do funcionário:', funcionario);
+    
+    if (!funcionario?.id || !usuario?.id) {
+      showToast('Erro ao salvar avaliação. Por favor, tente novamente.', 'error');
+      return;
+    }
+
+    if (!temPermissaoDetalhes) {
+      console.error('Usuário sem permissão para avaliar');
+      showToast('Você não tem permissão para realizar avaliações', 'error');
+      return;
+    }
+
+    if (novaAvaliacao.estrelas === 0) {
+      showToast('Por favor, selecione uma avaliação em estrelas', 'warning');
+      return;
+    }
+    
+    if (!novaAvaliacao.estrelas) {
+      showToast('Por favor, selecione uma quantidade de estrelas', 'warning');
+      return;
+    }
+
+    try {
+      const avaliacoesRef = collection(db, 'avaliacoes');
+      
+      const novaAvaliacaoData = {
+        funcionarioId: String(funcionario.id),
         funcionarioNome: funcionario.nome,
         supervisorId: usuario.id,
         supervisorNome: usuario.nome,
-        dataCriacao: new Date().toISOString()
+        data: novaAvaliacao.data,
+        hora: novaAvaliacao.hora,
+        estrelas: Number(novaAvaliacao.estrelas),
+        comentario: novaAvaliacao.comentario,
+        status: 'ativa',
+        tipo: 'avaliacao_supervisor',
+        dataCriacao: serverTimestamp()
       };
 
-      await addDoc(collection(db, 'avaliacoes_funcionarios'), novaAvaliacaoDoc);
+      console.log('Dados a serem salvos:', novaAvaliacaoData);
+
+      await addDoc(avaliacoesRef, novaAvaliacaoData);
       
-      setAvaliacoes(prev => [novaAvaliacaoDoc, ...prev]);
+      showToast('Avaliação salva com sucesso!', 'success');
       setShowAddModal(false);
+      
       setNovaAvaliacao({
         data: new Date().toISOString().split('T')[0],
         hora: new Date().toTimeString().slice(0, 5),
         estrelas: 0,
         comentario: ''
       });
+      
+      await carregarAvaliacoes();
     } catch (error) {
-      console.error('Erro ao adicionar avaliação:', error);
+      console.error('Erro ao salvar:', error);
+      showToast('Erro ao salvar avaliação. Por favor, tente novamente.', 'error');
     }
   };
 
-  if (usuario?.nivel < 2) {
-    return null;
-  }
+  // Função para carregar avaliações
+  const carregarAvaliacoes = async () => {
+    if (!funcionario?.id) return;
+
+    try {
+        const avaliacoesRef = collection(db, 'avaliacoes');
+        const q = query(
+          avaliacoesRef,
+          where('funcionarioId', '==', String(funcionario.id)),
+          where('tipo', '==', 'avaliacao_supervisor'),
+          where('status', '==', 'ativa')
+        );
+        
+        const snapshot = await getDocs(q);
+        const avaliacoesData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            data: data.data,
+            hora: data.hora,
+            estrelas: Number(data.estrelas),
+            comentario: data.comentario,
+            supervisorNome: data.supervisorNome,
+            supervisorCargo: data.supervisorCargo || '',
+            tipo: data.tipo,
+            origemAvaliacao: data.tipo === 'avaliacao_supervisor' ? 'Avaliação de Desempenho' : 'Avaliação de Tarefa',
+            status: data.status
+          };
+        });
+
+        // Set avaliacoes state
+        setAvaliacoes(avaliacoesData);
+
+        // Calcula estatísticas
+        const stats = avaliacoesData.reduce((acc, av) => {
+          // Soma total de estrelas para média
+          acc.somaEstrelas += av.estrelas;
+          
+          // Conta avaliações positivas (4-5 estrelas) e negativas (1-2 estrelas)
+          if (av.estrelas >= 4) acc.avaliacoesPositivas++;
+          if (av.estrelas <= 2) acc.avaliacoesNegativas++;
+          
+          // Agrupa por tipo
+          const tipo = av.tipo === 'avaliacao_supervisor' ? 'desempenho' : 'tarefas';
+          if (!acc.porTipo[tipo]) {
+            acc.porTipo[tipo] = { total: 0, somaEstrelas: 0 };
+          }
+          acc.porTipo[tipo].total++;
+          acc.porTipo[tipo].somaEstrelas += av.estrelas;
+          
+          // Encontra a avaliação mais recente
+          const dataAvaliacao = new Date(av.data + 'T' + (av.hora || '00:00'));
+          if (!acc.ultimaAvaliacao || dataAvaliacao > new Date(acc.ultimaAvaliacao.data + 'T' + (acc.ultimaAvaliacao.hora || '00:00'))) {
+            acc.ultimaAvaliacao = av;
+          }
+          
+          return acc;
+        }, {
+          somaEstrelas: 0,
+          avaliacoesPositivas: 0,
+          avaliacoesNegativas: 0,
+          porTipo: {
+            tarefas: { total: 0, somaEstrelas: 0 },
+            desempenho: { total: 0, somaEstrelas: 0 }
+          },
+          ultimaAvaliacao: null
+        });
+
+        setEstatisticas({
+          mediaEstrelas: avaliacoesData.length > 0 ? stats.somaEstrelas / avaliacoesData.length : 0,
+          totalAvaliacoes: avaliacoesData.length,
+          avaliacoesPositivas: stats.avaliacoesPositivas,
+          avaliacoesNegativas: stats.avaliacoesNegativas,
+          ultimaAvaliacao: stats.ultimaAvaliacao
+        });
+
+        setAvaliacoesPorTipo({
+          tarefas: {
+            total: stats.porTipo.tarefas.total,
+            media: stats.porTipo.tarefas.total > 0 
+              ? stats.porTipo.tarefas.somaEstrelas / stats.porTipo.tarefas.total 
+              : 0
+          },
+          desempenho: {
+            total: stats.porTipo.desempenho.total,
+            media: stats.porTipo.desempenho.total > 0 
+              ? stats.porTipo.desempenho.somaEstrelas / stats.porTipo.desempenho.total 
+              : 0
+          }
+        });
+
+      } catch (error) {
+        console.error('Erro ao carregar avaliações:', error);
+      }
+  };
+
+  // Carregar avaliações ao montar o componente ou quando o funcionário mudar
+  useEffect(() => {
+    if (funcionario?.id) {
+      carregarAvaliacoes();
+    }
+  }, [funcionario?.id]); // funcionario?.id como dependência para recarregar quando mudar
 
   return (
-    <div className="space-y-6">
-      {/* Botão Adicionar Avaliação */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nova Avaliação
-        </button>
+    <div className="space-y-8">
+      {/* Header com Título e Botão */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Avaliações</h2>
+        {!loading && temPermissaoDetalhes && (
+          <button
+            onClick={() => {
+              if (!usuario) {
+                alert('Por favor, faça login para adicionar uma avaliação');
+                return;
+              }
+              setShowAddModal(true);
+            }}
+            className="px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Nova Avaliação
+          </button>
+        )}
       </div>
 
-      {/* Lista de Avaliações */}
-      <div className="space-y-4">
-        {avaliacoes.length === 0 ? (
-          <div className="bg-[#192734] rounded-xl p-6 text-center border border-[#38444D]">
-            <Star className="w-12 h-12 text-[#8899A6] mx-auto mb-3" />
-            <p className="text-[#8899A6]">Nenhuma avaliação registrada para este funcionário</p>
+      {/* Avaliação Geral */}
+      <div className="bg-white dark:bg-[#192734] rounded-xl p-6 border border-gray-200 dark:border-[#38444D]">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+          <Award className="w-5 h-5 text-[#1DA1F2]" />
+          Avaliação Geral
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Média e Total */}
+          <div className="flex items-center gap-4">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((estrela) => (
+                <Star
+                  key={estrela}
+                  className={`w-6 h-6 ${
+                    estrela <= Math.round(estatisticas.mediaEstrelas)
+                      ? 'text-yellow-500 fill-yellow-500'
+                      : 'text-gray-300 dark:text-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
+            <div>
+              <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                {estatisticas.mediaEstrelas.toFixed(1)}
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {estatisticas.totalAvaliacoes} {estatisticas.totalAvaliacoes === 1 ? 'avaliação' : 'avaliações'}
+              </div>
+            </div>
           </div>
-        ) : (
-          avaliacoes.map((avaliacao) => (
+
+          {/* Distribuição */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-red-600 dark:text-red-400">Negativas</span>
+                <span className="text-green-600 dark:text-green-400">Positivas</span>
+              </div>
+              <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-green-500"
+                  style={{ 
+                    width: `${estatisticas.totalAvaliacoes > 0 
+                      ? (estatisticas.avaliacoesPositivas / estatisticas.totalAvaliacoes) * 100 
+                      : 0}%` 
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Detalhes por Tipo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Avaliações de Tarefas */}
+        <div className="bg-white dark:bg-[#192734] rounded-xl p-6 border border-gray-200 dark:border-[#38444D]">
+          <h4 className="text-base font-medium mb-3 text-gray-900 dark:text-white flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-[#1DA1F2]" />
+            Avaliações de Tarefas
+          </h4>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((estrela) => (
+                <Star
+                  key={estrela}
+                  className={`w-4 h-4 ${
+                    estrela <= Math.round(avaliacoesPorTipo.tarefas.media)
+                      ? 'text-yellow-500 fill-yellow-500'
+                      : 'text-gray-300 dark:text-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {avaliacoesPorTipo.tarefas.total} avaliações
+            </span>
+          </div>
+        </div>
+
+        {/* Avaliações de Desempenho */}
+        <div className="bg-white dark:bg-[#192734] rounded-xl p-6 border border-gray-200 dark:border-[#38444D]">
+          <h4 className="text-base font-medium mb-3 text-gray-900 dark:text-white flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-[#1DA1F2]" />
+            Avaliações de Desempenho
+          </h4>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((estrela) => (
+                <Star
+                  key={estrela}
+                  className={`w-4 h-4 ${
+                    estrela <= Math.round(avaliacoesPorTipo.desempenho.media)
+                      ? 'text-yellow-500 fill-yellow-500'
+                      : 'text-gray-300 dark:text-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {avaliacoesPorTipo.desempenho.total} avaliações
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Mensagem para usuários sem permissão */}
+      {!temPermissaoDetalhes && estatisticas.totalAvaliacoes > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300">
+              Acesso Limitado
+            </h4>
+            <p className="mt-1 text-sm text-blue-700 dark:text-blue-400">
+              Você pode ver apenas o resumo das avaliações. Para ver detalhes e comentários, é necessário ter nível de supervisor ou superior.
+            </p>
+          </div>
+        </div>
+      )}
+      {/* Lista de Avaliações */}
+      {temPermissaoDetalhes && estatisticas.totalAvaliacoes > 0 && (
+        <div>
+          {avaliacoes.map((avaliacao) => (
             <div
               key={avaliacao.id}
-              className="bg-[#192734] rounded-xl p-6 border border-[#38444D]"
+              className="bg-[#192734] rounded-xl p-6 border border-[#38444D] mb-4"
             >
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     {[1, 2, 3, 4, 5].map((estrela) => (
                       <Star
@@ -120,6 +393,13 @@ const AvaliacoesTab = ({ funcionario }) => {
                   </div>
                   <p className="text-[#8899A6] mt-2">{avaliacao.comentario}</p>
                 </div>
+                <button
+                  onClick={() => handleDelete(avaliacao.id)}
+                  className="p-2 text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-full transition-colors"
+                  title="Excluir avaliação"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
               </div>
               <div className="mt-4 flex items-center gap-4 text-sm text-[#8899A6]">
                 <div className="flex items-center gap-1">
@@ -131,56 +411,81 @@ const AvaliacoesTab = ({ funcionario }) => {
                   <span>{formatarHora(avaliacao.hora)}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span>por {avaliacao.supervisorNome}</span>
+                  <span>
+                    por {avaliacao.supervisorNome}
+                    {avaliacao.supervisorCargo && ` (${avaliacao.supervisorCargo})`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-blue-400">
+                  <span>{avaliacao.origemAvaliacao}</span>
                 </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#192734] rounded-xl p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Confirmar Exclusão</h3>
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setAvaliacaoParaExcluir(null);
+                }}
+                className="p-2 text-gray-500 dark:text-[#8899A6] hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-600 dark:text-[#8899A6] mb-4">
+                Tem certeza que deseja excluir esta avaliação? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setAvaliacaoParaExcluir(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 dark:text-[#8899A6] hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmarExclusao}
+                  className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Excluir Avaliação
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Nova Avaliação */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#192734] rounded-xl p-6 w-full max-w-md">
+          <div className="bg-white dark:bg-[#192734] rounded-xl p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">Nova Avaliação</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Nova Avaliação</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="p-2 text-[#8899A6] hover:bg-[#283340] rounded-full transition-colors"
+                className="p-2 text-gray-500 dark:text-[#8899A6] hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Data e Hora */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-[#8899A6] mb-2">Data</label>
-                  <input
-                    type="date"
-                    value={novaAvaliacao.data}
-                    onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, data: e.target.value }))}
-                    className="w-full px-3 py-2 bg-[#253341] text-white border border-[#38444D] rounded-lg focus:border-[#1DA1F2] focus:ring-1 focus:ring-[#1DA1F2] outline-none"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-[#8899A6] mb-2">Hora</label>
-                  <input
-                    type="time"
-                    value={novaAvaliacao.hora}
-                    onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, hora: e.target.value }))}
-                    className="w-full px-3 py-2 bg-[#253341] text-white border border-[#38444D] rounded-lg focus:border-[#1DA1F2] focus:ring-1 focus:ring-[#1DA1F2] outline-none"
-                    required
-                  />
-                </div>
-              </div>
-
+            <div className="space-y-6">
               {/* Estrelas */}
               <div className="flex flex-col items-center gap-2">
-                <span className="text-[#8899A6] text-sm">Avaliação</span>
+                <span className="text-gray-600 dark:text-[#8899A6] text-sm">Avaliação</span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((estrela) => (
                     <button
@@ -195,7 +500,7 @@ const AvaliacoesTab = ({ funcionario }) => {
                         className={`w-8 h-8 ${
                           (hoverEstrelas ? estrela <= hoverEstrelas : estrela <= novaAvaliacao.estrelas)
                             ? 'text-yellow-500 fill-yellow-500'
-                            : 'text-[#38444D]'
+                            : 'text-gray-300 dark:text-[#38444D]'
                         }`}
                       />
                     </button>
@@ -203,13 +508,37 @@ const AvaliacoesTab = ({ funcionario }) => {
                 </div>
               </div>
 
+              {/* Data e Hora */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 dark:text-[#8899A6] mb-2">Data</label>
+                  <input
+                    type="date"
+                    value={novaAvaliacao.data}
+                    onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, data: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#253341] text-gray-900 dark:text-white border border-gray-300 dark:border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 dark:text-[#8899A6] mb-2">Hora</label>
+                  <input
+                    type="time"
+                    value={novaAvaliacao.hora}
+                    onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, hora: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#253341] text-gray-900 dark:text-white border border-gray-300 dark:border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
               {/* Comentário */}
               <div>
-                <label className="block text-sm text-[#8899A6] mb-2">Comentário</label>
+                <label className="block text-sm text-gray-600 dark:text-[#8899A6] mb-2">Comentário</label>
                 <textarea
                   value={novaAvaliacao.comentario}
                   onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, comentario: e.target.value }))}
-                  className="w-full h-32 px-4 py-2 bg-[#253341] text-white border border-[#38444D] rounded-lg resize-none focus:border-[#1DA1F2] focus:ring-1 focus:ring-[#1DA1F2] outline-none"
+                  className="w-full h-32 px-4 py-2 bg-white dark:bg-[#253341] text-gray-900 dark:text-white border border-gray-300 dark:border-[#38444D] rounded-lg resize-none focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent outline-none"
                   placeholder="Deixe um feedback sobre o desempenho do funcionário..."
                   required
                 />
@@ -220,24 +549,26 @@ const AvaliacoesTab = ({ funcionario }) => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-[#8899A6] hover:bg-[#283340] rounded-full transition-colors"
+                  className="px-4 py-2 text-gray-600 dark:text-[#8899A6] hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
-                  type="submit"
-                  className="px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center gap-2"
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={novaAvaliacao.estrelas === 0}
+                  className="px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Check className="w-4 h-4" />
                   Salvar Avaliação
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-};
+}
 
 export default AvaliacoesTab;

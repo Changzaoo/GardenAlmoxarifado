@@ -343,18 +343,61 @@ const ListaEmprestimos = ({
   };
 
   const handleEditarEmprestimo = (emprestimo) => {
-    setEmprestimoParaEditar(emprestimo);
+    console.log('Iniciando edição do empréstimo:', emprestimo);
+    // Faz uma cópia profunda do empréstimo para evitar referências
+    const emprestimoParaEditar = JSON.parse(JSON.stringify(emprestimo));
+    setEmprestimoParaEditar(emprestimoParaEditar);
     setShowEditModal(true);
   };
 
   const handleSaveEdit = async (emprestimoEditado) => {
     try {
+      if (!emprestimoEditado || !emprestimoEditado.id) {
+        throw new Error('Empréstimo inválido');
+      }
+
+      // Valida se todas as ferramentas têm as propriedades necessárias
+      const ferramentasValidas = emprestimoEditado.ferramentas.every(ferramenta => 
+        ferramenta.id && 
+        ferramenta.nome && 
+        typeof ferramenta.quantidade === 'number'
+      );
+
+      if (!ferramentasValidas) {
+        throw new Error('Dados de ferramentas inválidos');
+      }
+
+      console.log('Salvando edições do empréstimo:', emprestimoEditado);
+
+      const dataAtualizacao = new Date().toISOString();
+
+      // Preserva o histórico de edições
+      const emprestimoAtualizado = {
+        ...emprestimoEditado,
+        dataAtualizacao,
+        usuarioAtualizacao: usuario?.email || 'sistema',
+        ferramentas: emprestimoEditado.ferramentas.map(ferramenta => ({
+          id: ferramenta.id,
+          nome: ferramenta.nome,
+          quantidade: ferramenta.quantidade,
+          codigo: ferramenta.codigo,
+          descricao: ferramenta.descricao
+        })),
+        historicoEdicoes: [
+          ...(emprestimoEditado.historicoEdicoes || []),
+          {
+            dataEdicao: dataAtualizacao,
+            usuarioEdicao: usuario?.email || 'sistema',
+            tipoEdicao: 'EDICAO_FERRAMENTAS'
+          }
+        ]
+      };
+
       // Atualiza o empréstimo no Firestore
       const emprestimoRef = doc(db, 'emprestimos', emprestimoEditado.id);
-      await updateDoc(emprestimoRef, {
-        ferramentas: emprestimoEditado.ferramentas,
-        dataAtualizacao: new Date()
-      });
+      await updateDoc(emprestimoRef, emprestimoAtualizado);
+
+      console.log('Empréstimo atualizado com sucesso');
 
       // Atualiza a disponibilidade das ferramentas se necessário
       await atualizarDisponibilidade();
@@ -370,7 +413,9 @@ const ListaEmprestimos = ({
 
   const handleTransferirFerramentas = (emprestimo) => {
     console.log('Abrindo modal de transferência:', { emprestimo });
-    setEmprestimoParaTransferencia(emprestimo);
+    // Faz uma cópia profunda do empréstimo para evitar referências
+    const emprestimoParaTransferir = JSON.parse(JSON.stringify(emprestimo));
+    setEmprestimoParaTransferencia(emprestimoParaTransferir);
     carregarFuncionarios();
     setShowTransferenciaModal(true);
   };
@@ -380,6 +425,19 @@ const ListaEmprestimos = ({
       if (!emprestimoParaTransferencia || !funcionarioDestino || !ferramentas.length) {
         console.error('Dados inválidos para transferência');
         return;
+      }
+
+      console.log('Iniciando transferência de ferramentas:', { ferramentas, funcionarioDestino, observacao });
+
+      const dataTransferencia = new Date().toISOString();
+      
+      // Encontra e preserva os detalhes completos da ferramenta a ser transferida
+      const ferramentaParaTransferir = emprestimoParaTransferencia.ferramentas.find(
+        f => f.id === ferramentas[0].id
+      );
+
+      if (!ferramentaParaTransferir) {
+        throw new Error('Ferramenta não encontrada no empréstimo original');
       }
 
       // Remove a ferramenta selecionada do empréstimo atual
@@ -392,22 +450,47 @@ const ListaEmprestimos = ({
       await updateDoc(emprestimoRef, {
         ferramentas: ferramentasRestantes,
         ferramentasTransferidas: arrayUnion({
-          ferramentas: [ferramentas[0]], // Agora transferimos apenas uma ferramenta
-          funcionarioDestino,
-          dataTransferencia: new Date().toISOString(),
-          observacao
-        })
+          ferramenta: ferramentaParaTransferir,
+          funcionarioDestinoId: funcionarioDestino.id,
+          funcionarioDestinoNome: funcionarioDestino.nome,
+          dataTransferencia,
+          observacao,
+          usuarioTransferencia: usuario?.email || 'sistema'
+        }),
+        dataAtualizacao: dataTransferencia,
+        usuarioAtualizacao: usuario?.email || 'sistema'
       });
 
-      // Cria um novo empréstimo para o funcionário destino
-      const novoEmprestimo = {
-        funcionarioId: funcionarioDestino,
-        ferramentas: [ferramentas[0]], // Agora transferimos apenas uma ferramenta
-        dataEmprestimo: new Date().toISOString(),
+      // Cria um novo registro de empréstimo para o funcionário destino
+      const emprestimoDaTransferencia = {
+        funcionarioId: funcionarioDestino.id,
+        nomeFuncionario: funcionarioDestino.nome,
+        ferramentas: [ferramentaParaTransferir], // Usa os detalhes completos da ferramenta
+        dataEmprestimo: dataTransferencia,
+        dataCriacao: dataTransferencia,
         status: 'emprestado',
         observacao: `Transferido de ${emprestimoParaTransferencia.nomeFuncionario}. ${observacao ? `Observação: ${observacao}` : ''}`,
-        emprestimoOriginalId: emprestimoParaTransferencia.id
+        emprestimoOriginalId: emprestimoParaTransferencia.id,
+        usuarioCriacao: usuario?.email || 'sistema',
+        historicoTransferencias: [{
+          dataTransferencia,
+          funcionarioOrigemId: emprestimoParaTransferencia.funcionarioId,
+          funcionarioOrigemNome: emprestimoParaTransferencia.nomeFuncionario,
+          observacao
+        }]
       };
+
+      // Adiciona o novo empréstimo ao Firestore
+      await addDoc(collection(db, 'emprestimos'), emprestimoDaTransferencia);
+
+      console.log('Transferência concluída com sucesso');
+
+      // Atualiza a disponibilidade das ferramentas se necessário
+      await atualizarDisponibilidade();
+
+      // Fecha o modal e limpa os estados
+      setShowTransferenciaModal(false);
+      setEmprestimoParaTransferencia(null);
 
       // TODO: Implementar criação do novo empréstimo usando a função apropriada do seu sistema
       // await criarEmprestimo(novoEmprestimo);

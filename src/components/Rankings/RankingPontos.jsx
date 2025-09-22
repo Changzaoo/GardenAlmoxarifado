@@ -47,6 +47,7 @@ const RankingPontos = () => {
   const [showMesSelector, setShowMesSelector] = useState(false);
   const [showAnoSelector, setShowAnoSelector] = useState(false);
   const [showSemanaSelector, setShowSemanaSelector] = useState(false);
+  const [showPontosExplicacao, setShowPontosExplicacao] = useState(false);
   
   // Encontrar a semana atual
   const getWeekNumber = (hoje) => {
@@ -567,37 +568,54 @@ const RankingPontos = () => {
                     <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                       <CircleDollarSign className="w-4 h-4 text-yellow-500" />
                       {funcionario.pontuacao.total} pontos
-                      <div className="relative group">
-                        <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-help" />
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-lg">
-                          <div className="text-left">
-                            <p className="mb-2">Os pontos são calculados da seguinte forma:</p>
-                            <ul className="space-y-1">
-                              <li className="flex items-center gap-1">
-                                <ToolCase className="w-3 h-3 text-blue-400" />
-                                20 pontos por ferramenta devolvida
-                              </li>
-                              <li className="flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3 text-green-400" />
-                                Tarefas: 20-70 pts + tempo estimado
-                              </li>
-                              <li className="ml-4 text-xs text-gray-300">
-                                • Baixa: 20 pts
-                                • Média: 30 pts
-                                • Alta: 50 pts
-                                • Urgente: 70 pts
-                              </li>
-                              <li className="ml-4 text-xs text-gray-300">
-                                + 5 pts por hora estimada (máx. 50 pts extras)
-                              </li>
-                              <li className="flex items-center gap-1">
-                                <Star className="w-3 h-3 text-yellow-400" />
-                                10 pontos por estrela em avaliações
-                              </li>
-                            </ul>
+                      <div className="relative">
+                        <HelpCircle
+                          className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPontosExplicacao((prev) => !prev);
+                          }}
+                        />
+                        {showPontosExplicacao && (
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setShowPontosExplicacao(false)}
+                          >
+                            <div
+                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-lg z-50"
+                              style={{ pointerEvents: 'auto' }}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <div className="text-left">
+                                <p className="mb-2">Os pontos são calculados da seguinte forma:</p>
+                                <ul className="space-y-1">
+                                  <li className="flex items-center gap-1">
+                                    <ToolCase className="w-3 h-3 text-blue-400" />
+                                    20 pontos por ferramenta devolvida
+                                  </li>
+                                  <li className="flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3 text-green-400" />
+                                    Tarefas: 20-70 pts + tempo estimado
+                                  </li>
+                                  <li className="ml-4 text-xs text-gray-300">
+                                    • Baixa: 20 pts
+                                    • Média: 30 pts
+                                    • Alta: 50 pts
+                                    • Urgente: 70 pts
+                                  </li>
+                                  <li className="ml-4 text-xs text-gray-300">
+                                    + 5 pts por hora estimada (máx. 50 pts extras)
+                                  </li>
+                                  <li className="flex items-center gap-1">
+                                    <Star className="w-3 h-3 text-yellow-400" />
+                                    10 pontos por estrela em avaliações
+                                  </li>
+                                </ul>
+                              </div>
+                              <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-gray-800 rotate-45"></div>
+                            </div>
                           </div>
-                          <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-gray-800 rotate-45"></div>
-                        </div>
+                        )}
                       </div>
                     </p>
                   </div>

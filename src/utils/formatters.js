@@ -15,3 +15,8 @@ export const formatarDataHora = (data) => {
     minute: '2-digit'
   });
 };
+
+export const formatarHora = (hora) => {
+  if (!hora) return '-';
+  return hora;
+};

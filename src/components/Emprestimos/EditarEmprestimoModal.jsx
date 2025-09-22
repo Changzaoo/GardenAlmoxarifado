@@ -2,39 +2,70 @@ import React, { useState, useEffect } from 'react';
 import { X, Trash2, Save } from 'lucide-react';
 
 const EditarEmprestimoModal = ({ emprestimo, onClose, onSave }) => {
-  const [ferramentas, setFerramentas] = useState([]);
+  const [ferramentasEditadas, setFerramentasEditadas] = useState([]);
+  const [emprestimoEditado, setEmprestimoEditado] = useState(null);
 
   useEffect(() => {
     if (emprestimo) {
-      setFerramentas(emprestimo.ferramentas.map(tool => ({
+      // Faz uma cópia profunda do empréstimo
+      const emprestimoClone = JSON.parse(JSON.stringify(emprestimo));
+      
+      // Garante que todas as ferramentas tenham as propriedades necessárias
+      const ferramentasProcessadas = emprestimoClone.ferramentas.map(tool => ({
         ...tool,
-        quantidadeOriginal: tool.quantidade
-      })));
+        id: tool.id,
+        nome: tool.nome || 'Ferramenta sem nome',
+        quantidade: tool.quantidade || 1,
+        quantidadeOriginal: tool.quantidade || 1,
+        codigo: tool.codigo,
+        descricao: tool.descricao
+      }));
+
+      setFerramentasEditadas(ferramentasProcessadas);
+      setEmprestimoEditado(emprestimoClone);
     }
   }, [emprestimo]);
 
   const handleRemoveTool = (toolId) => {
-    setFerramentas(prevTools => prevTools.filter(tool => tool.id !== toolId));
+    setFerramentasEditadas(prevTools => prevTools.filter(tool => tool.id !== toolId));
   };
 
   const handleQuantityChange = (toolId, newQuantity) => {
-    const maxQuantity = ferramentas.find(tool => tool.id === toolId)?.quantidadeOriginal || 0;
+    const maxQuantity = ferramentasEditadas.find(tool => tool.id === toolId)?.quantidadeOriginal || 0;
     const quantity = Math.min(Math.max(1, parseInt(newQuantity) || 0), maxQuantity);
 
-    setFerramentas(prevTools =>
+    setFerramentasEditadas(prevTools =>
       prevTools.map(tool =>
         tool.id === toolId
-          ? { ...tool, quantidade: quantity }
+          ? { 
+              ...tool,
+              quantidade: quantity,
+              // Preserva todas as propriedades importantes
+              nome: tool.nome,
+              codigo: tool.codigo,
+              descricao: tool.descricao
+            }
           : tool
       )
     );
   };
 
   const handleSave = () => {
-    onSave({
-      ...emprestimo,
-      ferramentas: ferramentas
-    });
+    if (!emprestimoEditado) return;
+
+    const emprestimoAtualizado = {
+      ...emprestimoEditado,
+      ferramentas: ferramentasEditadas.map(ferramenta => ({
+        id: ferramenta.id,
+        nome: ferramenta.nome,
+        quantidade: ferramenta.quantidade,
+        codigo: ferramenta.codigo,
+        descricao: ferramenta.descricao
+      }))
+    };
+
+    console.log('Salvando empréstimo atualizado:', emprestimoAtualizado);
+    onSave(emprestimoAtualizado);
     onClose();
   };
 
@@ -52,7 +83,7 @@ const EditarEmprestimoModal = ({ emprestimo, onClose, onSave }) => {
         </div>
 
         <div className="space-y-4">
-          {ferramentas.map((tool) => (
+          {ferramentasEditadas.map((tool) => (
             <div key={tool.id} className="flex items-center space-x-4 bg-[#253341] p-4 rounded-lg">
               <div className="flex-grow">
                 <h3 className="font-medium">{tool.nome}</h3>
