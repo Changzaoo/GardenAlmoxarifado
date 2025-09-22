@@ -878,7 +878,7 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
 
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center text-base font-bold">
-            <span className="text-gray-900 dark:text-white">Pontuação Semanal:</span>
+            <span className="text-gray-900 dark:text-white">Pontuação da data selecionada:</span>
             <span className="text-[#1DA1F2]">{funcionario.pontuacao.total} pontos</span>
           </div>
         </div>
