@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Award, TrendingUp, MessageSquare, AlertTriangle, Calendar, Clock, Check, X, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '../../components/ToastProvider';
-import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
@@ -46,12 +46,50 @@ function AvaliacoesTab({ funcionario }) {
     setShowConfirmModal(true);
   };
 
+  const calcularPontosAvaliacao = (estrelas) => {
+    // Convertendo estrelas em pontos
+    // 5 estrelas = 10 pontos
+    // 4 estrelas = 8 pontos
+    // 3 estrelas = 6 pontos
+    // 2 estrelas = 4 pontos
+    // 1 estrela = 2 pontos
+    return estrelas * 2;
+  };
+
   const confirmarExclusao = async () => {
     try {
+      // Primeiro, pegamos os dados da avaliação para saber quantos pontos remover
       const avaliacaoRef = doc(db, 'avaliacoes', avaliacaoParaExcluir);
+      const avaliacaoSnap = await getDoc(avaliacaoRef);
+      
+      if (!avaliacaoSnap.exists()) {
+        throw new Error('Avaliação não encontrada');
+      }
+
+      const avaliacaoData = avaliacaoSnap.data();
+      const pontosParaRemover = calcularPontosAvaliacao(avaliacaoData.estrelas);
+
+      // Atualizar os pontos do funcionário
+      const funcionarioRef = doc(db, 'funcionarios', funcionario.id);
+      const funcionarioSnap = await getDoc(funcionarioRef);
+      
+      if (!funcionarioSnap.exists()) {
+        throw new Error('Funcionário não encontrado');
+      }
+
+      const funcionarioData = funcionarioSnap.data();
+      const pontosAtuais = funcionarioData.pontos || 0;
+
+      // Atualizar os pontos do funcionário
+      await updateDoc(funcionarioRef, {
+        pontos: Math.max(0, pontosAtuais - pontosParaRemover) // Garante que não fique negativo
+      });
+
+      // Deletar a avaliação
       await deleteDoc(avaliacaoRef);
+      
       await carregarAvaliacoes();
-      showToast('Avaliação excluída com sucesso!', 'success');
+      showToast('Avaliação excluída e pontos atualizados com sucesso!', 'success');
       setShowConfirmModal(false);
       setAvaliacaoParaExcluir(null);
     } catch (error) {
@@ -105,8 +143,22 @@ function AvaliacoesTab({ funcionario }) {
       console.log('Dados a serem salvos:', novaAvaliacaoData);
 
       await addDoc(avaliacoesRef, novaAvaliacaoData);
+
+      // Atualizar os pontos do funcionário
+      const funcionarioRef = doc(db, 'funcionarios', funcionario.id);
+      const funcionarioSnap = await getDoc(funcionarioRef);
       
-      showToast('Avaliação salva com sucesso!', 'success');
+      if (funcionarioSnap.exists()) {
+        const funcionarioData = funcionarioSnap.data();
+        const pontosAtuais = funcionarioData.pontos || 0;
+        const novoPontos = pontosAtuais + calcularPontosAvaliacao(novaAvaliacaoData.estrelas);
+        
+        await updateDoc(funcionarioRef, {
+          pontos: novoPontos
+        });
+      }
+      
+      showToast('Avaliação salva e pontos atualizados com sucesso!', 'success');
       setShowAddModal(false);
       
       setNovaAvaliacao({

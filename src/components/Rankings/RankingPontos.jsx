@@ -117,10 +117,29 @@ const RankingPontos = () => {
           detalhes: {
             ferramentas: funcionario.emprestimos
               .filter(emp => {
-                const data = new Date(emp.dataDevolucao);
-                return data >= dataLimiteInicio && data <= dataLimiteFim;
+                const dataDevolucao = new Date(emp.dataDevolucao);
+                return dataDevolucao >= dataLimiteInicio && dataDevolucao <= dataLimiteFim;
               })
-              .length * 20,
+              .reduce((total, emp) => {
+                const dataRetirada = new Date(emp.dataRetirada);
+                const dataDevolucao = new Date(emp.dataDevolucao);
+                const bonusRetirada = verificarHorarioBonus(dataRetirada);
+                const bonusDevolucao = verificarHorarioBonus(dataDevolucao);
+                
+                let pontosPorFerramenta = 20;
+                let pontosBonus = 0;
+                
+                if (bonusRetirada.bonus) {
+                  pontosBonus += pontosPorFerramenta * 0.5;
+                  emp.bonusRetirada = true;
+                }
+                if (bonusDevolucao.bonus) {
+                  pontosBonus += pontosPorFerramenta * 0.5;
+                  emp.bonusDevolucao = true;
+                }
+                
+                return total + (pontosPorFerramenta + pontosBonus) * (emp.ferramentas?.length || 1);
+              }, 0),
             tarefas: funcionario.tarefas
               .filter(tarefa => {
                 const data = new Date(tarefa.dataConclusao);
@@ -169,19 +188,34 @@ const RankingPontos = () => {
     carregarDados();
   }, []);
 
-  const calcularPontuacao = (dados) => {
-    const pontosPorFerramentasDevolvidas = (dados.ferramentasDevolvidas || 0) * 20;
-    const pontosPorTarefasConcluidas = (dados.tarefasConcluidas || 0) * 50;
-    
-    // Calcula pontos por avaliação (5 estrelas = 50 pontos, 4 = 40, 3 = 30, 2 = 20, 1 = 10)
-    const pontosPorAvaliacao = dados.avaliacao ? Math.round(dados.avaliacao * 10) : 0;
+  const verificarHorarioBonus = (dataHora) => {
+    if (!dataHora) return { bonus: false, tipo: null };
 
+    const hora = dataHora.getHours();
+    const minutos = dataHora.getMinutes();
+    const horaMinutos = hora * 60 + minutos;
+
+    // 7:20 até 7:35 (440 a 455 minutos)
+    if (horaMinutos >= 440 && horaMinutos <= 455) {
+      return { bonus: true, tipo: 'retirada' };
+    }
+    
+    // 16:00 até 16:05 (960 a 965 minutos)
+    if (horaMinutos >= 960 && horaMinutos <= 965) {
+      return { bonus: true, tipo: 'devolucao' };
+    }
+
+    return { bonus: false, tipo: null };
+  };
+
+  const calcularPontuacao = (dados) => {
+    // Inicializa os detalhes de pontuação
     return {
-      total: pontosPorFerramentasDevolvidas + pontosPorTarefasConcluidas + pontosPorAvaliacao,
+      total: 0,
       detalhes: {
-        ferramentas: pontosPorFerramentasDevolvidas,
-        tarefas: pontosPorTarefasConcluidas,
-        avaliacao: pontosPorAvaliacao
+        ferramentas: 0,
+        tarefas: 0,
+        avaliacao: 0
       }
     };
   };
@@ -497,15 +531,80 @@ const RankingPontos = () => {
                       .reduce((total, func) => total + func.pontuacao.total, 0)}
                   </span>
                   <span className="text-blue-200">pontos</span>
+                  <div className="relative">
+                    <HelpCircle
+                      className="w-5 h-5 text-blue-200 hover:text-blue-100 cursor-pointer ml-2"
+                      onClick={() => setShowPontosExplicacao(prev => !prev)}
+                    />
+                    {showPontosExplicacao && (
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowPontosExplicacao(false)}
+                      >
+                        <div
+                          className="absolute top-full left-0 mt-2 w-64 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-lg z-50"
+                          style={{ pointerEvents: 'auto' }}
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <div className="text-left">
+                            <p className="mb-2">Os pontos são calculados da seguinte forma:</p>
+                            <ul className="space-y-1">
+                              <li className="flex items-center gap-1">
+                                <ToolCase className="w-3 h-3 text-blue-400" />
+                                20 pontos por ferramenta devolvida
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                Bônus de horário:
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                • +50% se retirada entre 7:20-7:35
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                • +50% se devolvida entre 16:00-16:05
+                              </li>
+                              <li className="flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3 text-green-400" />
+                                Tarefas: 20-70 pts + tempo estimado
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                • Baixa: 20 pts
+                                • Média: 30 pts
+                                • Alta: 50 pts
+                                • Urgente: 70 pts
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                + 5 pts por hora estimada (máx. 50 pts extras)
+                              </li>
+                              <li className="flex items-center gap-1">
+                                <Star className="w-3 h-3 text-yellow-400" />
+                                10 pontos por estrela em avaliações
+                              </li>
+                            </ul>
+                          </div>
+                          <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-gray-800 rotate-45"></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex gap-4 mt-3 text-sm">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 relative group">
                     <ToolCase className="w-4 h-4 text-blue-200" />
                     <span>
                       {filtrarPorPeriodo(rankings)
                         .reduce((total, func) => total + func.pontuacao.detalhes.ferramentas, 0)} pts
                     </span>
+                    {filtrarPorPeriodo(rankings).some(func => 
+                      func.emprestimos.some(emp => emp.bonusRetirada || emp.bonusDevolucao)
+                    ) && (
+                      <>
+                        <span className="ml-1 text-yellow-400 text-xs">★</span>
+                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block bg-gray-800 text-xs text-white p-2 rounded whitespace-nowrap">
+                          Inclui bônus de horário
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <CheckCircle className="w-4 h-4 text-blue-200" />
@@ -568,55 +667,6 @@ const RankingPontos = () => {
                     <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                       <CircleDollarSign className="w-4 h-4 text-yellow-500" />
                       {funcionario.pontuacao.total} pontos
-                      <div className="relative">
-                        <HelpCircle
-                          className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowPontosExplicacao((prev) => !prev);
-                          }}
-                        />
-                        {showPontosExplicacao && (
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setShowPontosExplicacao(false)}
-                          >
-                            <div
-                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-lg z-50"
-                              style={{ pointerEvents: 'auto' }}
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <div className="text-left">
-                                <p className="mb-2">Os pontos são calculados da seguinte forma:</p>
-                                <ul className="space-y-1">
-                                  <li className="flex items-center gap-1">
-                                    <ToolCase className="w-3 h-3 text-blue-400" />
-                                    20 pontos por ferramenta devolvida
-                                  </li>
-                                  <li className="flex items-center gap-1">
-                                    <CheckCircle className="w-3 h-3 text-green-400" />
-                                    Tarefas: 20-70 pts + tempo estimado
-                                  </li>
-                                  <li className="ml-4 text-xs text-gray-300">
-                                    • Baixa: 20 pts
-                                    • Média: 30 pts
-                                    • Alta: 50 pts
-                                    • Urgente: 70 pts
-                                  </li>
-                                  <li className="ml-4 text-xs text-gray-300">
-                                    + 5 pts por hora estimada (máx. 50 pts extras)
-                                  </li>
-                                  <li className="flex items-center gap-1">
-                                    <Star className="w-3 h-3 text-yellow-400" />
-                                    10 pontos por estrela em avaliações
-                                  </li>
-                                </ul>
-                              </div>
-                              <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-gray-800 rotate-45"></div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
                     </p>
                   </div>
                 </div>
@@ -654,6 +704,18 @@ const RankingPontos = () => {
 
 const DetalhesPontos = ({ funcionario, onClose }) => {
   const { emprestimos, tarefas, avaliacoes } = funcionario;
+  const [sectionsOpen, setSectionsOpen] = useState({
+    emprestimos: true,
+    tarefas: true,
+    avaliacoes: true
+  });
+
+  const toggleSection = (section) => {
+    setSectionsOpen(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const getDataFormatada = (data) => {
     const date = new Date(data);
@@ -679,61 +741,79 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
           <div className="space-y-4">
             {/* Empréstimos */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-              <div className="flex justify-between items-center mb-2">
+              <div 
+                className="flex justify-between items-center mb-2 cursor-pointer"
+                onClick={() => toggleSection('emprestimos')}
+              >
                 <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                   <ToolCase className="w-4 h-4 text-blue-500" />
                   Empréstimos
+                  <ChevronDown className={`w-4 h-4 transform transition-transform ${sectionsOpen.emprestimos ? '' : '-rotate-90'}`} />
                 </h4>
                 <div className="text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Total: </span>
                   <span className="font-medium text-blue-500">{emprestimos.length * 20} pontos</span>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
-                <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium">
-                  {emprestimos.reduce((total, emp) => total + emp.quantidade, 0)}
-                </span>
-                ferramentas devolvidas no total
-              </p>
-              <div className="space-y-1">
-                {emprestimos.map((emp, index) => (
-                  <div key={index} className="border-b border-gray-100 dark:border-gray-600/20 last:border-0 pb-2 last:pb-0 mb-2 last:mb-0">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600 dark:text-gray-300 font-medium">
-                        {getDataFormatada(emp.dataDevolucao)}
-                      </span>
-                      <span className="font-medium text-blue-500">
-                        +{emp.quantidade * 20} pts
-                      </span>
-                    </div>
-                    {emp.ferramentas && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 rounded-md p-2">
-                        <div className="flex items-center gap-1 mb-1">
-                          <ToolCase className="w-3 h-3" />
-                          <span className="font-medium">Ferramentas devolvidas:</span>
+              {sectionsOpen.emprestimos && (
+                <>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
+                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium">
+                      {emprestimos.reduce((total, emp) => total + emp.quantidade, 0)}
+                    </span>
+                    ferramentas devolvidas no total
+                  </p>
+                  <div className="space-y-1">
+                    {emprestimos.map((emp, index) => (
+                      <div key={index} className="border-b border-gray-100 dark:border-gray-600/20 last:border-0 pb-2 last:pb-0 mb-2 last:mb-0">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600 dark:text-gray-300 font-medium">
+                            {getDataFormatada(emp.dataDevolucao)}
+                          </span>
+                          <span className="font-medium text-blue-500">
+                            +{emp.quantidade * 20} pts
+                          </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-1 ml-4">
-                          {emp.ferramentas.map((ferramenta, idx) => (
-                            <div key={idx} className="flex items-center gap-1">
-                              <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                              <span>{ferramenta.nome || ferramenta}</span>
+                        {emp.ferramentas && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 rounded-md p-2">
+                            <div className="flex items-center gap-1 mb-1">
+                              <ToolCase className="w-3 h-3" />
+                              <span className="font-medium">Ferramentas devolvidas:</span>
                             </div>
-                          ))}
-                        </div>
+                            <div className="grid grid-cols-2 gap-1 ml-4">
+                              {emp.ferramentas.map((ferramenta, idx) => (
+                                <div key={idx} className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                                  <span>{ferramenta.nome || ferramenta}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
 
             {/* Tarefas */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-              <h4 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                Tarefas ({tarefas.length * 50} pontos)
-              </h4>
-              <div className="space-y-1">
+              <div 
+                className="flex justify-between items-center mb-2 cursor-pointer"
+                onClick={() => toggleSection('tarefas')}
+              >
+                <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  Tarefas 
+                  <ChevronDown className={`w-4 h-4 transform transition-transform ${sectionsOpen.tarefas ? '' : '-rotate-90'}`} />
+                </h4>
+                <span className="text-sm font-medium text-green-500">
+                  {tarefas.length * 50} pontos
+                </span>
+              </div>
+              {sectionsOpen.tarefas && (
+                <div className="space-y-1">
                 {tarefas.map((tarefa, index) => (
                   <div key={index} className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300 flex flex-col">
@@ -759,17 +839,28 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
                     </span>
                   </div>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Avaliações */}
             <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-              <h4 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                <Star className="w-4 h-4 text-yellow-500" />
-                Avaliações ({avaliacoes.reduce((acc, av) => acc + (av.estrelas * 10), 0)} pontos)
-              </h4>
-              <div className="space-y-1">
-                {avaliacoes.map((avaliacao, index) => (
+              <div 
+                className="flex justify-between items-center mb-2 cursor-pointer"
+                onClick={() => toggleSection('avaliacoes')}
+              >
+                <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                  <Star className="w-4 h-4 text-yellow-500" />
+                  Avaliações 
+                  <ChevronDown className={`w-4 h-4 transform transition-transform ${sectionsOpen.avaliacoes ? '' : '-rotate-90'}`} />
+                </h4>
+                <span className="text-sm font-medium text-yellow-500">
+                  {avaliacoes.reduce((acc, av) => acc + (av.estrelas * 10), 0)} pontos
+                </span>
+              </div>
+              {sectionsOpen.avaliacoes && (
+                <div className="space-y-1">
+                  {avaliacoes.map((avaliacao, index) => (
                   <div key={index} className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300">
                       {getDataFormatada(avaliacao.data)}
@@ -777,16 +868,17 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
                     <span className="font-medium text-yellow-500">
                       {avaliacao.estrelas}★ (+{avaliacao.estrelas * 10} pts)
                     </span>
-                  </div>
-                ))}
-              </div>
+                      </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center text-base font-bold">
-            <span className="text-gray-900 dark:text-white">Total de Pontos:</span>
+            <span className="text-gray-900 dark:text-white">Pontuação Semanal:</span>
             <span className="text-[#1DA1F2]">{funcionario.pontuacao.total} pontos</span>
           </div>
         </div>
