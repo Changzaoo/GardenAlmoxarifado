@@ -521,41 +521,7 @@ const ProfileTab = () => {
             showOnlyUserTasks={true}
             showAddButton={false}
           />
-        )}
-
-        {/* Seção de Avaliações */}
-        <div className="mt-8 border-t dark:border-[#2F3336] pt-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-              Avaliações
-            </h3>
-            {temPermissaoAvaliacao && (
-              <button
-                onClick={() => setShowAvaliacaoModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#1D9BF0] text-white rounded-full hover:bg-[#1a91da] transition-colors"
-              >
-                <MessageSquarePlus className="w-5 h-5" />
-                <span>Nova Avaliação</span>
-              </button>
-            )}
-          </div>
-
-          {/* Lista de Avaliações */}
-          <AvaliacoesList
-            avaliacoes={avaliacoes}
-            onDelete={handleDeleteAvaliacao}
-            canDelete={temPermissaoAvaliacao}
-          />
-        </div>
-
-        {/* Modal de Avaliação */}
-        {showAvaliacaoModal && (
-          <AvaliacaoPerfilModal
-            isOpen={showAvaliacaoModal}
-            onClose={() => setShowAvaliacaoModal(false)}
-            onConfirm={handleAddAvaliacao}
-          />
-        )}
+        )}     
       </div>
     </div>
   );
