@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { Search, Plus, Calendar, User, MapPin, DollarSign, FileText, AlertCircle } from 'lucide-react';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
+import { toast } from 'react-toastify';
 
 const { classes, colors } = twitterThemeConfig;
 
@@ -48,7 +49,22 @@ const FerramentasPerdidasTab = ({
     e.preventDefault();
     
     if (!novaFerramenta.nomeItem || !novaFerramenta.descricaoPerda) {
-      alert('Preencha pelo menos o nome da ferramenta e descrição da perda!');
+      toast.error('Por favor, preencha os campos obrigatórios:\n- Nome da Ferramenta\n- Descrição da Perda\n\nOs campos obrigatórios estão marcados com *', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        style: {
+          background: '#192734',
+          color: '#ffffff',
+          borderRadius: '1rem',
+          border: '1px solid #38444D'
+        }
+      });
       return;
     }
 
@@ -73,9 +89,39 @@ const FerramentasPerdidasTab = ({
         prioridade: 'media'
       });
       setModalAberto(false);
-      alert('Ferramenta perdida registrada com sucesso!');
+      toast.success('Ferramenta perdida registrada com sucesso!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        style: {
+          background: '#192734',
+          color: '#ffffff',
+          borderRadius: '1rem',
+          border: '1px solid #38444D'
+        }
+      });
     } else {
-      alert('Erro ao registrar ferramenta perdida. Tente novamente.');
+      toast.error('Erro ao registrar ferramenta perdida. Tente novamente.', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        style: {
+          background: '#192734',
+          color: '#ffffff',
+          borderRadius: '1rem',
+          border: '1px solid #38444D'
+        }
+      });
     }
   };
 
@@ -407,6 +453,19 @@ const FerramentasPerdidasTab = ({
                       placeholder="Ex: Ferramenta Manual"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
+                    Descrição da Perda *
+                  </label>
+                  <textarea
+                    value={novaFerramenta.descricaoPerda}
+                    onChange={(e) => setNovaFerramenta({...novaFerramenta, descricaoPerda: e.target.value})}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-24"
+                    placeholder="Descreva detalhadamente as circunstâncias da perda..."
+                    required
+                  />
                 </div>
 
                 <div>

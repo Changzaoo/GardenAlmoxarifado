@@ -134,8 +134,6 @@ const Chat = () => {
       <ChatButton 
         isOpen={isOpen} 
         onClick={() => setIsOpen(!isOpen)}
-        position={chatButtonPosition}
-        onPositionChange={setChatButtonPosition}
       />
       <ChatWindow
         isOpen={isOpen}
@@ -148,7 +146,6 @@ const Chat = () => {
         onSendMessage={sendMessage}
         onCreateGroup={createGroupChat}
         onCreateIndividualChat={createIndividualChat}
-        buttonPosition={chatButtonPosition}
       />
     </>
   );
