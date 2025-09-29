@@ -14,6 +14,28 @@ const ChatButton = ({ isOpen, onClick }) => {
   useEffect(() => {
     if (!usuario?.id) return;
 
+    // Registrar service worker para notificações push
+    if ('serviceWorker' in navigator && 'Notification' in window) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(async function(registration) {
+          console.log('Service Worker registrado com sucesso:', registration);
+          
+          // Solicitar permissão para notificações
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            // Registrar para receber push notifications
+            const subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: 'YOUR_PUBLIC_VAPID_KEY' // Substitua pela sua chave VAPID pública
+            });
+            console.log('Push Notification subscription:', subscription);
+          }
+        })
+        .catch(function(error) {
+          console.log('Erro ao registrar Service Worker:', error);
+        });
+    }
+
     console.log('Iniciando monitor de mensagens para usuário:', usuario.id);
     
     const mensagensRef = collection(db, 'mensagens');
@@ -53,7 +75,21 @@ const ChatButton = ({ isOpen, onClick }) => {
                 badge: '/logo.png',
                 vibrate: [200, 100, 200],
                 tag: 'chat-message',
-                requireInteraction: false
+                requireInteraction: true,
+                renotify: true,
+                silent: false, // Permite o som padrão do dispositivo
+                actions: [
+                  {
+                    action: 'reply',
+                    title: 'Responder',
+                    icon: '/logo.png'
+                  },
+                  {
+                    action: 'close',
+                    title: 'Fechar',
+                    icon: '/logo.png'
+                  }
+                ]
               });
             }
           }
@@ -73,29 +109,38 @@ const ChatButton = ({ isOpen, onClick }) => {
   }, [usuario?.id, isMobile]);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <button
-        onClick={onClick}
-        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl
-          ${isOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-[#1D9BF0] hover:bg-[#1a8cd8]'}`}
-      >
-        {isOpen ? (
-          <>
-            <X className="w-5 h-5 text-white" />
-            <span className="text-white font-medium">Fechar</span>
-          </>
-        ) : (
-          <>
-            <MessageSquare className="w-5 h-5 text-white" />
-            <span className="text-white font-medium">Mensagens</span>
-          </>
-        )}
-        {!isOpen && unreadCount > 0 && (
-          <div className="flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-full min-w-[20px] h-[20px] px-1.5">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </div>
-        )}
-      </button>
+    <div className="fixed bottom-4 right-4 z-30">
+      <div className="relative inline-block">
+        <button
+          onClick={onClick}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg transition-all duration-200 hover:shadow-xl
+            ${isOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-[#1D9BF0] hover:bg-[#1a8cd8]'}`}
+        >
+          {isOpen ? (
+            <>
+              <X className="w-5 h-5 text-white" />
+              <span className="text-white font-medium">Fechar</span>
+            </>
+          ) : (
+            <>
+              <div className="relative">
+                <MessageSquare className="w-5 h-5 text-white" />
+                {/* Instagram-style notification dot */}
+                {!isOpen && unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 w-[10px] h-[10px] rounded-full bg-[#FF3040] ring-2 ring-[#15202B]" />
+                )}
+              </div>
+              <span className="text-white font-medium">Mensagens</span>
+              {/* Message counter */}
+              {unreadCount > 0 && (
+                <div className="flex items-center justify-center bg-[#FF3040] text-white text-[11px] font-bold rounded-full min-w-[18px] h-[18px] px-1">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </div>
+              )}
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 };

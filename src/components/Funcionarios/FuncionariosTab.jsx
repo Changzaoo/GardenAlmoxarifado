@@ -525,34 +525,80 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
               {/* Linha 1: Avaliação e Empréstimos */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-[#253341] rounded-xl p-3">
-                  <div className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-white">
-                          {funcionariosStats[func.id]?.avaliacoes?.length > 0
-                            ? (funcionariosStats[func.id].avaliacoes.reduce((sum, av) => sum + Number(av.nota || 0), 0) / funcionariosStats[func.id].avaliacoes.length).toFixed(1)
-                            : "0.0"
-                          }
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1">
-                        {[1, 2, 3, 4, 5].map((estrela) => {
-                          const mediaAvaliacao = funcionariosStats[func.id]?.avaliacoes?.length > 0
-                            ? funcionariosStats[func.id].avaliacoes.reduce((sum, av) => sum + Number(av.nota || 0), 0) / funcionariosStats[func.id].avaliacoes.length
-                            : 0;
-                          
-                          return (
-                            <Star 
-                              key={estrela} 
-                              className={`w-3 h-3 ${
-                                estrela <= mediaAvaliacao
-                                  ? 'text-yellow-400 fill-yellow-400'
-                                  : 'text-[#8899A6]'
-                              }`}
-                            />
-                          );
-                        })}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                      <div className="space-y-2 flex-1">
+                        {/* Avaliações de Desempenho */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center text-[#1DA1F2]">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((estrela) => {
+                              const avaliacoes = funcionariosStats[func.id]?.avaliacoes || [];
+                              const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
+                              console.log(`Funcionário ${func.nome}:`, {
+                                avaliacoesDesempenho,
+                                id: func.id,
+                                todasAvaliacoes: avaliacoes
+                              });
+                              const mediaDesempenho = avaliacoesDesempenho.length > 0
+                                ? avaliacoesDesempenho.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesDesempenho.length
+                                : 0;
+                              
+                              return (
+                                <Star 
+                                  key={`desempenho-${estrela}`}
+                                  className={`w-3 h-3 ${
+                                    estrela <= mediaDesempenho
+                                      ? 'text-[#1DA1F2] fill-[#1DA1F2]'
+                                      : 'text-[#8899A6]'
+                                  }`}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Avaliações de Tarefas */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center text-green-500">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M9 11.5l2 2 4-4" />
+                                <path d="M20 12.5v-.447a2 2 0 0 0-1.105-1.79l-.32-.16a2 2 0 0 1-1.105-1.79v-.46c0-1.033-.768-1.906-1.8-2.023a58.566 58.566 0 0 0-10.88 0c-1.032.117-1.8.99-1.8 2.023v.46a2 2 0 0 1-1.105 1.79l-.32.16a2 2 0 0 0-1.105 1.79v.447c0 1.033.768 1.906 1.8 2.023a58.566 58.566 0 0 0 10.88 0c1.032-.117 1.8-.99 1.8-2.023z" />
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((estrela) => {
+                              const avaliacoes = funcionariosStats[func.id]?.avaliacoes || [];
+                              const avaliacoesTarefas = avaliacoes.filter(av => av.tipo === 'regular');
+                              const mediaTarefas = avaliacoesTarefas.length > 0
+                                ? avaliacoesTarefas.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesTarefas.length
+                                : 0;
+                              
+                              return (
+                                <Star 
+                                  key={`tarefas-${estrela}`}
+                                  className={`w-3 h-3 ${
+                                    estrela <= mediaTarefas
+                                      ? 'text-green-500 fill-green-500'
+                                      : 'text-[#8899A6]'
+                                  }`}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
