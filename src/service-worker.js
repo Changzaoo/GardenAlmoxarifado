@@ -89,6 +89,10 @@ registerRoute(
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  } else if (event.data && event.data.type === 'CLEAR_NOTIFICATIONS') {
+    self.registration.getNotifications().then(notifications => {
+      notifications.forEach(notification => notification.close());
+    });
   }
 });
 
@@ -98,6 +102,30 @@ self.addEventListener('push', function(event) {
     const data = event.data.json();
     
     const options = {
+      body: data.message,
+      icon: '/logo.png',
+      badge: '/logo.png',
+      tag: `chat-${data.chatId}`,
+      renotify: true,
+      vibrate: [200, 100, 200],
+      data: {
+        chatId: data.chatId,
+        messageId: data.messageId,
+        url: '/'
+      },
+      actions: [
+        {
+          action: 'reply',
+          title: 'Responder',
+          icon: '/logo.png'
+        },
+        {
+          action: 'read',
+          title: 'Marcar como lida',
+          icon: '/logo.png'
+        }
+      ]
+    };
       body: data.body,
       icon: '/logo192.png',
       badge: '/logo192.png',

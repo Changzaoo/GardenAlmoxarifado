@@ -125,18 +125,14 @@ const ChatButton = ({ isOpen, onClick }) => {
             <>
               <div className="relative">
                 <MessageSquare className="w-5 h-5 text-white" />
-                {/* Instagram-style notification dot */}
+                {/* Instagram-style notification dot with animation */}
                 {!isOpen && unreadCount > 0 && (
-                  <div className="absolute -top-1 -right-1 w-[10px] h-[10px] rounded-full bg-[#FF3040] ring-2 ring-[#15202B]" />
+                  <div className="absolute -top-0.5 -right-0.5">
+                    <div className="w-[8px] h-[8px] rounded-full bg-[#FF3040] animate-pulse" />
+                  </div>
                 )}
               </div>
               <span className="text-white font-medium">Mensagens</span>
-              {/* Message counter */}
-              {unreadCount > 0 && (
-                <div className="flex items-center justify-center bg-[#FF3040] text-white text-[11px] font-bold rounded-full min-w-[18px] h-[18px] px-1">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </div>
-              )}
             </>
           )}
         </button>

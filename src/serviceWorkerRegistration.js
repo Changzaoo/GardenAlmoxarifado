@@ -63,10 +63,38 @@ export function register(config) {
   }
 }
 
+async function subscribeToPush(registration) {
+  try {
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: process.env.REACT_APP_VAPID_PUBLIC_KEY
+    });
+    
+    console.log('Push Notification subscription:', subscription);
+    
+    // Aqui você pode enviar a subscription para seu servidor
+    // para armazenar e usar para enviar notificações push
+    
+    return subscription;
+  } catch (err) {
+    console.error('Erro ao se inscrever para notificações push:', err);
+    return null;
+  }
+}
+
 function registerValidSW(swUrl, config) {
   navigator.serviceWorker
     .register(swUrl)
-    .then((registration) => {
+    .then(async (registration) => {
+      // Solicitar permissão para notificações
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          // Inscrever para notificações push
+          await subscribeToPush(registration);
+        }
+      }
+
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         if (installingWorker == null) {

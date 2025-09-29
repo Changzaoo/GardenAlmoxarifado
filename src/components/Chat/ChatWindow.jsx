@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Users, Plus, ArrowLeft } from 'lucide-react';
+import { NotificationSoundToggle } from './NotificationSoundToggle';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
-const ChatWindow = ({ isOpen, onClose, currentUser }) => {
-  const [activeChat, setActiveChat] = useState(null);
-  const [messages, setMessages] = useState([]);
+const ChatWindow = ({ 
+  isOpen, 
+  onClose, 
+  currentUser, 
+  chats,
+  activeChat,
+  setActiveChat,
+  messages,
+  onSendMessage
+}) => {
   const [newMessage, setNewMessage] = useState('');
-  const [chats, setChats] = useState([]);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -23,18 +30,11 @@ const ChatWindow = ({ isOpen, onClose, currentUser }) => {
     }
   }, [messages]);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !activeChat) return;
 
-    const message = {
-      id: Date.now(),
-      text: newMessage,
-      sender: currentUser,
-      timestamp: new Date(),
-    };
-
-    setMessages([...messages, message]);
+    await onSendMessage(activeChat.id, newMessage);
     setNewMessage('');
   };
 
@@ -81,12 +81,15 @@ const ChatWindow = ({ isOpen, onClose, currentUser }) => {
         ) : (
           <>
             <h3 className={`font-medium ${colors.text}`}>Mensagens</h3>
-            <button
-              onClick={() => setShowNewGroup(true)}
-              className={`p-2 rounded-full hover:${colors.backgroundSecondary}`}
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <NotificationSoundToggle />
+              <button
+                onClick={() => setShowNewGroup(true)}
+                className={`p-2 rounded-full hover:${colors.backgroundSecondary}`}
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -170,13 +173,35 @@ const ChatWindow = ({ isOpen, onClose, currentUser }) => {
               onClick={() => setActiveChat(chat)}
               className={`p-4 border-b ${colors.borderColor} cursor-pointer hover:${colors.backgroundSecondary}`}
             >
-              <div className="flex justify-between items-start">
-                <h4 className={`font-medium ${colors.text}`}>{chat.name || chat.displayName}</h4>
+              <div className="flex justify-between items-start mb-1">
+                <div className="flex items-center gap-2">
+                  <h4 className={`font-medium ${colors.text}`}>{chat.name || chat.displayName}</h4>
+                </div>
                 <span className={`text-xs ${colors.textSecondary}`}>
-                  {chat.timestamp.toLocaleTimeString()}
+                  {chat.timestamp instanceof Date 
+                    ? chat.timestamp.toLocaleTimeString()
+                    : chat.timestamp?.toDate()?.toLocaleTimeString() || ''}
                 </span>
               </div>
-              <p className={`text-sm ${colors.textSecondary} truncate`}>{chat.lastMessage}</p>
+              <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center w-full">
+                  <p className={`text-sm ${chat.unreadCount > 0 ? 'font-semibold text-white' : colors.textSecondary} truncate flex-1`}>
+                    {chat.lastMessage || 'Nenhuma mensagem'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {chat.unreadCount > 0 && (
+                      <>
+                        <div className="w-[8px] h-[8px] rounded-full bg-[#FF3040] animate-pulse" />
+                        {chat.unreadCount > 1 && (
+                          <div className="min-w-[18px] h-[18px] rounded-full bg-[#FF3040] flex items-center justify-center text-[11px] text-white font-bold px-1">
+                            {chat.unreadCount}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>

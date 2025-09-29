@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useMessageNotification } from '../../hooks/useMessageNotification';
+import ChatBadge from './ChatBadge';
 import { 
   MessageCircle, X, Search, Users, Send, 
   ArrowLeft, Check, CheckCheck, MoreVertical,
   Smile, Paperclip, Mic, Trash2, Image,
-  FileText, Video, Headphones, File
+  FileText, Video, Headphones, File,
+  Volume2, VolumeX
 } from 'lucide-react';
 import ChatButton from './ChatButton';
 import './WorkflowChat.css';
@@ -64,6 +67,7 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
   const [isOpen, setIsOpen] = useState(false);
   const [activeChat, setActiveChat] = useState(null);
   const isMobile = useIsMobile();
+  const { sendNotification, clearNotifications, soundEnabled, toggleSound } = useMessageNotification();
   const [messages, setMessages] = useState([]);
   const [chats, setChats] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,8 +96,24 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
   useEffect(() => {
     if (messages?.length) {
       scrollToBottom();
+
+      // Marcar mensagens como lidas quando o chat estiver aberto
+      if (isOpen && activeChat) {
+        const unreadMessages = messages.filter(msg => 
+          msg.senderId !== currentUser.id && !msg.read
+        );
+
+        unreadMessages.forEach(async (msg) => {
+          await updateDoc(doc(db, 'chats', activeChat.id, 'messages', msg.id), {
+            read: true
+          });
+        });
+
+        // Limpar notificações quando o chat estiver aberto
+        clearNotifications();
+      }
     }
-  }, [messages]);
+  }, [messages, isOpen, activeChat, currentUser.id]);
 
   // Fechar menu de contexto ao clicar fora
   useEffect(() => {
@@ -160,6 +180,26 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      // Processar alterações em tempo real
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const messageData = change.doc.data();
+          // Verificar se é uma mensagem nova (não histórica) e se não é do usuário atual
+          const isNewMessage = (Date.now() - messageData.timestamp?.toDate?.()?.getTime() || 0) < 1000;
+          if (isNewMessage && messageData.senderId !== currentUser.id && !messageData.read) {
+            sendNotification({
+              remetente: {
+                nome: messageData.senderName,
+                id: messageData.senderId
+              },
+              conteudo: messageData.text || 'Nova mensagem',
+              chatId: activeChat.id,
+              id: change.doc.id
+            });
+          }
+        }
+      });
+
       const messagesList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -431,15 +471,66 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
   };
 
   const [buttonPos, setButtonPos] = useState(buttonPosition);
+  const [unreadMessages, setUnreadMessages] = useState({});
+  const [totalUnread, setTotalUnread] = useState(0);
+
+  // Monitorar mensagens não lidas
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const unreadQuery = query(
+      collection(db, 'messages'),
+      where('destinatario.id', '==', currentUser.id),
+      where('lida', '==', false)
+    );
+
+    const unsubscribe = onSnapshot(unreadQuery, (snapshot) => {
+      const unreadCounts = {};
+      let total = 0;
+
+      snapshot.docs.forEach((doc) => {
+        const message = doc.data();
+        const chatId = message.chatId;
+        unreadCounts[chatId] = (unreadCounts[chatId] || 0) + 1;
+        total++;
+      });
+
+      setUnreadMessages(unreadCounts);
+      setTotalUnread(total);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser?.id]);
+
+  // Marcar mensagens como lidas ao abrir o chat
+  useEffect(() => {
+    if (isOpen && activeChat) {
+      const unreadMessagesQuery = query(
+        collection(db, 'messages'),
+        where('chatId', '==', activeChat.id),
+        where('destinatario.id', '==', currentUser?.id),
+        where('lida', '==', false)
+      );
+
+      getDocs(unreadMessagesQuery).then((snapshot) => {
+        snapshot.docs.forEach((doc) => {
+          updateDoc(doc.ref, { lida: true });
+        });
+      });
+    }
+  }, [isOpen, activeChat, currentUser?.id]);
 
   return (
     <>
-      <ChatButton
-        isOpen={isOpen}
-        onClick={() => setIsOpen(!isOpen)}
-        position={buttonPos}
-        onPositionChange={setButtonPos}
-      />
+      <div className="relative">
+        <ChatButton
+          isOpen={isOpen}
+          onClick={() => setIsOpen(!isOpen)}
+          position={buttonPos}
+          onPositionChange={setButtonPos}
+        />
+        <ChatBadge count={totalUnread} />
+      </div>
 
       {isOpen && (
         <div 
@@ -586,6 +677,17 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
                                 : availableUsers.find(u => activeChat.participants.includes(u.id))?.nome.charAt(0).toUpperCase()}
                             </div>
                             <span>Ver perfil</span>
+                          </button>
+                          <button
+                            onClick={toggleSound}
+                            className="w-full px-4 py-2 text-left text-[#dcddde] hover:bg-white/5 flex items-center gap-2"
+                          >
+                            {soundEnabled ? (
+                              <Volume2 className="w-4 h-4 text-[#1d9bf0]" />
+                            ) : (
+                              <VolumeX className="w-4 h-4 text-[#72767d]" />
+                            )}
+                            <span>{soundEnabled ? 'Desativar som' : 'Ativar som'}</span>
                           </button>
                           <button
                             onClick={() => handleDeleteChat(activeChat.id)}
@@ -920,8 +1022,11 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
                             const timer = setTimeout(() => handleLongPress(chat.id), 500);
                             return () => clearTimeout(timer);
                           }}
-                          className="workflow-chat-list-item p-3 border-b border-white/10 cursor-pointer flex items-center gap-3"
+                          className="workflow-chat-list-item p-3 border-b border-white/10 cursor-pointer flex items-center gap-3 relative"
                         >
+                          {unreadMessages[chat.id] > 0 && (
+                            <ChatBadge count={unreadMessages[chat.id]} />
+                          )}
                           <div className="workflow-chat-user-avatar flex-shrink-0">
                             {initial}
                           </div>
