@@ -6,6 +6,7 @@ import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import { formatarData, formatarHora } from '../../utils/formatters';
+import { tiposAvaliacao } from '../../constants/avaliacoes';
 
 function AvaliacoesTab({ funcionario }) {
   const { usuario, loading } = useAuth();
@@ -32,9 +33,10 @@ function AvaliacoesTab({ funcionario }) {
     data: dataAtual.toISOString().split('T')[0],
     hora: dataAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     estrelas: 0,
-    comentario: ''
+    comentario: '',
+    tipo: 'positiva'
   });
-
+  
   const temPermissaoDetalhes = !loading && usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
 
   const handleDelete = async (avaliacaoId) => {
@@ -137,6 +139,7 @@ function AvaliacoesTab({ funcionario }) {
         comentario: novaAvaliacao.comentario,
         status: 'ativa',
         tipo: 'avaliacao_supervisor',
+        tipoAvaliacao: novaAvaliacao.tipo,
         dataCriacao: serverTimestamp()
       };
 
@@ -468,9 +471,16 @@ function AvaliacoesTab({ funcionario }) {
                     {avaliacao.supervisorCargo && ` (${avaliacao.supervisorCargo})`}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-blue-400">
+                <div className="flex items-center gap-1">
                   <span>{avaliacao.origemAvaliacao}</span>
                 </div>
+                {avaliacao.tipoAvaliacao && (
+                  <div className={`px-2 py-0.5 rounded-full text-sm ${
+                    tiposAvaliacao.find(t => t.valor === avaliacao.tipoAvaliacao)?.cor || 'text-blue-400 bg-blue-400/20'
+                  }`}>
+                    {tiposAvaliacao.find(t => t.valor === avaliacao.tipoAvaliacao)?.label || 'Avaliação'}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -581,6 +591,27 @@ function AvaliacoesTab({ funcionario }) {
                     className="w-full px-3 py-2 bg-white dark:bg-[#253341] text-gray-900 dark:text-white border border-gray-300 dark:border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent outline-none"
                     required
                   />
+                </div>
+              </div>
+
+              {/* Tipo de Avaliação */}
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-[#8899A6] mb-2">Tipo de Avaliação</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {tiposAvaliacao.map((tipo) => (
+                    <button
+                      key={tipo.valor}
+                      type="button"
+                      onClick={() => setNovaAvaliacao(prev => ({ ...prev, tipo: tipo.valor }))}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        novaAvaliacao.tipo === tipo.valor
+                          ? tipo.cor + ' ring-2 ring-offset-2 ring-offset-[#192734] ring-current'
+                          : 'bg-[#253341] text-[#8899A6] hover:bg-[#283340]'
+                      }`}
+                    >
+                      {tipo.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

@@ -22,40 +22,105 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
     tarefasEmAndamento: 0,
     emprestimosAtivos: 0,
     mediaAvaliacoes: 0,
-    totalAvaliacoes: 0
+    totalAvaliacoes: 0,
+    avaliacoes: []
   });
 
   // Carregar empréstimos do funcionário
   useEffect(() => {
     if (!funcionario?.id || !funcionario?.nome) return;
 
-    // Criar queries para diferentes formatos de dados
-    const emprestimosRef = collection(db, 'emprestimos');
-    const queries = [
-      query(emprestimosRef, where('funcionarioId', '==', String(funcionario.id))),
-      query(emprestimosRef, where('funcionarioId', '==', Number(funcionario.id))),
-      query(emprestimosRef, where('funcionario', '==', funcionario.nome)),
-      query(emprestimosRef, where('colaborador', '==', funcionario.nome)),
-      query(emprestimosRef, where('responsavel', '==', funcionario.nome.toLowerCase())), // Adicionado para compatibilidade com dados históricos
-      query(emprestimosRef, where('responsavel', '==', funcionario.nome)) // Caso o nome esteja com a capitalização original
-    ];
-
-    const unsubscribes = queries.map(q => 
+        // Configurar referências das coleções
+        const emprestimosRef = collection(db, 'emprestimos');
+        const avaliacoesRef = collection(db, 'avaliacoes');
+        const avaliacoesDesempenhoRef = collection(db, 'avaliacoesDesempenho');
+        
+        // Configurar queries de empréstimos
+        const emprestimosQueries = [
+          query(emprestimosRef, where('funcionarioId', '==', String(funcionario.id))),
+          query(emprestimosRef, where('funcionarioId', '==', Number(funcionario.id))),
+          query(emprestimosRef, where('funcionario', '==', funcionario.nome)),
+          query(emprestimosRef, where('colaborador', '==', funcionario.nome)),
+          query(emprestimosRef, where('responsavel', '==', funcionario.nome.toLowerCase())),
+          query(emprestimosRef, where('responsavel', '==', funcionario.nome))
+        ];
+        
+        // Configurar queries de avaliações
+        const avaliacoesQueries = [
+          query(avaliacoesRef, where('funcionarioId', '==', funcionario.id))
+        ];
+        
+        // Configurar queries de avaliações de desempenho
+        const avaliacoesDesempenhoQueries = [
+          query(avaliacoesDesempenhoRef, where('funcionarioId', '==', funcionario.id))
+        ];
+        
+        // Combinar todas as queries
+        const queries = [
+          ...emprestimosQueries,
+          ...avaliacoesQueries,
+          ...avaliacoesDesempenhoQueries
+        ];    const unsubscribes = queries.map(q => 
       onSnapshot(q, (snapshot) => {
         const emprestimosData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
         if (emprestimosData.length > 0) {
-          setEmprestimos(prev => {
-            const uniqueEmprestimos = [...prev];
-            emprestimosData.forEach(emp => {
-              if (!uniqueEmprestimos.some(e => e.id === emp.id)) {
-                uniqueEmprestimos.push(emp);
-              }
+          // Verificar o tipo de dados baseado no conteúdo
+          const isEmprestimo = emprestimosData.length > 0 && ('status' in emprestimosData[0] || 'dataEmprestimo' in emprestimosData[0]);
+          const isAvaliacao = emprestimosData.length > 0 && ('nota' in emprestimosData[0] || 'avaliacao' in emprestimosData[0]);
+          
+          if (isEmprestimo) {
+            // Se for um snapshot de empréstimos
+            setEmprestimos(prev => {
+              const uniqueEmprestimos = [...prev];
+              emprestimosData.forEach(emp => {
+                if (!uniqueEmprestimos.some(e => e.id === emp.id)) {
+                  uniqueEmprestimos.push(emp);
+                }
+              });
+              return uniqueEmprestimos;
             });
-            return uniqueEmprestimos;
-          });
+          } else if (isAvaliacao) {
+            // Se for um snapshot de avaliações (regulares ou desempenho)
+            const avaliacoes = emprestimosData.map(av => ({
+              ...av,
+              tipo: av.tipo || ('avaliacaoDesempenho' in av ? 'desempenho' : 'regular'),
+              nota: Number(av.nota || av.avaliacao || 0),
+              data: av.data || new Date().toISOString()
+            }));
+            
+            setStats(prev => {
+              const todasAvaliacoes = [...(prev.avaliacoes || [])];
+              avaliacoes.forEach(av => {
+                if (!todasAvaliacoes.some(a => a.id === av.id)) {
+                  todasAvaliacoes.push(av);
+                }
+              });
+              // Ordenar por data mais recente
+              todasAvaliacoes.sort((a, b) => new Date(b.data) - new Date(a.data));
+              
+              // Calcular médias
+              const avaliacoesDesempenho = todasAvaliacoes.filter(av => av.tipo === 'desempenho');
+              const avaliacoesRegulares = todasAvaliacoes.filter(av => av.tipo === 'regular');
+              
+              const mediaDesempenho = avaliacoesDesempenho.length > 0
+                ? avaliacoesDesempenho.reduce((sum, av) => sum + av.nota, 0) / avaliacoesDesempenho.length
+                : 0;
+              
+              const mediaRegular = avaliacoesRegulares.length > 0
+                ? avaliacoesRegulares.reduce((sum, av) => sum + av.nota, 0) / avaliacoesRegulares.length
+                : 0;
+              
+              return {
+                ...prev,
+                avaliacoes: todasAvaliacoes,
+                mediaAvaliacoes: ((mediaDesempenho + mediaRegular) / 2) || 0,
+                totalAvaliacoes: todasAvaliacoes.length
+              };
+            });
+          }
         }
       })
     );
@@ -71,24 +136,34 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
     const fetchUserStats = async () => {
       try {
         const tarefasRef = collection(db, 'tarefas');
+        const avaliacoesRef = collection(db, 'avaliacoes');
+        
         const [
           funcionariosIdsSnap,
           funcionarioSnap,
           funcionarioLowerSnap,
           responsavelSnap,
-          responsavelLowerSnap
+          responsavelLowerSnap,
+          avaliacoesSnap
         ] = await Promise.all([
           getDocs(query(tarefasRef, where('funcionariosIds', 'array-contains', funcionario.nome))),
           getDocs(query(tarefasRef, where('funcionario', '==', funcionario.nome))),
           getDocs(query(tarefasRef, where('funcionario', '==', funcionario.nome.toLowerCase()))),
           getDocs(query(tarefasRef, where('responsavel', '==', funcionario.nome))),
-          getDocs(query(tarefasRef, where('responsavel', '==', funcionario.nome.toLowerCase())))
+          getDocs(query(tarefasRef, where('responsavel', '==', funcionario.nome.toLowerCase()))),
+          getDocs(query(avaliacoesRef, where('funcionarioId', '==', funcionario.id)))
         ]);
         
         let tarefasConcluidas = 0;
         let tarefasEmAndamento = 0;
         let somaAvaliacoes = 0;
         let totalAvaliacoes = 0;
+        
+        // Carregar avaliações do funcionário
+        const avaliacoes = avaliacoesSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
         
         const processarTarefas = (snapshot) => {
           snapshot.forEach(doc => {
@@ -121,7 +196,8 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
           tarefasEmAndamento,
           emprestimosAtivos,
           mediaAvaliacoes: totalAvaliacoes > 0 ? (somaAvaliacoes / totalAvaliacoes) : 0,
-          totalAvaliacoes
+          totalAvaliacoes,
+          avaliacoes
         });
       } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
@@ -184,12 +260,39 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
           <div className="bg-[#253341] rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                <div>
-                  <span className="text-lg font-bold text-white">
-                    {stats.mediaAvaliacoes.toFixed(1)}
-                  </span>
-                  <p className="text-sm text-[#8899A6]">Média de Avaliações</p>
+                <div className="flex flex-col gap-2">
+                  {/* Avaliações de Desempenho */}
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#1DA1F2]" />
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((estrela) => {
+                        const avaliacoes = stats.avaliacoes || [];
+                        const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
+                        const mediaDesempenho = avaliacoesDesempenho.length > 0
+                          ? avaliacoesDesempenho.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesDesempenho.length
+                          : 0;
+                        
+                        return (
+                          <Star 
+                            key={`desempenho-${estrela}`}
+                            className={`w-3 h-3 ${
+                              estrela <= mediaDesempenho
+                                ? 'text-[#1DA1F2] fill-[#1DA1F2]'
+                                : 'text-[#8899A6]'
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Avaliações Gerais */}
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                    <span className="text-lg font-bold text-white">
+                      {stats.mediaAvaliacoes.toFixed(1)}
+                    </span>
+                  </div>
                 </div>
               </div>
               <span className="text-sm text-[#8899A6]">

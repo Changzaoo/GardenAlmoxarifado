@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Users, Trash2, Plus, Edit, Camera, Star, Wrench, CheckCircle, Clock, Phone, Trophy, ThumbsUp } from 'lucide-react';
+import { Users, Trash2, Plus, Edit, Camera, Star, Wrench, CheckCircle, Clock, Phone, Trophy, ThumbsUp, X } from 'lucide-react';
 import { storage, db } from '../../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '../ToastProvider';
 import FuncionarioProfile from './FuncionarioProfile';
+
+import { getTipoAvaliacaoConfig } from '../../constants/avaliacoes';
 
 // Função para formatar número de telefone
 const formatarTelefone = (telefone) => {
@@ -141,7 +143,35 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
         let tarefasEmAndamento = 0;
         let somaAvaliacoes = 0;
         let totalAvaliacoes = 0;
-        let avaliacoes = [];
+        const avaliacoesArray = [];
+        
+        // Processar avaliações regulares
+        avaliacoesSnap.forEach(doc => {
+          const avaliacao = doc.data();
+          avaliacoesArray.push({ 
+            ...avaliacao, 
+            id: doc.id,
+            tipo: avaliacao.tipo || 'regular',
+            nota: Number(avaliacao.nota || 0),
+            data: avaliacao.data || new Date().toISOString()
+          });
+        });
+        
+        // Processar avaliações de desempenho
+        avaliacoesDesempenhoSnap.forEach(doc => {
+          const avaliacao = doc.data();
+          avaliacoesArray.push({ 
+            ...avaliacao, 
+            id: doc.id,
+            tipo: 'desempenho',
+            nota: Number(avaliacao.nota || 0),
+            comentario: avaliacao.comentario || 'Avaliação de Desempenho',
+            data: avaliacao.data || new Date().toISOString()
+          });
+        });
+        
+        // Ordenar avaliações por data mais recente
+        avaliacoesArray.sort((a, b) => new Date(b.data) - new Date(a.data));
         
         // 2. Processar dados das tarefas
         const processarTarefas = (snapshot) => {
@@ -237,9 +267,6 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           }
         });
 
-        // Ordenar avaliações por data mais recente
-        todasAvaliacoes.sort((a, b) => new Date(b.data) - new Date(a.data));
-
         const statsData = {
           emprestimosAtivos,
           mediaAvaliacao: totalAvaliacoes > 0 ? (somaAvaliacoes / totalAvaliacoes).toFixed(1) : 0,
@@ -247,7 +274,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           tarefasConcluidas,
           tarefasEmAndamento,
           ferramentasDevolvidas,
-          avaliacoes: todasAvaliacoes
+          avaliacoes: avaliacoesArray
         };
 
         stats[func.id] = statsData;
@@ -304,12 +331,13 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 
   const handleEditar = (func) => {
     setEditando(func);
-    setFormEdit({
+    const originalData = {
       nome: func.nome || '',
       cargo: func.cargo || '',
       telefone: func.telefone || '',
-      photoURL: func.photoURL || null // usando null em vez de undefined
-    });
+      photoURL: func.photoURL || null
+    };
+    setFormEdit(originalData);
     setPreview(func.photoURL || null);
   };
 
@@ -318,7 +346,8 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
     setLoading(true);
     await adicionarFuncionario({
       ...novoFuncionario,
-      photoURL: formEdit.photoURL
+      // Garante que photoURL seja uma string vazia se não houver imagem
+      photoURL: formEdit.photoURL || ''
     });
     setNovoFuncionario({ nome: '', cargo: '', telefone: '' });
     setFormEdit(prev => ({ ...prev, photoURL: '' }));
@@ -333,13 +362,10 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
       const dadosAtualizados = {
         nome: formEdit.nome,
         cargo: formEdit.cargo,
-        telefone: formEdit.telefone
+        telefone: formEdit.telefone,
+        // Se não houver URL de imagem, define como uma string vazia para usar a imagem padrão
+        photoURL: formEdit.photoURL || ''
       };
-
-      // Só incluímos a photoURL se ela existir
-      if (formEdit.photoURL || editando.photoURL) {
-        dadosAtualizados.photoURL = formEdit.photoURL || editando.photoURL;
-      }
 
       await atualizarFuncionario(editando.id, dadosAtualizados);
       setEditando(null);
@@ -522,83 +548,57 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 
             {/* Conteúdo */}
             <div className="p-4 space-y-4">
-              {/* Linha 1: Avaliação e Empréstimos */}
+              {/* Linha 1: Avaliações */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-[#253341] rounded-xl p-3">
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-3">
+                    {/* Avaliações de Desempenho */}
                     <div className="flex items-center gap-2">
-                      <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                      <div className="space-y-2 flex-1">
-                        {/* Avaliações de Desempenho */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center text-[#1DA1F2]">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                <circle cx="9" cy="7" r="4" />
-                                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                              </svg>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((estrela) => {
-                              const avaliacoes = funcionariosStats[func.id]?.avaliacoes || [];
-                              const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
-                              console.log(`Funcionário ${func.nome}:`, {
-                                avaliacoesDesempenho,
-                                id: func.id,
-                                todasAvaliacoes: avaliacoes
-                              });
-                              const mediaDesempenho = avaliacoesDesempenho.length > 0
-                                ? avaliacoesDesempenho.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesDesempenho.length
-                                : 0;
-                              
-                              return (
-                                <Star 
-                                  key={`desempenho-${estrela}`}
-                                  className={`w-3 h-3 ${
-                                    estrela <= mediaDesempenho
-                                      ? 'text-[#1DA1F2] fill-[#1DA1F2]'
-                                      : 'text-[#8899A6]'
-                                  }`}
-                                />
-                              );
-                            })}
-                          </div>
-                        </div>
+                      <Users className="w-4 h-4 text-[#1DA1F2]" />
+                      <div className="flex items-center gap-1">
+                        {(() => {
+                          const avaliacoes = funcionariosStats[func.id]?.avaliacoes || [];
+                          const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
+                          const mediaDesempenho = avaliacoesDesempenho.length > 0
+                            ? avaliacoesDesempenho.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesDesempenho.length
+                            : 0;
+                          
+                          return [1, 2, 3, 4, 5].map((estrela) => (
+                            <Star 
+                              key={`desempenho-${estrela}`}
+                              className={`w-3 h-3 ${
+                                estrela <= mediaDesempenho
+                                  ? 'text-[#1DA1F2] fill-[#1DA1F2]'
+                                  : 'text-[#8899A6]'
+                              }`}
+                            />
+                          ));
+                        })()}
+                      </div>
+                    </div>
 
-                        {/* Avaliações de Tarefas */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center text-green-500">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M9 11.5l2 2 4-4" />
-                                <path d="M20 12.5v-.447a2 2 0 0 0-1.105-1.79l-.32-.16a2 2 0 0 1-1.105-1.79v-.46c0-1.033-.768-1.906-1.8-2.023a58.566 58.566 0 0 0-10.88 0c-1.032.117-1.8.99-1.8 2.023v.46a2 2 0 0 1-1.105 1.79l-.32.16a2 2 0 0 0-1.105 1.79v.447c0 1.033.768 1.906 1.8 2.023a58.566 58.566 0 0 0 10.88 0c1.032-.117 1.8-.99 1.8-2.023z" />
-                              </svg>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((estrela) => {
-                              const avaliacoes = funcionariosStats[func.id]?.avaliacoes || [];
-                              const avaliacoesTarefas = avaliacoes.filter(av => av.tipo === 'regular');
-                              const mediaTarefas = avaliacoesTarefas.length > 0
-                                ? avaliacoesTarefas.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesTarefas.length
-                                : 0;
-                              
-                              return (
-                                <Star 
-                                  key={`tarefas-${estrela}`}
-                                  className={`w-3 h-3 ${
-                                    estrela <= mediaTarefas
-                                      ? 'text-green-500 fill-green-500'
-                                      : 'text-[#8899A6]'
-                                  }`}
-                                />
-                              );
-                            })}
-                          </div>
-                        </div>
+                    {/* Avaliações de Tarefas */}
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <div className="flex items-center gap-1">
+                        {(() => {
+                          const avaliacoes = funcionariosStats[func.id]?.avaliacoes || [];
+                          const avaliacoesTarefas = avaliacoes.filter(av => av.tipo === 'regular');
+                          const mediaTarefas = avaliacoesTarefas.length > 0
+                            ? avaliacoesTarefas.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesTarefas.length
+                            : 0;
+                          
+                          return [1, 2, 3, 4, 5].map((estrela) => (
+                            <Star 
+                              key={`tarefas-${estrela}`}
+                              className={`w-3 h-3 ${
+                                estrela <= mediaTarefas
+                                  ? 'text-green-500 fill-green-500'
+                                  : 'text-[#8899A6]'
+                              }`}
+                            />
+                          ));
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -637,7 +637,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                               <Star 
                                 key={estrela} 
                                 className={`w-3 h-3 ${
-                                  estrela <= avaliacao.nota
+                                  estrela <= (avaliacao.nota || avaliacao.estrelas || 0)
                                     ? 'text-yellow-400 fill-yellow-400'
                                     : 'text-[#8899A6]'
                                 }`}
@@ -647,9 +647,9 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             avaliacao.tipo === 'desempenho' 
                               ? 'bg-blue-500/20 text-blue-500'
-                              : 'bg-green-500/20 text-green-500'
+                              : getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).cor
                           }`}>
-                            {avaliacao.tipo === 'desempenho' ? 'Desempenho' : 'Tarefa'}
+                            {avaliacao.tipo === 'desempenho' ? 'Desempenho' : getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).label}
                           </span>
                         </div>
                         <p className="text-[#8899A6] text-xs line-clamp-2 ml-1">{avaliacao.comentario || 'Sem comentário'}</p>
@@ -737,11 +737,36 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
               <div className="flex justify-center mb-6">
                 <div className="relative">
                   {preview ? (
-                    <img 
-                      src={preview} 
-                      alt="Preview" 
-                      className="w-32 h-32 rounded-full object-cover border-4 border-[#38444D]"
-                    />
+                    <div className="relative">
+                      <img 
+                        src={preview} 
+                        alt="Preview" 
+                        className="w-32 h-32 rounded-full object-cover border-4 border-[#38444D]"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          setPreview(null);
+                          setFormEdit(prev => ({ ...prev, photoURL: '' }));
+                        }}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          // Remove a imagem e volta para o ícone padrão
+                          setPreview(null);
+                          setFormEdit(prev => ({
+                            ...prev,
+                            photoURL: '',
+                          }));
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        title="Remover imagem"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   ) : (
                     <div className="w-32 h-32 rounded-full bg-[#253341] flex items-center justify-center border-4 border-[#38444D]">
                       <Users className="w-16 h-16 text-[#8899A6]" />
@@ -763,6 +788,22 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                 </div>
               </div>
               
+              <div className="space-y-2">
+                <p className="text-sm text-[#8899A6]">URL da Imagem</p>
+                <input
+                  type="url"
+                  placeholder="https://exemplo.com/imagem.jpg"
+                  value={formEdit.photoURL || ''}
+                  onChange={e => {
+                    const url = e.target.value.trim();
+                    setFormEdit(prev => ({ ...prev, photoURL: url }));
+                    setPreview(url || null); // Se a URL estiver vazia, mostra o ícone padrão
+                  }}
+                  className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+                />
+                <p className="text-xs text-[#8899A6]">ou</p>
+              </div>
+
               <input
                 type="text"
                 placeholder="Nome"
