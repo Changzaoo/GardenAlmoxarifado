@@ -33,6 +33,8 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   const [funcionariosStats, setFuncionariosStats] = useState({});
   const [funcionariosPontos, setFuncionariosPontos] = useState({});
   const [filtroAtual, setFiltroAtual] = useState('nome');
+  const [avaliacoesExpandidas, setAvaliacoesExpandidas] = useState(null);
+  const [avaliacoesDesempenhoExpandidas, setAvaliacoesDesempenhoExpandidas] = useState(null);
   const fileInputRef = useRef();
 
   const calcularPontuacao = (dados) => {
@@ -87,6 +89,16 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
       default:
         return ordenarPorNome;
     }
+  };
+
+  // Função para calcular a média de avaliações de desempenho
+  const calcularMediaAvaliacoesDesempenho = (avaliacoes) => {
+    if (!avaliacoes || avaliacoes.length === 0) return 0;
+    const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
+    if (avaliacoesDesempenho.length === 0) return 0;
+    
+    const soma = avaliacoesDesempenho.reduce((acc, av) => acc + (av.nota || av.estrelas || 0), 0);
+    return (soma / avaliacoesDesempenho.length).toFixed(1);
   };
 
   // Função para filtrar funcionários
@@ -491,8 +503,11 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
             className="bg-[#192734] rounded-2xl overflow-hidden border border-[#38444D] hover:border-[#1DA1F2] transition-colors cursor-pointer group"
             onClick={() => setFuncionarioSelecionado(func)}
           >
-            {/* Header com foto e ações */}
+            {/* Header com foto, média de desempenho e ações */}
             <div className="relative bg-[#1DA1F2]/10 p-4">
+              {/* Removido daqui e movido para depois do perfil */}
+
+              {/* Ações do header */}
               {!isFuncionario && !readonly && (
                 <div className="absolute top-2 right-2 flex gap-1.5">
                   <button 
@@ -548,6 +563,35 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 
             {/* Conteúdo */}
             <div className="p-4 space-y-4">
+              {/* Média de Avaliação de Desempenho */}
+              {funcionariosStats[func.id]?.avaliacoes?.filter(av => av.tipo === 'desempenho').length > 0 && (
+                <div className="bg-[#253341] rounded-xl p-3 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-blue-500" />
+                      <span className="text-sm font-semibold text-white">Média de Desempenho</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((estrela) => (
+                          <Star 
+                            key={estrela} 
+                            className={`w-4 h-4 ${
+                              estrela <= Number(calcularMediaAvaliacoesDesempenho(funcionariosStats[func.id].avaliacoes))
+                                ? 'text-yellow-400 fill-yellow-400'
+                                : 'text-[#8899A6]'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm font-bold text-blue-500">
+                        {calcularMediaAvaliacoesDesempenho(funcionariosStats[func.id].avaliacoes)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Linha 1: Avaliações */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-[#253341] rounded-xl p-3">
@@ -621,45 +665,207 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                 </div>
               </div>
 
-              {/* Linha de Avaliações Recentes */}
+              {/* Seção de Avaliações */}
               {funcionariosStats[func.id]?.avaliacoes?.length > 0 && (
-                <div className="bg-[#253341] rounded-xl p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <ThumbsUp className="w-5 h-5 text-[#1DA1F2]" />
-                    <span className="text-sm font-bold text-white">Últimas Avaliações</span>
-                  </div>
-                  <div className="space-y-2">
-                    {funcionariosStats[func.id].avaliacoes.slice(0, 3).map((avaliacao, index) => (
-                      <div key={index} className="flex flex-col gap-1">
-                        <div className="flex items-start gap-2 text-sm">
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((estrela) => (
-                              <Star 
-                                key={estrela} 
-                                className={`w-3 h-3 ${
-                                  estrela <= (avaliacao.nota || avaliacao.estrelas || 0)
-                                    ? 'text-yellow-400 fill-yellow-400'
-                                    : 'text-[#8899A6]'
-                                }`}
-                              />
-                            ))}
+                <>
+                  {/* Avaliações Regulares */}
+                  {funcionariosStats[func.id].avaliacoes.filter(av => av.tipo !== 'desempenho').length > 0 && (
+                    <div className="bg-[#253341] rounded-xl p-3 mb-3">
+                      {/* Média de Avaliações de Desempenho */}
+                      {funcionariosStats[func.id].avaliacoes.filter(av => av.tipo === 'desempenho').length > 0 && (
+                        <div className="flex items-center justify-between mb-2 px-2">
+                          <div className="flex items-center gap-2">
+                            <Trophy className="w-4 h-4 text-blue-500" />
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((estrela) => (
+                                  <Star 
+                                    key={estrela} 
+                                    className={`w-3 h-3 ${
+                                      estrela <= Number(calcularMediaAvaliacoesDesempenho(funcionariosStats[func.id].avaliacoes))
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-[#8899A6]'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm font-medium text-blue-500">
+                                {calcularMediaAvaliacoesDesempenho(funcionariosStats[func.id].avaliacoes)}
+                              </span>
+                            </div>
                           </div>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            avaliacao.tipo === 'desempenho' 
-                              ? 'bg-blue-500/20 text-blue-500'
-                              : getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).cor
-                          }`}>
-                            {avaliacao.tipo === 'desempenho' ? 'Desempenho' : getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).label}
-                          </span>
                         </div>
-                        <p className="text-[#8899A6] text-xs line-clamp-2 ml-1">{avaliacao.comentario || 'Sem comentário'}</p>
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAvaliacoesExpandidas(avaliacoesExpandidas === func.id ? null : func.id);
+                        }}
+                        className="w-full hover:bg-[#2C3E50] rounded-lg transition-colors p-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ThumbsUp className="w-5 h-5 text-[#1DA1F2]" />
+                            <span className="text-sm font-bold text-white">Avaliações</span>
+                            <div className="flex items-center">
+                              <span className="text-xs text-[#8899A6]">
+                                ({funcionariosStats[func.id].avaliacoes.filter(av => av.tipo !== 'desempenho').length})
+                              </span>
+                              <span className="text-xs text-[#8899A6] ml-2">
+                                {avaliacoesExpandidas === func.id ? 'Clique para recolher' : 'Clique para ver'}
+                              </span>
+                            </div>
+                          </div>
+                          <svg
+                            className={`w-5 h-5 text-[#8899A6] transform transition-transform duration-200 ${
+                              avaliacoesExpandidas === func.id ? 'rotate-180' : ''
+                            }`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </button>
+                      <div className={`space-y-2 overflow-hidden transition-all duration-200 ${
+                        avaliacoesExpandidas === func.id ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                      }`}>
+                        {funcionariosStats[func.id].avaliacoes
+                          .filter(av => av.tipo !== 'desempenho')
+                          .map((avaliacao, index) => (
+                          <div key={index} className="flex flex-col gap-1 border-b border-[#38444D] last:border-0 pb-2 last:pb-0">
+                            <div className="flex items-start justify-between gap-2 text-sm">
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((estrela) => (
+                                  <Star 
+                                    key={estrela} 
+                                    className={`w-3 h-3 ${
+                                      estrela <= (avaliacao.nota || avaliacao.estrelas || 0)
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-[#8899A6]'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).cor
+                                }`}>
+                                  {getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).label}
+                                </span>
+                                <span className="text-xs text-[#8899A6]">
+                                  {new Date(avaliacao.data).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-[#8899A6] text-xs ml-1">{avaliacao.comentario || 'Sem comentário'}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                      {/* Removido a exibição inicial das avaliações */}
+                    </div>
+                  )}
+
+                  {/* Avaliações de Desempenho */}
+                  {funcionariosStats[func.id].avaliacoes.filter(av => av.tipo === 'desempenho').length > 0 && (
+                    <div className="bg-[#253341] rounded-xl p-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAvaliacoesDesempenhoExpandidas(avaliacoesDesempenhoExpandidas === func.id ? null : func.id);
+                        }}
+                        className="w-full hover:bg-[#2C3E50] rounded-lg transition-colors p-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Trophy className="w-5 h-5 text-blue-500" />
+                            <span className="text-sm font-bold text-white">Avaliações de Desempenho</span>
+                            <div className="flex items-center">
+                              <span className="text-xs text-[#8899A6]">
+                                ({funcionariosStats[func.id].avaliacoes.filter(av => av.tipo === 'desempenho').length})
+                              </span>
+                              <span className="text-xs text-[#8899A6] ml-2">
+                                {avaliacoesDesempenhoExpandidas === func.id ? 'Clique para recolher' : 'Clique para ver'}
+                              </span>
+                            </div>
+                          </div>
+                          <svg
+                            className={`w-5 h-5 text-[#8899A6] transform transition-transform duration-200 ${
+                              avaliacoesDesempenhoExpandidas === func.id ? 'rotate-180' : ''
+                            }`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </button>
+                      <div className={`space-y-2 overflow-hidden transition-all duration-200 ${
+                        avaliacoesDesempenhoExpandidas === func.id ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0'
+                      }`}>
+                        {funcionariosStats[func.id].avaliacoes
+                          .filter(av => av.tipo === 'desempenho')
+                          .map((avaliacao, index) => (
+                          <div key={index} className="flex flex-col gap-1 border-b border-[#38444D] last:border-0 pb-2 last:pb-0">
+                            <div className="flex items-start justify-between gap-2 text-sm">
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((estrela) => (
+                                  <Star 
+                                    key={estrela} 
+                                    className={`w-3 h-3 ${
+                                      estrela <= (avaliacao.nota || avaliacao.estrelas || 0)
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-[#8899A6]'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-xs text-[#8899A6]">
+                                {new Date(avaliacao.data).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="text-[#8899A6] text-xs ml-1">{avaliacao.comentario || 'Sem comentário'}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Seção de Média de Avaliações de Desempenho */}
+              {funcionariosStats[func.id]?.avaliacoes?.filter(av => av.tipo === 'desempenho').length > 0 && (
+                <div className="bg-[#253341] rounded-xl p-3 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-blue-500" />
+                      <div>
+                        <span className="text-lg font-bold text-white">
+                          {calcularMediaAvaliacoesDesempenho(funcionariosStats[func.id].avaliacoes)}
+                        </span>
+                        <p className="text-xs text-[#8899A6]">Média de Desempenho</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((estrela) => (
+                        <Star 
+                          key={estrela} 
+                          className={`w-4 h-4 ${
+                            estrela <= Number(calcularMediaAvaliacoesDesempenho(funcionariosStats[func.id].avaliacoes))
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-[#8899A6]'
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Linha 2: Tarefas */}
+              {/* Linha: Tarefas */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-[#253341] rounded-xl p-3">
                   <div className="flex items-center gap-2">
