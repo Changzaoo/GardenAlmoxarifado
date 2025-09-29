@@ -102,16 +102,16 @@ self.addEventListener('push', function(event) {
     const data = event.data.json();
     
     const options = {
-      body: data.message,
+      body: data.message || data.body,
       icon: '/logo.png',
       badge: '/logo.png',
-      tag: `chat-${data.chatId}`,
+      tag: data.chatId ? `chat-${data.chatId}` : data.tag,
       renotify: true,
       vibrate: [200, 100, 200],
       data: {
         chatId: data.chatId,
         messageId: data.messageId,
-        url: '/'
+        url: data.url || '/'
       },
       actions: [
         {
@@ -125,15 +125,6 @@ self.addEventListener('push', function(event) {
           icon: '/logo.png'
         }
       ]
-    };
-      body: data.body,
-      icon: '/logo192.png',
-      badge: '/logo192.png',
-      vibrate: [200, 100, 200],
-      tag: data.tag,
-      data: {
-        url: data.url
-      }
     };
 
     event.waitUntil(
