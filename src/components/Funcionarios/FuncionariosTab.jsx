@@ -125,10 +125,8 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           funcionarioLowerSnap,
           responsavelSnap,
           responsavelLowerSnap,
-          avaliacoesIdSnap,
-          avaliacoesNomeSnap,
-          avaliacoesDesempenhoIdSnap,
-          avaliacoesDesempenhoNomeSnap
+          avaliacoesSnap,
+          avaliacoesDesempenhoSnap
         ] = await Promise.all([
           getDocs(query(tarefasRef, where('funcionariosIds', 'array-contains', func.nome))),
           getDocs(query(tarefasRef, where('funcionario', '==', func.nome))),
@@ -136,9 +134,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           getDocs(query(tarefasRef, where('responsavel', '==', func.nome))),
           getDocs(query(tarefasRef, where('responsavel', '==', func.nome.toLowerCase()))),
           getDocs(query(avaliacoesRef, where('funcionarioId', '==', func.id))),
-          getDocs(query(avaliacoesRef, where('funcionario', '==', func.nome))),
-          getDocs(query(avaliacoesDesempenhoRef, where('funcionarioId', '==', func.id))),
-          getDocs(query(avaliacoesDesempenhoRef, where('funcionario', '==', func.nome)))
+          getDocs(query(avaliacoesDesempenhoRef, where('funcionarioId', '==', func.id)))
         ]);
         
         let tarefasConcluidas = 0;
@@ -212,48 +208,34 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
         const todasAvaliacoes = [];
 
         // Processar avaliações regulares
-        const processarAvaliacoesRegulares = (snapshot) => {
-          snapshot.forEach(doc => {
-            const avaliacao = doc.data();
-            if (avaliacao.nota) {
-              todasAvaliacoes.push({
-                nota: Number(avaliacao.nota),
-                comentario: avaliacao.comentario || 'Avaliação de Tarefa',
-                data: avaliacao.data || new Date().toISOString(),
-                tipo: 'regular',
-                avaliador: avaliacao.avaliador || 'Sistema'
-              });
-              somaAvaliacoes += Number(avaliacao.nota);
-              totalAvaliacoes++;
-            }
-          });
-        };
-
-        // Processar ambos os snapshots de avaliações regulares
-        processarAvaliacoesRegulares(avaliacoesIdSnap);
-        processarAvaliacoesRegulares(avaliacoesNomeSnap);
+        avaliacoesSnap.forEach(doc => {
+          const avaliacao = doc.data();
+          if (avaliacao.nota) {
+            todasAvaliacoes.push({
+              nota: Number(avaliacao.nota),
+              comentario: avaliacao.comentario,
+              data: avaliacao.data || new Date().toISOString(),
+              tipo: 'regular'
+            });
+            somaAvaliacoes += Number(avaliacao.nota);
+            totalAvaliacoes++;
+          }
+        });
 
         // Processar avaliações de desempenho
-        const processarAvaliacoesDesempenho = (snapshot) => {
-          snapshot.forEach(doc => {
-            const avaliacao = doc.data();
-            if (avaliacao.nota) {
-              todasAvaliacoes.push({
-                nota: Number(avaliacao.nota),
-                comentario: avaliacao.comentario || 'Avaliação de Desempenho',
-                data: avaliacao.data || new Date().toISOString(),
-                tipo: 'desempenho',
-                avaliador: avaliacao.avaliador || 'Supervisor'
-              });
-              somaAvaliacoes += Number(avaliacao.nota);
-              totalAvaliacoes++;
-            }
-          });
-        };
-
-        // Processar ambos os snapshots de avaliações de desempenho
-        processarAvaliacoesDesempenho(avaliacoesDesempenhoIdSnap);
-        processarAvaliacoesDesempenho(avaliacoesDesempenhoNomeSnap);
+        avaliacoesDesempenhoSnap.forEach(doc => {
+          const avaliacao = doc.data();
+          if (avaliacao.nota) {
+            todasAvaliacoes.push({
+              nota: Number(avaliacao.nota),
+              comentario: avaliacao.comentario || 'Avaliação de Desempenho',
+              data: avaliacao.data || new Date().toISOString(),
+              tipo: 'desempenho'
+            });
+            somaAvaliacoes += Number(avaliacao.nota);
+            totalAvaliacoes++;
+          }
+        });
 
         // Ordenar avaliações por data mais recente
         todasAvaliacoes.sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -553,21 +535,24 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                             : "0.0"
                           }
                         </span>
-                        <span className="text-xs text-[#8899A6]">
-                          ({funcionariosStats[func.id]?.avaliacoes?.length || 0} avaliações)
-                        </span>
                       </div>
                       <div className="flex items-center gap-1 mt-1">
-                        {[1, 2, 3, 4, 5].map((estrela) => (
-                          <Star 
-                            key={estrela} 
-                            className={`w-3 h-3 ${
-                              estrela <= (funcionariosStats[func.id]?.mediaAvaliacao || 0)
-                                ? 'text-yellow-400 fill-yellow-400'
-                                : 'text-[#8899A6]'
-                            }`}
-                          />
-                        ))}
+                        {[1, 2, 3, 4, 5].map((estrela) => {
+                          const mediaAvaliacao = funcionariosStats[func.id]?.avaliacoes?.length > 0
+                            ? funcionariosStats[func.id].avaliacoes.reduce((sum, av) => sum + Number(av.nota || 0), 0) / funcionariosStats[func.id].avaliacoes.length
+                            : 0;
+                          
+                          return (
+                            <Star 
+                              key={estrela} 
+                              className={`w-3 h-3 ${
+                                estrela <= mediaAvaliacao
+                                  ? 'text-yellow-400 fill-yellow-400'
+                                  : 'text-[#8899A6]'
+                              }`}
+                            />
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -619,9 +604,6 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                               : 'bg-green-500/20 text-green-500'
                           }`}>
                             {avaliacao.tipo === 'desempenho' ? 'Desempenho' : 'Tarefa'}
-                          </span>
-                          <span className="text-xs text-[#8899A6] ml-2">
-                            {new Date(avaliacao.data).toLocaleDateString()}
                           </span>
                         </div>
                         <p className="text-[#8899A6] text-xs line-clamp-2 ml-1">{avaliacao.comentario || 'Sem comentário'}</p>
