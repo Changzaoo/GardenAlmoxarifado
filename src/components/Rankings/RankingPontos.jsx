@@ -140,24 +140,35 @@ const RankingPontos = () => {
                 
                 return total + (pontosPorFerramenta + pontosBonus) * (emp.ferramentas?.length || 1);
               }, 0),
-            tarefas: funcionario.tarefas
+            tarefas: (funcionario.tarefas || [])
               .filter(tarefa => {
                 const data = new Date(tarefa.dataConclusao);
-                return data >= dataLimiteInicio && data <= dataLimiteFim;
+                return !isNaN(data) && data >= dataLimiteInicio && data <= dataLimiteFim;
               })
               .reduce((total, tarefa) => {
+                if (tarefa.status !== 'concluida') {
+                  return total;
+                }
+                
                 const prioridadePontos = {
-                  'baixa': 20,
-                  'media': 30,
-                  'alta': 50,
-                  'urgente': 70
+                  baixa: 20,
+                  media: 30,
+                  média: 30,
+                  normal: 30,
+                  alta: 50,
+                  urgente: 70
                 };
+                
                 // Pontos base pela prioridade
-                let pontos = prioridadePontos[tarefa.prioridade?.toLowerCase()] || 30;
+                const prioridadeNormalizada = tarefa.prioridade?.toLowerCase()?.trim() || 'normal';
+                let pontos = prioridadePontos[prioridadeNormalizada] || 30;
                 
                 // Adiciona pontos baseado no tempo estimado (em horas)
-                if (tarefa.tempoEstimado) {
-                  pontos += Math.min(Math.floor(tarefa.tempoEstimado) * 5, 50); // 5 pontos por hora, max 50 pontos extras
+                const tempoEstimado = parseFloat(tarefa.tempoEstimado) || 1;
+                if (!isNaN(tempoEstimado) && tempoEstimado > 0) {
+                  // 5 pontos por hora, máximo de 50 pontos extras
+                  const pontosExtra = Math.min(Math.floor(tempoEstimado) * 5, 50);
+                  pontos += pontosExtra;
                 }
                 
                 return total + pontos;
@@ -167,7 +178,16 @@ const RankingPontos = () => {
                 const data = new Date(av.data);
                 return data >= dataLimiteInicio && data <= dataLimiteFim;
               })
-              .reduce((acc, av) => acc + (av.estrelas * 10), 0)
+              .reduce((acc, av) => {
+                const pontosEstrelas = {
+                  5: 50,  // 5 estrelas = 50 pontos
+                  4: 40,  // 4 estrelas = 40 pontos
+                  3: 30,  // 3 estrelas = 30 pontos
+                  2: 20,  // 2 estrelas = 20 pontos
+                  1: 10   // 1 estrela = 10 pontos
+                };
+                return acc + (pontosEstrelas[av.estrelas] || 0);
+              }, 0)
           }
         };
         
@@ -209,8 +229,7 @@ const RankingPontos = () => {
   };
 
   const calcularPontuacao = (dados) => {
-    // Inicializa os detalhes de pontuação
-    return {
+    const pontos = {
       total: 0,
       detalhes: {
         ferramentas: 0,
@@ -218,6 +237,78 @@ const RankingPontos = () => {
         avaliacao: 0
       }
     };
+
+    // Calcular pontos das ferramentas
+    pontos.detalhes.ferramentas = dados.emprestimos?.reduce((total, emp) => {
+      let pontosPorFerramenta = 20;
+      const qtd = emp.ferramentas?.length || 1;
+      
+      // Verificar bônus de horário
+      const dataRetirada = emp.dataRetirada ? new Date(emp.dataRetirada) : null;
+      const dataDevolucao = emp.dataDevolucao ? new Date(emp.dataDevolucao) : null;
+      
+      let pontosBonus = 0;
+      if (dataRetirada) {
+        const bonusRetirada = verificarHorarioBonus(dataRetirada);
+        if (bonusRetirada.bonus) {
+          pontosBonus += pontosPorFerramenta * 0.5; // 50% de bônus
+        }
+      }
+      
+      if (dataDevolucao) {
+        const bonusDevolucao = verificarHorarioBonus(dataDevolucao);
+        if (bonusDevolucao.bonus) {
+          pontosBonus += pontosPorFerramenta * 0.5; // 50% de bônus
+        }
+      }
+      
+      return total + ((pontosPorFerramenta + pontosBonus) * qtd);
+    }, 0) || 0;
+
+    // Calcular pontos das tarefas
+    pontos.detalhes.tarefas = dados.tarefas?.reduce((total, tarefa) => {
+      // Só conta pontos para tarefas concluídas
+      if (tarefa.status !== 'concluida') {
+        return total;
+      }
+
+      const prioridadePontos = {
+        baixa: 20,
+        media: 30,
+        média: 30,
+        normal: 30,
+        alta: 50,
+        urgente: 70
+      };
+      
+      // Pontos base pela prioridade
+      let pontos = prioridadePontos[tarefa.prioridade?.toLowerCase().trim()] || 30;
+      
+      // Pontos extras pelo tempo estimado
+      const tempoEstimado = parseFloat(tarefa.tempoEstimado) || 1;
+      if (!isNaN(tempoEstimado)) {
+        pontos += Math.min(Math.floor(tempoEstimado) * 5, 50); // 5 pontos por hora, máximo de 50 pontos extras
+      }
+      
+      return total + pontos;
+    }, 0) || 0;
+
+    // Calcular pontos das avaliações
+    pontos.detalhes.avaliacao = dados.avaliacoes?.reduce((total, av) => {
+      // Cada estrela vale 10 pontos
+      const pontosPorEstrela = 10;
+      // Garantir que temos um número válido de estrelas
+      const estrelas = Number(av.estrelas) || 0;
+      // Calcular pontos apenas se for um número válido maior que 0
+      const totalPontos = !isNaN(estrelas) && estrelas > 0 ? estrelas * pontosPorEstrela : 0;
+      
+      return total + totalPontos;
+    }, 0) || 0;
+
+    // Calcular total
+    pontos.total = pontos.detalhes.ferramentas + pontos.detalhes.tarefas + pontos.detalhes.avaliacao;
+
+    return pontos;
   };
 
   const carregarDados = async () => {
@@ -239,25 +330,38 @@ const RankingPontos = () => {
       const dadosFuncionarios = {};
       funcionariosSnap.forEach(doc => {
         const funcionario = doc.data();
-        dadosFuncionarios[doc.id] = {
-          id: doc.id,
-          nome: funcionario.nome,
-          photoURL: funcionario.photoURL,
-          ferramentasDevolvidas: 0,
-          tarefasConcluidas: 0,
-          avaliacao: 0,
-          avaliacoes: []
-        };
+        // Verificar todas as possíveis variações de terceirizado no campo
+        const isTerceirizado = 
+          funcionario.terceirizado === true || 
+          funcionario.tercerizado === true || 
+          funcionario.tipo === 'terceirizado' ||
+          funcionario.tipo === 'tercerizado' ||
+          (typeof funcionario.terceirizado === 'string' && funcionario.terceirizado.toLowerCase() === 'sim') ||
+          (typeof funcionario.tercerizado === 'string' && funcionario.tercerizado.toLowerCase() === 'sim');
+
+        // Só incluir se NÃO for terceirizado
+        if (!isTerceirizado) {
+          dadosFuncionarios[doc.id] = {
+            id: doc.id,
+            nome: funcionario.nome,
+            photoURL: funcionario.photoURL,
+            terceirizado: false,
+            tercerizado: false,
+            ferramentasDevolvidas: 0,
+            tarefasConcluidas: 0,
+            avaliacao: 0,
+            avaliacoes: []
+          };
+        }
       });
 
-      // Contar ferramentas devolvidas
+      // Contar ferramentas devolvidas apenas para não terceirizados
       emprestimosSnap.forEach(doc => {
         const emprestimo = doc.data();
-        if (emprestimo.status === 'devolvido' && emprestimo.funcionarioId) {
-          if (dadosFuncionarios[emprestimo.funcionarioId]) {
-            dadosFuncionarios[emprestimo.funcionarioId].ferramentasDevolvidas += 
-              (emprestimo.ferramentas?.length || 0);
-          }
+        if (emprestimo.status === 'devolvido' && emprestimo.funcionarioId && dadosFuncionarios[emprestimo.funcionarioId]) {
+          // Só conta se o funcionário estiver na lista (não terceirizado)
+          dadosFuncionarios[emprestimo.funcionarioId].ferramentasDevolvidas += 
+            (emprestimo.ferramentas?.length || 0);
         }
       });
 
@@ -307,12 +411,23 @@ const RankingPontos = () => {
             }
           });
 
-          // Coletar tarefas com datas
+          // Coletar tarefas com datas apenas para não terceirizados
           tarefasSnap.forEach(doc => {
             const tarefa = doc.data();
-            if (tarefa.status === 'concluida' && tarefa.responsavelId === funcionario.id) {
+            // Verifica se é uma tarefa válida e se o funcionário não é terceirizado
+            if (tarefa.status?.toLowerCase() === 'concluida' && 
+                ((tarefa.responsavelId && dadosFuncionarios[tarefa.responsavelId] === funcionario) || 
+                 (tarefa.funcionarioId && dadosFuncionarios[tarefa.funcionarioId] === funcionario) || 
+                 (tarefa.responsavel === funcionario.nome && !funcionario.terceirizado))) {
+              const dataRef = tarefa.dataConclusao || tarefa.dataAtualizacao || tarefa.dataFinalizacao || doc.updateTime || doc.createTime;
               tarefas.push({
-                dataConclusao: tarefa.dataConclusao || tarefa.dataAtualizacao
+                dataConclusao: typeof dataRef === 'string' ? new Date(dataRef) : dataRef,
+                dataRetirada: typeof dataRef === 'string' ? new Date(dataRef) : dataRef,
+                prioridade: (tarefa.prioridade || 'normal').toLowerCase().trim(),
+                tempoEstimado: parseFloat(tarefa.tempoEstimado) || 1,
+                titulo: tarefa.titulo || 'Sem título',
+                descricao: tarefa.descricao || '',
+                status: (tarefa.status || '').toLowerCase()
               });
             }
           });
@@ -320,10 +435,17 @@ const RankingPontos = () => {
           // Coletar avaliações com datas
           avaliacoesSnap.forEach(doc => {
             const avaliacao = doc.data();
-            if (avaliacao.funcionarioId === funcionario.id) {
+            // Verificar todas as formas possíveis de identificar o funcionário
+            const matchFuncionario = 
+              avaliacao.funcionarioId === funcionario.id || 
+              avaliacao.idFuncionario === funcionario.id ||
+              (avaliacao.funcionario && avaliacao.funcionario.id === funcionario.id) ||
+              (avaliacao.funcionario === funcionario.nome);
+
+            if (matchFuncionario && avaliacao.estrelas) {
               avaliacoes.push({
                 data: avaliacao.data || doc.createTime,
-                estrelas: avaliacao.estrelas
+                estrelas: Number(avaliacao.estrelas) // Garantir que estrelas seja número
               });
             }
           });
@@ -333,7 +455,11 @@ const RankingPontos = () => {
             emprestimos,
             tarefas,
             avaliacoes,
-            pontuacao: calcularPontuacao(funcionario)
+            pontuacao: calcularPontuacao({
+              emprestimos,
+              tarefas,
+              avaliacoes
+            })
           };
         });
 
@@ -577,7 +703,22 @@ const RankingPontos = () => {
                               </li>
                               <li className="flex items-center gap-1">
                                 <Star className="w-3 h-3 text-yellow-400" />
-                                10 pontos por estrela em avaliações
+                                Avaliações por estrelas:
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                • Cada estrela vale 10 pontos
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                • Ex: 5 estrelas = 50 pts
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                • Ex: 3 estrelas = 30 pts
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                • 2 estrelas: 20 pts
+                              </li>
+                              <li className="ml-4 text-xs text-gray-300">
+                                • 1 estrela: 10 pts
                               </li>
                             </ul>
                           </div>
@@ -631,7 +772,19 @@ const RankingPontos = () => {
 
       <div className="space-y-4">
         {filtrarPorPeriodo(rankings)
-          .filter(funcionario => funcionario.pontuacao.total > 0)
+          .filter(funcionario => {
+            // Verificar todas as possíveis variações de terceirizado
+            const isTerceirizado = 
+              funcionario.terceirizado === true || 
+              funcionario.tercerizado === true || 
+              funcionario.tipo === 'terceirizado' ||
+              funcionario.tipo === 'tercerizado' ||
+              (typeof funcionario.terceirizado === 'string' && funcionario.terceirizado.toLowerCase() === 'sim') ||
+              (typeof funcionario.tercerizado === 'string' && funcionario.tercerizado.toLowerCase() === 'sim');
+
+            // Manter apenas funcionários não terceirizados com pontuação
+            return !isTerceirizado && funcionario.pontuacao.total > 0;
+          })
           .sort((a, b) => b.pontuacao.total - a.pontuacao.total)
           .map((funcionario, index) => (
           <div 
@@ -809,7 +962,22 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
                   <ChevronDown className={`w-4 h-4 transform transition-transform ${sectionsOpen.tarefas ? '' : '-rotate-90'}`} />
                 </h4>
                 <span className="text-sm font-medium text-green-500">
-                  {tarefas.length * 50} pontos
+                  {tarefas.reduce((total, tarefa) => {
+                    const prioridadePontos = {
+                      baixa: 20,
+                      media: 30,
+                      média: 30,
+                      normal: 30,
+                      alta: 50,
+                      urgente: 70
+                    };
+                    let pontos = prioridadePontos[tarefa.prioridade?.toLowerCase().trim()] || 30;
+                    const tempoEstimado = parseFloat(tarefa.tempoEstimado) || 1;
+                    if (!isNaN(tempoEstimado)) {
+                      pontos += Math.min(Math.floor(tempoEstimado) * 5, 50);
+                    }
+                    return total + pontos;
+                  }, 0)} pontos
                 </span>
               </div>
               {sectionsOpen.tarefas && (
@@ -817,25 +985,54 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
                 {tarefas.map((tarefa, index) => (
                   <div key={index} className="flex justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-300 flex flex-col">
+                      <div>
                       <span>{getDataFormatada(tarefa.dataConclusao)}</span>
-                      <span className="text-xs text-gray-500">
-                        {tarefa.prioridade || 'Média'} • {tarefa.tempoEstimado || '1'}h est.
+                      <div className="flex flex-col text-xs text-gray-500">
+                        <span>{tarefa.titulo || 'Tarefa'}</span>
+                        <span>
+                          {tarefa.prioridade || 'Média'} • {tarefa.tempoEstimado || '1'}h est.
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="font-medium text-green-500">
+                        {(() => {
+                          const prioridadePontos = {
+                            baixa: 20,
+                            media: 30,
+                            média: 30,
+                            normal: 30,
+                            alta: 50,
+                            urgente: 70
+                          };
+                          
+                          const pontosPrioridade = prioridadePontos[tarefa.prioridade?.toLowerCase().trim()] || 30;
+                          const tempoEstimado = parseFloat(tarefa.tempoEstimado) || 1;
+                          const pontosExtra = !isNaN(tempoEstimado) ? Math.min(Math.floor(tempoEstimado) * 5, 50) : 0;
+                          const totalPontos = pontosPrioridade + pontosExtra;
+                          
+                          return `+${totalPontos} pts`;
+                        })()}
                       </span>
-                    </span>
-                    <span className="font-medium text-green-500">
-                      +{(() => {
-                        const prioridadePontos = {
-                          'baixa': 20,
-                          'media': 30,
-                          'alta': 50,
-                          'urgente': 70
-                        };
-                        let pontos = prioridadePontos[tarefa.prioridade?.toLowerCase()] || 30;
-                        if (tarefa.tempoEstimado) {
-                          pontos += Math.min(Math.floor(tarefa.tempoEstimado) * 5, 50);
-                        }
-                        return pontos;
-                      })()} pts
+                      <span className="text-xs text-gray-500">
+                        ({(() => {
+                          const prioridadePontos = {
+                            baixa: 20,
+                            media: 30,
+                            média: 30,
+                            normal: 30,
+                            alta: 50,
+                            urgente: 70
+                          };
+                          
+                          const pontosPrioridade = prioridadePontos[tarefa.prioridade?.toLowerCase().trim()] || 30;
+                          const tempoEstimado = parseFloat(tarefa.tempoEstimado) || 1;
+                          const pontosExtra = !isNaN(tempoEstimado) ? Math.min(Math.floor(tempoEstimado) * 5, 50) : 0;
+                          
+                          return `${pontosPrioridade} base + ${pontosExtra} tempo`;
+                        })()})
+                      </span>
+                    </div>
                     </span>
                   </div>
                 ))}
@@ -855,20 +1052,29 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
                   <ChevronDown className={`w-4 h-4 transform transition-transform ${sectionsOpen.avaliacoes ? '' : '-rotate-90'}`} />
                 </h4>
                 <span className="text-sm font-medium text-yellow-500">
-                  {avaliacoes.reduce((acc, av) => acc + (av.estrelas * 10), 0)} pontos
+                  {avaliacoes.reduce((acc, av) => {
+                    const pontosEstrelas = {
+                      5: 50,  // 5 estrelas = 50 pontos
+                      4: 40,  // 4 estrelas = 40 pontos
+                      3: 30,  // 3 estrelas = 30 pontos
+                      2: 20,  // 2 estrelas = 20 pontos
+                      1: 10   // 1 estrela = 10 pontos
+                    };
+                    return acc + (pontosEstrelas[av.estrelas] || 0);
+                  }, 0)} pontos
                 </span>
               </div>
               {sectionsOpen.avaliacoes && (
                 <div className="space-y-1">
                   {avaliacoes.map((avaliacao, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">
-                      {getDataFormatada(avaliacao.data)}
-                    </span>
-                    <span className="font-medium text-yellow-500">
-                      {avaliacao.estrelas}★ (+{avaliacao.estrelas * 10} pts)
-                    </span>
-                      </div>
+                    <div key={index} className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-300">
+                        {getDataFormatada(avaliacao.data)}
+                      </span>
+                      <span className="font-medium text-yellow-500">
+                        {avaliacao.estrelas}★ (+{(avaliacao.estrelas || 0) * 10} pts)
+                      </span>
+                    </div>
                   ))}
                 </div>
               )}

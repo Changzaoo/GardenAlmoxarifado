@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { HelpCircle, X } from 'lucide-react';
 
 const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm }) => {
+  const [showHelp, setShowHelp] = useState(false);
   return (
     <div className="flex items-center gap-4 mb-4">
       {/* Dropdown de Filtro */}
@@ -40,6 +42,58 @@ const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm }) 
           />
         </svg>
       </div>
+
+      {/* Ícone de Ajuda */}
+      <button
+        onClick={() => setShowHelp(true)}
+        className="p-2 hover:bg-[#253341] rounded-full transition-colors"
+        title="Ajuda"
+      >
+        <HelpCircle className="w-5 h-5 text-[#1DA1F2]" />
+      </button>
+
+      {/* Modal de Ajuda */}
+      {showHelp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#15202B] rounded-xl p-6 max-w-2xl w-full mx-4 relative border border-[#38444D]">
+            <button
+              onClick={() => setShowHelp(false)}
+              className="absolute top-4 right-4 text-[#8899A6] hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-xl font-bold text-white mb-4">Guia do Cartão de Funcionário</h2>
+            
+            <div className="space-y-4 text-[#8899A6]">
+              <div>
+                <h3 className="text-white font-semibold mb-2">📊 Avaliações</h3>
+                <p>• <span className="text-white">Medidor (Gauge)</span>: Média das avaliações de desempenho do funcionário.</p>
+                <p>• <span className="text-white">Martelo (Hammer)</span>: Média das avaliações de tarefas concluídas.</p>
+                <p className="text-sm mt-1">As cores indicam o desempenho: Dourado (⭐ 4.5+), Verde (🟢 3.5+), Amarelo (🟡 2.5+), Vermelho (🔴 abaixo de 2.5)</p>
+              </div>
+
+              <div>
+                <h3 className="text-white font-semibold mb-2">📈 Estatísticas</h3>
+                <p>• <span className="text-white">Tarefas Concluídas</span>: Número total de tarefas finalizadas.</p>
+                <p>• <span className="text-white">Em Andamento</span>: Tarefas atualmente em execução.</p>
+              </div>
+
+              <div>
+                <h3 className="text-white font-semibold mb-2">🏆 Sistema de Pontos</h3>
+                <p>• <span className="text-white">Ferramentas Devolvidas</span>: 20 pontos por ferramenta</p>
+                <p>• <span className="text-white">Tarefas Concluídas</span>: 50 pontos por tarefa</p>
+                <p>• <span className="text-white">Média de Avaliação</span>: Até 10 pontos baseado na média</p>
+              </div>
+
+              <div>
+                <h3 className="text-white font-semibold mb-2">📱 Contato</h3>
+                <p>Inclui informações como telefone e outros meios de contato disponíveis.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

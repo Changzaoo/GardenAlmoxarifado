@@ -131,94 +131,106 @@ const CardFuncionario = ({
         {/* Linha 1: Avaliações */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-[#253341] rounded-xl p-3">
-            <div className="flex flex-col gap-2">
-              {/* Média de Desempenho */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    const avaliacoesDesempenho = funcionariosStats[func.id]?.avaliacoes?.filter(av => 
-                      av.tipo === 'desempenho' || av.tipo === 'avaliacao_supervisor'
-                    ) || [];
-                    const media = avaliacoesDesempenho.length > 0
-                      ? (avaliacoesDesempenho.reduce((sum, av) => sum + (av.estrelas || av.nota || 0), 0) / avaliacoesDesempenho.length).toFixed(1)
-                      : '0';
-                    
-                    // Definir a cor baseada na média
-                    const mediaNum = parseFloat(media);
-                    let iconColor = '';
-                    if (mediaNum >= 4.5) {
-                      iconColor = 'text-yellow-400'; // Dourado para notas muito altas
-                    } else if (mediaNum >= 3.5) {
-                      iconColor = 'text-green-500'; // Verde para notas boas
-                    } else if (mediaNum >= 2.5) {
-                      iconColor = 'text-yellow-500'; // Amarelo para notas médias
-                    } else if (mediaNum > 0) {
-                      iconColor = 'text-red-500'; // Vermelho para notas baixas
-                    } else {
-                      iconColor = 'text-gray-400'; // Cinza para sem avaliação
-                    }
+            {/* Média de Desempenho */}
+            <div className="flex items-center gap-2">
+              {(() => {
+                const avaliacoesDesempenho = funcionariosStats[func.id]?.avaliacoes?.filter(av => 
+                  av.tipo === 'desempenho' || av.tipo === 'avaliacao_supervisor'
+                ) || [];
+                const media = avaliacoesDesempenho.length > 0
+                  ? (avaliacoesDesempenho.reduce((sum, av) => sum + (av.estrelas || av.nota || 0), 0) / avaliacoesDesempenho.length).toFixed(1)
+                  : '0';
+                
+                // Definir a cor baseada na média
+                const mediaNum = parseFloat(media);
+                let iconColor = '';
+                if (mediaNum >= 4.5) {
+                  iconColor = 'text-yellow-400'; // Dourado para notas muito altas
+                } else if (mediaNum >= 3.5) {
+                  iconColor = 'text-green-500'; // Verde para notas boas
+                } else if (mediaNum >= 2.5) {
+                  iconColor = 'text-yellow-500'; // Amarelo para notas médias
+                } else if (mediaNum > 0) {
+                  iconColor = 'text-red-500'; // Vermelho para notas baixas
+                } else {
+                  iconColor = 'text-gray-400'; // Cinza para sem avaliação
+                }
 
-                    return (
-                      <div className="flex items-center gap-2">
-                        <Gauge className={`w-6 h-6 ${iconColor}`} />
-                        <span className={`text-sm font-medium ${iconColor}`}>{media}</span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-              {/* Média de Tarefas */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    const avaliacoesTarefas = funcionariosStats[func.id]?.avaliacoes?.filter(av => av.tipo === 'regular') || [];
-                    const media = avaliacoesTarefas.length > 0
-                      ? (avaliacoesTarefas.reduce((sum, av) => sum + (av.nota || 0), 0) / avaliacoesTarefas.length).toFixed(1)
-                      : '0';
-                    
-                    // Definir a cor baseada na média
-                    const mediaNum = parseFloat(media);
-                    let iconColor = '';
-                    if (mediaNum >= 4.5) {
-                      iconColor = 'text-yellow-400'; // Dourado para notas muito altas
-                    } else if (mediaNum >= 3.5) {
-                      iconColor = 'text-green-500'; // Verde para notas boas
-                    } else if (mediaNum >= 2.5) {
-                      iconColor = 'text-yellow-500'; // Amarelo para notas médias
-                    } else if (mediaNum > 0) {
-                      iconColor = 'text-red-500'; // Vermelho para notas baixas
-                    } else {
-                      iconColor = 'text-gray-400'; // Cinza para sem avaliação
-                    }
-
-                    return (
-                      <div className="flex items-center gap-2">
-                        <Hammer className={`w-6 h-6 ${iconColor}`} />
-                        <span className={`text-sm font-medium ${iconColor}`}>{media}</span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
+                return (
+                  <div className="flex items-center gap-2">
+                    <Gauge className={`w-6 h-6 ${iconColor}`} />
+                    <div>
+                      <span className={`text-lg font-bold text-white`}>{media}</span>
+                      <p className="text-xs text-[#8899A6]">Desempenho</p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
           <div className="bg-[#253341] rounded-xl p-3">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[#1DA1F2]" />
-              <div>
-                <span className="text-lg font-bold text-white">
-                  {funcionariosStats[func.id]?.tarefasEmAndamento || 0}
-                </span>
-                <p className="text-xs text-[#8899A6]">Em Andamento</p>
-              </div>
-            </div>
+            {(() => {
+              // Avaliações regulares de tarefas
+              const avaliacoesTarefas = funcionariosStats[func.id]?.avaliacoes?.filter(av => av.tipo === 'regular') || [];
+              // Autoavaliações de tarefas
+              const autoavaliacoesTarefas = funcionariosStats[func.id]?.avaliacoes?.filter(av => av.tipoAvaliacao === 'tarefa') || [];
+              
+              const mediaRegular = avaliacoesTarefas.length > 0
+                ? (avaliacoesTarefas.reduce((sum, av) => sum + (av.nota || 0), 0) / avaliacoesTarefas.length)
+                : 0;
+                
+              const mediaAutoavaliacao = autoavaliacoesTarefas.length > 0
+                ? (autoavaliacoesTarefas.reduce((sum, av) => sum + (av.nota || 0), 0) / autoavaliacoesTarefas.length)
+                : 0;
+              
+              // Calculando a média geral (regular + autoavaliação)
+              const totalAvaliacoes = avaliacoesTarefas.length + autoavaliacoesTarefas.length;
+              const media = totalAvaliacoes > 0
+                ? ((mediaRegular * avaliacoesTarefas.length + mediaAutoavaliacao * autoavaliacoesTarefas.length) / totalAvaliacoes).toFixed(1)
+                : '0';
+              
+              // Definir a cor baseada na média
+              const mediaNum = parseFloat(media);
+              let iconColor = '';
+              if (mediaNum >= 4.5) {
+                iconColor = 'text-yellow-400'; // Dourado para notas muito altas
+              } else if (mediaNum >= 3.5) {
+                iconColor = 'text-green-500'; // Verde para notas boas
+              } else if (mediaNum >= 2.5) {
+                iconColor = 'text-yellow-500'; // Amarelo para notas médias
+              } else if (mediaNum > 0) {
+                iconColor = 'text-red-500'; // Vermelho para notas baixas
+              } else {
+                iconColor = 'text-gray-400'; // Cinza para sem avaliação
+              }
+
+              return (
+                <div className="flex items-center gap-2">
+                  <Hammer className={`w-6 h-6 ${iconColor}`} />
+                  <div>
+                    <span className={`text-lg font-bold text-white`}>{media}</span>
+                    <p className="text-xs text-[#8899A6]">Tarefas</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
         {/* Avaliações */}
         {funcionariosStats[func.id]?.avaliacoes?.length > 0 && (
           <>
+            {/* Autoavaliações */}
+            <AvaliacoesCard 
+              avaliacoes={funcionariosStats[func.id].avaliacoes}
+              tipo="autoavaliacao"
+              avaliacoesExpandidas={avaliacoesExpandidas}
+              setAvaliacoesExpandidas={setAvaliacoesExpandidas}
+              funcionarioId={`${func.id}-auto`}
+              calcularMediaAvaliacoesDesempenho={calcularMediaAvaliacoesDesempenho}
+            />
+
             {/* Avaliações Regulares */}
             <AvaliacoesCard 
               avaliacoes={funcionariosStats[func.id].avaliacoes}
@@ -255,17 +267,22 @@ const CardFuncionario = ({
             </div>
           </div>
 
-          <div className="bg-[#253341] rounded-xl p-3">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[#1DA1F2]" />
-              <div>
-                <span className="text-lg font-bold text-white">
-                  {funcionariosStats[func.id]?.tarefasEmAndamento || 0}
-                </span>
-                <p className="text-xs text-[#8899A6]">Em Andamento</p>
+          {(() => {
+            const emAndamento = funcionariosStats[func.id]?.tarefasEmAndamento || 0;
+            return emAndamento > 0 ? (
+              <div className="bg-[#253341] rounded-xl p-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-[#1DA1F2]" />
+                  <div>
+                    <span className="text-lg font-bold text-white">
+                      {emAndamento}
+                    </span>
+                    <p className="text-xs text-[#8899A6]">Em Andamento</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            ) : null;
+          })()}
         </div>
 
         {/* Informações de Contato */}

@@ -17,6 +17,11 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
   const [filtroEmprestimos, setFiltroEmprestimos] = useState('');
   const [filtroPeriodo, setFiltroPeriodo] = useState('todos'); // 'todos', 'hoje', 'semana', 'mes'
   const [filtroStatus, setFiltroStatus] = useState('todos'); // 'todos', 'emprestado', 'devolvido'
+  const [avaliacoesExpandidas, setAvaliacoesExpandidas] = useState({
+    desempenho: false,
+    tarefas: false,
+    autoavaliacoes: false
+  });
   const [stats, setStats] = useState({
     tarefasConcluidas: 0,
     tarefasEmAndamento: 0,
@@ -269,25 +274,185 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
                   {/* Avaliações de Desempenho */}
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-[#1DA1F2]" />
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((estrela) => {
-                        const avaliacoes = stats.avaliacoes || [];
-                        const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
-                        const mediaDesempenho = avaliacoesDesempenho.length > 0
-                          ? avaliacoesDesempenho.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesDesempenho.length
-                          : 0;
-                        
-                        return (
-                          <Star 
-                            key={`desempenho-${estrela}`}
-                            className={`w-3 h-3 ${
-                              estrela <= mediaDesempenho
-                                ? 'text-[#1DA1F2] fill-[#1DA1F2]'
-                                : 'text-[#8899A6]'
-                            }`}
-                          />
-                        );
-                      })}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1">
+                        {(() => {
+                          const avaliacoes = stats.avaliacoes || [];
+                          const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
+                          const mediaDesempenho = avaliacoesDesempenho.length > 0
+                            ? avaliacoesDesempenho.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesDesempenho.length
+                            : 0;
+
+                          return [1, 2, 3, 4, 5].map((estrela) => (
+                            <Star 
+                              key={`desempenho-${estrela}`}
+                              className={`w-3 h-3 ${
+                                estrela <= mediaDesempenho
+                                  ? 'text-[#1DA1F2] fill-[#1DA1F2]'
+                                  : 'text-[#8899A6]'
+                              }`}
+                            />
+                          ));
+                        })()}
+                      </div>
+                      <span 
+                        className="text-xs text-[#8899A6] hover:text-white transition-colors cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAvaliacoesExpandidas(prev => ({
+                            ...prev,
+                            desempenho: !prev.desempenho
+                          }));
+                        }}
+                      >
+                        {avaliacoesExpandidas.desempenho ? 'Clique para recolher' : `Clique para ver (${
+                          (stats.avaliacoes || []).filter(av => av.tipo === 'desempenho').length
+                        })`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Avaliações de Tarefas */}
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-[#1DA1F2]" />
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1">
+                        {(() => {
+                          const avaliacoes = stats.avaliacoes || [];
+                          const avaliacoesTarefas = avaliacoes.filter(av => av.tipo === 'regular');
+                          const mediaTarefas = avaliacoesTarefas.length > 0
+                            ? avaliacoesTarefas.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesTarefas.length
+                            : 0;
+
+                          return [1, 2, 3, 4, 5].map((estrela) => (
+                            <Star 
+                              key={`tarefas-${estrela}`}
+                              className={`w-3 h-3 ${
+                                estrela <= mediaTarefas
+                                  ? 'text-[#1DA1F2] fill-[#1DA1F2]'
+                                  : 'text-[#8899A6]'
+                              }`}
+                            />
+                          ));
+                        })()}
+                      </div>
+                      <span 
+                        className="text-xs text-[#8899A6] hover:text-white transition-colors cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAvaliacoesExpandidas(prev => ({
+                            ...prev,
+                            tarefas: !prev.tarefas
+                          }));
+                        }}
+                      >
+                        {avaliacoesExpandidas.tarefas ? 'Clique para recolher' : `Clique para ver (${
+                          (stats.avaliacoes || []).filter(av => av.tipo === 'regular').length
+                        })`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Autoavaliações */}
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-[#1DA1F2]" />
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1">
+                        {(() => {
+                          const avaliacoes = stats.avaliacoes || [];
+                          const autoAvaliacoes = avaliacoes.filter(av => av.tipoAvaliacao === 'autoavaliacao');
+                          const mediaAutoAvaliacoes = autoAvaliacoes.length > 0
+                            ? autoAvaliacoes.reduce((sum, av) => sum + Number(av.nota || 0), 0) / autoAvaliacoes.length
+                            : 0;
+
+                          return [1, 2, 3, 4, 5].map((estrela) => (
+                            <Star 
+                              key={`autoavaliacao-${estrela}`}
+                              className={`w-3 h-3 ${
+                                estrela <= mediaAutoAvaliacoes
+                                  ? 'text-[#1DA1F2] fill-[#1DA1F2]'
+                                  : 'text-[#8899A6]'
+                              }`}
+                            />
+                          ));
+                        })()}
+                      </div>
+                      <span 
+                        className="text-xs text-[#8899A6] hover:text-white transition-colors cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAvaliacoesExpandidas(prev => ({
+                            ...prev,
+                            autoavaliacoes: !prev.autoavaliacoes
+                          }));
+                        }}
+                      >
+                        {avaliacoesExpandidas.autoavaliacoes ? 'Clique para recolher' : `Clique para ver (${
+                          (stats.avaliacoes || []).filter(av => av.tipoAvaliacao === 'autoavaliacao').length
+                        })`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {avaliacoesExpandidas.autoavaliacoes && (
+                    <div className="pl-6 space-y-4">
+                      {stats.avaliacoes
+                        .filter(av => av.tipoAvaliacao === 'autoavaliacao')
+                        .map((av, index) => (
+                          <div key={av.id} className="space-y-1">
+                            <div className="text-sm text-[#8899A6]">Autoavaliação</div>
+                            <div className="text-sm text-white font-medium">- {av.titulo || 'Sem título'}</div>
+                            {av.descricao && (
+                              <div className="text-sm text-[#8899A6] leading-relaxed">
+                                {av.descricao}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-white font-medium">{av.nota}</span>
+                              <span className="text-[#8899A6]">
+                                {formatarDataHora(new Date(av.data))}
+                              </span>
+                            </div>
+                            {av.comentario && (
+                              <div className="text-sm text-[#8899A6] mt-1">
+                                {av.comentario}
+                              </div>
+                            )}
+                            {index < stats.avaliacoes.filter(av => av.tipoAvaliacao === 'autoavaliacao').length - 1 && (
+                              <div className="border-b border-[#38444D] my-4"></div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Avaliações de Tarefas */}
+                  <div className="flex items-center gap-2">
+                    <Star className="w-4 h-4 text-[#1DA1F2]" />
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1">
+                        {(() => {
+                          const avaliacoes = stats.avaliacoes || [];
+                          const avaliacoesTarefas = avaliacoes.filter(av => av.tipo === 'regular');
+                          const mediaTarefas = avaliacoesTarefas.length > 0
+                            ? avaliacoesTarefas.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesTarefas.length
+                            : 0;
+
+                          return [1, 2, 3, 4, 5].map((estrela) => (
+                            <Star 
+                              key={`tarefas-${estrela}`}
+                              className={`w-3 h-3 ${
+                                estrela <= mediaTarefas
+                                  ? 'text-[#1DA1F2] fill-[#1DA1F2]'
+                                  : 'text-[#8899A6]'
+                              }`}
+                            />
+                          ));
+                        })()}
+                      </div>
+                      <span className="text-xs text-[#8899A6] hover:text-white transition-colors cursor-pointer">
+                        Clique para ver ({(stats.avaliacoes || []).filter(av => av.tipo === 'regular').length})
+                      </span>
                     </div>
                   </div>
 
@@ -337,41 +502,7 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
             </div>
           </div>
 
-          {/* Autoavaliação de Tarefas */}
-          <div className="bg-[#253341] rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-[#1DA1F2]" />
-                <div>
-                  <div className="flex items-center gap-1">
-                    {(() => {
-                      const avaliacoes = stats.avaliacoes || [];
-                      const avaliacoesTarefas = avaliacoes.filter(av => av.tipoAvaliacao === 'tarefa');
-                      const mediaAutoAvaliacoes = avaliacoesTarefas.length > 0
-                        ? avaliacoesTarefas.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesTarefas.length
-                        : 0;
 
-                      return [1, 2, 3, 4, 5].map((estrela) => (
-                        <Star 
-                          key={`autoavaliacao-${estrela}`}
-                          className={`w-3 h-3 ${
-                            estrela <= mediaAutoAvaliacoes
-                              ? 'text-[#1DA1F2] fill-[#1DA1F2]'
-                              : 'text-[#8899A6]'
-                          }`}
-                        />
-                      ));
-                    })()}
-                  </div>
-                  <p className="text-sm text-[#8899A6]">
-                    Autoavaliação de Tarefas ({
-                      (stats.avaliacoes || []).filter(av => av.tipoAvaliacao === 'tarefa').length
-                    } avaliações)
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div className="bg-[#253341] rounded-lg p-4">
             <div className="flex items-center justify-between">

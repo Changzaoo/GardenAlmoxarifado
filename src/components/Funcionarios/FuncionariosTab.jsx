@@ -187,7 +187,28 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
             const tarefa = doc.data();
             if (tarefa.status === 'concluida') {
               tarefasConcluidas++;
-              // Adicionar avaliação da tarefa ao array de avaliações
+              
+              // Adicionar autoavaliação do funcionário se existir
+              if (tarefa.avaliacaoFuncionario) {
+                avaliacoesArray.push({
+                  id: `tarefa-${doc.id}-auto`,
+                  tipo: 'regular',
+                  nota: Number(tarefa.avaliacaoFuncionario),
+                  comentario: tarefa.comentarioFuncionario || 'Autoavaliação',
+                  data: tarefa.dataAutoavaliacao || tarefa.dataConclusao || new Date().toISOString(),
+                  hora: new Date(tarefa.dataAutoavaliacao || tarefa.dataConclusao || new Date()).toLocaleTimeString('pt-BR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  }),
+                  avaliador: func.nome,
+                  tipoAvaliacao: 'tarefa',
+                  nomeTarefa: tarefa.nome || tarefa.titulo,
+                  descricaoTarefa: tarefa.descricao,
+                  isAutoAvaliacao: true
+                });
+              }
+
+              // Adicionar avaliação do supervisor se existir
               if (tarefa.avaliacaoSupervisor) {
                 avaliacoesArray.push({
                   id: `tarefa-${doc.id}`,

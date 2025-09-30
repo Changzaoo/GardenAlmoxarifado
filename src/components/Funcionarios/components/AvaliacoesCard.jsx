@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Clock, Users, ThumbsUp } from 'lucide-react';
+import { Star, Clock, Users, ThumbsUp, Gauge } from 'lucide-react';
 import { getTipoAvaliacaoConfig } from '../../../constants/avaliacoes';
 
 const AvaliacoesCard = ({ 
@@ -13,9 +13,11 @@ const AvaliacoesCard = ({
   const avaliacoesFiltradas = avaliacoes.filter(av => {
     if (tipo === 'desempenho') {
       return av.tipo === 'desempenho';
+    } else if (tipo === 'autoavaliacao') {
+      return av.isAutoAvaliacao === true;
     } else {
-      // Para avaliações regulares, incluir tanto as avaliações de tarefa quanto as regulares
-      return av.tipo === 'regular' || av.tipoAvaliacao === 'tarefa';
+      // Para avaliações regulares, excluir autoavaliações
+      return av.tipo === 'regular' && !av.isAutoAvaliacao;
     }
   });
 
@@ -40,9 +42,19 @@ const AvaliacoesCard = ({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ThumbsUp className="w-5 h-5 text-[#1DA1F2]" />
+            {tipo === 'autoavaliacao' ? (
+              <Users className="w-5 h-5 text-[#1DA1F2]" />
+            ) : tipo === 'desempenho' ? (
+              <Gauge className="w-5 h-5 text-[#1DA1F2]" />
+            ) : (
+              <ThumbsUp className="w-5 h-5 text-[#1DA1F2]" />
+            )}
             <span className="text-sm font-bold text-white">
-              {tipo === 'desempenho' ? 'Avaliações de Desempenho' : 'Avaliações de Tarefas'}
+              {tipo === 'desempenho' 
+                ? 'Avaliações de Desempenho' 
+                : tipo === 'autoavaliacao'
+                  ? 'Autoavaliações'
+                  : 'Avaliações de Tarefas'}
             </span>
             <div className="flex items-center">
               <span className="text-xs text-[#8899A6] ml-2">
@@ -78,9 +90,9 @@ const AvaliacoesCard = ({
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-2">
                             <span className={`text-xs px-2 py-1 rounded-md font-medium ${
-                              getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).cor
+                              avaliacao.isAutoAvaliacao ? 'bg-blue-500/20 text-blue-400' : getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).cor
                             }`}>
-                              {getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).label}
+                              {avaliacao.isAutoAvaliacao ? 'Autoavaliação' : getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).label}
                             </span>
                             {avaliacao.tipoAvaliacao === 'tarefa' && avaliacao.nomeTarefa && (
                               <span className="text-xs text-[#8899A6]">
