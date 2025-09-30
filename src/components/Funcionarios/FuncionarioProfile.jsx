@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Phone, Briefcase, Star, CheckCircle, Package, Search, Clock, MessageSquare, Wrench } from 'lucide-react';
+import { X, Users, Phone, Briefcase, CheckCircle, Package, Search, Clock, MessageSquare, ThumbsUp, Gauge, Wrench } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
@@ -28,7 +28,8 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
     emprestimosAtivos: 0,
     mediaAvaliacoes: 0,
     totalAvaliacoes: 0,
-    avaliacoes: []
+    avaliacoes: [],
+    pontosDesempenho: 0
   });
 
   // Carregar empréstimos do funcionário
@@ -106,9 +107,15 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
               // Ordenar por data mais recente
               todasAvaliacoes.sort((a, b) => new Date(b.data) - new Date(a.data));
               
-              // Calcular médias
+              // Calcular médias e pontos
               const avaliacoesDesempenho = todasAvaliacoes.filter(av => av.tipo === 'desempenho');
               const avaliacoesRegulares = todasAvaliacoes.filter(av => av.tipo === 'regular');
+              
+              // Calcular pontos totais (10 pontos por estrela de avaliação de desempenho)
+              const pontosDesempenho = avaliacoesDesempenho.reduce((sum, av) => {
+                const nota = av.estrelas || av.nota || 0;
+                return sum + (nota * 10); // 10 pontos por estrela
+              }, 0);
               
               const mediaDesempenho = avaliacoesDesempenho.length > 0
                 ? avaliacoesDesempenho.reduce((sum, av) => sum + (av.estrelas || av.nota || 0), 0) / avaliacoesDesempenho.length
@@ -122,7 +129,8 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
                 ...prev,
                 avaliacoes: todasAvaliacoes,
                 mediaAvaliacoes: ((mediaDesempenho + mediaRegular) / 2) || 0,
-                totalAvaliacoes: todasAvaliacoes.length
+                totalAvaliacoes: todasAvaliacoes.length,
+                pontosDesempenho: pontosDesempenho
               };
             });
           }
@@ -201,13 +209,21 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
           emp.status === 'ativo' || emp.status === 'emprestado'
         ).length;
 
+        // Calcular pontos das avaliações de desempenho
+        const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
+        const pontosDesempenho = avaliacoesDesempenho.reduce((sum, av) => {
+          const nota = av.estrelas || av.nota || 0;
+          return sum + (nota * 10); // 10 pontos por estrela
+        }, 0);
+
         setStats({
           tarefasConcluidas,
           tarefasEmAndamento,
           emprestimosAtivos,
           mediaAvaliacoes: totalAvaliacoes > 0 ? (somaAvaliacoes / totalAvaliacoes) : 0,
           totalAvaliacoes,
-          avaliacoes
+          avaliacoes,
+          pontosDesempenho
         });
       } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
@@ -265,259 +281,11 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-6 px-6">
-          {/* Linha 1: Avaliação e Empréstimos */}
-          <div className="bg-[#253341] rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex flex-col gap-2">
-                  {/* Avaliações de Desempenho */}
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#1DA1F2]" />
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1">
-                        {(() => {
-                          const avaliacoes = stats.avaliacoes || [];
-                          const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
-                          const mediaDesempenho = avaliacoesDesempenho.length > 0
-                            ? avaliacoesDesempenho.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesDesempenho.length
-                            : 0;
-
-                          return [1, 2, 3, 4, 5].map((estrela) => (
-                            <Star 
-                              key={`desempenho-${estrela}`}
-                              className={`w-3 h-3 ${
-                                estrela <= mediaDesempenho
-                                  ? 'text-[#1DA1F2] fill-[#1DA1F2]'
-                                  : 'text-[#8899A6]'
-                              }`}
-                            />
-                          ));
-                        })()}
-                      </div>
-                      <span 
-                        className="text-xs text-[#8899A6] hover:text-white transition-colors cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAvaliacoesExpandidas(prev => ({
-                            ...prev,
-                            desempenho: !prev.desempenho
-                          }));
-                        }}
-                      >
-                        {avaliacoesExpandidas.desempenho ? 'Clique para recolher' : `Clique para ver (${
-                          (stats.avaliacoes || []).filter(av => av.tipo === 'desempenho').length
-                        })`}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Avaliações de Tarefas */}
-                  <div className="flex items-center gap-2">
-                    <Star className="w-4 h-4 text-[#1DA1F2]" />
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1">
-                        {(() => {
-                          const avaliacoes = stats.avaliacoes || [];
-                          const avaliacoesTarefas = avaliacoes.filter(av => av.tipo === 'regular');
-                          const mediaTarefas = avaliacoesTarefas.length > 0
-                            ? avaliacoesTarefas.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesTarefas.length
-                            : 0;
-
-                          return [1, 2, 3, 4, 5].map((estrela) => (
-                            <Star 
-                              key={`tarefas-${estrela}`}
-                              className={`w-3 h-3 ${
-                                estrela <= mediaTarefas
-                                  ? 'text-[#1DA1F2] fill-[#1DA1F2]'
-                                  : 'text-[#8899A6]'
-                              }`}
-                            />
-                          ));
-                        })()}
-                      </div>
-                      <span 
-                        className="text-xs text-[#8899A6] hover:text-white transition-colors cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAvaliacoesExpandidas(prev => ({
-                            ...prev,
-                            tarefas: !prev.tarefas
-                          }));
-                        }}
-                      >
-                        {avaliacoesExpandidas.tarefas ? 'Clique para recolher' : `Clique para ver (${
-                          (stats.avaliacoes || []).filter(av => av.tipo === 'regular').length
-                        })`}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Autoavaliações */}
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-[#1DA1F2]" />
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1">
-                        {(() => {
-                          const avaliacoes = stats.avaliacoes || [];
-                          const autoAvaliacoes = avaliacoes.filter(av => av.tipoAvaliacao === 'autoavaliacao');
-                          const mediaAutoAvaliacoes = autoAvaliacoes.length > 0
-                            ? autoAvaliacoes.reduce((sum, av) => sum + Number(av.nota || 0), 0) / autoAvaliacoes.length
-                            : 0;
-
-                          return [1, 2, 3, 4, 5].map((estrela) => (
-                            <Star 
-                              key={`autoavaliacao-${estrela}`}
-                              className={`w-3 h-3 ${
-                                estrela <= mediaAutoAvaliacoes
-                                  ? 'text-[#1DA1F2] fill-[#1DA1F2]'
-                                  : 'text-[#8899A6]'
-                              }`}
-                            />
-                          ));
-                        })()}
-                      </div>
-                      <span 
-                        className="text-xs text-[#8899A6] hover:text-white transition-colors cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAvaliacoesExpandidas(prev => ({
-                            ...prev,
-                            autoavaliacoes: !prev.autoavaliacoes
-                          }));
-                        }}
-                      >
-                        {avaliacoesExpandidas.autoavaliacoes ? 'Clique para recolher' : `Clique para ver (${
-                          (stats.avaliacoes || []).filter(av => av.tipoAvaliacao === 'autoavaliacao').length
-                        })`}
-                      </span>
-                    </div>
-                  </div>
-
-                  {avaliacoesExpandidas.autoavaliacoes && (
-                    <div className="pl-6 space-y-4">
-                      {stats.avaliacoes
-                        .filter(av => av.tipoAvaliacao === 'autoavaliacao')
-                        .map((av, index) => (
-                          <div key={av.id} className="space-y-1">
-                            <div className="text-sm text-[#8899A6]">Autoavaliação</div>
-                            <div className="text-sm text-white font-medium">- {av.titulo || 'Sem título'}</div>
-                            {av.descricao && (
-                              <div className="text-sm text-[#8899A6] leading-relaxed">
-                                {av.descricao}
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="text-white font-medium">{av.nota}</span>
-                              <span className="text-[#8899A6]">
-                                {formatarDataHora(new Date(av.data))}
-                              </span>
-                            </div>
-                            {av.comentario && (
-                              <div className="text-sm text-[#8899A6] mt-1">
-                                {av.comentario}
-                              </div>
-                            )}
-                            {index < stats.avaliacoes.filter(av => av.tipoAvaliacao === 'autoavaliacao').length - 1 && (
-                              <div className="border-b border-[#38444D] my-4"></div>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-                  )}
-
-                  {/* Avaliações de Tarefas */}
-                  <div className="flex items-center gap-2">
-                    <Star className="w-4 h-4 text-[#1DA1F2]" />
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1">
-                        {(() => {
-                          const avaliacoes = stats.avaliacoes || [];
-                          const avaliacoesTarefas = avaliacoes.filter(av => av.tipo === 'regular');
-                          const mediaTarefas = avaliacoesTarefas.length > 0
-                            ? avaliacoesTarefas.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesTarefas.length
-                            : 0;
-
-                          return [1, 2, 3, 4, 5].map((estrela) => (
-                            <Star 
-                              key={`tarefas-${estrela}`}
-                              className={`w-3 h-3 ${
-                                estrela <= mediaTarefas
-                                  ? 'text-[#1DA1F2] fill-[#1DA1F2]'
-                                  : 'text-[#8899A6]'
-                              }`}
-                            />
-                          ));
-                        })()}
-                      </div>
-                      <span className="text-xs text-[#8899A6] hover:text-white transition-colors cursor-pointer">
-                        Clique para ver ({(stats.avaliacoes || []).filter(av => av.tipo === 'regular').length})
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Avaliações Gerais */}
-                  <div className="flex items-center gap-2">
-                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                    <span className="text-lg font-bold text-white">
-                      {stats.mediaAvaliacoes.toFixed(1)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <span className="text-sm text-[#8899A6]">
-                ({stats.totalAvaliacoes} avaliações)
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-[#253341] rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wrench className={`w-5 h-5 ${
-                  stats.emprestimosAtivos > 0 ? 'text-[#1DA1F2]' : 'text-[#8899A6]'
-                }`} />
-                <div>
-                  <span className="text-lg font-bold text-white">
-                    {stats.emprestimosAtivos}
-                  </span>
-                  <p className="text-sm text-[#8899A6]">Empréstimos Ativos</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Linha 2: Tarefas */}
-          <div className="bg-[#253341] rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                <div>
-                  <span className="text-lg font-bold text-white">
-                    {stats.tarefasConcluidas}
-                  </span>
-                  <p className="text-sm text-[#8899A6]">Tarefas Concluídas</p>
-                </div>
-              </div>
-            </div>
-          </div>
+        
 
 
 
-          <div className="bg-[#253341] rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-[#1DA1F2]" />
-                <div>
-                  <span className="text-lg font-bold text-white">
-                    {stats.tarefasEmAndamento}
-                  </span>
-                  <p className="text-sm text-[#8899A6]">Em Andamento</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+         
 
         <div className="mt-6 border-b border-[#2F3336]">
           <div className="flex px-6">
@@ -659,7 +427,7 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
             <>
               <div className="text-sm text-[#8899A6] mb-4">
                 {stats.tarefasConcluidas > 0 && (
-                  `${stats.tarefasConcluidas} tarefa${stats.tarefasConcluidas !== 1 ? 's' : ''} concluída${stats.tarefasConcluidas !== 1 ? 's' : ''}`
+                  `${stats.tarefasConcluidas} tarefa${stats.tarefasConcluidas !== 1 ? 's' : ''}`
                 )}
                 {stats.totalAvaliacoes > 0 && (
                   ` • Média de avaliação: ${stats.mediaAvaliacoes.toFixed(1)} `
@@ -681,7 +449,10 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
             </>
           )}
           {activeTab === 'avaliacoes' && (
-            <AvaliacoesTab funcionario={funcionario} />
+            <AvaliacoesTab 
+              funcionario={funcionario} 
+              pontosDesempenho={stats.pontosDesempenho}
+            />
           )}
         </div>
       </div>

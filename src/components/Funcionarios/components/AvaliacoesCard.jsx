@@ -1,6 +1,7 @@
 import React from 'react';
-import { Star, Clock, Users, ThumbsUp, Gauge } from 'lucide-react';
+import { Clock, Users, ThumbsUp, Gauge } from 'lucide-react';
 import { getTipoAvaliacaoConfig } from '../../../constants/avaliacoes';
+import StarRating from './StarRating';
 
 const AvaliacoesCard = ({ 
   avaliacoes,
@@ -109,26 +110,8 @@ const AvaliacoesCard = ({
                       </div>
                     )}
 
-                    {/* Linha com as Estrelas */}
-                    <div className="flex flex-col space-y-2">
-                      {/* Estrelas */}
-                      <div className="flex items-center gap-1 bg-[#253341] px-2 py-1 rounded-md">
-                        {[1, 2, 3, 4, 5].map((estrela) => (
-                          <Star 
-                            key={estrela} 
-                            className={`w-4 h-4 ${
-                              estrela <= (avaliacao.nota || avaliacao.estrelas || 0)
-                                ? 'text-yellow-400 fill-yellow-400'
-                                : 'text-[#8899A6]'
-                            }`}
-                          />
-                        ))}
-                        <span className="text-sm font-medium text-yellow-400 ml-1">
-                          {avaliacao.nota || avaliacao.estrelas || 0}
-                        </span>
-                      </div>
-
-                      {/* Data, hora e avaliador */}
+                      {/* Nota da avaliação */}
+                    <div className="flex flex-col space-y-2">                      {/* Data, hora e avaliador */}
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1 bg-[#253341] px-2 py-1 rounded-md">
                           <Clock className="w-3 h-3 text-[#1DA1F2]" />
@@ -143,11 +126,19 @@ const AvaliacoesCard = ({
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1 bg-[#253341] px-2 py-1 rounded-md">
-                          <Users className="w-3 h-3 text-[#1DA1F2]" />
-                          <span className="text-xs text-white">
-                            {avaliacao.anonimo || avaliacao.anonima ? "Anônimo" : (avaliacao.avaliador || avaliacao.autor || avaliacao.supervisorNome)}
-                          </span>
+                        <div className="flex items-center justify-between flex-1 bg-[#253341] px-2 py-1 rounded-md">
+                          <div className="flex items-center gap-1">
+                            <Users className="w-3 h-3 text-[#1DA1F2]" />
+                            <span className="text-xs text-white">
+                              {avaliacao.anonimo || avaliacao.anonima ? "Anônimo" : (avaliacao.avaliador || avaliacao.autor || avaliacao.supervisorNome)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <StarRating rating={Number(avaliacao.nota || avaliacao.estrelas || 0)} />
+                            <span className="text-xs text-white">
+                              {(avaliacao.nota || avaliacao.estrelas || 0).toFixed(1)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Edit, Trash2, Trophy, Hammer, Gauge, CheckCircle, Clock } from 'lucide-react';
+import { Users, Edit, Trash2, Hammer, Gauge, Clock } from 'lucide-react';
 import AvaliacoesCard from './AvaliacoesCard';
 import InformacoesContato from './InformacoesContato';
 
@@ -111,14 +111,7 @@ const CardFuncionario = ({
               <p className="text-sm text-[#8899A6] mb-1">Mat: {func.matricula}</p>
             )}
             <p className="text-[#1DA1F2] font-medium truncate mb-1">{func.cargo || 'Cargo não definido'}</p>
-            {funcionariosPontos[func.id] && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-500 px-2 py-1 rounded-full">
-                  <Trophy className="w-4 h-4" />
-                  <span className="text-sm font-semibold">{funcionariosPontos[func.id].total} pontos</span>
-                </div>
-              </div>
-            )}
+
 
 
           </div>
@@ -255,17 +248,7 @@ const CardFuncionario = ({
 
         {/* Linha: Tarefas */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-[#253341] rounded-xl p-3">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              <div>
-                <span className="text-lg font-bold text-white">
-                  {funcionariosStats[func.id]?.tarefasConcluidas || 0}
-                </span>
-                <p className="text-xs text-[#8899A6]">Concluídas</p>
-              </div>
-            </div>
-          </div>
+
 
           {(() => {
             const emAndamento = funcionariosStats[func.id]?.tarefasEmAndamento || 0;

@@ -8,7 +8,7 @@ import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import { formatarData, formatarHora } from '../../utils/formatters';
 import { tiposAvaliacao } from '../../constants/avaliacoes';
 
-function AvaliacoesTab({ funcionario }) {
+function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
   const { usuario, loading } = useAuth();
   const { showToast } = useToast();
   const [avaliacaoParaExcluir, setAvaliacaoParaExcluir] = useState(null);
@@ -341,6 +341,9 @@ function AvaliacoesTab({ funcionario }) {
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {estatisticas.totalAvaliacoes} {estatisticas.totalAvaliacoes === 1 ? 'avaliação' : 'avaliações'}
               </div>
+              <div className="text-sm font-medium text-[#1DA1F2]">
+                {pontosDesempenho} pontos
+              </div>
             </div>
           </div>
 
@@ -412,9 +415,14 @@ function AvaliacoesTab({ funcionario }) {
                 />
               ))}
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {avaliacoesPorTipo.desempenho.total} avaliações
-            </span>
+            <div className="flex flex-col">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {avaliacoesPorTipo.desempenho.total} avaliações
+              </span>
+              <span className="text-sm font-medium text-[#1DA1F2]">
+                {pontosDesempenho} pontos
+              </span>
+            </div>
           </div>
         </div>
       </div>
