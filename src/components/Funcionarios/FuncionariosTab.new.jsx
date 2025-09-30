@@ -155,12 +155,11 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
         // Processar avaliações regulares
         avaliacoesSnap.forEach(doc => {
           const avaliacao = doc.data();
-          const isDesempenho = avaliacao.tipo === 'avaliacao_supervisor';
           avaliacoesArray.push({ 
             ...avaliacao, 
             id: doc.id,
-            tipo: isDesempenho ? 'desempenho' : 'regular',
-            nota: Number(avaliacao.estrelas || avaliacao.nota || 0),
+            tipo: avaliacao.tipo || 'regular',
+            nota: Number(avaliacao.nota || 0),
             data: avaliacao.data || new Date().toISOString()
           });
         });
@@ -172,7 +171,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
             ...avaliacao, 
             id: doc.id,
             tipo: 'desempenho',
-            nota: Number(avaliacao.estrelas || avaliacao.nota || 0),
+            nota: Number(avaliacao.nota || 0),
             comentario: avaliacao.comentario || 'Avaliação de Desempenho',
             data: avaliacao.data || new Date().toISOString()
           });
@@ -187,23 +186,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
             const tarefa = doc.data();
             if (tarefa.status === 'concluida') {
               tarefasConcluidas++;
-              // Adicionar avaliação da tarefa ao array de avaliações
               if (tarefa.avaliacaoSupervisor) {
-                avaliacoesArray.push({
-                  id: `tarefa-${doc.id}`,
-                  tipo: 'regular',
-                  nota: Number(tarefa.avaliacaoSupervisor),
-                  comentario: tarefa.comentarioSupervisor || 'Avaliação de Tarefa',
-                  data: tarefa.dataConclusao || new Date().toISOString(),
-                  hora: new Date(tarefa.dataConclusao || new Date()).toLocaleTimeString('pt-BR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  }),
-                  avaliador: tarefa.avaliadorNome || usuario.nome,
-                  tipoAvaliacao: 'tarefa',
-                  nomeTarefa: tarefa.nome || tarefa.titulo,
-                  descricaoTarefa: tarefa.descricao
-                });
                 somaAvaliacoes += Number(tarefa.avaliacaoSupervisor);
                 totalAvaliacoes++;
               }
@@ -215,17 +198,6 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
         
         processarTarefas(funcionariosIdsSnap);
         processarTarefas(funcionarioSnap);
-        
-        // Atualizar os stats do funcionário com as avaliações
-        setFuncionariosStats(prev => ({
-          ...prev,
-          [func.id]: {
-            ...prev[func.id],
-            avaliacoes: avaliacoesArray,
-            tarefasConcluidas,
-            tarefasEmAndamento
-          }
-        }));
         processarTarefas(funcionarioLowerSnap);
         processarTarefas(responsavelSnap);
         processarTarefas(responsavelLowerSnap);
@@ -447,7 +419,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           fileInputRef={fileInputRef}
           handleFileChange={handleFileChange}
           handleSalvarEdicao={handleSalvarEdicao}
-          setEditando={setEditando}
+          onClose={() => setEditando(null)}
           formatarTelefone={formatarTelefone}
         />
       )}

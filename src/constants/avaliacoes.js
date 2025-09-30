@@ -31,7 +31,7 @@ export const tiposAvaliacao = [
 export const getTipoAvaliacaoConfig = (tipo) => {
   return tiposAvaliacao.find(t => t.valor === tipo) || {
     valor: 'outro',
-    label: 'Avaliação',
-    cor: 'text-gray-500 bg-gray-500/20'
+    label: 'Tarefa',
+    cor: 'text-[#1DA1F2] bg-[#1DA1F2]/20'
   };
 };

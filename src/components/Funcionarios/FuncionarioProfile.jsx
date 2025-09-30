@@ -87,7 +87,7 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
             const avaliacoes = emprestimosData.map(av => ({
               ...av,
               tipo: av.tipo || ('avaliacaoDesempenho' in av ? 'desempenho' : 'regular'),
-              nota: Number(av.nota || av.avaliacao || 0),
+              nota: Number(av.nota || av.estrelas || av.avaliacao || 0),
               data: av.data || new Date().toISOString()
             }));
             
@@ -106,11 +106,11 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
               const avaliacoesRegulares = todasAvaliacoes.filter(av => av.tipo === 'regular');
               
               const mediaDesempenho = avaliacoesDesempenho.length > 0
-                ? avaliacoesDesempenho.reduce((sum, av) => sum + av.nota, 0) / avaliacoesDesempenho.length
+                ? avaliacoesDesempenho.reduce((sum, av) => sum + (av.estrelas || av.nota || 0), 0) / avaliacoesDesempenho.length
                 : 0;
               
               const mediaRegular = avaliacoesRegulares.length > 0
-                ? avaliacoesRegulares.reduce((sum, av) => sum + av.nota, 0) / avaliacoesRegulares.length
+                ? avaliacoesRegulares.reduce((sum, av) => sum + (av.estrelas || av.nota || 0), 0) / avaliacoesRegulares.length
                 : 0;
               
               return {
@@ -160,10 +160,15 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
         let totalAvaliacoes = 0;
         
         // Carregar avaliações do funcionário
-        const avaliacoes = avaliacoesSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const avaliacoes = avaliacoesSnap.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            nota: Number(data.estrelas || data.nota || data.avaliacao || 0),
+            tipo: data.tipo || (data.avaliacaoDesempenho ? 'desempenho' : 'regular')
+          };
+        });
         
         const processarTarefas = (snapshot) => {
           snapshot.forEach(doc => {
@@ -327,6 +332,42 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
                     {stats.tarefasConcluidas}
                   </span>
                   <p className="text-sm text-[#8899A6]">Tarefas Concluídas</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Autoavaliação de Tarefas */}
+          <div className="bg-[#253341] rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-[#1DA1F2]" />
+                <div>
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const avaliacoes = stats.avaliacoes || [];
+                      const avaliacoesTarefas = avaliacoes.filter(av => av.tipoAvaliacao === 'tarefa');
+                      const mediaAutoAvaliacoes = avaliacoesTarefas.length > 0
+                        ? avaliacoesTarefas.reduce((sum, av) => sum + Number(av.nota || 0), 0) / avaliacoesTarefas.length
+                        : 0;
+
+                      return [1, 2, 3, 4, 5].map((estrela) => (
+                        <Star 
+                          key={`autoavaliacao-${estrela}`}
+                          className={`w-3 h-3 ${
+                            estrela <= mediaAutoAvaliacoes
+                              ? 'text-[#1DA1F2] fill-[#1DA1F2]'
+                              : 'text-[#8899A6]'
+                          }`}
+                        />
+                      ));
+                    })()}
+                  </div>
+                  <p className="text-sm text-[#8899A6]">
+                    Autoavaliação de Tarefas ({
+                      (stats.avaliacoes || []).filter(av => av.tipoAvaliacao === 'tarefa').length
+                    } avaliações)
+                  </p>
                 </div>
               </div>
             </div>

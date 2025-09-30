@@ -29,12 +29,14 @@ function AvaliacoesTab({ funcionario }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [hoverEstrelas, setHoverEstrelas] = useState(0);
   const dataAtual = new Date();
+  const horaAtual = `${String(dataAtual.getHours()).padStart(2, '0')}:${String(dataAtual.getMinutes()).padStart(2, '0')}`;
   const [novaAvaliacao, setNovaAvaliacao] = useState({
     data: dataAtual.toISOString().split('T')[0],
-    hora: dataAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    hora: horaAtual,
     estrelas: 0,
     comentario: '',
-    tipo: 'positiva'
+    tipo: 'positiva',
+    anonima: false
   });
   
   const temPermissaoDetalhes = !loading && usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
@@ -132,7 +134,7 @@ function AvaliacoesTab({ funcionario }) {
         funcionarioId: String(funcionario.id),
         funcionarioNome: funcionario.nome,
         supervisorId: usuario.id,
-        supervisorNome: usuario.nome,
+        supervisorNome: novaAvaliacao.anonima ? 'Anônimo' : usuario.nome,
         data: novaAvaliacao.data,
         hora: novaAvaliacao.hora,
         estrelas: Number(novaAvaliacao.estrelas),
@@ -140,6 +142,7 @@ function AvaliacoesTab({ funcionario }) {
         status: 'ativa',
         tipo: 'avaliacao_supervisor',
         tipoAvaliacao: novaAvaliacao.tipo,
+        anonima: novaAvaliacao.anonima,
         dataCriacao: serverTimestamp()
       };
 
@@ -164,11 +167,14 @@ function AvaliacoesTab({ funcionario }) {
       showToast('Avaliação salva e pontos atualizados com sucesso!', 'success');
       setShowAddModal(false);
       
+      const agora = new Date();
       setNovaAvaliacao({
-        data: new Date().toISOString().split('T')[0],
-        hora: new Date().toTimeString().slice(0, 5),
+        data: agora.toISOString().split('T')[0],
+        hora: `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`,
         estrelas: 0,
-        comentario: ''
+        comentario: '',
+        tipo: 'positiva',
+        anonima: false
       });
       
       await carregarAvaliacoes();
@@ -192,12 +198,15 @@ function AvaliacoesTab({ funcionario }) {
         );
         
         const snapshot = await getDocs(q);
-        const avaliacoesData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            data: data.data,
-            hora: data.hora,
+        const avaliacoesData = snapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            const dataCompleta = new Date(data.data + 'T' + (data.hora || '00:00'));
+            return {
+              id: doc.id,
+              data: data.data,
+              hora: data.hora,
+              dataCompleta: dataCompleta,
             estrelas: Number(data.estrelas),
             comentario: data.comentario,
             supervisorNome: data.supervisorNome,
@@ -467,8 +476,8 @@ function AvaliacoesTab({ funcionario }) {
                 </div>
                 <div className="flex items-center gap-1">
                   <span>
-                    por {avaliacao.supervisorNome}
-                    {avaliacao.supervisorCargo && ` (${avaliacao.supervisorCargo})`}
+                    por {avaliacao.anonima ? "Anônimo" : avaliacao.supervisorNome}
+                    {!avaliacao.anonima && avaliacao.supervisorCargo && ` (${avaliacao.supervisorCargo})`}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -481,6 +490,19 @@ function AvaliacoesTab({ funcionario }) {
                     {tiposAvaliacao.find(t => t.valor === avaliacao.tipoAvaliacao)?.label || 'Avaliação'}
                   </div>
                 )}
+
+                {/* Data, Hora e Avaliador */}
+                <div className="mt-2 flex items-center justify-between gap-2 text-sm text-[#8899A6] bg-[#192734] rounded-lg p-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>{formatarData(avaliacao.data)}</span>
+                    <Clock className="w-4 h-4 ml-2" />
+                    <span>{avaliacao.hora || '00:00'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span>por {avaliacao.anonima ? "Anônimo" : avaliacao.supervisorNome}</span>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -613,6 +635,23 @@ function AvaliacoesTab({ funcionario }) {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Avaliação Anônima */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="avaliacaoAnonima"
+                  checked={novaAvaliacao.anonima}
+                  onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, anonima: e.target.checked }))}
+                  className="w-4 h-4 text-[#1DA1F2] bg-white dark:bg-[#253341] border border-gray-300 dark:border-[#38444D] rounded focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent"
+                />
+                <label
+                  htmlFor="avaliacaoAnonima"
+                  className="text-sm text-gray-600 dark:text-[#8899A6] cursor-pointer"
+                >
+                  Tornar avaliação anônima
+                </label>
               </div>
 
               {/* Comentário */}
