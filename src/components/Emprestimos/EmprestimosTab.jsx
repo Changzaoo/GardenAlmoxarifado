@@ -1,5 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth';
+﻿import { useAuth } from '../../hooks/useAuth';
 import NovoEmprestimo from './NovoEmprestimo';
 import ListaEmprestimos from './ListaEmprestimos';
 
@@ -9,7 +8,8 @@ const EmprestimosTab = ({
   adicionarEmprestimo,
   devolverFerramentas,
   removerEmprestimo,
-  atualizarDisponibilidade
+  atualizarDisponibilidade,
+  funcionarios
 }) => {
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
@@ -30,6 +30,7 @@ const EmprestimosTab = ({
         removerEmprestimo={removerEmprestimo}
         atualizarDisponibilidade={atualizarDisponibilidade}
         readonly={isFuncionario}
+        funcionarios={funcionarios}
       />
     </div>
   );

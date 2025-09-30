@@ -28,7 +28,9 @@ const ListaEmprestimos = ({
   emprestimos = [], 
   devolverFerramentas = () => {},
   removerEmprestimo = () => {},
-  atualizarDisponibilidade = () => true
+  atualizarDisponibilidade = () => true,
+  funcionarios = [],
+  readonly = false
 }) => {
   const [filtroEmprestimos, setFiltroEmprestimos] = useState('');
   const [filtroPeriodo, setFiltroPeriodo] = useState('hoje');
@@ -68,7 +70,6 @@ const ListaEmprestimos = ({
   const [emprestimoParaTransferencia, setEmprestimoParaTransferencia] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [emprestimoParaEditar, setEmprestimoParaEditar] = useState(null);
-  const [funcionarios, setFuncionarios] = useState([]);
   const { usuario } = useAuth();
   
   const temPermissaoEdicao = usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
@@ -662,10 +663,10 @@ const ListaEmprestimos = ({
                     <img 
                       src={funcionarios.find(f => f.nome === funcionario)?.photoURL} 
                       alt={funcionario} 
-                      className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
                     />
                   ) : (
-                    <CircleUser className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                    <CircleUser className="w-12 h-12 text-gray-400 dark:text-gray-500" />
                   )}
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                     {funcionario}

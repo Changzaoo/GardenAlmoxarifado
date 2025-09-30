@@ -8,8 +8,10 @@ import {
   ArrowLeft,
   Calendar,
   Trophy,
-  MessageSquarePlus
+  MessageSquarePlus,
+  Users
 } from 'lucide-react';
+import { FuncionariosProvider, useFuncionarios } from '../Funcionarios/FuncionariosProvider';
 import MeuInventarioTab from '../Inventario/MeuInventarioTab';
 import TarefasTab from '../Tarefas/TarefasTab';
 import AvaliacaoPerfilModal from './AvaliacaoPerfilModal';
@@ -41,6 +43,8 @@ const calcularPontuacao = (dados) => {
 const ProfileTab = () => {
   const { usuario } = useAuth();
   const isMobile = useIsMobile();
+  const { funcionarios } = useFuncionarios();
+  const funcionarioInfo = funcionarios.find(f => f.id === usuario.id);
   const [activeTab, setActiveTab] = useState('inventario');
   const [emprestimos, setEmprestimos] = useState([]);
   const [cargoFuncionario, setCargoFuncionario] = useState('');
@@ -409,17 +413,36 @@ const ProfileTab = () => {
 
       {/* Profile Info */}
       <div className="mt-16 px-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          {usuario.nome}
-        </h2>
-        <div className="flex items-center gap-2 mt-1 text-gray-500 dark:text-gray-400">
-          <span className="text-sm">{cargoFuncionario || 'Funcionário'}</span>
-        </div>
-        <div className="flex items-center gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
-          <Calendar className="w-4 h-4" />
-          <span>
-            Entrou em {format(new Date(usuario.dataCriacao || Date.now()), 'MMMM yyyy', { locale: ptBR })}
-          </span>
+        <div className="flex items-start gap-6">
+          <div className="flex-shrink-0">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-800">
+              {funcionarioInfo?.photoURL ? (
+                <img 
+                  src={funcionarioInfo.photoURL} 
+                  alt={usuario.nome} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+                  <Users className="w-12 h-12" />
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              {usuario.nome}
+            </h2>
+            <div className="flex items-center gap-2 mt-1 text-gray-500 dark:text-gray-400">
+              <span className="text-sm">{cargoFuncionario || 'Funcionário'}</span>
+            </div>
+            <div className="flex items-center gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <Calendar className="w-4 h-4" />
+              <span>
+                Entrou em {format(new Date(usuario.dataCriacao || Date.now()), 'MMMM yyyy', { locale: ptBR })}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -527,4 +550,12 @@ const ProfileTab = () => {
   );
 };
 
-export default ProfileTab;
+const WrappedProfileTab = () => {
+  return (
+    <FuncionariosProvider>
+      <ProfileTab />
+    </FuncionariosProvider>
+  );
+};
+
+export default WrappedProfileTab;

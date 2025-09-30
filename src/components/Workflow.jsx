@@ -7,7 +7,7 @@ import LegalTab from './Legal/LegalTab';
 import SupportTab from './Support/SupportTab';
 import { Shield } from 'lucide-react';
 import { db } from '../firebaseConfig';
-import { FuncionariosProvider } from './Funcionarios/FuncionariosProvider';
+import { FuncionariosProvider, useFuncionarios } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './ThemeProvider';
 
 import UserProfileModal from './Auth/UserProfileModal';
@@ -932,6 +932,8 @@ const PermissionDenied = ({ message = "Você não tem permissão para realizar e
 const AlmoxarifadoSistema = () => {
   const { usuario, logout, firebaseStatus } = useAuth();
   const isMobile = useIsMobile();
+  const { funcionarios: funcionariosData } = useFuncionarios();
+  const funcionarioInfo = funcionariosData.find(f => f.id === usuario.id);
   
   // Estados locais
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
@@ -1861,8 +1863,9 @@ const AlmoxarifadoSistema = () => {
   const podeEditarLegal = usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header móvel */}
+    <FuncionariosProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Header móvel */}
       {isMobile && (
         <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b dark:border-[#2F3336] shadow-sm">
           <div className="flex items-center justify-between px-4 h-16">
@@ -1950,18 +1953,22 @@ const AlmoxarifadoSistema = () => {
         <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-2 px-4 border-t dark:border-[#2F3336] bg-white dark:bg-black`}>
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
-              {usuario.photoURL ? (
+              {funcionarioInfo?.foto ? (
+                <img src={funcionarioInfo.foto} alt="Profile" className="w-full h-full object-cover" />
+              ) : usuario.photoURL ? (
                 <img src={usuario.photoURL} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-full h-full p-1.5 text-gray-600 dark:text-[#71767B]" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-[#E7E9EA] truncate leading-tight">{usuario.nome}</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-[#E7E9EA] truncate leading-tight">
+                {funcionarioInfo?.nome || usuario.nome}
+              </p>
               <p className="text-xs text-gray-500 dark:text-[#71767B] truncate leading-tight">
                 {usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 
                   NIVEIS_LABELS[usuario.nivel] : 
-                  (usuario.cargo || NIVEIS_LABELS[usuario.nivel])}
+                  (funcionarioInfo?.funcao || usuario.cargo || NIVEIS_LABELS[usuario.nivel])}
               </p>
             </div>
             <div className="flex items-center space-x-1">
@@ -2121,16 +2128,18 @@ const AlmoxarifadoSistema = () => {
             
             {abaAtiva === 'emprestimos' && (
               PermissionChecker.canView(usuario?.nivel) ? (
-                <EmprestimosTab
-                  emprestimos={emprestimos}
-                  inventario={inventario}
-                  funcionarios={funcionarios}
-                  adicionarEmprestimo={adicionarEmprestimo}
-                  removerEmprestimo={removerEmprestimo}
-                  atualizarEmprestimo={atualizarEmprestimo}
-                  devolverFerramentas={devolverFerramentas}
-                  readonly={!PermissionChecker.canManageOperational(usuario?.nivel)}
-                />
+                <FuncionariosProvider>
+                  <EmprestimosTab
+                    emprestimos={emprestimos}
+                    inventario={inventario}
+                    funcionarios={funcionarios}
+                    adicionarEmprestimo={adicionarEmprestimo}
+                    removerEmprestimo={removerEmprestimo}
+                    atualizarEmprestimo={atualizarEmprestimo}
+                    devolverFerramentas={devolverFerramentas}
+                    readonly={!PermissionChecker.canManageOperational(usuario?.nivel)}
+                  />
+                </FuncionariosProvider>
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar os empréstimos." />
               )
@@ -2244,6 +2253,7 @@ const AlmoxarifadoSistema = () => {
       </main>
       <WorkflowChat currentUser={usuario} />
     </div>
+    </FuncionariosProvider>
   );
 };
 
@@ -2270,10 +2280,12 @@ const Seed = () => {
   return (
     <AuthProvider>
       <ToastProvider>
-        <AnalyticsProvider>
-          <App />
-          <PWAUpdateAvailable />
-        </AnalyticsProvider>
+        <FuncionariosProvider>
+          <AnalyticsProvider>
+            <App />
+            <PWAUpdateAvailable />
+          </AnalyticsProvider>
+        </FuncionariosProvider>
       </ToastProvider>
     </AuthProvider>
   );
