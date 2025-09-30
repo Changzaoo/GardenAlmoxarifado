@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { HelpCircle, X } from 'lucide-react';
+import { HelpCircle, X, UsersRound } from 'lucide-react';
 
-const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm }) => {
+const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, onManageGroups, showGroupsButton = true }) => {
   const [showHelp, setShowHelp] = useState(false);
   return (
     <div className="flex items-center gap-4 mb-4">
@@ -42,6 +42,18 @@ const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm }) 
           />
         </svg>
       </div>
+
+      {/* Botão de Grupos */}
+      {showGroupsButton && (
+        <button
+          onClick={onManageGroups}
+          className="bg-[#1DA1F2] text-white px-4 py-2 rounded-lg hover:bg-[#1A91DA] transition-colors flex items-center gap-2"
+          title="Gerenciar grupos de funcionários"
+        >
+          <UsersRound className="w-4 h-4" />
+          <span className="text-sm">Grupos</span>
+        </button>
+      )}
 
       {/* Ícone de Ajuda */}
       <button

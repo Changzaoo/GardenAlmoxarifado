@@ -5,6 +5,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '../ToastProvider';
 import FuncionarioProfile from './FuncionarioProfile';
+import { UsersRound } from 'lucide-react';
+import GruposModal from './components/GruposModal';
 
 // Importando os componentes refatorados
 import FormularioAdicao from './components/FormularioAdicao';
@@ -25,6 +27,7 @@ const formatarTelefone = (telefone) => {
 
 const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
+  const [showGruposModal, setShowGruposModal] = useState(false);
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -423,6 +426,8 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           setFiltroAtual={setFiltroAtual}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          onManageGroups={() => setShowGruposModal(true)}
+          showGroupsButton={!readonly && usuario?.nivel >= 2}
         />
       </div>
 
@@ -455,6 +460,13 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           onClose={() => setFuncionarioSelecionado(null)}
         />
       )}
+
+      {/* Modal de Grupos */}
+      <GruposModal
+        isOpen={showGruposModal}
+        onClose={() => setShowGruposModal(false)}
+        funcionarios={funcionarios}
+      />
 
       {/* Modal de Edição */}
       {!isFuncionario && editando && (

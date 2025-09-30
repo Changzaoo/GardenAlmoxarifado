@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Phone, Briefcase, CheckCircle, Package, Search, Clock, MessageSquare, ThumbsUp, Gauge, Wrench } from 'lucide-react';
+import { X, Users, Phone, Briefcase, CheckCircle, Package, Search, Clock, MessageSquare, ThumbsUp, Gauge, Wrench, Edit2 } from 'lucide-react';
+import CargoSelect from './components/CargoSelect';
 import { useAuth } from '../../hooks/useAuth';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
@@ -12,6 +13,8 @@ import AvaliacoesTab from './AvaliacoesTab';
 const FuncionarioProfile = ({ funcionario, onClose }) => {
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
+  const [editandoCargo, setEditandoCargo] = useState(false);
+  const [cargoTemp, setCargoPerfil] = useState(funcionario.cargo || '');
   const [activeTab, setActiveTab] = useState('inventario');
   const [emprestimos, setEmprestimos] = useState([]);
   const [filtroEmprestimos, setFiltroEmprestimos] = useState('');
@@ -273,8 +276,61 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <Briefcase className="w-4 h-4 text-[#8899A6]" />
-            <span className="text-[#8899A6]">{funcionario.cargo}</span>
+            <div className="flex-1">
+              {editandoCargo ? (
+                <CargoSelect
+                  value={cargoTemp}
+                  onChange={setCargoPerfil}
+                  className="bg-[#253341] text-[#8899A6]"
+                />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-[#8899A6]">{funcionario.cargo || 'Cargo não definido'}</span>
+                  {usuario?.nivel >= 2 && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditandoCargo(true);
+                        setCargoPerfil(funcionario.cargo || '');
+                      }}
+                      className="p-1 hover:bg-[#253341] rounded transition-colors"
+                    >
+                      <Edit2 className="w-3 h-3 text-[#1DA1F2]" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
+          {editandoCargo && (
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    const funcionarioRef = doc(db, 'funcionarios', funcionario.id);
+                    await updateDoc(funcionarioRef, { cargo: cargoTemp });
+                    setEditandoCargo(false);
+                  } catch (error) {
+                    console.error('Erro ao atualizar cargo:', error);
+                  }
+                }}
+                className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
+              >
+                Salvar
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditandoCargo(false);
+                  setCargoPerfil(funcionario.cargo || '');
+                }}
+                className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-2 mt-1">
             <Phone className="w-4 h-4 text-[#8899A6]" />
             <span className="text-[#8899A6]">{funcionario.telefone}</span>
