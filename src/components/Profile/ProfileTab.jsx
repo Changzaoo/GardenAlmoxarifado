@@ -392,7 +392,13 @@ const ProfileTab = () => {
         <div className="h-32 bg-[#1D9BF0]/10"></div>
         <div className="absolute -bottom-12 left-4">
           <div className="w-24 h-24 rounded-full border-4 border-white dark:border-black bg-gray-200 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-            {usuario.photoURL ? (
+            {funcionarioInfo?.photoURL ? (
+              <img 
+                src={funcionarioInfo.photoURL} 
+                alt={usuario.nome} 
+                className="w-full h-full object-cover"
+              />
+            ) : usuario.photoURL ? (
               <img 
                 src={usuario.photoURL} 
                 alt={usuario.nome} 
@@ -413,22 +419,7 @@ const ProfileTab = () => {
 
       {/* Profile Info */}
       <div className="mt-16 px-4">
-        <div className="flex items-start gap-6">
-          <div className="flex-shrink-0">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-gray-800 bg-gray-100 dark:bg-gray-800">
-              {funcionarioInfo?.photoURL ? (
-                <img 
-                  src={funcionarioInfo.photoURL} 
-                  alt={usuario.nome} 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
-                  <Users className="w-12 h-12" />
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="flex items-start">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               {usuario.nome}

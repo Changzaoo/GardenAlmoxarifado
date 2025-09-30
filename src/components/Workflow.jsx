@@ -1953,8 +1953,8 @@ const AlmoxarifadoSistema = () => {
         <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-2 px-4 border-t dark:border-[#2F3336] bg-white dark:bg-black`}>
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
-              {funcionarioInfo?.foto ? (
-                <img src={funcionarioInfo.foto} alt="Profile" className="w-full h-full object-cover" />
+              {funcionarioInfo?.photoURL ? (
+                <img src={funcionarioInfo.photoURL} alt="Profile" className="w-full h-full object-cover" />
               ) : usuario.photoURL ? (
                 <img src={usuario.photoURL} alt="Profile" className="w-full h-full object-cover" />
               ) : (
