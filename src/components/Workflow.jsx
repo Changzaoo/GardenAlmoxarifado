@@ -28,7 +28,7 @@ import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import WorkflowChat from './Chat/WorkflowChat';
 import ChatNotificationBadge from './Chat/ChatNotificationBadge';
 import { MessageNotificationProvider } from './Chat/MessageNotificationContext';
-import { NotificationProvider } from './NotificationProvider';
+import { NotificationProvider, useNotification } from './NotificationProvider';
 import ComprasTab from './Compras/ComprasTab';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
 import TarefasTab from './Tarefas/TarefasTab';
@@ -37,6 +37,8 @@ import AnalyticsTab from './Analytics/AnalyticsTab';
 import AnalyticsProvider from './Analytics/AnalyticsProvider';
 import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
+import NotificationsPage from '../pages/NotificationsPage';
+import { notifyNewLoan } from '../utils/notificationHelpers';
 // Icons
 import { 
   Package,
@@ -68,7 +70,8 @@ import {
   Camera,
   Upload,
   LogOut,
-  MessageCircle
+  MessageCircle,
+  Bell
 } from 'lucide-react';
 
 // Função para bloquear teclas de atalho e menu de contexto
@@ -937,6 +940,7 @@ const AlmoxarifadoSistema = () => {
   const { usuario, logout, firebaseStatus } = useAuth();
   const isMobile = useIsMobile();
   const { funcionarios: funcionariosData } = useFuncionarios();
+  const { unreadCount: notificationUnreadCount } = useNotification();
   const funcionarioInfo = funcionariosData.find(f => f.id === usuario.id);
   
   // Estados locais
@@ -1357,6 +1361,23 @@ const AlmoxarifadoSistema = () => {
 
       // Atualiza a disponibilidade das ferramentas
       await atualizarDisponibilidadeFerramentas(emprestimo.ferramentas, 'emprestar');
+      
+      // Criar notificação para o funcionário
+      try {
+        const funcionario = funcionarios.find(f => f.nome === emprestimo.nomeFuncionario);
+        if (funcionario?.id) {
+          await notifyNewLoan(
+            funcionario.id,
+            emprestimo.ferramentas,
+            usuario?.nome || 'Responsável',
+            { emprestimoId: docRef.id }
+          );
+          console.log('Notificação de empréstimo enviada para:', funcionario.nome);
+        }
+      } catch (notifError) {
+        console.error('Erro ao enviar notificação de empréstimo:', notifError);
+        // Não falhar o empréstimo se a notificação falhar
+      }
       
       return docRef;
     } catch (error) {
@@ -1812,6 +1833,12 @@ const AlmoxarifadoSistema = () => {
       icone: Trophy,
       permissao: () => true // Visível para todos os níveis
     },
+    {
+      id: 'notificacoes',
+      nome: 'Notificações',
+      icone: Bell,
+      permissao: () => true // Visível para todos os níveis
+    },
     { 
       id: 'tarefas', 
       nome: 'Tarefas', 
@@ -1982,13 +2009,20 @@ const AlmoxarifadoSistema = () => {
                         setAbaAtiva(aba.id);
                         setMenuOpen(false);
                       }}
-                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square relative ${
                         abaAtiva === aba.id
                           ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
-                      <Icone className="w-6 h-6 mb-1" />
+                      <div className="relative">
+                        <Icone className="w-6 h-6 mb-1" />
+                        {aba.id === 'notificacoes' && notificationUnreadCount > 0 && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                            {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs font-medium text-center leading-tight">
                         {aba.nome}
                       </span>
@@ -2125,18 +2159,25 @@ const AlmoxarifadoSistema = () => {
                         setMenuOpen(false);
                       }
                     }}
-                    className={`${menuRecolhido ? 'justify-center' : 'justify-start'} w-full flex items-center ${menuRecolhido ? 'px-0' : 'space-x-3 px-4'} ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-[20px] transition-all duration-200 ${
+                    className={`${menuRecolhido ? 'justify-center' : 'justify-start'} w-full flex items-center ${menuRecolhido ? 'px-0' : 'space-x-3 px-4'} ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-[20px] transition-all duration-200 relative ${
                       abaAtiva === aba.id
                         ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
                         : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
                     }`}
                     title={menuRecolhido ? aba.nome : ''}
                   >
-                    <Icone className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
-                      abaAtiva === aba.id 
-                        ? 'text-white' 
-                        : 'text-gray-700 dark:text-[#E7E9EA] group-hover:text-blue-500 dark:group-hover:text-[#1D9BF0]'
-                    }`} />
+                    <div className="relative">
+                      <Icone className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
+                        abaAtiva === aba.id 
+                          ? 'text-white' 
+                          : 'text-gray-700 dark:text-[#E7E9EA] group-hover:text-blue-500 dark:group-hover:text-[#1D9BF0]'
+                      }`} />
+                      {aba.id === 'notificacoes' && notificationUnreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                          {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                        </span>
+                      )}
+                    </div>
                     {!menuRecolhido && <span>{aba.nome}</span>}
                   </button>
                 );
@@ -2505,6 +2546,10 @@ const AlmoxarifadoSistema = () => {
 
             {abaAtiva === 'ranking' && (
               <RankingPontos />
+            )}
+
+            {abaAtiva === 'notificacoes' && (
+              <NotificationsPage />
             )}
 
             {abaAtiva === 'historico-emprestimos' && (

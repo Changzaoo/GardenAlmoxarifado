@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { X, ListChecks } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import SeletorTarefaPredefinida from './SeletorTarefaPredefinida';
+import { notifyNewTask } from '../../utils/notificationHelpers';
 
 const CriarTarefa = ({ onClose }) => {
   const { usuario } = useAuth();
@@ -37,7 +38,7 @@ const CriarTarefa = ({ onClose }) => {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, 'tarefas'), {
+      const tarefaData = {
         titulo: formData.titulo,
         descricao: formData.descricao,
         prioridade: formData.prioridade,
@@ -52,7 +53,25 @@ const CriarTarefa = ({ onClose }) => {
           id: usuario.id,
           nome: usuario.nome
         }
-      });
+      };
+
+      const docRef = await addDoc(collection(db, 'tarefas'), tarefaData);
+      
+      // Criar notificação para cada funcionário atribuído
+      try {
+        for (const funcionarioId of formData.funcionariosIds) {
+          await notifyNewTask(
+            funcionarioId,
+            formData.titulo,
+            formData.prioridade,
+            { id: docRef.id, ...tarefaData }
+          );
+        }
+      } catch (notificationError) {
+        console.error('Erro ao criar notificações da tarefa:', notificationError);
+        // Não bloqueia a criação da tarefa mesmo se a notificação falhar
+      }
+
       showToast('Tarefa criada com sucesso!', 'success');
       onClose();
     } catch (error) {

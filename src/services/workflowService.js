@@ -1,8 +1,10 @@
 import { db } from '../firebaseConfig';
+import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { lgpdService } from '../services/lgpdService';
 import { auditService } from '../services/auditService';
 import { legalDocumentService } from '../services/legalDocumentService';
 import { LGPD_PURPOSES } from '../constants/lgpd';
+import { notifyNewLoan } from '../utils/notificationHelpers';
 
 export const initializeWorkflow = async (usuario) => {
   if (!usuario) return;
@@ -50,6 +52,19 @@ export const createLoanWithAudit = async (emprestimo, usuario) => {
   };
 
   const docRef = await addDoc(collection(db, 'emprestimos'), emprestimoWithTracking);
+
+  // Criar notificação para o responsável pelo empréstimo
+  try {
+    await notifyNewLoan(
+      emprestimo.responsavel,
+      emprestimo.ferramentas.map(f => f.nome),
+      emprestimo.responsavel,
+      { id: docRef.id, ...emprestimoWithTracking }
+    );
+  } catch (notificationError) {
+    console.error('Erro ao criar notificação do empréstimo:', notificationError);
+    // Não bloqueia a criação do empréstimo mesmo se a notificação falhar
+  }
 
   // Log the operation
   await auditService.logOperation({

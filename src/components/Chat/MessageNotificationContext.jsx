@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -21,6 +21,11 @@ export const MessageNotificationProvider = ({ children }) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const audioRef = useRef(null);
   const previousMessagesRef = useRef({});
+
+  // Log para debug
+  useEffect(() => {
+    console.log('MessageNotificationProvider: usuário atual:', usuario);
+  }, [usuario]);
 
   // Inicializar áudio
   useEffect(() => {
@@ -112,55 +117,65 @@ export const MessageNotificationProvider = ({ children }) => {
   }, []);
 
   // Função para marcar mensagens como lidas
-  const markMessagesAsRead = useCallback(async (otherUserId) => {
+  const markMessagesAsRead = useCallback(async (chatIdOrUserId) => {
     if (!usuario?.id) return;
 
     try {
-      // Buscar conversas entre os dois usuários
-      const conversasRef = collection(db, 'conversas');
+      console.log('MessageNotificationContext: Marcando mensagens como lidas para', chatIdOrUserId);
+      
+      // Buscar todos os chats do usuário
+      const chatsRef = collection(db, 'chats');
       const q = query(
-        conversasRef,
-        where('participantes', 'array-contains', usuario.id)
+        chatsRef,
+        where('participants', 'array-contains', usuario.id)
       );
 
-      const unsubscribe = onSnapshot(q, async (snapshot) => {
-        for (const conversaDoc of snapshot.docs) {
-          const conversaData = conversaDoc.data();
-          const participantes = conversaData.participantes || [];
+      const chatsSnapshot = await getDocs(q);
+      
+      for (const chatDoc of chatsSnapshot.docs) {
+        const chatData = chatDoc.data();
+        const participants = chatData.participants || [];
+        
+        // Verificar se é o chat correto (por ID do chat ou por ID do outro usuário)
+        const isCorrectChat = chatDoc.id === chatIdOrUserId || 
+                             (chatData.type !== 'group' && participants.includes(chatIdOrUserId));
+        
+        if (isCorrectChat) {
+          console.log('MessageNotificationContext: Chat encontrado:', chatDoc.id);
           
-          // Verificar se é a conversa correta
-          if (participantes.includes(otherUserId)) {
-            // Atualizar mensagens não lidas
-            const mensagensRef = collection(db, 'conversas', conversaDoc.id, 'mensagens');
-            const mensagensQuery = query(
-              mensagensRef,
-              where('remetenteId', '==', otherUserId),
-              where('lida', '==', false)
-            );
+          // Buscar mensagens não lidas neste chat
+          const messagesRef = collection(db, 'chats', chatDoc.id, 'messages');
+          const messagesQuery = query(
+            messagesRef,
+            where('senderId', '!=', usuario.id),
+            where('read', '==', false)
+          );
 
-            const mensagensSnapshot = await getDocs(mensagensQuery);
-            
-            // Marcar todas como lidas
-            const updatePromises = mensagensSnapshot.docs.map(msgDoc => 
-              updateDoc(doc(db, 'conversas', conversaDoc.id, 'mensagens', msgDoc.id), {
-                lida: true,
-                lidaEm: new Date().toISOString()
-              })
-            );
+          const messagesSnapshot = await getDocs(messagesQuery);
+          
+          console.log('MessageNotificationContext: Marcando', messagesSnapshot.size, 'mensagens como lidas');
+          
+          // Marcar todas como lidas
+          const updatePromises = messagesSnapshot.docs.map(msgDoc => 
+            updateDoc(doc(db, 'chats', chatDoc.id, 'messages', msgDoc.id), {
+              read: true,
+              readAt: serverTimestamp()
+            })
+          );
 
-            await Promise.all(updatePromises);
-            
-            // Atualizar contador local
-            setUnreadCounts(prev => {
-              const newCounts = { ...prev };
-              delete newCounts[otherUserId];
-              return newCounts;
-            });
-          }
+          await Promise.all(updatePromises);
+          
+          // Atualizar contador local
+          const countKey = chatData.type === 'group' ? chatDoc.id : chatIdOrUserId;
+          setUnreadCounts(prev => {
+            const newCounts = { ...prev };
+            delete newCounts[countKey];
+            return newCounts;
+          });
+          
+          break; // Encontrou e atualizou, pode sair do loop
         }
-      });
-
-      return unsubscribe;
+      }
     } catch (error) {
       console.error('Erro ao marcar mensagens como lidas:', error);
     }
@@ -168,13 +183,18 @@ export const MessageNotificationProvider = ({ children }) => {
 
   // Monitorar mensagens não lidas
   useEffect(() => {
-    if (!usuario?.id) return;
+    if (!usuario?.id) {
+      console.log('MessageNotificationContext: usuário não disponível');
+      return;
+    }
+
+    console.log('MessageNotificationContext: iniciando monitor para usuário', usuario.id);
 
     const unsubscribers = [];
 
-    // Buscar todas as conversas do usuário
-    const conversasRef = collection(db, 'conversas');
-    const q = query(conversasRef, where('participantes', 'array-contains', usuario.id));
+    // Buscar todos os chats do usuário
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('participants', 'array-contains', usuario.id));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       // Limpar listeners anteriores de mensagens
@@ -183,74 +203,112 @@ export const MessageNotificationProvider = ({ children }) => {
 
       const counts = {};
 
-      snapshot.docs.forEach(conversaDoc => {
-        const conversaData = conversaDoc.data();
-        const participantes = conversaData.participantes || [];
-        const otherUserId = participantes.find(id => id !== usuario.id);
+      snapshot.docs.forEach(chatDoc => {
+        const chatData = chatDoc.data();
+        const participants = chatData.participants || [];
+        
+        // Para chat individual, encontrar o outro usuário
+        const otherUserId = chatData.type === 'group' 
+          ? null 
+          : participants.find(id => id !== usuario.id);
 
-        if (!otherUserId) return;
+        if (!otherUserId && chatData.type !== 'group') return;
 
-        // Monitorar mensagens não lidas desta conversa
-        const mensagensRef = collection(db, 'conversas', conversaDoc.id, 'mensagens');
-        const mensagensQuery = query(
-          mensagensRef,
-          where('remetenteId', '==', otherUserId),
-          where('lida', '==', false)
+        // Monitorar mensagens não lidas deste chat
+        const messagesRef = collection(db, 'chats', chatDoc.id, 'messages');
+        const messagesQuery = query(
+          messagesRef,
+          where('senderId', '!=', usuario.id),
+          where('read', '==', false)
         );
 
-        const mensagensUnsub = onSnapshot(mensagensQuery, async (mensagensSnapshot) => {
-          const unreadCount = mensagensSnapshot.size;
+        const messagesUnsub = onSnapshot(messagesQuery, async (messagesSnapshot) => {
+          const unreadCount = messagesSnapshot.size;
+          
+          // Usar chatId como chave para grupos, ou otherUserId para chats individuais
+          const countKey = chatData.type === 'group' ? chatDoc.id : otherUserId;
           
           // Atualizar contadores
           setUnreadCounts(prev => {
             const newCounts = { ...prev };
             if (unreadCount > 0) {
-              newCounts[otherUserId] = unreadCount;
+              newCounts[countKey] = unreadCount;
             } else {
-              delete newCounts[otherUserId];
+              delete newCounts[countKey];
             }
             return newCounts;
           });
 
           // Detectar novas mensagens e disparar notificações
-          const previousCount = previousMessagesRef.current[otherUserId] || 0;
+          const previousCount = previousMessagesRef.current[countKey] || 0;
+          
+          console.log('MessageNotificationContext: Verificando novas mensagens', {
+            chatId: chatDoc.id,
+            countKey,
+            unreadCount,
+            previousCount,
+            hasNewMessages: unreadCount > previousCount
+          });
           
           if (unreadCount > previousCount && unreadCount > 0) {
             // Nova mensagem recebida
-            const lastMsg = mensagensSnapshot.docs[mensagensSnapshot.docs.length - 1];
+            console.log('MessageNotificationContext: Nova mensagem detectada!');
+            
+            // Pegar a mensagem mais recente
+            const lastMsg = messagesSnapshot.docs[messagesSnapshot.docs.length - 1];
             if (lastMsg) {
               const msgData = lastMsg.data();
               
+              console.log('MessageNotificationContext: Dados da mensagem:', msgData);
+              
               // Buscar informações do remetente
-              const remetenteDoc = await getDoc(doc(db, 'funcionarios', otherUserId));
-              const remetente = remetenteDoc.exists() ? remetenteDoc.data() : { nome: 'Usuário' };
+              const senderId = msgData.senderId;
+              let senderName = msgData.senderName || 'Usuário';
+              
+              // Se não tiver senderName, buscar do Firestore
+              if (!msgData.senderName && senderId) {
+                try {
+                  const senderDoc = await getDoc(doc(db, 'funcionarios', senderId));
+                  if (senderDoc.exists()) {
+                    senderName = senderDoc.data().nome || 'Usuário';
+                  }
+                } catch (error) {
+                  console.error('Erro ao buscar dados do remetente:', error);
+                }
+              }
+              
+              console.log('MessageNotificationContext: Tocando som e enviando notificação...');
               
               // Tocar som
               playNotificationSound();
               
               // Enviar notificação
-              const notificationTitle = `Nova mensagem de ${remetente.nome}`;
-              const notificationBody = msgData.conteudo?.substring(0, 100) || 'Você recebeu uma nova mensagem';
+              const notificationTitle = chatData.type === 'group' 
+                ? `${senderName} em ${chatData.name}`
+                : `Nova mensagem de ${senderName}`;
+              const notificationBody = msgData.text?.substring(0, 100) || msgData.type === 'audio' ? '🎤 Áudio' : 'Você recebeu uma nova mensagem';
               
               sendPushNotification(notificationTitle, notificationBody);
               
               // Armazenar última mensagem
               setLastMessages(prev => ({
                 ...prev,
-                [otherUserId]: {
-                  conteudo: msgData.conteudo,
-                  remetente: remetente.nome,
+                [countKey]: {
+                  conteudo: msgData.text,
+                  remetente: senderName,
                   timestamp: msgData.timestamp
                 }
               }));
             }
           }
           
-          previousMessagesRef.current[otherUserId] = unreadCount;
+          previousMessagesRef.current[countKey] = unreadCount;
         });
 
-        unsubscribers.push(mensagensUnsub);
+        unsubscribers.push(messagesUnsub);
       });
+    }, (error) => {
+      console.error('MessageNotificationContext: Erro no listener de conversas:', error);
     });
 
     return () => {
@@ -277,6 +335,8 @@ export const MessageNotificationProvider = ({ children }) => {
     toggleSound
   };
 
+  // Se houver erro de inicialização, ainda renderiza os children
+  // para não quebrar a aplicação
   return (
     <MessageNotificationContext.Provider value={value}>
       {children}
