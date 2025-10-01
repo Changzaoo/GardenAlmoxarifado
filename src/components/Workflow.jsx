@@ -1870,17 +1870,6 @@ const AlmoxarifadoSistema = () => {
         <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b dark:border-[#2F3336] shadow-sm">
           <div className="flex items-center justify-between px-4 h-16">
             <div className="flex items-center w-full relative">
-              <button
-                onClick={toggleMenu}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors absolute left-0"
-              >
-                {menuOpen ? (
-                  <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-                ) : (
-                  <MenuIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-                )}
-              </button>
-
               {/* Logo e título no header mobile */}
               <div className="flex items-center justify-center w-full">
                 <div className="flex items-center">
@@ -2542,9 +2531,10 @@ const AlmoxarifadoSistema = () => {
 
       {/* Menu inferior para mobile */}
       {isMobile && !menuOpen && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-gray-200 dark:border-[#38444D] px-2 py-1">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-gray-200 dark:border-[#38444D] px-2 py-0.5">
           <div className="flex justify-around items-center">
-            {abas.filter(aba => aba.permissao()).slice(0, 5).map((aba) => {
+            {/* Primeiros 2 ícones à esquerda (excluindo ranking e meu-perfil) */}
+            {abas.filter(aba => aba.permissao() && aba.id !== 'ranking' && aba.id !== 'emprestimos' && aba.id !== 'meu-perfil').slice(0, 2).map((aba) => {
               const Icone = aba.icone;
               return (
                 <button
@@ -2553,13 +2543,13 @@ const AlmoxarifadoSistema = () => {
                     setAbaAtiva(aba.id);
                     setMenuOpen(false);
                   }}
-                  className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
+                  className={`flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
                     abaAtiva === aba.id
                       ? 'text-[#1D9BF0]'
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
-                  <Icone className={`w-5 h-5 mb-1 ${
+                  <Icone className={`w-4 h-4 mb-0.5 ${
                     abaAtiva === aba.id 
                       ? 'text-[#1D9BF0]' 
                       : 'text-gray-500 dark:text-gray-400'
@@ -2571,18 +2561,66 @@ const AlmoxarifadoSistema = () => {
               );
             })}
             
-            {/* Botão "Mais" para acessar menu lateral */}
+            {/* Ícone especial de empréstimos no centro com fundo azul circular - 20% para cima com animação bounce */}
+            <button
+              onClick={() => {
+                setAbaAtiva('emprestimos');
+                setMenuOpen(false);
+              }}
+              className="flex flex-col items-center justify-center p-1 transition-all duration-200 min-w-0 flex-1 transform -translate-y-[20%]"
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-0.5 transition-all duration-200 animate-bounce ${
+                abaAtiva === 'emprestimos'
+                  ? 'bg-[#1D9BF0] shadow-lg'
+                  : 'bg-[#1D9BF0]'
+              }`}>
+                <ClipboardList className="w-5 h-5 text-white" />
+              </div>
+              <span className={`text-xs font-medium text-center leading-tight ${
+                abaAtiva === 'emprestimos'
+                  ? 'text-[#1D9BF0]'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}>
+                Empréstimos
+              </span>
+            </button>
+
+            {/* Próximos 1 ícone à direita (excluindo ranking e meu-perfil) */}
+            {abas.filter(aba => aba.permissao() && aba.id !== 'ranking' && aba.id !== 'emprestimos' && aba.id !== 'meu-perfil').slice(2, 3).map((aba) => {
+              const Icone = aba.icone;
+              return (
+                <button
+                  key={aba.id}
+                  onClick={() => {
+                    setAbaAtiva(aba.id);
+                    setMenuOpen(false);
+                  }}
+                  className={`flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
+                    abaAtiva === aba.id
+                      ? 'text-[#1D9BF0]'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  <Icone className={`w-4 h-4 mb-0.5 ${
+                    abaAtiva === aba.id 
+                      ? 'text-[#1D9BF0]' 
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`} />
+                  <span className="text-xs font-medium truncate w-full text-center leading-tight">
+                    {aba.nome}
+                  </span>
+                </button>
+              );
+            })}
+
+            {/* Botão de menu (movido do cabeçalho) */}
             <button
               onClick={toggleMenu}
-              className="flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 min-w-0 flex-1 text-gray-500 dark:text-gray-400"
+              className="flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 min-w-0 flex-1 text-gray-500 dark:text-gray-400"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mb-1">
-                <circle cx="12" cy="12" r="1"></circle>
-                <circle cx="12" cy="5" r="1"></circle>
-                <circle cx="12" cy="19" r="1"></circle>
-              </svg>
+              <MenuIcon className="w-4 h-4 mb-0.5" />
               <span className="text-xs font-medium truncate w-full text-center leading-tight">
-                Mais
+                Menu
               </span>
             </button>
           </div>
