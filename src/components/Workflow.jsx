@@ -12,7 +12,6 @@ import { useTheme } from './ThemeProvider';
 
 import UserProfileModal from './Auth/UserProfileModal';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
-import { useNotifications } from '../hooks/useNotifications';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { Menu as MenuIcon, X, Scale, BarChart3 } from 'lucide-react';
 import RankingPontos from './Rankings/RankingPontos';
@@ -1845,13 +1844,13 @@ const AlmoxarifadoSistema = () => {
     
     { 
       id: 'danificadas', 
-      nome: 'Ferramentas Danificadas', 
+      nome: ' Danificadas', 
       icone: AlertTriangle,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
     { 
       id: 'perdidas', 
-      nome: 'Ferramentas Perdidas', 
+      nome: ' Perdidas', 
       icone: AlertCircle,
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
@@ -1896,14 +1895,14 @@ const AlmoxarifadoSistema = () => {
       {/* Menu lateral */}
       <nav className={`${
         isMobile 
-          ? `fixed top-0 bottom-0 left-0 z-40 w-full transform transition-transform duration-300 ease-in-out ${
+          ? `fixed top-0 bottom-0 left-8 z-40 w-full max-w-[280px] transform transition-transform duration-300 ease-in-out ${
               menuOpen ? 'translate-x-0' : '-translate-x-full'
             }`
-          : 'w-72 fixed h-full'
-      } bg-white dark:bg-black border-r dark:border-[#2F3336]`}>
+          : 'w-64 fixed h-full left-8'
+      } bg-white dark:bg-black shadow-lg rounded-lg mt-2`}>
         <div className="flex flex-col h-full">
           {!isMobile && (
-            <div className="p-4 border-b dark:border-[#2F3336]">
+            <div className="p-4">
               <div className="flex items-center">
                 <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-12 mr-3" />
                 <div>
@@ -1931,7 +1930,7 @@ const AlmoxarifadoSistema = () => {
                       setMenuOpen(false);
                     }
                   }}
-                  className={`block w-full text-left flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-base transition-all duration-200 ${
+                  className={`block w-full text-left flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-[20px] transition-all duration-200 ${
                     abaAtiva === aba.id
                       ? 'bg-[#1D9BF0] text-white'
                       : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
@@ -1950,7 +1949,7 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
 
-        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-2 px-4 border-t dark:border-[#2F3336] bg-white dark:bg-black`}>
+        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-2 px-4 bg-white dark:bg-black rounded-b-lg`}>
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
               {funcionarioInfo?.photoURL ? (
@@ -2272,7 +2271,6 @@ const App = () => {
 // Componente principal com Provider
 const Seed = () => {
   // Inicializar hook de notificações
-  useNotifications();
   
   // Ativar bloqueios de segurança
   useSecurityBlock();

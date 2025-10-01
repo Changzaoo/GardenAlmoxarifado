@@ -21,7 +21,7 @@ const NotificationIcon = ({ tipo }) => {
 
 export const NotificationBadge = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead } = useNotification();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotification();
 
   const getTimeAgo = (timestamp) => {
     if (!timestamp) return '';
@@ -56,12 +56,22 @@ export const NotificationBadge = () => {
         <div className="absolute right-0 mt-2 w-80 bg-[#253341] rounded-lg shadow-lg z-50 border border-[#38444D] overflow-hidden">
           <div className="p-4 border-b border-[#38444D] flex justify-between items-center">
             <h3 className="text-lg font-medium text-white">Notificações</h3>
-            <button
+            <div className="flex space-x-4">
+              {notifications.length > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-sm text-[#1DA1F2] hover:text-[#1a91da]"
+                >
+                  Marcar todas como lidas
+                </button>
+              )}
+              <button
                 onClick={() => setIsOpen(false)}
                 className="text-sm text-gray-400 hover:text-white"
               >
                 Fechar
               </button>
+            </div>
           </div>
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
@@ -104,60 +114,5 @@ export const NotificationBadge = () => {
 };
 
 export default NotificationBadge;
-                onClick={markAllAsRead}
-                className="text-sm text-[#1DA1F2] hover:text-[#1a91da]"
-              >
-                Marcar todas como lidas
-              </button>
-            )}
-          </div>
-
-          <div className="max-h-[400px] overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-400">
-                Nenhuma notificação
-              </div>
-            ) : (
-              notifications.map(notification => {
-                const { title, content, icon } = getNotificationContent(notification);
-                return (
-                  <div
-                    key={notification.id}
-                    className={`p-4 border-b border-[#38444D] hover:bg-[#2C3D4F] transition-colors cursor-pointer ${
-                      !notification.read ? 'bg-[#192734]' : ''
-                    }`}
-                    onClick={() => markAsRead(notification.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`rounded-full p-2 ${
-                        !notification.read ? 'bg-[#1DA1F2] bg-opacity-10' : 'bg-[#38444D]'
-                      }`}>
-                        {/* Ícone baseado no tipo de notificação */}
-                        <Bell className="w-4 h-4 text-[#1DA1F2]" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                          <h4 className="text-sm font-medium text-white">
-                            {title}
-                          </h4>
-                          <span className="text-xs text-[#8899A6]">
-                            {getTimeAgo(notification.timestamp || notification.createdAt)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-[#8899A6] mt-1">
-                          {content}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 

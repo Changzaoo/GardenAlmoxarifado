@@ -32,6 +32,30 @@ const FerramentasPerdidasTab = ({
   const [filtro, setFiltro] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [modalAberto, setModalAberto] = useState(false);
+  const [editModalAberto, setEditModalAberto] = useState(false);
+  const [editingFerramenta, setEditingFerramenta] = useState(null);
+  const [deleteModalAberto, setDeleteModalAberto] = useState(false);
+  const [deletingFerramentaId, setDeletingFerramentaId] = useState(null);
+
+  const openEditModal = (ferramenta) => {
+    setEditingFerramenta(ferramenta);
+    setEditModalAberto(true);
+  };
+
+  const closeEditModal = () => {
+    setEditingFerramenta(null);
+    setEditModalAberto(false);
+  };
+
+  const openDeleteModal = (ferramentaId) => {
+    setDeletingFerramentaId(ferramentaId);
+    setDeleteModalAberto(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeletingFerramentaId(null);
+    setDeleteModalAberto(false);
+  };
 
   const ferramentasFiltradas = ferramentasPerdidas.filter(item => {
     const matchFiltro = 
@@ -127,11 +151,11 @@ const FerramentasPerdidasTab = ({
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'buscando': return 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]';
-      case 'encontrada': return 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]';
-      case 'perdida_definitiva': return 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]';
-      case 'substituida': return 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]';
-      default: return 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]';
+      case 'buscando': return 'bg-[#FFD700] bg-opacity-100 text-black font-semibold hover:bg-[#FFD700] hover:bg-opacity-90';
+      case 'encontrada': return 'bg-[#00BA7C] bg-opacity-100 text-white font-semibold hover:bg-[#00BA7C] hover:bg-opacity-90';
+      case 'perdida_definitiva': return 'bg-[#F4212E] bg-opacity-100 text-white font-semibold hover:bg-[#F4212E] hover:bg-opacity-90';
+      case 'substituida': return 'bg-[#1D9BF0] bg-opacity-100 text-white font-semibold hover:bg-[#1D9BF0] hover:bg-opacity-90';
+      default: return 'bg-[#8899A6] bg-opacity-100 text-white font-semibold hover:bg-[#8899A6] hover:bg-opacity-90';
     }
   };
 
@@ -147,10 +171,10 @@ const FerramentasPerdidasTab = ({
 
   const getPrioridadeColor = (prioridade) => {
     switch (prioridade) {
-      case 'baixa': return 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]';
-      case 'media': return 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]';
-      case 'alta': return 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]';
-      default: return 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]';
+      case 'baixa': return 'bg-[#00BA7C] text-white font-semibold';
+      case 'media': return 'bg-[#FFD700] text-black font-semibold';
+      case 'alta': return 'bg-[#F4212E] text-white font-semibold';
+      default: return 'bg-[#8899A6] text-white font-semibold';
     }
   };
 
@@ -276,16 +300,22 @@ const FerramentasPerdidasTab = ({
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="w-full md:w-48 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none hover:bg-[#2C3D4F] [&>option]:bg-[#192734] [&>option:hover]:bg-[#2C3D4F] [&>option:checked]:bg-[#2C3D4F]"
+            className={`w-full md:w-48 px-4 py-2 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 transition-colors appearance-none cursor-pointer ${
+              filtroStatus === 'todos' ? 'bg-[#253341] text-white' :
+              filtroStatus === 'buscando' ? 'bg-[#FFD700] text-black' :
+              filtroStatus === 'encontrada' ? 'bg-[#00BA7C] text-white' :
+              filtroStatus === 'perdida_definitiva' ? 'bg-[#F4212E] text-white' :
+              filtroStatus === 'substituida' ? 'bg-[#1D9BF0] text-white' : 'bg-[#8899A6] text-white'
+            }`}
             style={{
-              backgroundColor: '#253341',
+              colorScheme: 'dark'
             }}
           >
-            <option value="todos" className="bg-[#192734]">Todos os Status</option>
-            <option value="buscando" className="bg-[#192734]">Buscando</option>
-            <option value="encontrada" className="bg-[#192734]">Encontrada</option>
-            <option value="perdida_definitiva">Perda Definitiva</option>
-            <option value="substituida">Substituída</option>
+            <option value="todos" style={{ backgroundColor: '#192734', color: 'white' }} className="font-semibold">Todos os Status</option>
+            <option value="buscando" style={{ backgroundColor: '#192734', color: '#FFD700' }} className="font-semibold">Buscando</option>
+            <option value="encontrada" style={{ backgroundColor: '#192734', color: '#00BA7C' }} className="font-semibold">Encontrada</option>
+            <option value="perdida_definitiva" style={{ backgroundColor: '#192734', color: '#F4212E' }} className="font-semibold">Perda Definitiva</option>
+            <option value="substituida" style={{ backgroundColor: '#192734', color: '#1D9BF0' }} className="font-semibold">Substituída</option>
           </select>
         </div>
       </div>
@@ -306,24 +336,60 @@ const FerramentasPerdidasTab = ({
               </div>
 
               <div className="flex flex-col gap-2 items-end">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.statusBusca)}`}>
-                  {getStatusText(item.statusBusca)}
-                </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPrioridadeColor(item.prioridade)}`}>
-                  Prioridade {item.prioridade.charAt(0).toUpperCase() + item.prioridade.slice(1)}
-                </span>
-                {!readonly && (
-                  <select
-                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 mt-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
-                    value={item.statusBusca}
-                    onChange={e => atualizarFerramentaPerdida(item.id, { statusBusca: e.target.value })}
-                  >
-                    <option value="buscando" className="bg-[#192734]">Buscando</option>
-                    <option value="encontrada">Encontrada</option>
-                    <option value="perdida_definitiva">Perda Definitiva</option>
-                    <option value="substituida">Substituída</option>
-                  </select>
-                )}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    {!readonly && (
+                      <select
+                        className={`px-3 py-1 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 transition-colors appearance-none cursor-pointer ${getStatusColor(item.statusBusca)}`}
+                        value={item.statusBusca}
+                        onChange={e => atualizarFerramentaPerdida(item.id, { statusBusca: e.target.value })}
+                        style={{
+                          colorScheme: 'dark',
+                          backgroundColor: item.statusBusca === 'buscando' ? '#FFD700' :
+                                         item.statusBusca === 'encontrada' ? '#00BA7C' :
+                                         item.statusBusca === 'perdida_definitiva' ? '#F4212E' :
+                                         item.statusBusca === 'substituida' ? '#1D9BF0' : '#8899A6',
+                          color: item.statusBusca === 'buscando' ? 'black' : 'white'
+                        }}
+                      >
+                        <option value="buscando" style={{ backgroundColor: '#192734', color: '#FFD700' }} className="font-semibold">Buscando</option>
+                        <option value="encontrada" style={{ backgroundColor: '#192734', color: '#00BA7C' }} className="font-semibold">Encontrada</option>
+                        <option value="perdida_definitiva" style={{ backgroundColor: '#192734', color: '#F4212E' }} className="font-semibold">Perda Definitiva</option>
+                        <option value="substituida" style={{ backgroundColor: '#192734', color: '#1D9BF0' }} className="font-semibold">Substituída</option>
+                      </select>
+                    )}
+                    {readonly && (
+                      <span className={`px-3 py-1 rounded-lg text-xs font-medium ${getStatusColor(item.statusBusca)}`}>
+                        {getStatusText(item.statusBusca)}
+                      </span>
+                    )}
+                    <span className={`px-3 py-1 rounded-lg text-xs font-medium ${getPrioridadeColor(item.prioridade)}`}>
+                      {item.prioridade.charAt(0).toUpperCase() + item.prioridade.slice(1)}
+                    </span>
+                  </div>
+                  {!readonly && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEditModal(item)}
+                        className="text-[#1DA1F2] hover:text-white transition-colors text-sm"
+                        title="Editar"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(item.id)}
+                        className="text-[#F4212E] hover:text-white transition-colors text-sm"
+                        title="Excluir"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -574,7 +640,277 @@ const FerramentasPerdidasTab = ({
           </div>
         </div>
       )}
-  </div>
+
+      {/* Modal de Edição de Ferramenta Perdida */}
+      {editModalAberto && editingFerramenta && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Search className="w-5 h-5 text-[#1DA1F2]" />
+                  Editar Ferramenta Perdida
+                </h3>
+                <button
+                  onClick={closeEditModal}
+                  className="text-[#8899A6] hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const sucesso = atualizarFerramentaPerdida(editingFerramenta.id, editingFerramenta);
+                if (sucesso) {
+                  closeEditModal();
+                  toast.success('Ferramenta perdida atualizada com sucesso!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "dark",
+                    style: {
+                      background: '#192734',
+                      color: '#ffffff',
+                      borderRadius: '1rem',
+                      border: '1px solid #38444D'
+                    }
+                  });
+                } else {
+                  toast.error('Erro ao atualizar ferramenta perdida. Tente novamente.', {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "dark",
+                    style: {
+                      background: '#192734',
+                      color: '#ffffff',
+                      borderRadius: '1rem',
+                      border: '1px solid #38444D'
+                    }
+                  });
+                }
+              }} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Nome da Ferramenta *
+                    </label>
+                    <input
+                      type="text"
+                      value={editingFerramenta.nomeItem}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, nomeItem: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      placeholder="Ex: Martelo Tramontina 25mm"
+                      list="inventario-list"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Categoria
+                    </label>
+                    <input
+                      type="text"
+                      value={editingFerramenta.categoria}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, categoria: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      placeholder="Ex: Ferramenta Manual"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
+                    Descrição da Perda *
+                  </label>
+                  <textarea
+                    value={editingFerramenta.descricaoPerda}
+                    onChange={(e) => setEditingFerramenta({...editingFerramenta, descricaoPerda: e.target.value})}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-24"
+                    placeholder="Descreva detalhadamente as circunstâncias da perda..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
+                    Último Local Visto
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFerramenta.localUltimaVez}
+                    onChange={(e) => setEditingFerramenta({...editingFerramenta, localUltimaVez: e.target.value})}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                    placeholder="Ex: Obra da Rua A, Almoxarifado, Canteiro 3..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Valor Estimado (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editingFerramenta.valorEstimado}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, valorEstimado: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      placeholder="0,00"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Status da Busca
+                    </label>
+                    <select
+                      value={editingFerramenta.statusBusca}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, statusBusca: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                    >
+                      <option value="buscando" className="bg-[#192734]">Buscando</option>
+                      <option value="encontrada">Encontrada</option>
+                      <option value="perdida_definitiva">Perda Definitiva</option>
+                      <option value="substituida">Substituída</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Prioridade
+                    </label>
+                    <select
+                      value={editingFerramenta.prioridade}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, prioridade: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                    >
+                      <option value="baixa" className="bg-[#192734]">Baixa</option>
+                      <option value="media">Média</option>
+                      <option value="alta">Alta</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
+                    Observações e Ações Tomadas
+                  </label>
+                  <textarea
+                    value={editingFerramenta.observacoes}
+                    onChange={(e) => setEditingFerramenta({...editingFerramenta, observacoes: e.target.value})}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-20 resize-none"
+                    placeholder="Ex: Já foi feita busca no almoxarifado, verificado com outros funcionários..."
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    type="submit"
+                    className="flex-1 bg-[#1DA1F2] text-white font-bold py-2 px-4 rounded-full hover:bg-[#1a91da] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                  >
+                    Salvar Alterações
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    className="flex-1 border border-[#1DA1F2] text-[#1DA1F2] font-bold py-2 px-4 rounded-full hover:bg-[#1DA1F2] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {deleteModalAberto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-[#F4212E] bg-opacity-10 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-[#F4212E]" />
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  Confirmar Exclusão
+                </h3>
+              </div>
+              
+              <p className={`${colors.text} mb-6`}>
+                Tem certeza que deseja excluir este registro de ferramenta perdida? Esta ação não pode ser desfeita.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={async () => {
+                    const sucesso = await removerFerramentaPerdida(deletingFerramentaId);
+                    if (sucesso) {
+                      closeDeleteModal();
+                      toast.success('Registro removido com sucesso!', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        theme: "dark",
+                        style: {
+                          background: '#192734',
+                          color: '#ffffff',
+                          borderRadius: '1rem',
+                          border: '1px solid #38444D'
+                        }
+                      });
+                    } else {
+                      toast.error('Erro ao remover registro. Tente novamente.', {
+                        position: "top-right",
+                        autoClose: 5000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        theme: "dark",
+                        style: {
+                          background: '#192734',
+                          color: '#ffffff',
+                          borderRadius: '1rem',
+                          border: '1px solid #38444D'
+                        }
+                      });
+                    }
+                  }}
+                  className="flex-1 bg-[#F4212E] text-white font-bold py-2 px-4 rounded-full hover:bg-[#d91d28] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F4212E] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                >
+                  Excluir
+                </button>
+                <button
+                  onClick={closeDeleteModal}
+                  className="flex-1 border border-[#38444D] text-white font-bold py-2 px-4 rounded-full hover:bg-[#38444D] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#38444D] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

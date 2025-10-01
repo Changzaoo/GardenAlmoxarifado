@@ -1,39 +1,70 @@
-import React, { useState, useContext } from 'react';
-import { AlertTriangle, Plus, Search, Calendar, Wrench, FileText } from 'lucide-react';
-import { AuthContext } from '../../hooks/useAuth';
-import { toast } from 'react-toastify';
+import React, { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { Search, Plus, Calendar, User, MapPin, DollarSign, FileText, AlertCircle } from 'lucide-react';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
+import { toast } from 'react-toastify';
+
+const { classes, colors } = twitterThemeConfig;
 
 const FerramentasDanificadasTab = ({ 
-  ferramentasDanificadas, 
-  inventario, 
-  adicionarFerramentaDanificada, 
-  atualizarFerramentaDanificada,
-  removerFerramentaDanificada,
-  readonly
+  ferramentasDanificadas = [], 
+  inventario = [], 
+  adicionarFerramentaDanificada = () => {}, 
+  atualizarFerramentaDanificada = () => {},
+  removerFerramentaDanificada = () => {},
+  readonly = false
 }) => {
-  const { usuario } = useContext(AuthContext);
+  const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
   const [novaFerramenta, setNovaFerramenta] = useState({
     nomeItem: '',
     categoria: '',
     descricaoProblema: '',
-    dataOcorrencia: new Date().toISOString().split('T')[0],
-    custoReparo: '',
-    statusReparo: 'aguardando',
+    responsavel: '',
+    localUltimaVez: '',
+    dataDanificacao: new Date().toISOString().split('T')[0],
+    valorReparo: '',
+    statusReparo: 'aguardando_reparo',
     observacoes: '',
     prioridade: 'media'
   });
+
   const [filtro, setFiltro] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [modalAberto, setModalAberto] = useState(false);
+  const [editModalAberto, setEditModalAberto] = useState(false);
+  const [editingFerramenta, setEditingFerramenta] = useState(null);
+  const [deleteModalAberto, setDeleteModalAberto] = useState(false);
+  const [deletingFerramentaId, setDeletingFerramentaId] = useState(null);
+
+  const openEditModal = (ferramenta) => {
+    setEditingFerramenta(ferramenta);
+    setEditModalAberto(true);
+  };
+
+  const closeEditModal = () => {
+    setEditingFerramenta(null);
+    setEditModalAberto(false);
+  };
+
+  const openDeleteModal = (ferramentaId) => {
+    setDeletingFerramentaId(ferramentaId);
+    setDeleteModalAberto(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeletingFerramentaId(null);
+    setDeleteModalAberto(false);
+  };
 
   const ferramentasFiltradas = ferramentasDanificadas.filter(item => {
     const matchFiltro = 
-      item.nomeItem.toLowerCase().includes(filtro.toLowerCase()) ||
-      item.descricaoProblema.toLowerCase().includes(filtro.toLowerCase());
+      (item.nomeItem || '').toLowerCase().includes(filtro.toLowerCase()) ||
+      (item.descricaoProblema || '').toLowerCase().includes(filtro.toLowerCase()) ||
+      (item.responsavel || '').toLowerCase().includes(filtro.toLowerCase()) ||
+      (item.localUltimaVez || '').toLowerCase().includes(filtro.toLowerCase());
     
-    const matchStatus = filtroStatus === 'todos' || item.statusReparo === filtroStatus;
+    const matchStatus = filtroStatus === 'todos' || (item.statusReparo || '') === filtroStatus;
     
     return matchFiltro && matchStatus;
   });
@@ -42,9 +73,9 @@ const FerramentasDanificadasTab = ({
     e.preventDefault();
     
     if (!novaFerramenta.nomeItem || !novaFerramenta.descricaoProblema) {
-      toast.warning('Preencha pelo menos o nome da ferramenta e descrição do problema!', {
+      toast.error('Por favor, preencha os campos obrigatórios:\n- Nome da Ferramenta\n- Descrição da Perda\n\nOs campos obrigatórios estão marcados com *', {
         position: "top-right",
-        autoClose: 3000,
+        autoClose: 5000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
@@ -63,7 +94,7 @@ const FerramentasDanificadasTab = ({
 
     const dadosCompletos = {
       ...novaFerramenta,
-      custoReparo: novaFerramenta.custoReparo ? parseFloat(novaFerramenta.custoReparo) : 0
+      valorReparo: novaFerramenta.valorReparo ? parseFloat(novaFerramenta.valorReparo) : 0
     };
 
     const sucesso = await adicionarFerramentaDanificada(dadosCompletos);
@@ -73,9 +104,11 @@ const FerramentasDanificadasTab = ({
         nomeItem: '',
         categoria: '',
         descricaoProblema: '',
-        dataOcorrencia: new Date().toISOString().split('T')[0],
-        custoReparo: '',
-        statusReparo: 'aguardando',
+        responsavel: '',
+        localUltimaVez: '',
+        dataDanificacao: new Date().toISOString().split('T')[0],
+        valorReparo: '',
+        statusReparo: 'aguardando_reparo',
         observacoes: '',
         prioridade: 'media'
       });
@@ -99,7 +132,7 @@ const FerramentasDanificadasTab = ({
     } else {
       toast.error('Erro ao registrar ferramenta danificada. Tente novamente.', {
         position: "top-right",
-        autoClose: 3000,
+        autoClose: 5000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
@@ -116,103 +149,149 @@ const FerramentasDanificadasTab = ({
     }
   };
 
-  const { colors, classes } = twitterThemeConfig;
-
   const getStatusColor = (status) => {
     switch (status) {
-      case 'aguardando': return 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]';
-      case 'em_reparo': return 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]';
-      case 'reparado': return 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]';
-      case 'irreparavel': return 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]';
-      default: return 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]';
+      case 'aguardando_reparo': return 'bg-[#FFD700] bg-opacity-100 text-black font-semibold hover:bg-[#FFD700] hover:bg-opacity-90';
+      case 'em_reparo': return 'bg-[#1D9BF0] bg-opacity-100 text-white font-semibold hover:bg-[#1D9BF0] hover:bg-opacity-90';
+      case 'reparada': return 'bg-[#00BA7C] bg-opacity-100 text-white font-semibold hover:bg-[#00BA7C] hover:bg-opacity-90';
+      case 'irreparavel': return 'bg-[#F4212E] bg-opacity-100 text-white font-semibold hover:bg-[#F4212E] hover:bg-opacity-90';
+      case 'substituida': return 'bg-[#8A2BE2] bg-opacity-100 text-white font-semibold hover:bg-[#8A2BE2] hover:bg-opacity-90';
+      default: return 'bg-[#8899A6] bg-opacity-100 text-white font-semibold hover:bg-[#8899A6] hover:bg-opacity-90';
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'aguardando': return 'Aguardando Reparo';
+      case 'aguardando_reparo': return 'Aguardando Reparo';
       case 'em_reparo': return 'Em Reparo';
-      case 'reparado': return 'Reparado';
+      case 'reparada': return 'Reparada';
       case 'irreparavel': return 'Irreparável';
+      case 'substituida': return 'Substituída';
       default: return status;
     }
   };
 
   const getPrioridadeColor = (prioridade) => {
     switch (prioridade) {
-      case 'baixa': return 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]';
-      case 'media': return 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]';
-      case 'alta': return 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]';
-      default: return 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]';
+      case 'baixa': return 'bg-[#00BA7C] text-white font-semibold';
+      case 'media': return 'bg-[#FFD700] text-black font-semibold';
+      case 'alta': return 'bg-[#F4212E] text-white font-semibold';
+      default: return 'bg-[#8899A6] text-white font-semibold';
     }
   };
 
-  const estatisticas = {
-    total: ferramentasDanificadas.length,
-    aguardando: ferramentasDanificadas.filter(f => f.statusReparo === 'aguardando').length,
-    emReparo: ferramentasDanificadas.filter(f => f.statusReparo === 'em_reparo').length,
-    reparadas: ferramentasDanificadas.filter(f => f.statusReparo === 'reparado').length,
-    irreparaveis: ferramentasDanificadas.filter(f => f.statusReparo === 'irreparavel').length
+  const calcularEstatisticas = () => {
+    const total = ferramentasDanificadas.length;
+    const aguardandoReparo = ferramentasDanificadas.filter(f => (f.statusReparo || '') === 'aguardando_reparo').length;
+    const emReparo = ferramentasDanificadas.filter(f => (f.statusReparo || '') === 'em_reparo').length;
+    const reparadas = ferramentasDanificadas.filter(f => (f.statusReparo || '') === 'reparada').length;
+    const irreparaveis = ferramentasDanificadas.filter(f => (f.statusReparo || '') === 'irreparavel').length;
+    const substituidas = ferramentasDanificadas.filter(f => (f.statusReparo || '') === 'substituida').length;
+    const valorTotalDanos = ferramentasDanificadas
+      .filter(f => (f.statusReparo || '') === 'irreparavel')
+      .reduce((total, f) => total + (f.valorReparo || 0), 0);
+    return {
+      total,
+      aguardandoReparo,
+      emReparo,
+      reparadas,
+      irreparaveis,
+      substituidas,
+      valorTotalDanos
+    };
   };
+
+  const estatisticas = calcularEstatisticas();
 
   return (
     <div className="space-y-6">
-      {/* Header com estatísticas */}
+      {/* Header com botão */}
       <div className={`${classes.card} p-6`}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#F4212E] bg-opacity-10 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-[#F4212E]" />
+              <AlertCircle className="w-5 h-5 text-[#F4212E]" />
             </div>
             <div>
 
-              <p className={`text-sm ${colors.textSecondary}`}>Controle e acompanhamento de reparos</p>
+              <p className={`text-sm ${colors.textSecondary}`}>Controle e rastreamento de ferramentas danificadas</p>
             </div>
           </div>
           
-          <button
-            onClick={() => setModalAberto(true)}
-            className="bg-[#1DA1F2] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-[#1a91da] transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Registrar Dano
-          </button>
+          {!isFuncionario && !readonly && (
+            <button
+              onClick={() => setModalAberto(true)}
+              className="bg-[#1DA1F2] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-[#1a91da] transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Registrar Dano
+            </button>
+          )}
         </div>
 
         {/* Estatísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
           <div className={`${classes.card} p-4`}>
-            <div className={`text-2xl font-bold ${colors.text}`}>{estatisticas.total}</div>
-            <div className={`text-sm ${colors.textSecondary}`}>Total</div>
+            <div className="flex items-center">
+              <div className="bg-[#1DA1F2] bg-opacity-10 p-3 rounded-full">
+                <AlertCircle className="w-5 h-5 text-[#1DA1F2]" />
+              </div>
+              <div className="ml-3">
+                <p className={`text-sm ${colors.textSecondary}`}>Total</p>
+                <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.total}</p>
+              </div>
+            </div>
           </div>
-          <div className={`${classes.card} p-4 bg-[#FFD700] bg-opacity-5`}>
-            <div className="text-2xl font-bold text-[#FFD700]">{estatisticas.aguardando}</div>
-            <div className="text-sm text-[#FFD700]">Aguardando</div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Aguardando Reparo</p>
+              <p className="text-xl font-bold text-[#FFD700]">{estatisticas.aguardandoReparo}</p>
+            </div>
           </div>
-          <div className={`${classes.card} p-4 bg-[#1D9BF0] bg-opacity-5`}>
-            <div className="text-2xl font-bold text-[#1D9BF0]">{estatisticas.emReparo}</div>
-            <div className="text-sm text-[#1D9BF0]">Em Reparo</div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Em Reparo</p>
+              <p className="text-xl font-bold text-[#1D9BF0]">{estatisticas.emReparo}</p>
+            </div>
           </div>
-          <div className={`${classes.card} p-4 bg-[#00BA7C] bg-opacity-5`}>
-            <div className="text-2xl font-bold text-[#00BA7C]">{estatisticas.reparadas}</div>
-            <div className="text-sm text-[#00BA7C]">Reparadas</div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Reparadas</p>
+              <p className="text-xl font-bold text-[#00BA7C]">{estatisticas.reparadas}</p>
+            </div>
           </div>
-          <div className={`${classes.card} p-4 bg-[#F4212E] bg-opacity-5`}>
-            <div className="text-2xl font-bold text-[#F4212E]">{estatisticas.irreparaveis}</div>
-            <div className="text-sm text-[#F4212E]">Irreparáveis</div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Irreparáveis</p>
+              <p className="text-xl font-bold text-[#F4212E]">{estatisticas.irreparaveis}</p>
+            </div>
+          </div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Substituídas</p>
+              <p className="text-xl font-bold text-[#8A2BE2]">{estatisticas.substituidas}</p>
+            </div>
+          </div>
+          <div className={`${classes.card} p-4`}>
+            <div className="flex flex-col">
+              <p className={`text-sm ${colors.textSecondary}`}>Valor em Danos</p>
+              <p className="text-xl font-bold text-[#F4212E]">
+                R$ {estatisticas.valorTotalDanos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-[3] relative">
+          <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 flex items-center z-10">
               <Search className={`w-5 h-5 ml-3 ${colors.textSecondary}`} />
             </div>
             <div className="absolute inset-y-0 left-14 flex items-center pointer-events-none">
               {!filtro && (
-                <span className="text-gray-500">
-                  Buscar por ferramenta, problema ou responsável...
+                <span className={`text-gray-500`}>
+                  Buscar por ferramenta, descrição, responsável ou local...
                 </span>
               )}
             </div>
@@ -220,23 +299,35 @@ const FerramentasDanificadasTab = ({
               type="text"
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 pl-12 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors"
+              className={`
+                pl-12 w-full py-2 
+                ${classes.input} 
+                focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent
+              `}
             />
           </div>
           
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="md:w-48 bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none hover:bg-[#2C3D4F] [&>option]:bg-[#192734] [&>option:hover]:bg-[#2C3D4F] [&>option:checked]:bg-[#2C3D4F]"
+            className={`w-full md:w-48 px-4 py-2 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 transition-colors appearance-none cursor-pointer ${
+              filtroStatus === 'todos' ? 'bg-[#253341] text-white' :
+              filtroStatus === 'aguardando_reparo' ? 'bg-[#FFD700] text-black' :
+              filtroStatus === 'em_reparo' ? 'bg-[#1D9BF0] text-white' :
+              filtroStatus === 'reparada' ? 'bg-[#00BA7C] text-white' :
+              filtroStatus === 'irreparavel' ? 'bg-[#F4212E] text-white' :
+              filtroStatus === 'substituida' ? 'bg-[#8A2BE2] text-white' : 'bg-[#8899A6] text-white'
+            }`}
             style={{
-              backgroundColor: '#253341'
+              colorScheme: 'dark'
             }}
           >
-            <option value="todos" className="!bg-[#192734]">Todos os Status</option>
-            <option value="aguardando">Aguardando Reparo</option>
-            <option value="em_reparo">Em Reparo</option>
-            <option value="reparado">Reparado</option>
-            <option value="irreparavel">Irreparável</option>
+            <option value="todos" style={{ backgroundColor: '#192734', color: 'white' }} className="font-semibold">Todos os Status</option>
+            <option value="aguardando_reparo" style={{ backgroundColor: '#192734', color: '#FFD700' }} className="font-semibold">Aguardando Reparo</option>
+            <option value="em_reparo" style={{ backgroundColor: '#192734', color: '#1D9BF0' }} className="font-semibold">Em Reparo</option>
+            <option value="reparada" style={{ backgroundColor: '#192734', color: '#00BA7C' }} className="font-semibold">Reparada</option>
+            <option value="irreparavel" style={{ backgroundColor: '#192734', color: '#F4212E' }} className="font-semibold">Irreparável</option>
+            <option value="substituida" style={{ backgroundColor: '#192734', color: '#8A2BE2' }} className="font-semibold">Substituída</option>
           </select>
         </div>
       </div>
@@ -244,59 +335,114 @@ const FerramentasDanificadasTab = ({
       {/* Lista de ferramentas danificadas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {ferramentasFiltradas.map(item => (
-          <div key={item.id} className={`${classes.card} ${classes.cardHover} p-6 border-l-4 border-[#F4212E]`}>
+          <div key={item.id} className={`${classes.card} p-6`}>
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
                 <h3 className={`font-bold ${colors.text} text-lg flex items-center gap-2`}>
-                  <Wrench className="w-5 h-5 text-[#F4212E]" />
+                  <AlertCircle className="w-5 h-5 text-[#F4212E]" />
                   {item.nomeItem}
                 </h3>
                 {item.categoria && (
-                  <p className={`${colors.textSecondary} text-sm`}>{item.categoria}</p>
+                  <p className={`text-sm ${colors.textSecondary}`}>{item.categoria}</p>
                 )}
               </div>
+
               <div className="flex flex-col gap-2 items-end">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.statusReparo)}`}>
-                  {getStatusText(item.statusReparo)}
-                </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPrioridadeColor(item.prioridade)}`}>
-                  Prioridade {item.prioridade.charAt(0).toUpperCase() + item.prioridade.slice(1)}
-                </span>
-                {/* Status editing dropdown */}
-                <select
-                  className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none mt-2 text-xs"
-                  value={item.statusReparo}
-                  onChange={e => atualizarFerramentaDanificada(item.id, { statusReparo: e.target.value })}
-                >
-                  <option value="aguardando" className="bg-[#192734]">Aguardando Reparo</option>
-                  <option value="em_reparo">Em Reparo</option>
-                  <option value="reparado">Reparado</option>
-                  <option value="irreparavel">Irreparável</option>
-                </select>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    {!readonly && (
+                      <select
+                        className={`px-3 py-1 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 transition-colors appearance-none cursor-pointer ${getStatusColor(item.statusReparo)}`}
+                        value={item.statusReparo}
+                        onChange={e => atualizarFerramentaDanificada(item.id, { statusReparo: e.target.value })}
+                        style={{
+                          colorScheme: 'dark',
+                          backgroundColor: item.statusReparo === 'aguardando_reparo' ? '#FFD700' :
+                                         item.statusReparo === 'em_reparo' ? '#1D9BF0' :
+                                         item.statusReparo === 'reparada' ? '#00BA7C' :
+                                         item.statusReparo === 'irreparavel' ? '#F4212E' :
+                                         item.statusReparo === 'substituida' ? '#8A2BE2' : '#8899A6',
+                          color: item.statusReparo === 'aguardando_reparo' ? 'black' : 'white'
+                        }}
+                      >
+                        <option value="aguardando_reparo" style={{ backgroundColor: '#192734', color: '#FFD700' }} className="font-semibold">Aguardando Reparo</option>
+                        <option value="em_reparo" style={{ backgroundColor: '#192734', color: '#1D9BF0' }} className="font-semibold">Em Reparo</option>
+                        <option value="reparada" style={{ backgroundColor: '#192734', color: '#00BA7C' }} className="font-semibold">Reparada</option>
+                        <option value="irreparavel" style={{ backgroundColor: '#192734', color: '#F4212E' }} className="font-semibold">Irreparável</option>
+                        <option value="substituida" style={{ backgroundColor: '#192734', color: '#8A2BE2' }} className="font-semibold">Substituída</option>
+                      </select>
+                    )}
+                    {readonly && (
+                      <span className={`px-3 py-1 rounded-lg text-xs font-medium ${getStatusColor(item.statusReparo)}`}>
+                        {getStatusText(item.statusReparo)}
+                      </span>
+                    )}
+                    <span className={`px-3 py-1 rounded-lg text-xs font-medium ${getPrioridadeColor(item.prioridade)}`}>
+                      {item.prioridade.charAt(0).toUpperCase() + item.prioridade.slice(1)}
+                    </span>
+                  </div>
+                  {!readonly && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEditModal(item)}
+                        className="text-[#1DA1F2] hover:text-white transition-colors text-sm"
+                        title="Editar"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(item.id)}
+                        className="text-[#F4212E] hover:text-white transition-colors text-sm"
+                        title="Excluir"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="space-y-3 text-sm">
-              <div className={`${classes.card} bg-[#F4212E] bg-opacity-5 p-3`}>
-                <div className="flex items-center gap-2 font-medium text-[#F4212E] mb-1">
+              <div className={`${classes.card} p-3 bg-[#F4212E] bg-opacity-5`}>
+                <div className={`flex items-center gap-2 font-medium text-[#F4212E] mb-1`}>
                   <FileText className="w-4 h-4" />
                   Descrição do Problema
                 </div>
                 <p className="text-[#F4212E]">{item.descricaoProblema}</p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
-                <div className={`flex items-center gap-2 ${colors.textSecondary}`}>
-                  <Calendar className="w-4 h-4" />
-                  <span><strong>Data:</strong> {new Date(item.dataOcorrencia).toLocaleDateString('pt-BR')}</span>
+              <div className="grid grid-cols-1 gap-2">
+                <div className={`flex items-center gap-2 ${colors.text}`}>
+                  <User className="w-4 h-4" />
+                  <span><strong>Responsável:</strong> {item.responsavel}</span>
                 </div>
+                
+                <div className={`flex items-center gap-2 ${colors.text}`}>
+                  <Calendar className="w-4 h-4" />
+                  <span><strong>Data do Dano:</strong> {new Date(item.dataDanificacao).toLocaleDateString('pt-BR')}</span>
+                </div>
+                
+                {item.localUltimaVez && (
+                  <div className={`flex items-center gap-2 ${colors.text}`}>
+                    <MapPin className="w-4 h-4" />
+                    <span><strong>Último local visto:</strong> {item.localUltimaVez}</span>
+                  </div>
+                )}
               </div>
 
-              {item.custoReparo > 0 && (
-                <div className={`${classes.card} bg-[#1D9BF0] bg-opacity-5 p-2`}>
-                  <strong className="text-[#1D9BF0]">Custo de Reparo:</strong> 
-                  <span className="text-[#1D9BF0] ml-1">
-                    R$ {item.custoReparo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {item.valorReparo > 0 && (
+                <div className={`${classes.card} p-2 bg-[#FFD700] bg-opacity-5 flex items-center gap-2`}>
+                  <DollarSign className="w-4 h-4 text-[#FFD700]" />
+                  <span className="text-[#FFD700]">
+                    <strong>Valor Estimado:</strong> 
+                    <span className="ml-1">
+                      R$ {item.valorReparo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
                   </span>
                 </div>
               )}
@@ -304,9 +450,14 @@ const FerramentasDanificadasTab = ({
               {item.observacoes && (
                 <div className={`${classes.card} p-2`}>
                   <strong className={colors.text}>Observações:</strong>
-                  <p className={`${colors.textSecondary} mt-1`}>{item.observacoes}</p>
+                  <p className={colors.textSecondary}>{item.observacoes}</p>
                 </div>
               )}
+
+              {/* Tempo desde a perda */}
+              <div className={`text-xs ${colors.textSecondary} border-t pt-2`}>
+                Danificada há {Math.floor((new Date() - new Date(item.dataDanificacao)) / (1000 * 60 * 60 * 24))} dias
+              </div>
             </div>
           </div>
         ))}
@@ -314,14 +465,14 @@ const FerramentasDanificadasTab = ({
 
       {ferramentasFiltradas.length === 0 && (
         <div className={`${classes.card} p-8 text-center`}>
-          <AlertTriangle className={`w-16 h-16 mx-auto ${colors.textSecondary} mb-4`} />
-          <p className={`${colors.text} text-lg`}>
+          <Search className={`w-16 h-16 mx-auto ${colors.textSecondary} mb-4`} />
+          <p className={`text-lg font-medium ${colors.text}`}>
             {filtro || filtroStatus !== 'todos' 
               ? 'Nenhuma ferramenta danificada encontrada' 
               : 'Nenhuma ferramenta danificada registrada'
             }
           </p>
-          <p className={`${colors.textSecondary} text-sm mt-2`}>
+          <p className={`${colors.textSecondary} mt-2`}>
             {filtro || filtroStatus !== 'todos'
               ? 'Tente alterar os filtros de busca'
               : 'Clique em "Registrar Dano" para adicionar uma ocorrência'
@@ -332,17 +483,17 @@ const FerramentasDanificadasTab = ({
 
       {/* Modal de Nova Ferramenta Danificada */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-[#F4212E]" />
+                  <Search className="w-5 h-5 text-[#F4212E]" />
                   Registrar Ferramenta Danificada
                 </h3>
                 <button
                   onClick={() => setModalAberto(false)}
-                  className="text-[#8899A6] hover:text-white"
+                  className="text-[#8899A6] hover:text-white transition-colors"
                 >
                   ✕
                 </button>
@@ -351,20 +502,23 @@ const FerramentasDanificadasTab = ({
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className={`block text-sm font-medium text-white text-center mb-2`}>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
                       Nome da Ferramenta *
                     </label>
-                    <select
+                    <input
+                      type="text"
                       value={novaFerramenta.nomeItem}
-                      onChange={e => setNovaFerramenta({ ...novaFerramenta, nomeItem: e.target.value })}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                      onChange={(e) => setNovaFerramenta({...novaFerramenta, nomeItem: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      placeholder="Ex: Martelo Tramontina 25mm"
+                      list="inventario-list"
                       required
-                    >
-                      <option value="">Selecione a ferramenta</option>
+                    />
+                    <datalist id="inventario-list">
                       {[...inventario].sort((a, b) => a.nome.localeCompare(b.nome)).map(item => (
-                        <option key={item.id} value={item.nome}>{item.nome}</option>
+                        <option key={item.id} value={item.nome} />
                       ))}
-                    </select>
+                    </datalist>
                   </div>
                   
                   <div>
@@ -376,35 +530,68 @@ const FerramentasDanificadasTab = ({
                       value={novaFerramenta.categoria}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, categoria: e.target.value})}
                       className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
-                      placeholder="Ex: Ferramenta Elétrica"
+                      placeholder="Ex: Ferramenta Manual"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-white text-center mb-2">
-                    Descrição do Problema *
+                    Descrição da Perda *
                   </label>
                   <textarea
                     value={novaFerramenta.descricaoProblema}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, descricaoProblema: e.target.value})}
                     className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-24"
-                    placeholder="Descreva detalhadamente o problema encontrado na ferramenta..."
+                    placeholder="Descreva detalhadamente as circunstâncias da perda..."
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
+                    Último Local Visto
+                  </label>
+                  <input
+                    type="text"
+                    value={novaFerramenta.localUltimaVez}
+                    onChange={(e) => setNovaFerramenta({...novaFerramenta, localUltimaVez: e.target.value})}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                    placeholder="Ex: Obra da Rua A, Almoxarifado, Canteiro 3..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-white text-center mb-2">
-                      Data da Ocorrência
+                      Valor Estimado (R$)
                     </label>
                     <input
-                      type="date"
-                      value={novaFerramenta.dataOcorrencia}
-                      onChange={(e) => setNovaFerramenta({...novaFerramenta, dataOcorrencia: e.target.value})}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={novaFerramenta.valorReparo}
+                      onChange={(e) => setNovaFerramenta({...novaFerramenta, valorReparo: e.target.value})}
                       className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      placeholder="0,00"
                     />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Status do Reparo
+                    </label>
+                    <select
+                      value={novaFerramenta.statusReparo}
+                      onChange={(e) => setNovaFerramenta({...novaFerramenta, statusReparo: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                    >
+                      <option value="aguardando_reparo" className="bg-[#192734]">Aguardando Reparo</option>
+                      <option value="em_reparo">Em Reparo</option>
+                      <option value="reparada">Reparada</option>
+                      <option value="irreparavel">Irreparável</option>
+                      <option value="substituida">Substituída</option>
+                    </select>
                   </div>
                   
                   <div>
@@ -423,54 +610,34 @@ const FerramentasDanificadasTab = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
-                      Status do Reparo
-                    </label>
-                    <select
-                      value={novaFerramenta.statusReparo}
-                      onChange={(e) => setNovaFerramenta({...novaFerramenta, statusReparo: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
-                    >
-                      <option value="aguardando" className="bg-[#192734]">Aguardando Reparo</option>
-                      <option value="em_reparo">Em Reparo</option>
-                      <option value="reparado">Reparado</option>
-                      <option value="irreparavel">Irreparável</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
-                      Custo Estimado de Reparo (R$)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={novaFerramenta.custoReparo}
-                      onChange={(e) => setNovaFerramenta({...novaFerramenta, custoReparo: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
-                      placeholder="0,00"
-                    />
-                  </div>
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium text-white text-center mb-2">
-                    Observações Adicionais
+                    Observações e Ações Tomadas
                   </label>
                   <textarea
                     value={novaFerramenta.observacoes}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, observacoes: e.target.value})}
-                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-20"
-                    placeholder="Informações complementares sobre o dano ou reparo..."
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-20 resize-none"
+                    placeholder="Ex: Já foi feita busca no almoxarifado, verificado com outros funcionários..."
                   />
+                </div>
+
+                <div className="bg-[#1DA1F2] bg-opacity-5 p-4 rounded-lg border border-[#1DA1F2] border-opacity-10">
+                  <div className="flex items-center gap-2 text-[#1DA1F2] mb-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="font-medium">Dicas para recuperação:</span>
+                  </div>
+                  <ul className="text-sm text-[#1DA1F2] space-y-1">
+                    <li>• Verifique os locais de trabalho recentes</li>
+                    <li>• Consulte outros funcionários da equipe</li>
+                    <li>• Confira veículos e equipamentos utilizados</li>
+                    <li>• Examine áreas de armazenamento temporário</li>
+                  </ul>
                 </div>
 
                 <div className="flex gap-3 pt-4">
                   <button 
-                    type="submit" 
+                    type="submit"
                     className="flex-1 bg-[#1DA1F2] text-white font-bold py-2 px-4 rounded-full hover:bg-[#1a91da] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
                   >
                     Registrar Ferramenta Danificada
@@ -484,6 +651,277 @@ const FerramentasDanificadasTab = ({
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Ferramenta Danificada */}
+      {editModalAberto && editingFerramenta && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Search className="w-5 h-5 text-[#1DA1F2]" />
+                  Editar Ferramenta Danificada
+                </h3>
+                <button
+                  onClick={closeEditModal}
+                  className="text-[#8899A6] hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const sucesso = atualizarFerramentaDanificada(editingFerramenta.id, editingFerramenta);
+                if (sucesso) {
+                  closeEditModal();
+                  toast.success('Ferramenta danificada atualizada com sucesso!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "dark",
+                    style: {
+                      background: '#192734',
+                      color: '#ffffff',
+                      borderRadius: '1rem',
+                      border: '1px solid #38444D'
+                    }
+                  });
+                } else {
+                  toast.error('Erro ao atualizar ferramenta danificada. Tente novamente.', {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "dark",
+                    style: {
+                      background: '#192734',
+                      color: '#ffffff',
+                      borderRadius: '1rem',
+                      border: '1px solid #38444D'
+                    }
+                  });
+                }
+              }} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Nome da Ferramenta *
+                    </label>
+                    <input
+                      type="text"
+                      value={editingFerramenta.nomeItem}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, nomeItem: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      placeholder="Ex: Martelo Tramontina 25mm"
+                      list="inventario-list"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Categoria
+                    </label>
+                    <input
+                      type="text"
+                      value={editingFerramenta.categoria}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, categoria: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      placeholder="Ex: Ferramenta Manual"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
+                    Descrição da Perda *
+                  </label>
+                  <textarea
+                    value={editingFerramenta.descricaoProblema}
+                    onChange={(e) => setEditingFerramenta({...editingFerramenta, descricaoProblema: e.target.value})}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-24"
+                    placeholder="Descreva detalhadamente as circunstâncias da perda..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
+                    Último Local Visto
+                  </label>
+                  <input
+                    type="text"
+                    value={editingFerramenta.localUltimaVez}
+                    onChange={(e) => setEditingFerramenta({...editingFerramenta, localUltimaVez: e.target.value})}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                    placeholder="Ex: Obra da Rua A, Almoxarifado, Canteiro 3..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Valor Estimado (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editingFerramenta.valorReparo}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, valorReparo: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      placeholder="0,00"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Status do Reparo
+                    </label>
+                    <select
+                      value={editingFerramenta.statusReparo}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, statusReparo: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                    >
+                      <option value="aguardando_reparo" className="bg-[#192734]">Aguardando Reparo</option>
+                      <option value="em_reparo">Em Reparo</option>
+                      <option value="reparada">Reparada</option>
+                      <option value="irreparavel">Irreparável</option>
+                      <option value="substituida">Substituída</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-white text-center mb-2">
+                      Prioridade
+                    </label>
+                    <select
+                      value={editingFerramenta.prioridade}
+                      onChange={(e) => setEditingFerramenta({...editingFerramenta, prioridade: e.target.value})}
+                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                    >
+                      <option value="baixa" className="bg-[#192734]">Baixa</option>
+                      <option value="media">Média</option>
+                      <option value="alta">Alta</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white text-center mb-2">
+                    Observações e Ações Tomadas
+                  </label>
+                  <textarea
+                    value={editingFerramenta.observacoes}
+                    onChange={(e) => setEditingFerramenta({...editingFerramenta, observacoes: e.target.value})}
+                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-20 resize-none"
+                    placeholder="Ex: Já foi feita busca no almoxarifado, verificado com outros funcionários..."
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button 
+                    type="submit"
+                    className="flex-1 bg-[#1DA1F2] text-white font-bold py-2 px-4 rounded-full hover:bg-[#1a91da] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                  >
+                    Salvar Alterações
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    className="flex-1 border border-[#1DA1F2] text-[#1DA1F2] font-bold py-2 px-4 rounded-full hover:bg-[#1DA1F2] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {deleteModalAberto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-[#F4212E] bg-opacity-10 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-[#F4212E]" />
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  Confirmar Exclusão
+                </h3>
+              </div>
+              
+              <p className={`${colors.text} mb-6`}>
+                Tem certeza que deseja excluir este registro de ferramenta danificada? Esta ação não pode ser desfeita.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={async () => {
+                    const sucesso = await removerFerramentaDanificada(deletingFerramentaId);
+                    if (sucesso) {
+                      closeDeleteModal();
+                      toast.success('Registro removido com sucesso!', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        theme: "dark",
+                        style: {
+                          background: '#192734',
+                          color: '#ffffff',
+                          borderRadius: '1rem',
+                          border: '1px solid #38444D'
+                        }
+                      });
+                    } else {
+                      toast.error('Erro ao remover registro. Tente novamente.', {
+                        position: "top-right",
+                        autoClose: 5000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        theme: "dark",
+                        style: {
+                          background: '#192734',
+                          color: '#ffffff',
+                          borderRadius: '1rem',
+                          border: '1px solid #38444D'
+                        }
+                      });
+                    }
+                  }}
+                  className="flex-1 bg-[#F4212E] text-white font-bold py-2 px-4 rounded-full hover:bg-[#d91d28] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F4212E] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                >
+                  Excluir
+                </button>
+                <button
+                  onClick={closeDeleteModal}
+                  className="flex-1 border border-[#38444D] text-white font-bold py-2 px-4 rounded-full hover:bg-[#38444D] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#38444D] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
         </div>
