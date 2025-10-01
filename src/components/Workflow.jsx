@@ -63,7 +63,8 @@ import {
   Moon,
   Camera,
   Upload,
-  LogOut
+  LogOut,
+  MessageCircle
 } from 'lucide-react';
 
 // Função para bloquear teclas de atalho e menu de contexto
@@ -939,6 +940,7 @@ const AlmoxarifadoSistema = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuRecolhido, setMenuRecolhido] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -2529,6 +2531,18 @@ const AlmoxarifadoSistema = () => {
         </div>
       </main>
 
+      {/* Botão de chat flutuante acima do menu inferior para mobile */}
+      {isMobile && !menuOpen && (
+        <button
+          onClick={() => {
+            setChatOpen(!chatOpen);
+          }}
+          className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-[#1D9BF0] hover:bg-[#1A8CD8] rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
+        >
+          <MessageCircle className="w-6 h-6 text-white" />
+        </button>
+      )}
+
       {/* Menu inferior para mobile */}
       {isMobile && !menuOpen && (
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-gray-200 dark:border-[#38444D] px-2 py-0.5">
@@ -2561,15 +2575,15 @@ const AlmoxarifadoSistema = () => {
               );
             })}
             
-            {/* Ícone especial de empréstimos no centro com fundo azul circular - 20% para cima com animação bounce */}
+            {/* Ícone especial de empréstimos no centro com fundo azul circular - 20% para cima com efeitos minimalistas */}
             <button
               onClick={() => {
                 setAbaAtiva('emprestimos');
                 setMenuOpen(false);
               }}
-              className="flex flex-col items-center justify-center p-1 transition-all duration-200 min-w-0 flex-1 transform -translate-y-[20%]"
+              className="flex flex-col items-center justify-center p-1 transition-all duration-200 min-w-0 flex-1 transform -translate-y-[20%] hover:scale-105"
             >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-0.5 transition-all duration-200 animate-bounce ${
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-0.5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-200 dark:hover:shadow-blue-900 ${
                 abaAtiva === 'emprestimos'
                   ? 'bg-[#1D9BF0] shadow-lg'
                   : 'bg-[#1D9BF0]'
@@ -2627,7 +2641,11 @@ const AlmoxarifadoSistema = () => {
         </nav>
       )}
 
-      <WorkflowChat currentUser={usuario} />
+      <WorkflowChat 
+        currentUser={usuario} 
+        externalOpen={chatOpen}
+        onToggle={setChatOpen}
+      />
     </div>
     </FuncionariosProvider>
   );

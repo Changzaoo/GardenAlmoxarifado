@@ -63,7 +63,12 @@ const formatLastMessageTime = (timestamp) => {
   return messageDate.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' });
 };
 
-const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 86, y: window.innerHeight - 86 } }) => {
+const WorkflowChat = ({ 
+  currentUser, 
+  buttonPosition = { x: window.innerWidth - 86, y: window.innerHeight - 86 },
+  externalOpen = null,
+  onToggle = null
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeChat, setActiveChat] = useState(null);
   const isMobile = useIsMobile();
@@ -87,6 +92,13 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
   const mediaRecorderRef = useRef(null);
   const fileInputRef = useRef(null);
   const audioInputRef = useRef(null);
+
+  // Sincronizar com estado externo se fornecido
+  useEffect(() => {
+    if (externalOpen !== null) {
+      setIsOpen(externalOpen);
+    }
+  }, [externalOpen]);
 
   // Scroll para a última mensagem
   const scrollToBottom = () => {
@@ -525,7 +537,13 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
       <div className="relative">
         <ChatButton
           isOpen={isOpen}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            const newState = !isOpen;
+            setIsOpen(newState);
+            if (onToggle) {
+              onToggle(newState);
+            }
+          }}
           position={buttonPos}
           onPositionChange={setButtonPos}
         />
@@ -702,15 +720,32 @@ const WorkflowChat = ({ currentUser, buttonPosition = { x: window.innerWidth - 8
                   </>
                 ) : (
                   <>
-                    <h3 className="font-medium text-white">Conversas</h3>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setShowNewGroup(true)}
-                        className="text-white hover:text-white/80 transition-colors p-2"
-                        title="Novo Grupo"
-                      >
-                        <Users className="w-5 h-5" />
-                      </button>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const newState = false;
+                            setIsOpen(newState);
+                            if (onToggle) {
+                              onToggle(newState);
+                            }
+                          }}
+                          className="text-white hover:text-white/80 transition-colors p-2"
+                          title="Fechar Chat"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                        <h3 className="font-medium text-white">Conversas</h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setShowNewGroup(true)}
+                          className="text-white hover:text-white/80 transition-colors p-2"
+                          title="Novo Grupo"
+                        >
+                          <Users className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
