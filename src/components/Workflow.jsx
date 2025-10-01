@@ -1899,10 +1899,10 @@ const AlmoxarifadoSistema = () => {
               menuOpen ? 'translate-x-0' : '-translate-x-full'
             }`
           : 'w-80 fixed h-full left-0'
-      } bg-white dark:bg-black shadow-lg rounded-lg mt-2`}>
+      } bg-white dark:bg-black shadow-lg rounded-lg mt-2 border-r border-gray-200 dark:border-[#38444D]`}>
         <div className="flex flex-col h-full">
           {!isMobile && (
-            <div className="p-4">
+            <div className="p-4 border-b border-gray-200 dark:border-[#38444D]">
               <div className="flex items-center">
                 <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-12 mr-3" />
                 <div>
@@ -1949,63 +1949,63 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
 
-        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-2 px-4 bg-white dark:bg-black rounded-b-lg`}>
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
+        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-3 px-4 bg-white dark:bg-black rounded-b-lg border-t border-gray-200 dark:border-[#38444D]`}>
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
               {funcionarioInfo?.photoURL ? (
                 <img src={funcionarioInfo.photoURL} alt="Profile" className="w-full h-full object-cover" />
               ) : usuario.photoURL ? (
                 <img src={usuario.photoURL} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <User className="w-full h-full p-1.5 text-gray-600 dark:text-[#71767B]" />
+                <User className="w-full h-full p-2 text-gray-600 dark:text-[#71767B]" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-[#E7E9EA] truncate leading-tight">
+              <p className="text-base font-bold text-gray-900 dark:text-[#E7E9EA] truncate leading-tight">
                 {funcionarioInfo?.nome || usuario.nome}
               </p>
-              <p className="text-xs text-gray-500 dark:text-[#71767B] truncate leading-tight">
+              <p className="text-sm text-gray-500 dark:text-[#71767B] truncate leading-tight">
                 {usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 
                   NIVEIS_LABELS[usuario.nivel] : 
                   (funcionarioInfo?.funcao || usuario.cargo || NIVEIS_LABELS[usuario.nivel])}
               </p>
             </div>
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-2">
               <button
                 onClick={() => {
                   logout();
                   setMenuOpen(false);
                 }}
-                className="p-1.5 rounded-full hover:bg-red-500/10 transition-colors"
+                className="p-2 rounded-full hover:bg-red-500/10 transition-colors"
                 title="Sair"
               >
-                <LogOut className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                <LogOut className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
               </button>
               <button
                 onClick={() => {
                   setShowProfileModal(true);
                   setMenuOpen(false);
                 }}
-                className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Editar perfil"
               >
-                <Edit className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                <Edit className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
               </button>
             </div>
           </div>
           
           {/* Botões de Suporte e Usuários */}
-          <div className="mt-1.5">
-            <div className="flex items-center gap-1">
+          <div className="mt-2">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => {
                   setAbaAtiva('suporte');
                   setMenuOpen(false);
                 }}
-                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Ajuda"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-[#E7E9EA]"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-[#E7E9EA]"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
               </button>
               {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
                 <button
@@ -2013,10 +2013,10 @@ const AlmoxarifadoSistema = () => {
                     setAbaAtiva('usuarios');
                     setMenuOpen(false);
                   }}
-                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                  className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                   title="Usuários"
                 >
-                  <Users className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                  <Users className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
                 </button>
               )}
               {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
@@ -2026,30 +2026,30 @@ const AlmoxarifadoSistema = () => {
                       setAbaAtiva('dashboard');
                       setMenuOpen(false);
                     }}
-                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                    className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                     title="Dashboard"
                   >
-                    <BarChart3 className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                    <BarChart3 className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
                   </button>
                   <button
                     onClick={() => {
                       setAbaAtiva('historico-emprestimos');
                       setMenuOpen(false);
                     }}
-                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                    className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                     title="Histórico de Empréstimos"
                   >
-                    <History className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                    <History className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
                   </button>
                   <button
                     onClick={() => {
                       setAbaAtiva('historico-transferencias');
                       setMenuOpen(false);
                     }}
-                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                    className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                     title="Histórico de Transferências"
                   >
-                    <ArrowRight className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                    <ArrowRight className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
                   </button>
                 </>
               )}
@@ -2058,10 +2058,10 @@ const AlmoxarifadoSistema = () => {
                   setAbaAtiva('legal');
                   setMenuOpen(false);
                 }}
-                className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Legal"
               >
-                <Scale className="w-4 h-4 text-gray-900 dark:text-[#E7E9EA]" />
+                <Scale className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
               </button>
             </div>
           </div>
