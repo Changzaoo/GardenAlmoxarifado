@@ -171,6 +171,21 @@ const FerramentasDanificadasTab = ({
     }
   };
 
+  const calcularDiasDanificada = (dataDanificacao) => {
+    if (!dataDanificacao) return 0;
+    
+    const dataAtual = new Date();
+    const dataDano = new Date(dataDanificacao);
+    
+    // Verificar se a data é válida
+    if (isNaN(dataDano.getTime())) return 0;
+    
+    const diferenca = dataAtual - dataDano;
+    const dias = Math.floor(diferenca / (1000 * 60 * 60 * 24));
+    
+    return dias >= 0 ? dias : 0;
+  };
+
   const getPrioridadeColor = (prioridade) => {
     switch (prioridade) {
       case 'baixa': return 'bg-[#00BA7C] text-white font-semibold';
@@ -207,16 +222,7 @@ const FerramentasDanificadasTab = ({
     <div className="space-y-6">
       {/* Header com botão */}
       <div className={`${classes.card} p-6`}>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#F4212E] bg-opacity-10 rounded-lg flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-[#F4212E]" />
-            </div>
-            <div>
-
-              <p className={`text-sm ${colors.textSecondary}`}>Controle e rastreamento de ferramentas danificadas</p>
-            </div>
-          </div>
+        <div className="flex items-center justify-end mb-6">
           
           {!isFuncionario && !readonly && (
             <button
@@ -454,9 +460,9 @@ const FerramentasDanificadasTab = ({
                 </div>
               )}
 
-              {/* Tempo desde a perda */}
+              {/* Tempo desde o dano */}
               <div className={`text-xs ${colors.textSecondary} border-t pt-2`}>
-                Danificada há {Math.floor((new Date() - new Date(item.dataDanificacao)) / (1000 * 60 * 60 * 24))} dias
+                Danificada há {calcularDiasDanificada(item.dataDanificacao)} dias
               </div>
             </div>
           </div>

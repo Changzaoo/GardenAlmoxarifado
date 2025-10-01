@@ -25,11 +25,17 @@ const getSemanasDoMes = (ano, mes) => {
     // Ajusta o fim da semana para não ultrapassar o mês
     const fimAjustado = new Date(Math.min(fim, ultimoDia));
 
-    semanas.push({
-      inicio: new Date(inicio),
-      fim: fimAjustado,
-      label: `${inicio.getDate()}/${mes + 1} - ${fimAjustado.getDate()}/${mes + 1}`
-    });
+    // Só adiciona a semana se ela contém pelo menos um dia do mês atual
+    if (fimAjustado >= primeiroDia) {
+      // Ajustar as datas para mostrar apenas os dias do mês atual
+      const inicioAjustado = new Date(Math.max(inicio, primeiroDia));
+      
+      semanas.push({
+        inicio: inicioAjustado,
+        fim: fimAjustado,
+        label: `${inicioAjustado.getDate()}/${mes + 1} - ${fimAjustado.getDate()}/${mes + 1}`
+      });
+    }
 
     inicio = new Date(fim);
     inicio.setDate(inicio.getDate() + 1);
@@ -49,6 +55,9 @@ const RankingPontos = () => {
   const [showSemanaSelector, setShowSemanaSelector] = useState(false);
   const [showPontosExplicacao, setShowPontosExplicacao] = useState(false);
   
+  // Calcular as semanas do mês atual
+  const semanasDoMes = getSemanasDoMes(anoSelected, mesSelected);
+  
   // Encontrar a semana atual
   const getWeekNumber = (hoje) => {
     const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
@@ -56,15 +65,15 @@ const RankingPontos = () => {
     primeiroDiaSemana.setDate(primeiroDia.getDate() - primeiroDia.getDay() + (primeiroDia.getDay() === 0 ? -6 : 1));
     
     const diff = hoje - primeiroDiaSemana;
-    return Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
+    const weekNumber = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
+    
+    // Garantir que o número da semana seja válido (não negativo e dentro do limite)
+    return Math.max(0, Math.min(weekNumber, semanasDoMes.length - 1));
   };
-  
+
   const [semanaSelected, setSemanaSelected] = useState(getWeekNumber(new Date()));
   const [selectedFuncionario, setSelectedFuncionario] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
-  
-  // Calcular as semanas do mês atual
-  const semanasDoMes = getSemanasDoMes(anoSelected, mesSelected);
 
   // Fechar seletores quando clicar fora
   useEffect(() => {
@@ -100,8 +109,15 @@ const RankingPontos = () => {
         let dataLimiteInicio, dataLimiteFim;
 
         if (periodoAtual === 'semana') {
-          dataLimiteInicio = semanasDoMes[semanaSelected].inicio;
-          dataLimiteFim = semanasDoMes[semanaSelected].fim;
+          // Verificar se a semana selecionada existe no array
+          if (semanasDoMes && semanasDoMes[semanaSelected]) {
+            dataLimiteInicio = semanasDoMes[semanaSelected].inicio;
+            dataLimiteFim = semanasDoMes[semanaSelected].fim;
+          } else {
+            // Fallback para o mês inteiro se a semana não existir
+            dataLimiteInicio = new Date(anoSelected, mesSelected, 1);
+            dataLimiteFim = new Date(anoSelected, mesSelected + 1, 0);
+          }
         } else if (periodoAtual === 'mes') {
           dataLimiteInicio = new Date(anoSelected, mesSelected, 1);
           dataLimiteFim = new Date(anoSelected, mesSelected + 1, 0);
