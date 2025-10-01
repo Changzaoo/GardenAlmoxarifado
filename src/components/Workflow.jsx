@@ -937,6 +937,7 @@ const AlmoxarifadoSistema = () => {
   // Estados locais
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuRecolhido, setMenuRecolhido] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   const toggleMenu = () => {
@@ -1892,64 +1893,349 @@ const AlmoxarifadoSistema = () => {
         </header>
       )}
 
+      {/* Overlay para mobile */}
+      {isMobile && menuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
       {/* Menu lateral */}
       <nav className={`${
         isMobile 
-          ? `fixed top-0 bottom-0 left-0 z-40 w-full max-w-[320px] transform transition-transform duration-300 ease-in-out ${
+          ? `fixed top-0 bottom-0 left-0 z-50 w-full h-full transform transition-transform duration-300 ease-in-out ${
               menuOpen ? 'translate-x-0' : '-translate-x-full'
-            }`
-          : 'w-80 fixed h-full left-0'
-      } bg-white dark:bg-black shadow-lg rounded-lg mt-2 border-r border-gray-200 dark:border-[#38444D]`}>
+            } bg-white dark:bg-black shadow-lg border-r border-gray-200 dark:border-[#38444D]`
+          : `${menuRecolhido ? 'w-16' : 'w-80'} fixed h-full left-0 transition-all duration-300 ease-in-out bg-white dark:bg-black shadow-lg rounded-lg mt-2 border-r border-gray-200 dark:border-[#38444D]`
+      }`}>
         <div className="flex flex-col h-full">
           {!isMobile && (
-            <div className="p-4 border-b border-gray-200 dark:border-[#38444D]">
-              <div className="flex items-center">
-                <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-12 mr-3" />
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900 dark:text-white">WorkFlow</h1>
-                </div>
+            <div className="p-4 border-b border-gray-200 dark:border-[#38444D] flex items-center justify-between">
+              <div className={`flex items-center ${menuRecolhido ? 'justify-center w-full' : ''}`}>
+                <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-auto" />
+                {!menuRecolhido && (
+                  <div className="ml-3">
+                    <h1 className="text-lg font-bold text-gray-900 dark:text-white">WorkFlow</h1>
+                  </div>
+                )}
               </div>
+              {!menuRecolhido && (
+                <button
+                  onClick={() => setMenuRecolhido(!menuRecolhido)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  title="Recolher menu"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+                    <path d="m15 18-6-6 6-6"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
+          
+          {/* Botão de expandir quando menu recolhido */}
+          {!isMobile && menuRecolhido && (
+            <div className="p-2 flex justify-center border-b border-gray-200 dark:border-[#38444D]">
+              <button
+                onClick={() => setMenuRecolhido(!menuRecolhido)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="Expandir menu"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </button>
             </div>
           )}
 
-          {/* Espaço para o header fixo no mobile */}
+          {/* Header personalizado para menu fullscreen mobile */}
           {isMobile && menuOpen && (
-            <div className="h-16"></div>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-[#38444D]">
+              {/* Logo e nome centralizado */}
+              <div className="flex-1 flex items-center justify-center">
+                <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-3" />
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">WorkFlow</h1>
+              </div>
+              
+              {/* Botão X no canto superior direito */}
+              <button
+                onClick={toggleMenu}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="Fechar menu"
+              >
+                <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
           )}
 
-          <div className="flex-1 overflow-y-auto py-4 px-2">
-            <div className="space-y-1">
-              {abas.filter(aba => aba.permissao()).map((aba) => {
-              const Icone = aba.icone;
-              return (
+          {/* Menu em grade para mobile */}
+          {isMobile && menuOpen ? (
+            <div className="flex-1 p-3">
+              <div className="grid grid-cols-4 gap-3">
+                {abas.filter(aba => aba.permissao()).map((aba) => {
+                  const Icone = aba.icone;
+                  return (
+                    <button
+                      key={aba.id}
+                      onClick={() => {
+                        setAbaAtiva(aba.id);
+                        setMenuOpen(false);
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                        abaAtiva === aba.id
+                          ? 'bg-[#1D9BF0] text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <Icone className="w-6 h-6 mb-1" />
+                      <span className="text-xs font-medium text-center leading-tight">
+                        {aba.nome}
+                      </span>
+                    </button>
+                  );
+                })}
+                
+                {/* Botões secundários */}
                 <button
-                  key={aba.id}
                   onClick={() => {
-                    setAbaAtiva(aba.id);
-                    if (isMobile) {
-                      setMenuOpen(false);
-                    }
+                    setAbaAtiva('suporte');
+                    setMenuOpen(false);
                   }}
-                  className={`block w-full text-left flex items-center space-x-3 px-4 ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-[20px] transition-all duration-200 ${
-                    abaAtiva === aba.id
+                  className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                    abaAtiva === 'suporte'
+                      ? 'bg-[#1D9BF0] text-white shadow-lg'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 mb-1">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <path d="M12 17h.01"></path>
+                  </svg>
+                  <span className="text-xs font-medium text-center leading-tight">
+                    Suporte
+                  </span>
+                </button>
+
+                {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
+                  <button
+                    onClick={() => {
+                      setAbaAtiva('usuarios');
+                      setMenuOpen(false);
+                    }}
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                      abaAtiva === 'usuarios'
+                        ? 'bg-[#1D9BF0] text-white shadow-lg'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Users className="w-6 h-6 mb-1" />
+                    <span className="text-xs font-medium text-center leading-tight">
+                      Usuários
+                    </span>
+                  </button>
+                )}
+
+                {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setAbaAtiva('dashboard');
+                        setMenuOpen(false);
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                        abaAtiva === 'dashboard'
+                          ? 'bg-[#1D9BF0] text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <BarChart3 className="w-6 h-6 mb-1" />
+                      <span className="text-xs font-medium text-center leading-tight">
+                        Dashboard
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAbaAtiva('historico-emprestimos');
+                        setMenuOpen(false);
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                        abaAtiva === 'historico-emprestimos'
+                          ? 'bg-[#1D9BF0] text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <History className="w-6 h-6 mb-1" />
+                      <span className="text-xs font-medium text-center leading-tight">
+                        Histórico
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAbaAtiva('historico-transferencias');
+                        setMenuOpen(false);
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                        abaAtiva === 'historico-transferencias'
+                          ? 'bg-[#1D9BF0] text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <ArrowRight className="w-6 h-6 mb-1" />
+                      <span className="text-xs font-medium text-center leading-tight">
+                        Transferências
+                      </span>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => {
+                    setAbaAtiva('legal');
+                    setMenuOpen(false);
+                  }}
+                  className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                    abaAtiva === 'legal'
+                      ? 'bg-[#1D9BF0] text-white shadow-lg'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Scale className="w-6 h-6 mb-1" />
+                  <span className="text-xs font-medium text-center leading-tight">
+                    Legal
+                  </span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Menu linear para desktop */
+            <div className="flex-1 overflow-y-auto py-2 px-2">
+              <div className="space-y-1">
+                {abas.filter(aba => aba.permissao()).map((aba) => {
+                const Icone = aba.icone;
+                return (
+                  <button
+                    key={aba.id}
+                    onClick={() => {
+                      setAbaAtiva(aba.id);
+                      if (isMobile) {
+                        setMenuOpen(false);
+                      }
+                    }}
+                    className={`${menuRecolhido ? 'justify-center' : 'justify-start'} w-full flex items-center ${menuRecolhido ? 'px-0' : 'space-x-3 px-4'} ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-[20px] transition-all duration-200 ${
+                      abaAtiva === aba.id
+                        ? 'bg-[#1D9BF0] text-white'
+                        : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                    }`}
+                    title={menuRecolhido ? aba.nome : ''}
+                  >
+                    <Icone className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
+                      abaAtiva === aba.id 
+                        ? 'text-white' 
+                        : 'text-[#E7E9EA] group-hover:text-[#1D9BF0]'
+                    }`} />
+                    {!menuRecolhido && <span>{aba.nome}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          )}
+
+        {/* Botões secundários no modo recolhido */}
+        {!isMobile && menuRecolhido && (
+          <div className="px-2 py-2 border-t border-gray-200 dark:border-[#38444D]">
+            <div className="space-y-1">
+              <button
+                onClick={() => setAbaAtiva('suporte')}
+                className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                  abaAtiva === 'suporte'
+                    ? 'bg-[#1D9BF0] text-white'
+                    : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                }`}
+                title="Ajuda"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <path d="M12 17h.01"></path>
+                </svg>
+              </button>
+              
+              {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
+                <button
+                  onClick={() => setAbaAtiva('usuarios')}
+                  className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                    abaAtiva === 'usuarios'
                       ? 'bg-[#1D9BF0] text-white'
                       : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
                   }`}
+                  title="Usuários"
                 >
-                  <Icone className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
-                    abaAtiva === aba.id 
-                      ? 'text-white' 
-                      : 'text-[#E7E9EA] group-hover:text-[#1D9BF0]'
-                  }`} />
-                  <span>{aba.nome}</span>
+                  <Users className="w-5 h-5" />
                 </button>
-              );
-            })}
-          
+              )}
+              
+              {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+                <>
+                  <button
+                    onClick={() => setAbaAtiva('dashboard')}
+                    className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                      abaAtiva === 'dashboard'
+                        ? 'bg-[#1D9BF0] text-white'
+                        : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                    }`}
+                    title="Dashboard"
+                  >
+                    <BarChart3 className="w-5 h-5" />
+                  </button>
+                  
+                  <button
+                    onClick={() => setAbaAtiva('historico-emprestimos')}
+                    className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                      abaAtiva === 'historico-emprestimos'
+                        ? 'bg-[#1D9BF0] text-white'
+                        : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                    }`}
+                    title="Histórico de Empréstimos"
+                  >
+                    <History className="w-5 h-5" />
+                  </button>
+                  
+                  <button
+                    onClick={() => setAbaAtiva('historico-transferencias')}
+                    className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                      abaAtiva === 'historico-transferencias'
+                        ? 'bg-[#1D9BF0] text-white'
+                        : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                    }`}
+                    title="Histórico de Transferências"
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+              
+              <button
+                onClick={() => setAbaAtiva('legal')}
+                className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                  abaAtiva === 'legal'
+                    ? 'bg-[#1D9BF0] text-white'
+                    : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                }`}
+                title="Legal"
+              >
+                <Scale className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-3 px-4 bg-white dark:bg-black rounded-b-lg border-t border-gray-200 dark:border-[#38444D]`}>
+        {!menuRecolhido && (
+          <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-3 px-4 bg-white dark:bg-black rounded-b-lg border-t border-gray-200 dark:border-[#38444D]`}>
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
               {funcionarioInfo?.photoURL ? (
@@ -1994,78 +2280,81 @@ const AlmoxarifadoSistema = () => {
             </div>
           </div>
           
-          {/* Botões de Suporte e Usuários */}
-          <div className="mt-2">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setAbaAtiva('suporte');
-                  setMenuOpen(false);
-                }}
-                className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                title="Ajuda"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-[#E7E9EA]"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
-              </button>
-              {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
+          {/* Botões de Suporte e Usuários - apenas no desktop */}
+          {!isMobile && (
+            <div className="mt-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    setAbaAtiva('usuarios');
+                    setAbaAtiva('suporte');
                     setMenuOpen(false);
                   }}
                   className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                  title="Usuários"
+                  title="Ajuda"
                 >
-                  <Users className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-[#E7E9EA]"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
                 </button>
-              )}
-              {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
-                <>
+                {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
                   <button
                     onClick={() => {
-                      setAbaAtiva('dashboard');
+                      setAbaAtiva('usuarios');
                       setMenuOpen(false);
                     }}
                     className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                    title="Dashboard"
+                    title="Usuários"
                   >
-                    <BarChart3 className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
+                    <Users className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
                   </button>
-                  <button
-                    onClick={() => {
-                      setAbaAtiva('historico-emprestimos');
-                      setMenuOpen(false);
-                    }}
-                    className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                    title="Histórico de Empréstimos"
-                  >
-                    <History className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAbaAtiva('historico-transferencias');
-                      setMenuOpen(false);
-                    }}
-                    className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                    title="Histórico de Transferências"
-                  >
-                    <ArrowRight className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
-                  </button>
-                </>
-              )}
-              <button
-                onClick={() => {
-                  setAbaAtiva('legal');
-                  setMenuOpen(false);
-                }}
-                className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                title="Legal"
-              >
-                <Scale className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
-              </button>
+                )}
+                {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setAbaAtiva('dashboard');
+                        setMenuOpen(false);
+                      }}
+                      className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                      title="Dashboard"
+                    >
+                      <BarChart3 className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAbaAtiva('historico-emprestimos');
+                        setMenuOpen(false);
+                      }}
+                      className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                      title="Histórico de Empréstimos"
+                    >
+                      <History className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAbaAtiva('historico-transferencias');
+                        setMenuOpen(false);
+                      }}
+                      className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                      title="Histórico de Transferências"
+                    >
+                      <ArrowRight className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    setAbaAtiva('legal');
+                    setMenuOpen(false);
+                  }}
+                  className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
+                  title="Legal"
+                >
+                  <Scale className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
+        )}
         </div>
       </nav>
 
@@ -2078,7 +2367,7 @@ const AlmoxarifadoSistema = () => {
 
 
 
-      <main className={`${isMobile ? 'pt-16' : 'pl-80'} w-full min-h-screen bg-white dark:bg-black`}>
+      <main className={`${isMobile ? 'pt-16 pb-20' : `${menuRecolhido ? 'pl-16' : 'pl-80'} transition-all duration-300 ease-in-out`} w-full min-h-screen bg-white dark:bg-black`}>
         <div className="max-w-5xl mx-auto px-4">
           <div className="py-3">
 
@@ -2250,6 +2539,56 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
       </main>
+
+      {/* Menu inferior para mobile */}
+      {isMobile && !menuOpen && (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-gray-200 dark:border-[#38444D] px-2 py-1">
+          <div className="flex justify-around items-center">
+            {abas.filter(aba => aba.permissao()).slice(0, 5).map((aba) => {
+              const Icone = aba.icone;
+              return (
+                <button
+                  key={aba.id}
+                  onClick={() => {
+                    setAbaAtiva(aba.id);
+                    setMenuOpen(false);
+                  }}
+                  className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
+                    abaAtiva === aba.id
+                      ? 'text-[#1D9BF0]'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  <Icone className={`w-5 h-5 mb-1 ${
+                    abaAtiva === aba.id 
+                      ? 'text-[#1D9BF0]' 
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`} />
+                  <span className="text-xs font-medium truncate w-full text-center leading-tight">
+                    {aba.nome}
+                  </span>
+                </button>
+              );
+            })}
+            
+            {/* Botão "Mais" para acessar menu lateral */}
+            <button
+              onClick={toggleMenu}
+              className="flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 min-w-0 flex-1 text-gray-500 dark:text-gray-400"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mb-1">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="12" cy="5" r="1"></circle>
+                <circle cx="12" cy="19" r="1"></circle>
+              </svg>
+              <span className="text-xs font-medium truncate w-full text-center leading-tight">
+                Mais
+              </span>
+            </button>
+          </div>
+        </nav>
+      )}
+
       <WorkflowChat currentUser={usuario} />
     </div>
     </FuncionariosProvider>

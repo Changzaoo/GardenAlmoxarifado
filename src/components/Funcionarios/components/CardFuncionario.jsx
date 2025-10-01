@@ -1,5 +1,5 @@
-import React from 'react';
-import { Users, Edit, Trash2, Hammer, Gauge, Clock, UserX, UserCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Users, Edit, Trash2, Hammer, Gauge, Clock, UserX, UserCheck, MoreVertical } from 'lucide-react';
 import AvaliacoesCard from './AvaliacoesCard';
 import InformacoesContato from './InformacoesContato';
 
@@ -21,6 +21,26 @@ const CardFuncionario = ({
   reintegrarFuncionario,
   filtroAtual
 }) => {
+  const [menuAberto, setMenuAberto] = useState(false);
+  const menuRef = useRef(null);
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuAberto(false);
+      }
+    };
+
+    if (menuAberto) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuAberto]);
+
   // Função para calcular a média das avaliações (retorna o tipo e a média)
   const calcularMedia = (avaliacoes) => {
     // Verificar se existem avaliações
@@ -73,56 +93,76 @@ const CardFuncionario = ({
       <div className="relative bg-[#1DA1F2]/10 p-4">
         {/* Ações do header */}
         {!isFuncionario && !readonly && (
-          <div className="absolute top-2 left-2 flex items-center">
+          <div className="absolute top-2 right-2" ref={menuRef}>
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleEditar(func);
+                setMenuAberto(!menuAberto);
               }}
-              className="p-1.5 bg-[#192734] text-[#1DA1F2] hover:bg-[#253341] hover:text-white rounded-lg transition-colors shadow-md"
-              title="Editar funcionário"
+              className="p-1.5 bg-[#192734] text-[#8899A6] hover:bg-[#253341] hover:text-white rounded-lg transition-colors shadow-md"
+              title="Opções"
             >
-              <Edit className="w-4 h-4" />
+              <MoreVertical className="w-4 h-4" />
             </button>
 
-            <div className="w-px h-6 bg-[#38444D] mx-1"></div>
+            {/* Menu dropdown */}
+            {menuAberto && (
+              <div className="absolute top-full right-0 mt-1 bg-[#192734] border border-[#38444D] rounded-lg shadow-lg py-1 z-10 min-w-[160px]">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuAberto(false);
+                    handleEditar(func);
+                  }}
+                  className="w-full px-3 py-2 text-left text-[#1DA1F2] hover:bg-[#1DA1F2]/20 transition-colors flex items-center gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Editar
+                </button>
 
-            {func.demitido ? (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  reintegrarFuncionario(func);
-                }}
-                className="p-1.5 bg-[#192734] text-green-500 hover:bg-[#253341] hover:text-white rounded-lg transition-colors shadow-md"
-                title="Reintegrar funcionário"
-              >
-                <UserCheck className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  demitirFuncionario(func);
-                }}
-                className="p-1.5 bg-[#192734] text-orange-500 hover:bg-[#253341] hover:text-white rounded-lg transition-colors shadow-md"
-                title="Demitir funcionário"
-              >
-                <UserX className="w-4 h-4" />
-              </button>
+                <div className="h-px bg-[#38444D] mx-2 my-1"></div>
+
+                {func.demitido ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuAberto(false);
+                      reintegrarFuncionario(func);
+                    }}
+                    className="w-full px-3 py-2 text-left text-green-500 hover:bg-green-500/20 transition-colors flex items-center gap-2"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    Reintegrar
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuAberto(false);
+                      demitirFuncionario(func);
+                    }}
+                    className="w-full px-3 py-2 text-left text-orange-500 hover:bg-orange-500/20 transition-colors flex items-center gap-2"
+                  >
+                    <UserX className="w-4 h-4" />
+                    Demitir
+                  </button>
+                )}
+
+                <div className="h-px bg-[#38444D] mx-2 my-1"></div>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuAberto(false);
+                    confirmarExclusao(func);
+                  }}
+                  className="w-full px-3 py-2 text-left text-red-500 hover:bg-red-500/20 transition-colors flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Excluir
+                </button>
+              </div>
             )}
-
-            <div className="w-px h-6 bg-[#38444D] mx-1"></div>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                confirmarExclusao(func);
-              }}
-              className="p-1.5 bg-[#192734] text-red-500 hover:bg-[#253341] hover:text-white rounded-lg transition-colors shadow-md"
-              title="Excluir funcionário"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
           </div>
         )}
 
