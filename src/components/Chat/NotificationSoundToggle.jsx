@@ -8,7 +8,7 @@ export const NotificationSoundToggle = () => {
   return (
     <button
       onClick={toggleSound}
-      className="p-2 rounded-full hover:bg-[#1f2937] transition-colors"
+      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
       title={soundEnabled ? 'Desativar som' : 'Ativar som'}
     >
       {soundEnabled ? (

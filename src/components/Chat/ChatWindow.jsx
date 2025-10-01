@@ -58,7 +58,7 @@ const ChatWindow = ({
 
   return isOpen ? (
     <div
-      className={`fixed right-4 bottom-[73px] bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-lg shadow-xl w-80 mb-2 max-h-[calc(100vh-100px)] flex flex-col`}
+      className={`fixed right-4 bottom-[73px] bg-white dark:bg-gray-100 border border-gray-200 dark:border-gray-300 rounded-lg shadow-xl w-80 mb-2 max-h-[calc(100vh-100px)] flex flex-col`}
       style={{
         zIndex: 1000,
       }}

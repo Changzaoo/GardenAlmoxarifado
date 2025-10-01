@@ -91,31 +91,31 @@ const TransferenciasPendentes = ({ usuario }) => {
   if (transferencias.length === 0) return null;
 
   return (
-    <div className="bg-yellow-50 p-4 rounded-lg mb-6">
+    <div className="bg-white dark:bg-gray-700 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-600">
       <div className="flex items-center gap-2 mb-4">
         <Bell className="w-5 h-5 text-yellow-600" />
-        <h3 className="text-lg font-medium text-yellow-800">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
           Transferências Pendentes
         </h3>
       </div>
 
       <div className="space-y-4">
         {transferencias.map((transferencia) => (
-          <div key={transferencia.id} className="bg-white p-4 rounded-lg shadow-sm border border-yellow-200">
+          <div key={transferencia.id} className="bg-gray-50 dark:bg-gray-600 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-500">
             <div className="flex justify-between items-start">
               <div>
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-gray-900 dark:text-white">
                   Solicitação de {transferencia.funcionarioOrigem}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Data: {formatarData(transferencia.dataSolicitacao)}
                 </p>
                 
                 <div className="mt-2">
-                  <p className="text-sm font-medium text-gray-700">Ferramentas:</p>
-                  <div className="bg-gray-50 p-2 rounded mt-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Ferramentas:</p>
+                  <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded mt-1">
                     {transferencia.ferramentas.map((ferramenta, idx) => (
-                      <div key={idx} className="text-sm text-gray-800">
+                      <div key={idx} className="text-sm text-gray-900 dark:text-gray-200">
                         {typeof ferramenta === 'string' ? ferramenta : ferramenta.nome}
                         {typeof ferramenta !== 'string' && ferramenta.quantidade > 1 && ` (${ferramenta.quantidade})`}
                       </div>

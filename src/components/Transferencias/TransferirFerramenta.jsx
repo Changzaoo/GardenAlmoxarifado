@@ -87,11 +87,11 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+      <div className="bg-white dark:bg-gray-700 rounded-lg shadow-xl w-full max-w-2xl border border-gray-200 dark:border-gray-600">
         {/* Cabeçalho */}
-        <div className="bg-gray-50 px-6 py-4 rounded-t-lg border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Transferir Ferramentas</h3>
-          <p className="text-sm text-gray-600 mt-1">
+        <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 rounded-t-lg border-b border-gray-200 dark:border-gray-600">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Transferir Ferramentas</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
             Selecione o funcionário e confirme a transferência das ferramentas
           </p>
         </div>
@@ -100,25 +100,25 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
         <div className="p-6 space-y-6">
           {/* Ferramentas */}
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Ferramentas a transferir:</h4>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg divide-y divide-gray-200">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Ferramentas a transferir:</h4>
+            <div className="bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-lg divide-y divide-gray-200 dark:divide-gray-500">
               {emprestimo.ferramentas.map((ferramenta, idx) => (
                 <div key={idx} className="p-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <ToolCase className="w-5 h-5 text-gray-400" />
                     <div>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
                         {typeof ferramenta === 'string' ? ferramenta : ferramenta.nome}
                       </span>
                       {typeof ferramenta !== 'string' && ferramenta.codigo && (
-                        <span className="ml-2 text-xs text-gray-500">
+                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                           Código: {ferramenta.codigo}
                         </span>
                       )}
                     </div>
                   </div>
                   {typeof ferramenta !== 'string' && ferramenta.quantidade > 1 && (
-                    <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                    <span className="text-sm text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-500 px-2 py-1 rounded">
                       Qtd: {ferramenta.quantidade}
                     </span>
                   )}
@@ -129,13 +129,13 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
 
           {/* Seleção de Funcionário */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
               Selecione o funcionário para receber as ferramentas:
             </label>
             <select
               value={funcionarioSelecionado}
               onChange={(e) => setFuncionarioSelecionado(e.target.value)}
-              className="w-full bg-white dark:bg-gray-800 dark:bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none"
+              className="w-full bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none"
               required
             >
               <option value="">Selecione um funcionário</option>
@@ -171,11 +171,11 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
         </div>
 
         {/* Rodapé com botões */}
-        <div className="bg-gray-50 px-6 py-4 rounded-b-lg border-t flex justify-end gap-3">
+        <div className="bg-gray-50 dark:bg-gray-800 px-6 py-4 rounded-b-lg border-t border-gray-200 dark:border-gray-600 flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
           >
             Cancelar
           </button>
@@ -183,7 +183,7 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
             type="button"
             onClick={handleTransferir}
             disabled={loading || !funcionarioSelecionado || !confirmado}
-            className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-2"
           >
             <ArrowRight className="w-4 h-4" />
             {loading ? 'Transferindo...' : 'Confirmar Transferência'}

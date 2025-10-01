@@ -69,24 +69,24 @@ const TransferenciasPendentesRecebimento = ({ usuario }) => {
   }
 
   return (
-    <div className="bg-green-50 rounded-lg shadow-sm p-6 border border-green-200 mb-6">
-      <h3 className="text-lg font-semibold text-green-800 mb-4">
+    <div className="bg-white dark:bg-gray-700 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-600 mb-6">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
         Transferências Pendentes para Sua Aprovação
       </h3>
       <div className="space-y-3">
         {transferencias.map(transferencia => (
-          <div key={transferencia.id} className="bg-white rounded-lg p-4 border border-green-200">
+          <div key={transferencia.id} className="bg-gray-50 dark:bg-gray-600 rounded-lg p-4 border border-gray-200 dark:border-gray-500">
             <div className="flex justify-between items-start">
               <div>
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-gray-900 dark:text-white">
                   De: {transferencia.funcionarioOrigem}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Solicitado em: {formatarData(transferencia.dataSolicitacao)}
                 </p>
                 <div className="mt-2">
-                  <p className="text-sm text-gray-700">Ferramentas:</p>
-                  <ul className="list-disc list-inside text-sm text-gray-600">
+                  <p className="text-sm text-gray-900 dark:text-white">Ferramentas:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300">
                     {(transferencia.ferramentas || []).map((ferramenta, idx) => (
                       <li key={idx}>
                         {typeof ferramenta === 'string' ? ferramenta : ferramenta.nome}
@@ -97,20 +97,20 @@ const TransferenciasPendentesRecebimento = ({ usuario }) => {
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <div className="text-sm text-green-600 flex items-center gap-1 mb-2">
+                <div className="text-sm text-yellow-600 dark:text-yellow-400 flex items-center gap-1 mb-2">
                   <Clock className="w-4 h-4" />
                   Aguardando sua aprovação
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAceitarTransferencia(transferencia)}
-                    className="px-4 py-2 bg-green-600 text-gray-900 dark:text-white rounded-md hover:bg-green-700 transition-colors"
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
                   >
                     Aceitar
                   </button>
                   <button
                     onClick={() => handleRecusarTransferencia(transferencia)}
-                    className="px-4 py-2 bg-red-600 text-gray-900 dark:text-white rounded-md hover:bg-red-700 transition-colors"
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                   >
                     Recusar
                   </button>

@@ -577,7 +577,7 @@ const WorkflowChat = ({
                 <h3 className="font-medium text-white">Perfil</h3>
               </div>
               <div className="flex-1 overflow-y-auto bg-[#36393f]">
-                <div className="p-8 flex flex-col items-center border-b border-white/10">
+                <div className="p-8 flex flex-col items-center border-b border-gray-200 dark:border-gray-400">
                   <div className="workflow-chat-user-avatar w-32 h-32 text-4xl flex items-center justify-center mb-4">
                     {activeChat.type === 'group' 
                       ? activeChat.name.charAt(0).toUpperCase()
@@ -679,7 +679,7 @@ const WorkflowChat = ({
 
                       {showOptionsMenu && (
                         <div 
-                          className="absolute right-0 mt-2 w-48 bg-[#1f2936] rounded shadow-lg py-1 z-[10001] border border-white/10"
+                          className="absolute right-0 mt-2 w-48 bg-gray-100 dark:bg-gray-600 rounded shadow-lg py-1 z-[10001] border border-gray-200 dark:border-gray-400"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
@@ -752,7 +752,7 @@ const WorkflowChat = ({
               </div>
 
               {showNewGroup ? (
-                <div className="flex-1 overflow-auto p-4 bg-[#1f2936]">
+                <div className="flex-1 overflow-auto p-4 bg-gray-100 dark:bg-gray-600">
                   <div className="mb-4">
                     <input
                       type="text"
@@ -762,7 +762,7 @@ const WorkflowChat = ({
                       className="workflow-chat-input w-full"
                     />
                   </div>
-                  <div className="bg-[#1f2936] rounded p-2 max-h-[400px] overflow-y-auto">
+                  <div className="bg-gray-100 dark:bg-gray-600 rounded p-2 max-h-[400px] overflow-y-auto">
                     {availableUsers.map(user => (
                       <div
                         key={user.id}
@@ -784,7 +784,7 @@ const WorkflowChat = ({
                             type="checkbox"
                             checked={selectedUsers.find(u => u.id === user.id)}
                             onChange={() => {}}
-                            className="rounded text-[#1D9BF0] bg-[#2f3136] border border-white/10 focus:ring-[#1D9BF0] focus:ring-offset-0"
+                            className="rounded text-[#1D9BF0] bg-[#2f3136] border border-gray-200 dark:border-gray-400 focus:ring-[#1D9BF0] focus:ring-offset-0"
                           />
                           <span className="text-[#dcddde]">{user.nome}</span>
                         </div>
@@ -801,14 +801,14 @@ const WorkflowChat = ({
                 </div>
               ) : activeChat ? (
                 <>
-                  <div className="flex-1 overflow-y-auto p-4 workflow-chat-messages bg-[#1f2936]">
+                  <div className="flex-1 overflow-y-auto p-4 workflow-chat-messages bg-gray-100 dark:bg-gray-600">
                     {messages?.map((message) => (
                       <div
                         key={message.id}
                         className={`${message.senderId === currentUser.id ? 'text-right' : 'text-left'}`}
                       >
                         <div
-                          className={`workflow-chat-message border border-white/10 ${
+                          className={`workflow-chat-message border border-gray-200 dark:border-gray-400 ${
                             message.senderId === currentUser.id
                               ? 'workflow-chat-message-sent bg-[#1d9bf0] text-white'
                               : 'workflow-chat-message-received bg-[#40444b] text-[#dcddde]'
@@ -900,7 +900,7 @@ const WorkflowChat = ({
                     ))}
                     <div ref={messagesEndRef} />
                   </div>
-                  <div className="p-3 border-t border-white/10 bg-[#1f2936] flex items-center gap-2 relative">
+                  <div className="p-3 border-t border-gray-200 dark:border-gray-400 bg-gray-100 dark:bg-gray-600 flex items-center gap-2 relative">
                     <div className="relative">
                       <button
                         type="button"
@@ -933,7 +933,7 @@ const WorkflowChat = ({
                       </button>
 
                       {showAttachMenu && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-[#2f3136] rounded-lg shadow-lg border border-white/10">
+                        <div className="absolute bottom-full left-0 mb-2 bg-[#2f3136] rounded-lg shadow-lg border border-gray-200 dark:border-gray-400">
                           <input
                             type="file"
                             accept="image/*"
@@ -995,7 +995,7 @@ const WorkflowChat = ({
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Digite uma mensagem"
-                        className="flex-1 workflow-chat-input bg-[#40444b] text-[#dcddde] border border-white/10 py-2 px-4 focus:outline-none focus:border-[#1d9bf0] text-sm"
+                        className="flex-1 workflow-chat-input bg-[#40444b] text-[#dcddde] border border-gray-200 dark:border-gray-400 py-2 px-4 focus:outline-none focus:border-[#1d9bf0] text-sm"
                       />
                       {newMessage.trim() && (
                         <button
@@ -1028,7 +1028,7 @@ const WorkflowChat = ({
                 </>
               ) : (
                 <>
-                  <div className="p-3 bg-[#1f2936] border-b border-white/10">
+                  <div className="p-3 bg-gray-100 dark:bg-gray-600 border-b border-gray-200 dark:border-gray-400">
                     <div className="relative">
                       <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#72767d]" />
                       <input
@@ -1040,7 +1040,7 @@ const WorkflowChat = ({
                       />
                     </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto bg-[#1f2936]">
+                  <div className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-600">
                     {searchResults.chats.map((chat) => {
                       const otherUser = chat.type !== 'group' 
                         ? availableUsers.find(u => chat.participants.includes(u.id) && u.id !== currentUser.id)
@@ -1057,7 +1057,7 @@ const WorkflowChat = ({
                             const timer = setTimeout(() => handleLongPress(chat.id), 500);
                             return () => clearTimeout(timer);
                           }}
-                          className="workflow-chat-list-item p-3 border-b border-white/10 cursor-pointer flex items-center gap-3 relative"
+                          className="workflow-chat-list-item p-3 border-b border-gray-200 dark:border-gray-400 cursor-pointer flex items-center gap-3 relative"
                         >
                           {unreadMessages[chat.id] > 0 && (
                             <ChatBadge count={unreadMessages[chat.id]} />
@@ -1084,7 +1084,7 @@ const WorkflowChat = ({
 
                     {/* Seção de usuários encontrados */}
                     {searchTerm && searchResults.users.length > 0 && (
-                      <div className="mt-2 border-t border-white/10">
+                      <div className="mt-2 border-t border-gray-200 dark:border-gray-400">
                         <div className="p-2 bg-[#2f3136]">
                           <span className="text-xs font-medium text-[#72767d]">
                             Usuários encontrados
@@ -1094,7 +1094,7 @@ const WorkflowChat = ({
                           <div
                             key={user.id}
                             onClick={() => startNewChat(user)}
-                            className="workflow-chat-list-item p-3 border-b border-white/10 cursor-pointer flex items-center gap-3"
+                            className="workflow-chat-list-item p-3 border-b border-gray-200 dark:border-gray-400 cursor-pointer flex items-center gap-3"
                           >
                             <div className="workflow-chat-user-avatar flex-shrink-0">
                               {user.nome.charAt(0).toUpperCase()}
@@ -1120,7 +1120,7 @@ const WorkflowChat = ({
           {/* Menu de contexto */}
           {contextMenu.visible && (
             <div
-              className="fixed bg-[#1f2936] border border-white/10 rounded shadow-lg py-1 z-[10000]"
+              className="fixed bg-gray-100 dark:bg-gray-600 border border-gray-200 dark:border-gray-400 rounded shadow-lg py-1 z-[10000]"
               style={{
                 top: contextMenu.y,
                 left: contextMenu.x,

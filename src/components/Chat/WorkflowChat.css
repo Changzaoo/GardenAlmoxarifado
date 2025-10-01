@@ -1,5 +1,5 @@
 .workflow-chat-container {
-  background-color: #1f2936;
+  background-color: #f9fafb;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   max-width: 90vw;
   max-height: 90vh;
@@ -7,6 +7,10 @@
   bottom: 80px;
   right: 16px;
   z-index: 1000;
+}
+
+.dark .workflow-chat-container {
+  background-color: #374151;
 }
 
 @media (orientation: portrait) and (max-width: 768px) {
@@ -20,25 +24,48 @@
 }
 
 .workflow-chat-messages {
-  background-color: #1f2936;
-  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-color: #f9fafb;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23000000' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
   scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+
+.dark .workflow-chat-messages {
+  background-color: #374151;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
-/* Emoji Picker customization */
+/* Emoji Picker customization - Tema Claro */
 .EmojiPickerReact {
-  --epr-bg-color: #2f3136 !important;
-  --epr-category-label-bg-color: #36393f !important;
+  --epr-bg-color: #ffffff !important;
+  --epr-category-label-bg-color: #f3f4f6 !important;
+  --epr-hover-bg-color: rgba(0, 0, 0, 0.1) !important;
+  --epr-focus-bg-color: rgba(0, 0, 0, 0.1) !important;
+  --epr-search-border-color: rgba(0, 0, 0, 0.1) !important;
+  --epr-search-input-bg-color: #f9fafb !important;
+  --epr-search-input-placeholder-color: #6b7280 !important;
+  --epr-scrollbar-thumb-color: rgba(0, 0, 0, 0.1) !important;
+  --epr-scrollbar-thumb-hover-color: rgba(0, 0, 0, 0.2) !important;
+  --epr-search-input-text-color: #111827 !important;
+  --epr-text-color: #111827 !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Emoji Picker customization - Tema Escuro */
+.dark .EmojiPickerReact {
+  --epr-bg-color: #4b5563 !important;
+  --epr-category-label-bg-color: #374151 !important;
   --epr-hover-bg-color: rgba(255, 255, 255, 0.1) !important;
   --epr-focus-bg-color: rgba(255, 255, 255, 0.1) !important;
   --epr-search-border-color: rgba(255, 255, 255, 0.1) !important;
-  --epr-search-input-bg-color: #40444b !important;
-  --epr-search-input-placeholder-color: #72767d !important;
+  --epr-search-input-bg-color: #374151 !important;
+  --epr-search-input-placeholder-color: #9ca3af !important;
   --epr-scrollbar-thumb-color: rgba(255, 255, 255, 0.1) !important;
   --epr-scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.2) !important;
-  --epr-search-input-text-color: #dcddde !important;
-  --epr-text-color: #dcddde !important;
+  --epr-search-input-text-color: #f9fafb !important;
+  --epr-text-color: #f9fafb !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
 }
@@ -103,22 +130,37 @@
 }
 
 .workflow-chat-message-received {
-  background-color: #1f2936;
-  color: #dcddde;
+  background-color: #e5e7eb;
+  color: #111827;
   margin-right: auto;
   border-radius: 0 8px 8px 8px;
 }
 
+.dark .workflow-chat-message-received {
+  background-color: #4b5563;
+  color: #f9fafb;
+}
+
 .workflow-chat-input {
-  background-color: #40444b;
-  color: #dcddde;
+  background-color: #f9fafb;
+  color: #111827;
   border-radius: 24px !important;
   padding-right: 48px !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.dark .workflow-chat-input {
+  background-color: #374151;
+  color: #f9fafb;
+  border: 1px solid #4b5563 !important;
 }
 
 .workflow-chat-input::placeholder {
-  color: #72767d;
+  color: #6b7280;
+}
+
+.dark .workflow-chat-input::placeholder {
+  color: #9ca3af;
 }
 
 .workflow-chat-send-button {
@@ -130,40 +172,68 @@
 
 .workflow-chat-list-item {
   transition: all 0.2s ease;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  color: #dcddde;
+  border-color: #e5e7eb !important;
+  color: #111827;
+}
+
+.dark .workflow-chat-list-item {
+  border-color: #4b5563 !important;
+  color: #f9fafb;
 }
 
 .workflow-chat-list-item:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.dark .workflow-chat-list-item:hover {
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 .workflow-chat-search {
   border-radius: 24px !important;
-  background-color: #40444b;
-  color: #dcddde;
-  transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #f9fafb;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+
+.dark .workflow-chat-search {
+  background-color: #374151;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
 }
 
 .workflow-chat-search:focus {
-  background-color: #36393f;
+  background-color: #f3f4f6;
+  border-color: #3b82f6;
+}
+
+.dark .workflow-chat-search:focus {
+  background-color: #4b5563;
+  border-color: #60a5fa;
 }
 
 .workflow-chat-search::placeholder {
-  color: #72767d;
+  color: #6b7280;
   text-indent: 20px; /* Move o texto do placeholder para a direita */
+}
+
+.dark .workflow-chat-search::placeholder {
+  color: #9ca3af;
 }
 
 .workflow-chat-user-avatar {
   width: 40px;
   height: 40px;
-  background-color: #40444b;
+  background-color: #e5e7eb;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  color: #dcddde;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #111827;
+}
+
+.dark .workflow-chat-user-avatar {
+  background-color: #4b5563;
+  color: #f9fafb;
 }

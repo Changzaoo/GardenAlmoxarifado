@@ -160,10 +160,10 @@ const TransferenciasRecebidas = ({ usuario }) => {
 
   if (isLoading) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+      <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
         <div className="flex items-center gap-2">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900"></div>
-          <p className="text-gray-600">Carregando transferências...</p>
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900 dark:border-white"></div>
+          <p className="text-gray-900 dark:text-white">Carregando transferências...</p>
         </div>
       </div>
     );
@@ -185,10 +185,10 @@ const TransferenciasRecebidas = ({ usuario }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+    <div className="bg-white dark:bg-gray-700 rounded-lg shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-600">
       <div className="flex items-center gap-2 mb-4">
         <Bell className="w-5 h-5 text-yellow-500" />
-        <h2 className="text-lg font-semibold text-gray-900">Ferramentas para Aceitar</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ferramentas para Aceitar</h2>
         <span className="px-2.5 py-0.5 bg-yellow-100 text-yellow-800 text-sm rounded-full">
           {transferencias.length}
         </span>
@@ -198,29 +198,29 @@ const TransferenciasRecebidas = ({ usuario }) => {
         {transferencias.map((transferencia) => (
           <div
             key={transferencia.id}
-            className="border border-blue-100 bg-blue-50 rounded-lg p-4"
+            className="border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-lg p-4"
           >
             <div className="flex flex-col space-y-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-gray-900 dark:text-white">
                     De: {transferencia.funcionarioOrigem}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     Solicitado em: {formatarData(transferencia.dataSolicitacao)}
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAcao(transferencia, true)}
-                    className="px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg flex items-center gap-1 transition-colors"
+                    className="px-3 py-1.5 bg-green-600 text-white hover:bg-green-700 rounded-lg flex items-center gap-1 transition-colors"
                   >
                     <CheckCircle className="w-4 h-4" />
                     Aceitar
                   </button>
                   <button
                     onClick={() => handleAcao(transferencia, false)}
-                    className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg flex items-center gap-1 transition-colors"
+                    className="px-3 py-1.5 bg-red-600 text-white hover:bg-red-700 rounded-lg flex items-center gap-1 transition-colors"
                   >
                     <XCircle className="w-4 h-4" />
                     Recusar
@@ -228,11 +228,11 @@ const TransferenciasRecebidas = ({ usuario }) => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg p-3">
-                <p className="text-sm font-medium text-gray-700 mb-2">Ferramentas:</p>
+              <div className="bg-white dark:bg-gray-600 rounded-lg p-3">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">Ferramentas:</p>
                 <ul className="space-y-1">
                   {(transferencia.ferramentas || []).map((ferramenta, idx) => (
-                    <li key={idx} className="text-sm text-gray-600 flex items-center gap-2">
+                    <li key={idx} className="text-sm text-gray-900 dark:text-gray-200 flex items-center gap-2">
                       <ArrowRight className="w-4 h-4 text-blue-500" />
                       {typeof ferramenta === 'string' ? ferramenta : ferramenta.nome}
                       {ferramenta.quantidade > 1 && ` (${ferramenta.quantidade})`}
@@ -242,7 +242,7 @@ const TransferenciasRecebidas = ({ usuario }) => {
               </div>
 
               {transferencia.observacoes && (
-                <div className="mt-3 text-sm text-gray-600">
+                <div className="mt-3 text-sm text-gray-900 dark:text-gray-200">
                   <strong>Observações:</strong> {transferencia.observacoes}
                 </div>
               )}

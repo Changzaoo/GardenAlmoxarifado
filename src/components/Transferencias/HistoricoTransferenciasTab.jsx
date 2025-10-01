@@ -3,9 +3,6 @@ import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { ToolCase, ArrowRight, Calendar, Clock } from 'lucide-react';
 import { formatarData } from '../../utils/dateUtils';
-import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
-
-const { classes, colors } = twitterThemeConfig;
 
 const HistoricoTransferenciasTab = () => {
   const [transferencias, setTransferencias] = useState([]);
@@ -52,12 +49,12 @@ const HistoricoTransferenciasTab = () => {
   return (
     <div className="space-y-4">
       {transferencias.length === 0 ? (
-        <div className={`${classes.card} p-8 text-center`}>
-          <ToolCase className={`w-16 h-16 mx-auto ${colors.textSecondary} mb-4`} />
-          <p className={`text-lg font-medium ${colors.text}`}>
+        <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-8 text-center">
+          <ToolCase className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+          <p className="text-lg font-medium text-gray-900 dark:text-white">
             Nenhuma transferência registrada
           </p>
-          <p className={colors.textSecondary}>
+          <p className="text-gray-600 dark:text-gray-300">
             As transferências aparecerão aqui quando forem realizadas
           </p>
         </div>
@@ -66,18 +63,18 @@ const HistoricoTransferenciasTab = () => {
           {transferencias.map((transferencia, index) => (
             <div 
               key={`${transferencia.emprestimoId}-${index}`}
-              className={`${classes.card} p-6`}
+              className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={colors.textSecondary}>De:</span>
-                    <span className={`font-medium ${colors.text}`}>{transferencia.de}</span>
-                    <ArrowRight className={`w-4 h-4 text-blue-500 dark:text-[#1D9BF0]`} />
-                    <span className={colors.textSecondary}>Para:</span>
-                    <span className={`font-medium ${colors.text}`}>{transferencia.para}</span>
+                    <span className="text-gray-600 dark:text-gray-300">De:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{transferencia.de}</span>
+                    <ArrowRight className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
+                    <span className="text-gray-600 dark:text-gray-300">Para:</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{transferencia.para}</span>
                   </div>
-                  <div className={`flex items-center gap-4 text-sm ${colors.textSecondary}`}>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
                       {formatarData(transferencia.data)}
@@ -88,28 +85,28 @@ const HistoricoTransferenciasTab = () => {
                     </div>
                   </div>
                 </div>
-                <div className={`text-sm ${colors.textSecondary} bg-blue-100 dark:bg-[#1D9BF0] dark:bg-opacity-10 px-2 py-1 rounded-full`}>
+                <div className="text-sm text-gray-600 dark:text-gray-300 bg-blue-100 dark:bg-[#1D9BF0] dark:bg-opacity-10 px-2 py-1 rounded-full">
                   #{transferencia.emprestimoId.slice(-4)}
                 </div>
               </div>
 
               <div className="mt-4">
-                <h4 className={`text-sm font-medium ${colors.text} mb-2`}>Ferramentas:</h4>
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Ferramentas:</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {transferencia.ferramentas.map((ferramenta, idx) => (
                     <div 
                       key={idx}
-                      className={`${classes.card} flex items-center gap-2 p-2`}
+                      className="bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-lg flex items-center gap-2 p-2"
                     >
-                      <ToolCase className={`w-4 h-4 ${colors.textSecondary}`} />
-                      <span className={`text-sm ${colors.text}`}>
+                      <ToolCase className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                      <span className="text-sm text-gray-900 dark:text-white">
                         {typeof ferramenta === 'string' ? ferramenta : ferramenta.nome}
                         {typeof ferramenta !== 'string' && ferramenta.quantidade > 1 && 
                           ` (${ferramenta.quantidade})`
                         }
                       </span>
                       {typeof ferramenta !== 'string' && ferramenta.codigo && (
-                        <span className={`text-xs ${colors.textSecondary} ml-2`}>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                           {ferramenta.codigo}
                         </span>
                       )}

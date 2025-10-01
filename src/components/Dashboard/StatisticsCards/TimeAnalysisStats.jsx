@@ -379,10 +379,10 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                       }}
                     >
                       <div className="w-48 text-sm flex items-center gap-2">
-                        <span className={`w-20 ${isToday ? 'text-blue-500 dark:text-[#1D9BF0] font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <span className="w-20 text-white">
                           {dia} {isToday && '(Hoje)'}
                         </span>
-                        <span className="text-gray-500 dark:text-gray-400/70">
+                        <span className="text-white">
                           ({stats.ultimaData})
                         </span>
                       </div>
@@ -392,8 +392,8 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                           style={{ width: `${(stats.count || 0) / maxEmprestimos * 100}%` }}
                         />
                       </div>
-                      <div className="w-8 text-right text-gray-500 dark:text-gray-400 text-sm">{stats.count}</div>
-                      <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      <div className="w-8 text-right text-white text-sm">{stats.count}</div>
+                      <ChevronRight className="w-4 h-4 text-white" />
                     </div>
                   );
                 })}

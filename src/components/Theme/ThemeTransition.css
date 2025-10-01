@@ -1,0 +1,368 @@
+/* ===== THEME TRANSITION OVERLAY ===== */
+.theme-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+
+/* ===== DESATURATE EFFECT (Claro → Escuro - Perda de Cor) ===== */
+.theme-transition-overlay.desaturate {
+  background: radial-gradient(
+    circle at var(--button-x) var(--button-y),
+    transparent 0%,
+    rgba(0, 0, 0, 0.05) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+}
+
+/* Onda de dessaturação */
+.theme-transition-overlay.desaturate .desaturate-wave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at var(--button-x) var(--button-y),
+    transparent 0%,
+    transparent 30%,
+    rgba(128, 128, 128, 0.4) 50%,
+    rgba(64, 64, 64, 0.6) 80%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  opacity: 0;
+  transform: scale(0);
+  animation: desaturate-wave 1s ease-out;
+}
+
+/* Ondulação de dessaturação */
+.theme-transition-overlay.desaturate .desaturate-ripple {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  left: calc(var(--button-x) - 25px);
+  top: calc(var(--button-y) - 25px);
+  border: 2px solid rgba(128, 128, 128, 0.8);
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 0;
+  animation: desaturate-ripple 1s ease-out;
+}
+
+/* Dreno de cor */
+.theme-transition-overlay.desaturate .color-drain {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(
+    from 0deg at var(--button-x) var(--button-y),
+    transparent 0deg,
+    rgba(64, 64, 64, 0.3) 90deg,
+    rgba(32, 32, 32, 0.5) 180deg,
+    rgba(16, 16, 16, 0.7) 270deg,
+    transparent 360deg
+  );
+  opacity: 0;
+  animation: color-drain 1s ease-out;
+}
+
+/* ===== SATURATE EFFECT (Escuro → Claro - Ganho de Cor) ===== */
+.theme-transition-overlay.saturate {
+  background: radial-gradient(
+    circle at var(--button-x) var(--button-y),
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+}
+
+/* Explosão de saturação */
+.theme-transition-overlay.saturate .saturate-burst {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  left: calc(var(--button-x) - 15px);
+  top: calc(var(--button-y) - 15px);
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(255, 223, 0, 0.8) 30%,
+    rgba(255, 165, 0, 0.6) 60%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 0;
+  animation: saturate-burst 1s ease-out;
+}
+
+/* Florescimento de cor */
+.theme-transition-overlay.saturate .color-bloom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at var(--button-x) var(--button-y),
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 235, 59, 0.7) 20%,
+    rgba(255, 193, 7, 0.5) 40%,
+    rgba(255, 152, 0, 0.3) 60%,
+    rgba(255, 87, 34, 0.2) 80%,
+    transparent 100%
+  );
+  opacity: 0;
+  transform: scale(0);
+  animation: color-bloom 1s ease-out;
+}
+
+/* Ondas de cor */
+.theme-transition-overlay.saturate .color-waves {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.theme-transition-overlay.saturate .color-wave {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: color-wave 1s ease-out;
+}
+
+/* Posicionamento das ondas de cor */
+.wave-1 { 
+  left: calc(var(--button-x) + 50px); 
+  top: calc(var(--button-y) - 30px);
+  background: rgba(255, 193, 7, 0.8);
+  animation-delay: 0.1s;
+}
+.wave-2 { 
+  left: calc(var(--button-x) - 60px); 
+  top: calc(var(--button-y) + 40px);
+  background: rgba(255, 87, 34, 0.8);
+  animation-delay: 0.2s;
+}
+.wave-3 { 
+  left: calc(var(--button-x) + 80px); 
+  top: calc(var(--button-y) + 20px);
+  background: rgba(76, 175, 80, 0.8);
+  animation-delay: 0.15s;
+}
+.wave-4 { 
+  left: calc(var(--button-x) - 40px); 
+  top: calc(var(--button-y) - 50px);
+  background: rgba(33, 150, 243, 0.8);
+  animation-delay: 0.25s;
+}
+.wave-5 { 
+  left: calc(var(--button-x) + 30px); 
+  top: calc(var(--button-y) + 60px);
+  background: rgba(156, 39, 176, 0.8);
+  animation-delay: 0.05s;
+}
+.wave-6 { 
+  left: calc(var(--button-x) - 70px); 
+  top: calc(var(--button-y) - 20px);
+  background: rgba(255, 235, 59, 0.8);
+  animation-delay: 0.3s;
+}
+.wave-7 { 
+  left: calc(var(--button-x) + 100px); 
+  top: calc(var(--button-y) - 60px);
+  background: rgba(244, 67, 54, 0.8);
+  animation-delay: 0.12s;
+}
+.wave-8 { 
+  left: calc(var(--button-x) - 90px); 
+  top: calc(var(--button-y) + 70px);
+  background: rgba(0, 188, 212, 0.8);
+  animation-delay: 0.22s;
+}
+
+/* Overlay de transição */
+.theme-transition-overlay .transition-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(128, 128, 128, 0.1);
+  opacity: 0;
+  animation: transition-overlay 1s ease-out;
+}
+
+/* ===== KEYFRAME ANIMATIONS ===== */
+
+/* Animações de Dessaturação */
+@keyframes desaturate-wave {
+  0% { 
+    transform: scale(0); 
+    opacity: 0; 
+  }
+  30% { 
+    transform: scale(1); 
+    opacity: 0.8; 
+  }
+  70% { 
+    transform: scale(8); 
+    opacity: 0.6; 
+  }
+  100% { 
+    transform: scale(20); 
+    opacity: 0; 
+  }
+}
+
+@keyframes desaturate-ripple {
+  0% { 
+    transform: scale(0); 
+    opacity: 1; 
+  }
+  50% { 
+    transform: scale(10); 
+    opacity: 0.6; 
+  }
+  100% { 
+    transform: scale(40); 
+    opacity: 0; 
+  }
+}
+
+@keyframes color-drain {
+  0% { 
+    opacity: 0; 
+    transform: rotate(0deg); 
+  }
+  30% { 
+    opacity: 0.8; 
+    transform: rotate(180deg); 
+  }
+  70% { 
+    opacity: 0.6; 
+    transform: rotate(540deg); 
+  }
+  100% { 
+    opacity: 0; 
+    transform: rotate(720deg); 
+  }
+}
+
+/* Animações de Saturação */
+@keyframes saturate-burst {
+  0% { 
+    transform: scale(0); 
+    opacity: 0; 
+  }
+  20% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+  50% { 
+    transform: scale(4); 
+    opacity: 0.8; 
+  }
+  100% { 
+    transform: scale(15); 
+    opacity: 0; 
+  }
+}
+
+@keyframes color-bloom {
+  0% { 
+    transform: scale(0); 
+    opacity: 0; 
+  }
+  25% { 
+    transform: scale(2); 
+    opacity: 0.9; 
+  }
+  75% { 
+    transform: scale(12); 
+    opacity: 0.5; 
+  }
+  100% { 
+    transform: scale(25); 
+    opacity: 0; 
+  }
+}
+
+@keyframes color-wave {
+  0% { 
+    transform: scale(0) translateX(0) translateY(0); 
+    opacity: 0; 
+  }
+  30% { 
+    transform: scale(1) translateX(0) translateY(0); 
+    opacity: 1; 
+  }
+  70% { 
+    transform: scale(3) translateX(var(--wave-x, 200px)) translateY(var(--wave-y, 200px)); 
+    opacity: 0.6; 
+  }
+  100% { 
+    transform: scale(0) translateX(var(--wave-x, 400px)) translateY(var(--wave-y, 400px)); 
+    opacity: 0; 
+  }
+}
+
+@keyframes transition-overlay {
+  0% { opacity: 0; }
+  50% { opacity: 0.1; }
+  100% { opacity: 0; }
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .theme-transition-overlay.saturate .color-wave {
+    width: 15px;
+    height: 15px;
+  }
+  
+  .theme-transition-overlay.desaturate .desaturate-ripple {
+    width: 30px;
+    height: 30px;
+    left: calc(var(--button-x) - 15px);
+    top: calc(var(--button-y) - 15px);
+  }
+}
+
+@media (max-width: 480px) {
+  .theme-transition-overlay.saturate .color-wave {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .theme-transition-overlay.saturate .saturate-burst {
+    width: 20px;
+    height: 20px;
+    left: calc(var(--button-x) - 10px);
+    top: calc(var(--button-y) - 10px);
+  }
+}
+
+/* Redução de movimento para acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition-overlay * {
+    animation-duration: 0.3s !important;
+  }
+  
+  .theme-transition-overlay .color-wave,
+  .theme-transition-overlay .desaturate-ripple {
+    display: none;
+  }
+}

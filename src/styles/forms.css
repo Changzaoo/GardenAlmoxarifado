@@ -1,18 +1,18 @@
 /* Base styles for form inputs */
 .form-input {
-  @apply bg-white dark:bg-gray-700 
+  @apply bg-white dark:bg-gray-600
          text-gray-900 dark:text-white 
-         border border-gray-300 dark:border-gray-600 
+         border border-gray-300 dark:border-gray-500 
          rounded-lg 
          focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 
          focus:border-green-500 dark:focus:border-green-400
-         placeholder-gray-400 dark:placeholder-gray-500;
+         placeholder-gray-400 dark:placeholder-gray-300;
 }
 
 .form-select {
-  @apply bg-white dark:bg-gray-700 
+  @apply bg-white dark:bg-gray-600
          text-gray-900 dark:text-white 
-         border border-gray-300 dark:border-gray-600 
+         border border-gray-300 dark:border-gray-500 
          rounded-lg 
          focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 
          focus:border-green-500 dark:focus:border-green-400;
