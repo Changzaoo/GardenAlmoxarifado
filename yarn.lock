@@ -1140,6 +1140,11 @@
   dependencies:
     tslib "^2.1.0"
 
+"@capacitor/local-notifications@^7.0.3":
+  version "7.0.3"
+  resolved "https://registry.npmjs.org/@capacitor/local-notifications/-/local-notifications-7.0.3.tgz"
+  integrity sha512-zVHZk5AYRiBwBDynaD7caPUROozgvwOG0L2SPFw1HBTWCscJvo0fsaE67NWW252jzel3PH0XogglJUYFx/jtHA==
+
 "@craco/craco@^7.1.0":
   version "7.1.0"
   resolved "https://registry.npmjs.org/@craco/craco/-/craco-7.1.0.tgz"
@@ -2825,7 +2830,7 @@
     semver "^7.3.7"
     tsutils "^3.21.0"
 
-"@typescript-eslint/eslint-plugin@^8.44.1":
+"@typescript-eslint/eslint-plugin@^8.41.0":
   version "8.44.1"
   resolved "https://registry.npmjs.org/@typescript-eslint/eslint-plugin/-/eslint-plugin-8.44.1.tgz"
   integrity sha512-molgphGqOBT7t4YKCSkbasmu1tb1MgrZ2szGzHbclF7PNmOkSTQVHy+2jXOSnxvR3+Xe1yySHFZoqMpz3TfQsw==
@@ -2857,7 +2862,7 @@
     "@typescript-eslint/typescript-estree" "5.62.0"
     debug "^4.3.4"
 
-"@typescript-eslint/parser@^8.44.1":
+"@typescript-eslint/parser@^8.41.0":
   version "8.44.1"
   resolved "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.44.1.tgz"
   integrity sha512-EHrrEsyhOhxYt8MTg4zTF+DJMuNBzWwgvvOYNj/zm1vnaD/IC5zCXFehZv94Piqa2cRFfXrTFxIvO95L7Qc/cw==

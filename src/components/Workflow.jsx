@@ -26,6 +26,9 @@ import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
 import FerramentasPerdidasTab from './Perdidas/FerramentasPerdidasTab';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import WorkflowChat from './Chat/WorkflowChat';
+import ChatNotificationBadge from './Chat/ChatNotificationBadge';
+import { MessageNotificationProvider } from './Chat/MessageNotificationContext';
+import { NotificationProvider } from './NotificationProvider';
 import ComprasTab from './Compras/ComprasTab';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
 import TarefasTab from './Tarefas/TarefasTab';
@@ -2558,6 +2561,7 @@ const AlmoxarifadoSistema = () => {
           className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1A8CD8] rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
         >
           <MessageCircle className="w-6 h-6 text-gray-900 dark:text-white" />
+          <ChatNotificationBadge />
         </button>
       )}
 
@@ -2692,10 +2696,14 @@ const Seed = () => {
     <AuthProvider>
       <ToastProvider>
         <FuncionariosProvider>
-          <AnalyticsProvider>
-            <App />
-            <PWAUpdateAvailable />
-          </AnalyticsProvider>
+          <NotificationProvider>
+            <MessageNotificationProvider>
+              <AnalyticsProvider>
+                <App />
+                <PWAUpdateAvailable />
+              </AnalyticsProvider>
+            </MessageNotificationProvider>
+          </NotificationProvider>
         </FuncionariosProvider>
       </ToastProvider>
     </AuthProvider>

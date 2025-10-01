@@ -1,0 +1,174 @@
+<!-- Este arquivo HTML pode ser aberto no navegador para gerar o arquivo de áudio de notificação -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Som de Notificação</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .info {
+            margin: 20px 0;
+            text-align: center;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gerador de Som de Notificação</h1>
+    <div class="info">
+        <p>Clique no botão abaixo para gerar e baixar um som de notificação suave estilo Kali Linux.</p>
+        <p>O som será um tom de 800Hz seguido de 1000Hz, cada um com 0.15 segundos de duração.</p>
+    </div>
+    
+    <button onclick="playSound()">▶️ Testar Som</button>
+    <button onclick="generateAndDownload()">⬇️ Gerar e Baixar notification.mp3</button>
+    
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioContext;
+        let audioBuffer;
+
+        function createNotificationSound() {
+            audioContext = new AudioContext();
+            const sampleRate = audioContext.sampleRate;
+            const duration = 0.3; // 300ms total
+            const bufferSize = sampleRate * duration;
+            
+            audioBuffer = audioContext.createBuffer(1, bufferSize, sampleRate);
+            const channelData = audioBuffer.getChannelData(0);
+            
+            const freq1 = 800;  // Primeiro tom
+            const freq2 = 1000; // Segundo tom
+            const tone1Duration = 0.15;
+            const tone2Duration = 0.15;
+            
+            // Primeiro tom (800Hz)
+            for (let i = 0; i < sampleRate * tone1Duration; i++) {
+                const t = i / sampleRate;
+                const envelope = Math.sin((Math.PI * i) / (sampleRate * tone1Duration));
+                channelData[i] = Math.sin(2 * Math.PI * freq1 * t) * envelope * 0.3;
+            }
+            
+            // Segundo tom (1000Hz)
+            const offset = sampleRate * tone1Duration;
+            for (let i = 0; i < sampleRate * tone2Duration; i++) {
+                const t = i / sampleRate;
+                const envelope = Math.sin((Math.PI * i) / (sampleRate * tone2Duration));
+                channelData[offset + i] = Math.sin(2 * Math.PI * freq2 * t) * envelope * 0.3;
+            }
+            
+            return audioBuffer;
+        }
+
+        function playSound() {
+            if (!audioBuffer) {
+                createNotificationSound();
+            }
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioContext.destination);
+            source.start(0);
+        }
+
+        async function generateAndDownload() {
+            if (!audioBuffer) {
+                createNotificationSound();
+            }
+            
+            // Converter para WAV
+            const wavData = audioBufferToWav(audioBuffer);
+            const blob = new Blob([wavData], { type: 'audio/wav' });
+            
+            // Criar link de download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'notification.wav';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('Arquivo notification.wav gerado! Mova-o para a pasta public/sounds/ do projeto.\n\nNota: Para converter para MP3, você pode usar ferramentas online como:\n- https://cloudconvert.com/wav-to-mp3\n- https://online-audio-converter.com/');
+        }
+
+        function audioBufferToWav(buffer) {
+            const length = buffer.length * buffer.numberOfChannels * 2 + 44;
+            const arrayBuffer = new ArrayBuffer(length);
+            const view = new DataView(arrayBuffer);
+            const channels = [];
+            let offset = 0;
+            let pos = 0;
+
+            // Write WAV header
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8); // file length - 8
+            setUint32(0x45564157); // "WAVE"
+
+            setUint32(0x20746d66); // "fmt " chunk
+            setUint32(16); // length = 16
+            setUint16(1); // PCM (uncompressed)
+            setUint16(buffer.numberOfChannels);
+            setUint32(buffer.sampleRate);
+            setUint32(buffer.sampleRate * 2 * buffer.numberOfChannels); // avg. bytes/sec
+            setUint16(buffer.numberOfChannels * 2); // block-align
+            setUint16(16); // 16-bit
+
+            setUint32(0x61746164); // "data" - chunk
+            setUint32(length - pos - 4); // chunk length
+
+            // Write interleaved data
+            for (let i = 0; i < buffer.numberOfChannels; i++) {
+                channels.push(buffer.getChannelData(i));
+            }
+
+            while (pos < length) {
+                for (let i = 0; i < buffer.numberOfChannels; i++) {
+                    let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                    view.setInt16(pos, sample, true);
+                    pos += 2;
+                }
+                offset++;
+            }
+
+            return arrayBuffer;
+
+            function setUint16(data) {
+                view.setUint16(pos, data, true);
+                pos += 2;
+            }
+
+            function setUint32(data) {
+                view.setUint32(pos, data, true);
+                pos += 4;
+            }
+        }
+    </script>
+</body>
+</html>

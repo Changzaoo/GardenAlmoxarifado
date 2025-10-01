@@ -9,6 +9,7 @@ import { ThemeProvider } from './components/Theme/ThemeSystem';
 import { RouteStateManager } from './components/RouteStateManager';
 import { ScrollPersistence } from './hooks/useScrollPersistence';
 import Layout from './components/Layout/Layout';
+import { MessageNotificationProvider } from './components/Chat/MessageNotificationContext';
 import LoginForm from './components/Auth/LoginForm';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import UserProfileModal from './components/Auth/UserProfileModal';
@@ -34,10 +35,10 @@ function App() {
         <AuthProvider>
           <FuncionariosProvider>
             <InventarioProvider>
-              <div className="App">
+              <MessageNotificationProvider>
+                <div className="App">
                 <RouteStateManager />
                 <ScrollPersistence />
-                <Chat />
                 <ToastContainer 
                   position="top-right" 
                   autoClose={3000}
@@ -62,6 +63,7 @@ function App() {
                   </Route>
                 </Routes>
               </div>
+              </MessageNotificationProvider>
             </InventarioProvider>
           </FuncionariosProvider>
         </AuthProvider>

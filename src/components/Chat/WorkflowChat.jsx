@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { useMessageNotification } from '../../hooks/useMessageNotification';
+import { useMessageNotifications } from './MessageNotificationContext';
 import ChatBadge from './ChatBadge';
 import { 
   MessageCircle, X, Search, Users, Send, 
@@ -72,7 +72,14 @@ const WorkflowChat = ({
   const [isOpen, setIsOpen] = useState(false);
   const [activeChat, setActiveChat] = useState(null);
   const isMobile = useIsMobile();
-  const { sendNotification, clearNotifications, soundEnabled, toggleSound } = useMessageNotification();
+  const { 
+    unreadCounts, 
+    markMessagesAsRead, 
+    sendNotification, 
+    clearNotifications, 
+    soundEnabled, 
+    toggleSound 
+  } = useMessageNotifications();
   const [messages, setMessages] = useState([]);
   const [chats, setChats] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1051,7 +1058,13 @@ const WorkflowChat = ({
                       return (
                         <div
                           key={chat.id}
-                          onClick={() => setActiveChat(chat)}
+                          onClick={() => {
+                            setActiveChat(chat);
+                            // Marcar mensagens como lidas quando abrir o chat
+                            if (otherUser?.id && unreadCounts[otherUser.id]) {
+                              markMessagesAsRead(otherUser.id);
+                            }
+                          }}
                           onContextMenu={(e) => handleContextMenu(e, chat.id)}
                           onTouchStart={() => {
                             const timer = setTimeout(() => handleLongPress(chat.id), 500);
@@ -1059,9 +1072,6 @@ const WorkflowChat = ({
                           }}
                           className="workflow-chat-list-item p-3 border-b border-gray-200 dark:border-gray-400 cursor-pointer flex items-center gap-3 relative"
                         >
-                          {unreadMessages[chat.id] > 0 && (
-                            <ChatBadge count={unreadMessages[chat.id]} />
-                          )}
                           <div className="workflow-chat-user-avatar flex-shrink-0">
                             {initial}
                           </div>
@@ -1070,9 +1080,16 @@ const WorkflowChat = ({
                               <h4 className="font-medium text-[#dcddde] truncate">
                                 {chatName}
                               </h4>
-                              <span className="text-xs text-[#72767d] ml-2 flex-shrink-0">
-                                {formatLastMessageTime(chat.lastMessageTimestamp)}
-                              </span>
+                              <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                                {otherUser?.id && unreadCounts[otherUser.id] > 0 && (
+                                  <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                                    {unreadCounts[otherUser.id] > 99 ? '99+' : unreadCounts[otherUser.id]}
+                                  </span>
+                                )}
+                                <span className="text-xs text-[#72767d]">
+                                  {formatLastMessageTime(chat.lastMessageTimestamp)}
+                                </span>
+                              </div>
                             </div>
                             <p className="text-sm text-[#72767d] truncate">
                               {chat.lastMessage}
