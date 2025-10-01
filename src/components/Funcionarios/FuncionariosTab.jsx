@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '../ToastProvider';
 import FuncionarioProfile from './FuncionarioProfile';
-import { UsersRound } from 'lucide-react';
+import { UsersRound, Users, UserX } from 'lucide-react';
 import GruposModal from './components/GruposModal';
 
 // Importando os componentes refatorados
@@ -85,8 +85,45 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
         return ordenarPorEmprestimos;
       case 'pontos':
         return ordenarPorPontos;
+      case 'demitidos':
+        return ordenarPorNome; // Para demitidos, usar ordenação por nome
       default:
         return ordenarPorNome;
+    }
+  };
+
+  // Função para demitir funcionário
+  const demitirFuncionario = async (funcionario) => {
+    try {
+      const funcionarioAtualizado = {
+        ...funcionario,
+        demitido: true,
+        dataDemissao: new Date().toISOString()
+      };
+      
+      await atualizarFuncionario(funcionario.id, funcionarioAtualizado);
+      showToast('Funcionário demitido com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao demitir funcionário:', error);
+      showToast('Erro ao demitir funcionário', 'error');
+    }
+  };
+
+  // Função para reintegrar funcionário
+  const reintegrarFuncionario = async (funcionario) => {
+    try {
+      const funcionarioAtualizado = {
+        ...funcionario,
+        demitido: false,
+        dataDemissao: null,
+        dataReintegracao: new Date().toISOString()
+      };
+      
+      await atualizarFuncionario(funcionario.id, funcionarioAtualizado);
+      showToast('Funcionário reintegrado com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao reintegrar funcionário:', error);
+      showToast('Erro ao reintegrar funcionário', 'error');
     }
   };
 
@@ -104,13 +141,23 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   const filtrarFuncionarios = (funcionarios) => {
     if (!funcionarios) return [];
     const searchLower = searchTerm.toLowerCase();
+    
     return funcionarios.filter(func => {
-      return func.nome?.toLowerCase().includes(searchLower) ||
-             func.cargo?.toLowerCase().includes(searchLower) ||
-             func.telefone?.includes(searchTerm) ||
-             func.email?.toLowerCase().includes(searchLower) ||
-             func.matricula?.toLowerCase().includes(searchLower) ||
-             func.setor?.toLowerCase().includes(searchLower);
+      // Filtro por texto de busca
+      const matchesSearch = func.nome?.toLowerCase().includes(searchLower) ||
+                           func.cargo?.toLowerCase().includes(searchLower) ||
+                           func.telefone?.includes(searchTerm) ||
+                           func.email?.toLowerCase().includes(searchLower) ||
+                           func.matricula?.toLowerCase().includes(searchLower) ||
+                           func.setor?.toLowerCase().includes(searchLower);
+      
+      // Filtro por status de demissão
+      if (filtroAtual === 'demitidos') {
+        return matchesSearch && func.demitido === true;
+      } else {
+        // Para outros filtros, mostrar apenas funcionários ativos (não demitidos)
+        return matchesSearch && !func.demitido;
+      }
     });
   };
 
@@ -432,26 +479,52 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
       </div>
 
       {/* Lista de Funcionários */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {[...funcionariosFiltrados].sort(getFuncaoOrdenacao()).map((func) => (
-          <CardFuncionario
-            key={func.id}
-            funcionario={func}
-            funcionariosStats={funcionariosStats}
-            funcionariosPontos={funcionariosPontos}
-            isFuncionario={isFuncionario}
-            readonly={readonly}
-            avaliacoesExpandidas={avaliacoesExpandidas}
-            avaliacoesDesempenhoExpandidas={avaliacoesDesempenhoExpandidas}
-            setAvaliacoesExpandidas={setAvaliacoesExpandidas}
-            setAvaliacoesDesempenhoExpandidas={setAvaliacoesDesempenhoExpandidas}
-            handleEditar={handleEditar}
-            confirmarExclusao={confirmarExclusao}
-            calcularMediaAvaliacoesDesempenho={calcularMediaAvaliacoesDesempenho}
-            onClick={() => setFuncionarioSelecionado(func)}
-          />
-        ))}
-      </div>
+      {funcionariosFiltrados.length === 0 ? (
+        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+          <div className="bg-[#192734] rounded-full p-6 mb-4">
+            {filtroAtual === 'demitidos' ? (
+              <UserX className="w-12 h-12 text-gray-400" />
+            ) : (
+              <Users className="w-12 h-12 text-gray-400" />
+            )}
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            {filtroAtual === 'demitidos' ? 'Nenhum funcionário demitido' : 'Nenhum funcionário encontrado'}
+          </h3>
+          <p className="text-gray-400 max-w-md">
+            {filtroAtual === 'demitidos' 
+              ? 'Não há funcionários demitidos no sistema.'
+              : searchTerm 
+                ? `Não foram encontrados funcionários que correspondam ao termo "${searchTerm}".`
+                : 'Ainda não há funcionários cadastrados no sistema.'
+            }
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[...funcionariosFiltrados].sort(getFuncaoOrdenacao()).map((func) => (
+            <CardFuncionario
+              key={func.id}
+              funcionario={func}
+              funcionariosStats={funcionariosStats}
+              funcionariosPontos={funcionariosPontos}
+              isFuncionario={isFuncionario}
+              readonly={readonly}
+              avaliacoesExpandidas={avaliacoesExpandidas}
+              avaliacoesDesempenhoExpandidas={avaliacoesDesempenhoExpandidas}
+              setAvaliacoesExpandidas={setAvaliacoesExpandidas}
+              setAvaliacoesDesempenhoExpandidas={setAvaliacoesDesempenhoExpandidas}
+              handleEditar={handleEditar}
+              confirmarExclusao={confirmarExclusao}
+              calcularMediaAvaliacoesDesempenho={calcularMediaAvaliacoesDesempenho}
+              onClick={() => setFuncionarioSelecionado(func)}
+              demitirFuncionario={demitirFuncionario}
+              reintegrarFuncionario={reintegrarFuncionario}
+              filtroAtual={filtroAtual}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Modal de Perfil do Funcionário */}
       {funcionarioSelecionado && (

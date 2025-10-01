@@ -16,6 +16,7 @@ const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, on
         <option value="avaliacao">Mais Avaliados</option>
         <option value="tarefas">Mais Tarefas</option>
         <option value="emprestimos">Mais Empréstimos</option>
+        <option value="demitidos">Funcionários Demitidos</option>
       </select>
 
       {/* Campo de Busca */}

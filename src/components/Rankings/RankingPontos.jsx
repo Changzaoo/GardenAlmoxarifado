@@ -192,6 +192,10 @@ const RankingPontos = () => {
             avaliacao: funcionario.avaliacoes
               .filter(av => {
                 const data = new Date(av.data);
+                // Verificar se a data é válida
+                if (isNaN(data.getTime())) {
+                  return false;
+                }
                 return data >= dataLimiteInicio && data <= dataLimiteFim;
               })
               .reduce((acc, av) => {
@@ -211,6 +215,16 @@ const RankingPontos = () => {
           pontuacaoFiltrada.detalhes.ferramentas + 
           pontuacaoFiltrada.detalhes.tarefas + 
           pontuacaoFiltrada.detalhes.avaliacao;
+      } else {
+        // Quando não há filtro de período, usar a pontuação total original
+        // mas garantir que os pontos de avaliação estejam incluídos
+        pontuacaoFiltrada = {
+          ...funcionario.pontuacao,
+          detalhes: {
+            ...funcionario.pontuacao.detalhes,
+            avaliacao: funcionario.pontuacao.detalhes.avaliacao || 0
+          }
+        };
       }
 
       return {
@@ -223,6 +237,18 @@ const RankingPontos = () => {
   useEffect(() => {
     carregarDados();
   }, []);
+
+  // Função helper para verificar se um funcionário é terceirizado
+  const isFuncionarioTerceirizado = (funcionario) => {
+    return funcionario.terceirizado === true || 
+           funcionario.tercerizado === true || 
+           funcionario.tipo === 'terceirizado' ||
+           funcionario.tipo === 'tercerizado' ||
+           (typeof funcionario.terceirizado === 'string' && funcionario.terceirizado.toLowerCase() === 'sim') ||
+           (typeof funcionario.tercerizado === 'string' && funcionario.tercerizado.toLowerCase() === 'sim') ||
+           (funcionario.nome && funcionario.nome.toLowerCase().includes('terceirizado')) ||
+           (funcionario.nome && funcionario.nome.toLowerCase().includes('tercerizado'));
+  };
 
   const verificarHorarioBonus = (dataHora) => {
     if (!dataHora) return { bonus: false, tipo: null };
@@ -347,13 +373,7 @@ const RankingPontos = () => {
       funcionariosSnap.forEach(doc => {
         const funcionario = doc.data();
         // Verificar todas as possíveis variações de terceirizado no campo
-        const isTerceirizado = 
-          funcionario.terceirizado === true || 
-          funcionario.tercerizado === true || 
-          funcionario.tipo === 'terceirizado' ||
-          funcionario.tipo === 'tercerizado' ||
-          (typeof funcionario.terceirizado === 'string' && funcionario.terceirizado.toLowerCase() === 'sim') ||
-          (typeof funcionario.tercerizado === 'string' && funcionario.tercerizado.toLowerCase() === 'sim');
+        const isTerceirizado = isFuncionarioTerceirizado(funcionario);
 
         // Só incluir se NÃO for terceirizado
         if (!isTerceirizado) {
@@ -459,10 +479,24 @@ const RankingPontos = () => {
               (avaliacao.funcionario === funcionario.nome);
 
             if (matchFuncionario && avaliacao.estrelas) {
-              avaliacoes.push({
-                data: avaliacao.data || doc.createTime,
+              // Garantir que temos uma data válida
+              let dataAvaliacao = avaliacao.data || avaliacao.dataAvaliacao || avaliacao.timestamp;
+              
+              // Se ainda não temos data, usar a data de criação do documento
+              if (!dataAvaliacao) {
+                dataAvaliacao = doc.metadata?.fromCache ? new Date() : (doc.createTime || new Date());
+              }
+              
+              // Converter para Date se for string
+              if (typeof dataAvaliacao === 'string') {
+                dataAvaliacao = new Date(dataAvaliacao);
+              }
+
+              const avaliacaoComData = {
+                data: dataAvaliacao,
                 estrelas: Number(avaliacao.estrelas) // Garantir que estrelas seja número
-              });
+              };
+              avaliacoes.push(avaliacaoComData);
             }
           });
 
@@ -660,7 +694,9 @@ const RankingPontos = () => {
                 <h3 className="text-lg font-semibold text-white">Total de Pontos</h3>
               </div>
               <div className="bg-white/10 rounded-lg px-3 py-1 text-sm">
-                {filtrarPorPeriodo(rankings).filter(func => func.pontuacao.total > 0).length} funcionários
+                {filtrarPorPeriodo(rankings)
+                  .filter(func => !isFuncionarioTerceirizado(func) && func.pontuacao.total > 0)
+                  .length} funcionários
               </div>
             </div>
             
@@ -669,7 +705,7 @@ const RankingPontos = () => {
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold">
                     {filtrarPorPeriodo(rankings)
-                      .filter(func => func.pontuacao.total > 0)
+                      .filter(func => !isFuncionarioTerceirizado(func) && func.pontuacao.total > 0)
                       .reduce((total, func) => total + func.pontuacao.total, 0)}
                   </span>
                   <span className="text-blue-200">pontos</span>
@@ -750,6 +786,7 @@ const RankingPontos = () => {
                     <ToolCase className="w-4 h-4 text-blue-200" />
                     <span>
                       {filtrarPorPeriodo(rankings)
+                        .filter(func => !isFuncionarioTerceirizado(func))
                         .reduce((total, func) => total + func.pontuacao.detalhes.ferramentas, 0)} pts
                     </span>
                     {filtrarPorPeriodo(rankings).some(func => 
@@ -767,6 +804,7 @@ const RankingPontos = () => {
                     <CheckCircle className="w-4 h-4 text-blue-200" />
                     <span>
                       {filtrarPorPeriodo(rankings)
+                        .filter(func => !isFuncionarioTerceirizado(func))
                         .reduce((total, func) => total + func.pontuacao.detalhes.tarefas, 0)} pts
                     </span>
                   </div>
@@ -774,6 +812,7 @@ const RankingPontos = () => {
                     <Star className="w-4 h-4 text-blue-200" />
                     <span>
                       {filtrarPorPeriodo(rankings)
+                        .filter(func => !isFuncionarioTerceirizado(func))
                         .reduce((total, func) => total + func.pontuacao.detalhes.avaliacao, 0)} pts
                     </span>
                   </div>
@@ -790,13 +829,7 @@ const RankingPontos = () => {
         {filtrarPorPeriodo(rankings)
           .filter(funcionario => {
             // Verificar todas as possíveis variações de terceirizado
-            const isTerceirizado = 
-              funcionario.terceirizado === true || 
-              funcionario.tercerizado === true || 
-              funcionario.tipo === 'terceirizado' ||
-              funcionario.tipo === 'tercerizado' ||
-              (typeof funcionario.terceirizado === 'string' && funcionario.terceirizado.toLowerCase() === 'sim') ||
-              (typeof funcionario.tercerizado === 'string' && funcionario.tercerizado.toLowerCase() === 'sim');
+            const isTerceirizado = isFuncionarioTerceirizado(funcionario);
 
             // Manter apenas funcionários não terceirizados com pontuação
             return !isTerceirizado && funcionario.pontuacao.total > 0;
