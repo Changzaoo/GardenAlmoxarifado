@@ -1895,10 +1895,10 @@ const AlmoxarifadoSistema = () => {
       {/* Menu lateral */}
       <nav className={`${
         isMobile 
-          ? `fixed top-0 bottom-0 left-8 z-40 w-full max-w-[280px] transform transition-transform duration-300 ease-in-out ${
+          ? `fixed top-0 bottom-0 left-0 z-40 w-full max-w-[280px] transform transition-transform duration-300 ease-in-out ${
               menuOpen ? 'translate-x-0' : '-translate-x-full'
             }`
-          : 'w-64 fixed h-full left-8'
+          : 'w-64 fixed h-full left-0'
       } bg-white dark:bg-black shadow-lg rounded-lg mt-2`}>
         <div className="flex flex-col h-full">
           {!isMobile && (
@@ -2078,7 +2078,7 @@ const AlmoxarifadoSistema = () => {
 
 
 
-      <main className={`${isMobile ? 'pt-16' : 'pl-64'} w-full min-h-screen bg-white dark:bg-black`}>
+      <main className={`${isMobile ? 'pt-16' : 'pl-72'} w-full min-h-screen bg-white dark:bg-black`}>
         <div className="max-w-5xl mx-auto px-4">
           <div className="py-3">
 
