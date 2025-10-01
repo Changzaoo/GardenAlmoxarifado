@@ -44,7 +44,7 @@ const HistoricoTransferenciasTab = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D9BF0]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 dark:border-[#1D9BF0]"></div>
       </div>
     );
   }
@@ -73,7 +73,7 @@ const HistoricoTransferenciasTab = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <span className={colors.textSecondary}>De:</span>
                     <span className={`font-medium ${colors.text}`}>{transferencia.de}</span>
-                    <ArrowRight className={`w-4 h-4 text-[#1D9BF0]`} />
+                    <ArrowRight className={`w-4 h-4 text-blue-500 dark:text-[#1D9BF0]`} />
                     <span className={colors.textSecondary}>Para:</span>
                     <span className={`font-medium ${colors.text}`}>{transferencia.para}</span>
                   </div>
@@ -88,7 +88,7 @@ const HistoricoTransferenciasTab = () => {
                     </div>
                   </div>
                 </div>
-                <div className={`text-sm ${colors.textSecondary} bg-[#1D9BF0] bg-opacity-10 px-2 py-1 rounded-full`}>
+                <div className={`text-sm ${colors.textSecondary} bg-blue-100 dark:bg-[#1D9BF0] dark:bg-opacity-10 px-2 py-1 rounded-full`}>
                   #{transferencia.emprestimoId.slice(-4)}
                 </div>
               </div>

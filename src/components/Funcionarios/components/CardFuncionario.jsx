@@ -85,12 +85,12 @@ const CardFuncionario = ({
   return (
     <div 
       key={func.id} 
-      className={`bg-[#192734] rounded-2xl overflow-hidden border border-[#38444D] transition-all group ${
+      className={`bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-600 transition-all group ${
         func.demitido && filtroAtual !== 'demitidos' ? 'opacity-60' : ''
       }`}
     >
       {/* Header com foto e ações */}
-      <div className="relative bg-[#1DA1F2]/10 p-4">
+      <div className="relative bg-gray-100 dark:bg-gray-700 p-4">
         {/* Ações do header */}
         {!isFuncionario && !readonly && (
           <div className="absolute top-2 right-2" ref={menuRef}>
@@ -99,7 +99,7 @@ const CardFuncionario = ({
                 e.stopPropagation();
                 setMenuAberto(!menuAberto);
               }}
-              className="p-1.5 bg-[#192734] text-[#8899A6] hover:bg-[#253341] hover:text-white rounded-lg transition-colors shadow-md"
+              className="p-1.5 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white rounded-lg transition-colors shadow-md"
               title="Opções"
             >
               <MoreVertical className="w-4 h-4" />
@@ -107,14 +107,14 @@ const CardFuncionario = ({
 
             {/* Menu dropdown */}
             {menuAberto && (
-              <div className="absolute top-full right-0 mt-1 bg-[#192734] border border-[#38444D] rounded-lg shadow-lg py-1 z-10 min-w-[160px]">
+              <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg py-1 z-10 min-w-[160px]">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setMenuAberto(false);
                     handleEditar(func);
                   }}
-                  className="w-full px-3 py-2 text-left text-[#1DA1F2] hover:bg-[#1DA1F2]/20 transition-colors flex items-center gap-2"
+                  className="w-full px-3 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
                 >
                   <Edit className="w-4 h-4" />
                   Editar
@@ -171,17 +171,17 @@ const CardFuncionario = ({
             <img 
               src={func.photoURL} 
               alt={func.nome} 
-              className="w-20 h-20 rounded-2xl object-cover border-2 border-[#38444D]"
+              className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-200 dark:border-gray-600"
             />
           ) : (
-            <div className="w-20 h-20 rounded-2xl bg-[#253341] border-2 border-[#38444D] flex items-center justify-center flex-shrink-0">
-              <Users className="w-10 h-10 text-[#8899A6]" />
+            <div className="w-20 h-20 rounded-2xl bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 flex items-center justify-center flex-shrink-0">
+              <Users className="w-10 h-10 text-gray-500 dark:text-gray-400" />
             </div>
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 
-                className="text-xl font-bold text-white truncate cursor-pointer hover:text-[#1DA1F2] transition-colors"
+                className="text-xl font-bold text-gray-900 dark:text-white truncate cursor-pointer hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   onClick();
@@ -197,9 +197,9 @@ const CardFuncionario = ({
               )}
             </div>
             {func.matricula && (
-              <p className="text-sm text-[#8899A6] mb-1">Mat: {func.matricula}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Mat: {func.matricula}</p>
             )}
-            <p className="text-[#1DA1F2] font-medium truncate mb-1">{func.cargo || 'Cargo não definido'}</p>
+            <p className="text-gray-900 dark:text-gray-300 font-medium truncate mb-1">{func.cargo || 'Cargo não definido'}</p>
             {func.demitido && func.dataDemissao && (
               <p className="text-xs text-red-400">
                 Demitido em: {new Date(func.dataDemissao).toLocaleDateString('pt-BR')}
@@ -214,7 +214,7 @@ const CardFuncionario = ({
 
         {/* Linha 1: Avaliações */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-[#253341] rounded-xl p-3">
+          <div className="bg-white dark:bg-gray-700 rounded-xl p-3">
             {/* Média de Desempenho */}
             <div className="flex items-center gap-2">
               {(() => {
@@ -244,8 +244,8 @@ const CardFuncionario = ({
                   <div className="flex items-center gap-2">
                     <Gauge className={`w-6 h-6 ${iconColor}`} />
                     <div>
-                      <span className={`text-lg font-bold text-white`}>{media}</span>
-                      <p className="text-xs text-[#8899A6]">Desempenho</p>
+                      <span className={`text-lg font-bold text-gray-900 dark:text-white`}>{media}</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Desempenho</p>
                     </div>
                   </div>
                 );
@@ -253,7 +253,7 @@ const CardFuncionario = ({
             </div>
           </div>
 
-          <div className="bg-[#253341] rounded-xl p-3">
+          <div className="bg-white dark:bg-gray-700 rounded-xl p-3">
             {(() => {
               // Avaliações regulares de tarefas
               const avaliacoesTarefas = funcionariosStats[func.id]?.avaliacoes?.filter(av => av.tipo === 'regular') || [];
@@ -293,8 +293,8 @@ const CardFuncionario = ({
                 <div className="flex items-center gap-2">
                   <Hammer className={`w-6 h-6 ${iconColor}`} />
                   <div>
-                    <span className={`text-lg font-bold text-white`}>{media}</span>
-                    <p className="text-xs text-[#8899A6]">Tarefas</p>
+                    <span className={`text-lg font-bold text-gray-900 dark:text-white`}>{media}</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Tarefas</p>
                   </div>
                 </div>
               );
@@ -344,14 +344,14 @@ const CardFuncionario = ({
           {(() => {
             const emAndamento = funcionariosStats[func.id]?.tarefasEmAndamento || 0;
             return emAndamento > 0 ? (
-              <div className="bg-[#253341] rounded-xl p-3">
+              <div className="bg-white dark:bg-gray-700 rounded-xl p-3">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-[#1DA1F2]" />
+                  <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <div>
-                    <span className="text-lg font-bold text-white">
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">
                       {emAndamento}
                     </span>
-                    <p className="text-xs text-[#8899A6]">Em Andamento</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Em Andamento</p>
                   </div>
                 </div>
               </div>
@@ -367,3 +367,6 @@ const CardFuncionario = ({
 };
 
 export default CardFuncionario;
+
+
+

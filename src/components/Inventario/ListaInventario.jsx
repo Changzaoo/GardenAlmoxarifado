@@ -50,7 +50,7 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
               placeholder="Buscar por item..."
               value={filtroInventario}
               onChange={(e) => setFiltroInventario(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white dark:placeholder-gray-500"
+              className="w-full h-10 pl-10 pr-4 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
             />
           </div>
           
@@ -59,7 +59,7 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
             <select
               value={filtroCategoria}
               onChange={(e) => setFiltroCategoria(e.target.value)}
-              className="border border-gray-300 dark:border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <option value="">Todas as categorias</option>
               <option value="Ferramentas">Ferramentas</option>
@@ -68,7 +68,7 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
               <option value="Outros">Outros</option>
             </select>
 
-            <div className="flex items-center gap-2 border border-gray-300 dark:border-[#38444D] rounded-lg p-1 bg-white dark:bg-[#253341]">
+            <div className="flex items-center gap-2 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg p-1 bg-white dark:bg-gray-800 dark:bg-white dark:bg-gray-700">
               <button
                 onClick={() => setOrdenacao('nome-asc')}
                 className={`p-2 rounded-lg transition-colors ${ordenacao === 'nome-asc' ? 'bg-[#1D9BF0] text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
@@ -129,3 +129,4 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
 };
 
 export default ListaInventario;
+

@@ -30,7 +30,7 @@ const SupportButton = ({ content }) => {
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={toggleModal} />
 
-            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div className="inline-block align-bottom bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
               <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Ajuda
@@ -52,7 +52,7 @@ const SupportButton = ({ content }) => {
                     placeholder="Pesquisar ajuda..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
@@ -63,7 +63,7 @@ const SupportButton = ({ content }) => {
                       key={index}
                       className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
                     >
-                      <div className="p-4 bg-white dark:bg-gray-800">
+                      <div className="p-4 bg-white dark:bg-gray-800 dark:bg-gray-800">
                         <div className="flex items-center gap-2">
                           <Book className="w-5 h-5 text-blue-500" />
                           <span className="font-medium text-gray-900 dark:text-white">
@@ -90,3 +90,4 @@ const SupportButton = ({ content }) => {
 };
 
 export default SupportButton;
+

@@ -26,12 +26,12 @@ const AvaliacaoTarefaModal = ({ isOpen, onClose, onConfirm, titulo, tipoAvaliaca
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] rounded-xl p-6 w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-white">{titulo}</h3>
           <button
             onClick={onClose}
-            className="p-2 text-[#8899A6] hover:bg-[#283340] rounded-full transition-colors"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:bg-[#283340] rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -40,7 +40,7 @@ const AvaliacaoTarefaModal = ({ isOpen, onClose, onConfirm, titulo, tipoAvaliaca
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Estrelas de Avaliação */}
           <div className="flex flex-col items-center gap-2">
-            <span className="text-[#8899A6] text-sm">
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
               {tipoAvaliacao === "colaborador"
                 ? "Como você avalia esta tarefa?"
                 : "Como você avalia o desempenho do colaborador?"}
@@ -69,7 +69,7 @@ const AvaliacaoTarefaModal = ({ isOpen, onClose, onConfirm, titulo, tipoAvaliaca
 
           {/* Campo de Comentário */}
           <div>
-            <label className="block text-sm text-[#8899A6] mb-2">
+            <label className="block text-sm text-gray-500 dark:text-gray-400 mb-2">
               {tipoAvaliacao === "colaborador"
                 ? "Compartilhe sua experiência com esta tarefa"
                 : "Deixe um feedback sobre o desempenho"}
@@ -77,7 +77,7 @@ const AvaliacaoTarefaModal = ({ isOpen, onClose, onConfirm, titulo, tipoAvaliaca
             <textarea
               value={comentario}
               onChange={(e) => setComentario(e.target.value)}
-              className="w-full h-32 px-4 py-2 bg-[#253341] text-white border border-[#38444D] rounded-lg resize-none focus:border-[#1DA1F2] focus:ring-1 focus:ring-[#1DA1F2] outline-none transition-colors"
+              className="w-full h-32 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:border-blue-500 dark:border-[#1D9BF0] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] outline-none transition-colors"
               placeholder={
                 tipoAvaliacao === "colaborador"
                   ? "Descreva sua experiência, dificuldades encontradas e aprendizados..."
@@ -91,13 +91,13 @@ const AvaliacaoTarefaModal = ({ isOpen, onClose, onConfirm, titulo, tipoAvaliaca
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-[#8899A6] hover:bg-[#283340] rounded-full transition-colors"
+              className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:bg-[#283340] rounded-full transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={avaliacao === 0 || !comentario.trim()}
             >
               Enviar Avaliação
@@ -110,3 +110,4 @@ const AvaliacaoTarefaModal = ({ isOpen, onClose, onConfirm, titulo, tipoAvaliaca
 };
 
 export default AvaliacaoTarefaModal;
+

@@ -340,7 +340,7 @@ const TarefasTab = ({
   return (
     <div className="space-y-6">
       {/* Barra de Filtros */}
-      <div className="bg-white dark:bg-[#1E2732] rounded-lg shadow-md border border-gray-200 dark:border-[#38444D] p-4">
+      <div className="bg-white dark:bg-[#1E2732] rounded-lg shadow-md border border-gray-200 dark:border-gray-600 p-4">
         <div className="flex flex-wrap gap-4">
           {/* Busca */}
           <div className="relative flex-1 min-w-[250px]">
@@ -350,7 +350,7 @@ const TarefasTab = ({
               placeholder="Buscar tarefas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white"
+              className="w-full h-10 pl-10 pr-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-gray-700 dark:text-white"
             />
           </div>
 
@@ -360,7 +360,7 @@ const TarefasTab = ({
             <select
               value={filtroStatus}
               onChange={(e) => setFiltroStatus(e.target.value)}
-              className="w-full border border-gray-300 dark:border-[#38444D] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
             >
               <option value="todas">Todos os status</option>
               <option value="pendente">Pendentes</option>
@@ -373,7 +373,7 @@ const TarefasTab = ({
             <select
               value={filtroPeriodo}
               onChange={(e) => setFiltroPeriodo(e.target.value)}
-              className="w-full border border-gray-300 dark:border-[#38444D] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
             >
               <option value="todos">Todos os períodos</option>
               <option value="hoje">Hoje</option>
@@ -385,7 +385,7 @@ const TarefasTab = ({
             <select
               value={filtroAvaliacao}
               onChange={(e) => setFiltroAvaliacao(e.target.value)}
-              className="w-full border border-gray-300 dark:border-[#38444D] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
             >
               <option value="todas">Todas as avaliações</option>
               <option value="excelente">Excelente (5★)</option>
@@ -399,7 +399,7 @@ const TarefasTab = ({
             {showAddButton && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
               <button
                 onClick={() => setShowCriarTarefa(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-[#1a91da] transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
               >
                 <Plus className="w-4 h-4" /> Nova Tarefa
               </button>
@@ -409,11 +409,11 @@ const TarefasTab = ({
       </div>
 
       {/* Modal dos Cards */}
-      <div className="bg-gray-100 dark:bg-[#15202B] rounded-lg shadow-md border border-gray-200 dark:border-[#38444D] p-6">
+      <div className="bg-gray-100 dark:bg-[#15202B] rounded-lg shadow-md border border-gray-200 dark:border-gray-600 p-6">
         {tarefasFiltradas.length === 0 ? (
-          <div className="bg-[#192734] rounded-xl p-6 text-center border border-[#38444D]">
-            <Clock className="w-12 h-12 text-[#8899A6] mx-auto mb-3" />
-            <p className="text-[#8899A6]">{
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center border border-gray-300 dark:border-gray-600">
+            <Clock className="w-12 h-12 text-gray-500 dark:text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400">{
               searchTerm
                 ? 'Nenhuma tarefa encontrada para esta busca'
                 : userFilter
@@ -428,22 +428,22 @@ const TarefasTab = ({
               return (
               <div
                 key={tarefa.id}
-                className="bg-[#192734] rounded-xl p-6 border border-[#38444D] hover:border-[#1DA1F2] transition-colors cursor-pointer"
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:border-[#1D9BF0] transition-colors cursor-pointer"
                 onClick={() => setTarefaSelecionada(tarefa)}
               >
                 <div>
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-white">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                           {tarefa.titulo}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                         {statusInfo.icon}
                         <span>{statusInfo.text}</span>
                         {!readOnly && tarefa.status === 'em_andamento' && (
-                          <span className="text-[#1DA1F2] font-medium ml-2">
+                          <span className="text-blue-500 dark:text-[#1D9BF0] font-medium ml-2">
                             {formatarTempo(temposDecorridos[tarefa.id])}
                           </span>
                         )}
@@ -453,7 +453,7 @@ const TarefasTab = ({
 
                   {tarefa.descricao && (
                     <div className="mb-4">
-                      <p className="text-sm text-[#8899A6] line-clamp-2">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
                         {tarefa.descricao}
                       </p>
                     </div>
@@ -467,7 +467,7 @@ const TarefasTab = ({
                           .map((func, idx) => (
                             <div 
                               key={idx}
-                              className="inline-flex items-center gap-1 px-2 py-1 bg-[#253341] rounded-full text-sm text-[#8899A6]"
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-sm text-gray-500 dark:text-gray-400"
                             >
                               <User className="w-3 h-3" />
                               {func}
@@ -478,10 +478,10 @@ const TarefasTab = ({
 
                     {tarefa.prioridade && (
                       <div className="flex items-center gap-2 mt-4">
-                        <span className="text-sm text-[#8899A6]">Prioridade:</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Prioridade:</span>
                         <span className={`text-sm ${
                           tarefa.prioridade === 'alta' ? 'text-red-500' :
-                          tarefa.prioridade === 'média' ? 'text-[#1DA1F2]' :
+                          tarefa.prioridade === 'média' ? 'text-blue-500 dark:text-[#1D9BF0]' :
                           'text-green-500'
                         }`}>
                           {tarefa.prioridade.charAt(0).toUpperCase() + tarefa.prioridade.slice(1)}
@@ -493,7 +493,7 @@ const TarefasTab = ({
                       <div className="space-y-2 mt-4">
                         {tarefa.avaliacaoSupervisor && (
                           <div className="flex items-center gap-1">
-                            <span className="text-sm text-[#8899A6]">Supervisor:</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Supervisor:</span>
                             <div className="flex items-center">
                               {[...Array(5)].map((_, index) => (
                                 <Star
@@ -510,7 +510,7 @@ const TarefasTab = ({
                         )}
                         {tarefa.avaliacaoFuncionario && (
                           <div className="flex items-center gap-1">
-                            <span className="text-sm text-[#8899A6]">Funcionário:</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Funcionário:</span>
                             <div className="flex items-center">
                               {[...Array(5)].map((_, index) => (
                                 <Star
@@ -529,7 +529,7 @@ const TarefasTab = ({
                     )}
                   </div>
 
-                  <div className="mt-4 text-sm text-[#8899A6]">
+                  <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
                       <span>Criada em {formatarDataHora(tarefa.dataCriacao)}</span>
@@ -544,7 +544,7 @@ const TarefasTab = ({
                             e.stopPropagation();
                             handleIniciarTarefa(tarefa.id);
                           }}
-                          className="px-3 py-1 text-sm bg-[#1DA1F2] text-white rounded-full flex items-center gap-1 hover:bg-[#1a91da] transition-colors"
+                          className="px-3 py-1 text-sm bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
                         >
                           <PlayCircle className="w-4 h-4" />
                           Iniciar
@@ -558,7 +558,7 @@ const TarefasTab = ({
                               e.stopPropagation();
                               handlePausarTarefa(tarefa.id);
                             }}
-                            className="px-3 py-1 text-sm bg-[#F7BE38] text-white rounded-full flex items-center gap-1 hover:bg-[#f0b730] transition-colors"
+                            className="px-3 py-1 text-sm bg-[#F7BE38] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-[#f0b730] transition-colors"
                           >
                             <Pause className="w-4 h-4" />
                             Pausar
@@ -569,7 +569,7 @@ const TarefasTab = ({
                               setTarefaParaAvaliacao(tarefa);
                               handleConcluirTarefa();
                             }}
-                            className="px-3 py-1 text-sm bg-[#4CAF50] text-white rounded-full flex items-center gap-1 hover:bg-[#43a047] transition-colors"
+                            className="px-3 py-1 text-sm bg-[#4CAF50] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-[#43a047] transition-colors"
                           >
                             <CheckCircle className="w-4 h-4" />
                             Concluir
@@ -583,7 +583,7 @@ const TarefasTab = ({
                             e.stopPropagation();
                             handleIniciarTarefa(tarefa.id);
                           }}
-                          className="px-3 py-1 text-sm bg-[#1DA1F2] text-white rounded-full flex items-center gap-1 hover:bg-[#1a91da] transition-colors"
+                          className="px-3 py-1 text-sm bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
                         >
                           <PlayCircle className="w-4 h-4" />
                           Retomar
@@ -597,7 +597,7 @@ const TarefasTab = ({
                             setTarefaParaAvaliacao(tarefa);
                             setShowAvaliacaoModal(true);
                           }}
-                          className="px-3 py-1 text-sm bg-[#1DA1F2] text-white rounded-full flex items-center gap-1 hover:bg-[#1a91da] transition-colors"
+                          className="px-3 py-1 text-sm bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
                         >
                           <Star className="w-4 h-4" />
                           Avaliar
@@ -617,7 +617,7 @@ const TarefasTab = ({
         <div className="flex justify-center mt-6">
           <button
             onClick={() => setQuantidadeExibida(prev => prev + 10)}
-            className="px-4 py-2 text-[#1DA1F2] hover:bg-[#1DA1F2]/10 rounded-lg transition-colors"
+            className="px-4 py-2 text-blue-500 dark:text-[#1D9BF0] hover:bg-blue-500 dark:bg-[#1D9BF0]/10 rounded-lg transition-colors"
           >
             Carregar mais
           </button>
@@ -682,3 +682,4 @@ const TarefasTab = ({
 };
 
 export default TarefasTab;
+

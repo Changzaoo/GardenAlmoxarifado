@@ -74,7 +74,7 @@ const LegalTab = () => {
 
   return (
     <div className="space-y-6">
-      <form className="bg-[#192734] p-6 rounded-lg border border-[#38444D]">
+      <form className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600">
         {/* Botões de ação */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex space-x-4">
@@ -83,7 +83,7 @@ const LegalTab = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(true)}
-                  className="px-4 py-2 bg-[#1DA1F2] text-white rounded-md hover:bg-[#1a91da] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] flex items-center space-x-2"
+                  className="px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-md hover:bg-blue-600 dark:hover:bg-[#1a8cd8] focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] flex items-center space-x-2"
                 >
                   <PlusIcon className="w-4 h-4" />
                   <span>Novo texto legal</span>
@@ -91,7 +91,7 @@ const LegalTab = () => {
                 <button
                   type="button"
                   onClick={() => {}}
-                  className="px-4 py-2 bg-[#2C3C4C] text-white rounded-md hover:bg-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#38444D] flex items-center space-x-2"
+                  className="px-4 py-2 bg-[#2C3C4C] text-gray-900 dark:text-white rounded-md hover:bg-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#38444D] flex items-center space-x-2"
                 >
                   <FileText className="w-4 h-4" />
                   <span>Adicionar documentos padrão</span>
@@ -103,7 +103,7 @@ const LegalTab = () => {
 
         {/* Tabs - com suporte a modo retrato */}
         <div className="w-full overflow-x-auto mt-6">
-          <div className="flex flex-nowrap min-w-max border-b border-[#38444D]">
+          <div className="flex flex-nowrap min-w-max border-b border-gray-200 dark:border-gray-600 dark:border-gray-600">
             {tabs.map(tab => (
               <button
                 key={tab.id}
@@ -111,8 +111,8 @@ const LegalTab = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex shrink-0 items-center px-4 py-2 ${
                   activeTab === tab.id
-                    ? "text-[#1DA1F2] border-b-2 border-[#1DA1F2]"
-                    : "text-[#8899A6] hover:text-white"
+                    ? "text-blue-500 dark:text-[#1D9BF0] border-b-2 border-blue-500 dark:border-[#1D9BF0]"
+                    : "text-gray-500 dark:text-gray-400 hover:text-white"
                 }`}
               >
                 <tab.icon className="w-4 h-4 mr-2 shrink-0" />
@@ -136,28 +136,28 @@ const LegalTab = () => {
                 }
               })
               .map(doc => (
-                <div key={doc.id} className="bg-[#253341] p-4 rounded-lg border border-[#38444D]">
+                <div key={doc.id} className="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600">
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="text-white font-medium">{doc.titulo}</h4>
-                      <p className="text-[#8899A6] text-sm mt-1">Versão atual: {doc.versao}</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Versão atual: {doc.versao}</p>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <div className="text-[#8899A6] text-sm">
+                      <div className="text-gray-500 dark:text-gray-400 text-sm">
                         {new Date(doc.dataCriacao).toLocaleDateString()}
                       </div>
                       {canEdit && (
                         <button
                           type="button"
                           onClick={() => handleNewVersion(doc)}
-                          className="px-2 py-1 bg-[#2C3C4C] text-white text-sm rounded hover:bg-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#38444D]"
+                          className="px-2 py-1 bg-[#2C3C4C] text-gray-900 dark:text-white text-sm rounded hover:bg-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#38444D]"
                         >
                           Nova versão
                         </button>
                       )}
                     </div>
                   </div>
-                  <div className="mt-3 text-white whitespace-pre-wrap">
+                  <div className="mt-3 text-gray-900 dark:text-white whitespace-pre-wrap">
                     {doc.conteudo}
                   </div>
                 </div>
@@ -170,3 +170,5 @@ const LegalTab = () => {
 };
 
 export default LegalTab;
+
+

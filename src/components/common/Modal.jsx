@@ -46,7 +46,7 @@ const Modal = ({
           ${className}
         `}>
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-[#38444D]">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600 dark:border-gray-600">
             <div className="flex items-center justify-between">
               <h3 className={`text-lg font-medium ${colors.text}`}>
                 {title}
@@ -87,3 +87,4 @@ export const useModal = (initialState = false) => {
 };
 
 export default Modal;
+

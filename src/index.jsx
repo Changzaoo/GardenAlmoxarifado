@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import Workflow from './components/Workflow';
-import ThemeProvider from './components/ThemeProvider';
+import Seed from './components/Workflow';
+import { ThemeProvider } from './components/Theme/ThemeSystem';
 import SecurityBlockScreen from './components/SecurityBlockScreen';
 import './index.css';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
@@ -83,7 +83,7 @@ const Root = () => {
 
   return (
     <ThemeProvider>
-      <Workflow />
+      <Seed />
     </ThemeProvider>
   );
 };

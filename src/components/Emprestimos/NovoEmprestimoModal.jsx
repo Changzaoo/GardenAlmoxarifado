@@ -73,13 +73,13 @@ const NovoEmprestimoModal = ({ isOpen, onClose, onConfirm, funcionarios, ferrame
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-white">Novo Empréstimo</h2>
           <button
             onClick={onClose}
-            className="text-[#8899A6] hover:text-white transition-colors"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
@@ -88,11 +88,11 @@ const NovoEmprestimoModal = ({ isOpen, onClose, onConfirm, funcionarios, ferrame
         <div className="space-y-6">
           {/* Seleção de Funcionário */}
           <div>
-            <label className="block text-[#8899A6] mb-2">Funcionário</label>
+            <label className="block text-gray-500 dark:text-gray-400 mb-2">Funcionário</label>
             <select
               value={novoEmprestimo.funcionarioId}
               onChange={handleSelectFuncionario}
-              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+              className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
             >
               <option value="">Selecione um funcionário</option>
               {funcionarios.map(funcionario => (
@@ -105,15 +105,15 @@ const NovoEmprestimoModal = ({ isOpen, onClose, onConfirm, funcionarios, ferrame
 
           {/* Busca de Ferramentas */}
           <div>
-            <label className="block text-[#8899A6] mb-2">Ferramentas Disponíveis</label>
+            <label className="block text-gray-500 dark:text-gray-400 mb-2">Ferramentas Disponíveis</label>
             <div className="relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8899A6]" />
+              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
               <input
                 type="text"
                 value={filtroFerramentas}
                 onChange={(e) => setFiltroFerramentas(e.target.value)}
                 placeholder="Buscar ferramentas..."
-                className="w-full bg-[#253341] border border-[#38444D] text-white rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+                className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
               />
             </div>
 
@@ -123,11 +123,11 @@ const NovoEmprestimoModal = ({ isOpen, onClose, onConfirm, funcionarios, ferrame
                 <button
                   key={ferramenta.nome}
                   onClick={() => handleAddFerramenta(ferramenta)}
-                  className="flex items-center gap-2 p-2 rounded-lg bg-[#253341] hover:bg-[#2C3E50] transition-colors text-left"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-800 dark:bg-gray-700 hover:bg-[#2C3E50] transition-colors text-left"
                 >
-                  <Wrench className="w-4 h-4 text-[#1DA1F2]" />
+                  <Wrench className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
                   <span className="text-white">{ferramenta.nome}</span>
-                  <span className="text-[#8899A6] text-sm ml-auto">
+                  <span className="text-gray-500 dark:text-gray-400 text-sm ml-auto">
                     Disponível: {ferramenta.disponivel}
                   </span>
                 </button>
@@ -137,15 +137,15 @@ const NovoEmprestimoModal = ({ isOpen, onClose, onConfirm, funcionarios, ferrame
 
           {/* Ferramentas Selecionadas */}
           <div>
-            <h3 className="text-[#8899A6] mb-2">Ferramentas Selecionadas</h3>
+            <h3 className="text-gray-500 dark:text-gray-400 mb-2">Ferramentas Selecionadas</h3>
             <div className="space-y-2">
               {novoEmprestimo.ferramentas.map(ferramenta => (
                 <div
                   key={ferramenta.nome}
-                  className="flex items-center justify-between p-2 rounded-lg bg-[#253341]"
+                  className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-gray-800 dark:bg-gray-700"
                 >
                   <div className="flex items-center gap-2">
-                    <Wrench className="w-4 h-4 text-[#1DA1F2]" />
+                    <Wrench className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
                     <span className="text-white">{ferramenta.nome}</span>
                   </div>
                   <button
@@ -163,7 +163,7 @@ const NovoEmprestimoModal = ({ isOpen, onClose, onConfirm, funcionarios, ferrame
           <div className="flex justify-end gap-3 mt-6">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-[#253341] text-[#8899A6] hover:bg-[#2C3E50] transition-colors"
+              className="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-[#2C3E50] transition-colors"
             >
               Cancelar
             </button>
@@ -172,8 +172,8 @@ const NovoEmprestimoModal = ({ isOpen, onClose, onConfirm, funcionarios, ferrame
               disabled={!novoEmprestimo.funcionarioId || novoEmprestimo.ferramentas.length === 0}
               className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
                 novoEmprestimo.funcionarioId && novoEmprestimo.ferramentas.length > 0
-                  ? 'bg-[#1DA1F2] hover:bg-[#1A91DA] text-white'
-                  : 'bg-[#253341] text-[#8899A6] cursor-not-allowed'
+                  ? 'bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1a8cd8] text-white'
+                  : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               }`}
             >
               <Plus className="w-4 h-4" />
@@ -187,3 +187,6 @@ const NovoEmprestimoModal = ({ isOpen, onClose, onConfirm, funcionarios, ferrame
 };
 
 export default NovoEmprestimoModal;
+
+
+

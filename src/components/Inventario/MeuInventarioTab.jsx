@@ -62,7 +62,7 @@ const MeuInventarioTab = ({ emprestimos, readOnly = false, showEmptyMessage }) =
     if (!Array.isArray(emprestimos)) {
       return (
         <div className="bg-white dark:bg-gray-700 rounded-lg p-6 text-center shadow-md">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1DA1F2] mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 dark:border-[#1D9BF0] mx-auto"></div>
           <p className="mt-2 text-gray-500 dark:text-gray-400">Carregando empréstimos...</p>
         </div>
       );
@@ -71,13 +71,13 @@ const MeuInventarioTab = ({ emprestimos, readOnly = false, showEmptyMessage }) =
     return (
       <>
         {transferencias.length > 0 && (
-          <div className="bg-[#192734] border border-[#38444D] hover:border-[#1DA1F2] rounded-xl p-4 mb-6 transition-colors">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-600 hover:border-blue-500 dark:border-[#1D9BF0] rounded-xl p-4 mb-6 transition-colors">
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-lg font-semibold text-white">
                 Transferências Pendentes ({transferencias.length})
               </h3>
             </div>
-            <p className="text-sm text-[#8899A6] mb-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               Você tem ferramentas aguardando sua confirmação de recebimento.
             </p>
           </div>
@@ -113,3 +113,4 @@ const MeuInventarioTab = ({ emprestimos, readOnly = false, showEmptyMessage }) =
 };
 
 export default MeuInventarioTab;
+

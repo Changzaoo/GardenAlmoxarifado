@@ -17,7 +17,7 @@ const InventarioTab = ({
   const isFuncionario = usuario?.nivel === 1; // NÍVEL 1 = FUNCIONÁRIO
   
   return (
-    <div className="space-y-6 bg-[#15202B] text-white min-h-screen p-4">
+    <div className="space-y-6 bg-[#15202B] text-gray-900 dark:text-white min-h-screen p-4">
       {!isFuncionario && (
         <NovoItem
           adicionarItem={adicionarItem}
@@ -36,3 +36,4 @@ const InventarioTab = ({
 };
 
 export default InventarioTab;
+

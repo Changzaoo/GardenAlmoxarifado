@@ -456,7 +456,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   };
 
   return (
-    <div className="bg-[#15202B] p-4 rounded-xl">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl">
       <div className="flex flex-col gap-4 mb-4">
         {/* Formulário de Adição */}
         {!isFuncionario && !readonly && (
@@ -481,14 +481,14 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
       {/* Lista de Funcionários */}
       {funcionariosFiltrados.length === 0 ? (
         <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-          <div className="bg-[#192734] rounded-full p-6 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-full p-6 mb-4">
             {filtroAtual === 'demitidos' ? (
               <UserX className="w-12 h-12 text-gray-400" />
             ) : (
               <Users className="w-12 h-12 text-gray-400" />
             )}
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             {filtroAtual === 'demitidos' ? 'Nenhum funcionário demitido' : 'Nenhum funcionário encontrado'}
           </h3>
           <p className="text-gray-400 max-w-md">
@@ -575,3 +575,4 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 };
 
 export default FuncionariosTab;
+

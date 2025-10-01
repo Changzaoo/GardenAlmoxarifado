@@ -15,7 +15,7 @@ const VerificacaoMensalTab = () => {
     if (!modalAberto) return null;
     
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Verificação do Inventário</h3>
@@ -46,7 +46,7 @@ const VerificacaoMensalTab = () => {
                       min="0"
                       value={quantidades[item.id] || ''}
                       onChange={(e) => handleQuantidadeChange(item.id, e.target.value)}
-                      className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+                      className="w-24 px-3 py-2 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:bg-gray-800"
                       placeholder="Qtd."
                     />
                     <button
@@ -76,7 +76,7 @@ const VerificacaoMensalTab = () => {
                 setModalAberto(false);
               }}
               variant="primary"
-              className="bg-[#1DA1F2] hover:bg-[#1a91da] text-white"
+              className="bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1a8cd8] text-white"
               loading={loading}
             >
               {loading ? 'Salvando...' : 'Salvar Verificação'}
@@ -272,7 +272,7 @@ const VerificacaoMensalTab = () => {
   return (
     <div className="space-y-6">
       {itemParaRemover && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Confirmar Remoção</h3>
             <p className="text-gray-700 dark:text-gray-300 mb-6">
@@ -287,7 +287,7 @@ const VerificacaoMensalTab = () => {
               </button>
               <button
                 onClick={confirmarRemocao}
-                className="px-4 py-2 text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+                className="px-4 py-2 text-gray-900 dark:text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
               >
                 Remover
               </button>
@@ -301,19 +301,19 @@ const VerificacaoMensalTab = () => {
             type="month"
             value={mesAtual}
             onChange={(e) => setMesAtual(e.target.value)}
-            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2"
+            className="rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600 bg-white dark:bg-gray-800 dark:bg-gray-800 px-3 py-2"
           />
           <button
             onClick={carregarHistorico}
             className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors"
             title="Ver histórico de verificações"
           >
-            <CalendarIcon className="w-5 h-5 text-[#1DA1F2]" />
+            <CalendarIcon className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
           </button>
         </div>
         <Button
           variant="primary"
-          className="bg-[#1DA1F2] hover:bg-[#1a91da] text-white px-4 py-2 rounded-lg transition-colors"
+          className="bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1a8cd8] text-gray-900 dark:text-white px-4 py-2 rounded-lg transition-colors"
           onClick={() => setModalAberto(true)}
         >
           Verificar Inventário
@@ -322,7 +322,7 @@ const VerificacaoMensalTab = () => {
 
       {/* Modal de Verificação */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Verificação do Inventário</h3>
@@ -353,7 +353,7 @@ const VerificacaoMensalTab = () => {
                         min="0"
                         value={quantidades[item.id] || ''}
                         onChange={(e) => handleQuantidadeChange(item.id, e.target.value)}
-                        className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+                        className="w-24 px-3 py-2 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 dark:bg-gray-800"
                         placeholder="Qtd."
                       />
                       <button
@@ -378,7 +378,7 @@ const VerificacaoMensalTab = () => {
               </Button>
               <Button
                 onClick={salvarVerificacao}
-                className="bg-[#1DA1F2] hover:bg-[#1a91da] text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1a8cd8] text-gray-900 dark:text-white px-4 py-2 rounded-lg transition-colors"
               >
                 Salvar Verificação
               </Button>
@@ -395,7 +395,7 @@ const VerificacaoMensalTab = () => {
       )}
 
       {itemParaRemover && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Confirmar Remoção</h3>
             <p className="text-gray-700 dark:text-gray-300 mb-6">
@@ -410,7 +410,7 @@ const VerificacaoMensalTab = () => {
               </button>
               <button
                 onClick={confirmarRemocao}
-                className="px-4 py-2 text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+                className="px-4 py-2 text-gray-900 dark:text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
               >
                 Remover
               </button>
@@ -456,7 +456,7 @@ const VerificacaoMensalTab = () => {
                       value={quantidades[item.id] || ''}
                       onChange={(e) => handleQuantidadeChange(item.id, e.target.value)}
                       placeholder="Quantidade"
-                      className="w-24 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1"
+                      className="w-24 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600 bg-white dark:bg-gray-800 dark:bg-gray-800 px-3 py-1"
                       min="0"
                     />
                   </div>
@@ -483,3 +483,6 @@ const VerificacaoMensalTab = () => {
 };
 
 export default VerificacaoMensalTab;
+
+
+

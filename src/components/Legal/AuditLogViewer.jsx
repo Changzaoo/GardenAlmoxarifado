@@ -48,27 +48,27 @@ const AuditLogViewer = ({ usuario }) => {
     <div className="space-y-4">
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div>
-          <label className="block text-[#8899A6] text-sm mb-1">Data Inicial</label>
+          <label className="block text-gray-500 dark:text-gray-400 text-sm mb-1">Data Inicial</label>
           <input
             type="date"
-            className="w-full bg-[#22303C] border border-[#38444D] rounded p-2 text-white"
+            className="w-full bg-[#22303C] border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded p-2 text-white"
             value={filters.startDate}
             onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
           />
         </div>
         <div>
-          <label className="block text-[#8899A6] text-sm mb-1">Data Final</label>
+          <label className="block text-gray-500 dark:text-gray-400 text-sm mb-1">Data Final</label>
           <input
             type="date"
-            className="w-full bg-[#22303C] border border-[#38444D] rounded p-2 text-white"
+            className="w-full bg-[#22303C] border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded p-2 text-white"
             value={filters.endDate}
             onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
           />
         </div>
         <div>
-          <label className="block text-[#8899A6] text-sm mb-1">Categoria</label>
+          <label className="block text-gray-500 dark:text-gray-400 text-sm mb-1">Categoria</label>
           <select
-            className="w-full bg-[#22303C] border border-[#38444D] rounded p-2 text-white"
+            className="w-full bg-[#22303C] border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded p-2 text-white"
             value={filters.category}
             onChange={(e) => setFilters({ ...filters, category: e.target.value })}
           >
@@ -81,9 +81,9 @@ const AuditLogViewer = ({ usuario }) => {
           </select>
         </div>
         <div>
-          <label className="block text-[#8899A6] text-sm mb-1">Operação</label>
+          <label className="block text-gray-500 dark:text-gray-400 text-sm mb-1">Operação</label>
           <select
-            className="w-full bg-[#22303C] border border-[#38444D] rounded p-2 text-white"
+            className="w-full bg-[#22303C] border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded p-2 text-white"
             value={filters.operation}
             onChange={(e) => setFilters({ ...filters, operation: e.target.value })}
           >
@@ -99,21 +99,21 @@ const AuditLogViewer = ({ usuario }) => {
 
       {loading ? (
         <div className="text-center py-8">
-          <Activity className="w-8 h-8 animate-spin mx-auto text-[#1DA1F2] mb-2" />
-          <p className="text-[#8899A6]">Carregando logs...</p>
+          <Activity className="w-8 h-8 animate-spin mx-auto text-blue-500 dark:text-[#1D9BF0] mb-2" />
+          <p className="text-gray-500 dark:text-gray-400">Carregando logs...</p>
         </div>
       ) : (
         <div className="space-y-2">
           {logs.map((log) => (
-            <div key={log.id} className="bg-[#22303C] p-4 rounded-lg border border-[#38444D]">
+            <div key={log.id} className="bg-[#22303C] p-4 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-[#1DA1F2] font-medium">{log.operation}</span>
-                <span className="text-[#8899A6] text-sm">
+                <span className="text-blue-500 dark:text-[#1D9BF0] font-medium">{log.operation}</span>
+                <span className="text-gray-500 dark:text-gray-400 text-sm">
                   {new Date(log.timestamp).toLocaleString()}
                 </span>
               </div>
               <p className="text-white mb-1">{log.details}</p>
-              <div className="flex space-x-4 text-sm text-[#8899A6]">
+              <div className="flex space-x-4 text-sm text-gray-500 dark:text-gray-400">
                 <span>Categoria: {log.category}</span>
                 <span>Usuário: {log.userId}</span>
                 {log.ipAddress && <span>IP: {log.ipAddress}</span>}
@@ -123,8 +123,8 @@ const AuditLogViewer = ({ usuario }) => {
 
           {logs.length === 0 && (
             <div className="text-center py-8">
-              <Search className="w-12 h-12 mx-auto text-[#8899A6] mb-3" />
-              <p className="text-[#8899A6]">Nenhum log encontrado para os filtros selecionados.</p>
+              <Search className="w-12 h-12 mx-auto text-gray-500 dark:text-gray-400 mb-3" />
+              <p className="text-gray-500 dark:text-gray-400">Nenhum log encontrado para os filtros selecionados.</p>
             </div>
           )}
         </div>
@@ -134,3 +134,4 @@ const AuditLogViewer = ({ usuario }) => {
 };
 
 export default AuditLogViewer;
+

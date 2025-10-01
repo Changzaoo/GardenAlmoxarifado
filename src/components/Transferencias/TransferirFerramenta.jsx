@@ -86,7 +86,7 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
         {/* Cabeçalho */}
         <div className="bg-gray-50 px-6 py-4 rounded-t-lg border-b">
@@ -135,7 +135,7 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
             <select
               value={funcionarioSelecionado}
               onChange={(e) => setFuncionarioSelecionado(e.target.value)}
-              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+              className="w-full bg-white dark:bg-gray-800 dark:bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none"
               required
             >
               <option value="">Selecione um funcionário</option>
@@ -175,7 +175,7 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
           >
             Cancelar
           </button>
@@ -183,7 +183,7 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
             type="button"
             onClick={handleTransferir}
             disabled={loading || !funcionarioSelecionado || !confirmado}
-            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-2"
           >
             <ArrowRight className="w-4 h-4" />
             {loading ? 'Transferindo...' : 'Confirmar Transferência'}
@@ -195,3 +195,6 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
 };
 
 export default TransferirFerramenta;
+
+
+

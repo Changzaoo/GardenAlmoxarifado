@@ -304,7 +304,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
               }
               setShowAddModal(true);
             }}
-            className="px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Nova Avaliação
@@ -313,9 +313,9 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
       </div>
 
       {/* Avaliação Geral */}
-      <div className="bg-white dark:bg-[#192734] rounded-xl p-6 border border-gray-200 dark:border-[#38444D]">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
         <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
-          <Award className="w-5 h-5 text-[#1DA1F2]" />
+          <Award className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
           Avaliação Geral
         </h3>
         
@@ -341,7 +341,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {estatisticas.totalAvaliacoes} {estatisticas.totalAvaliacoes === 1 ? 'avaliação' : 'avaliações'}
               </div>
-              <div className="text-sm font-medium text-[#1DA1F2]">
+              <div className="text-sm font-medium text-blue-500 dark:text-[#1D9BF0]">
                 {pontosDesempenho} pontos
               </div>
             </div>
@@ -372,9 +372,9 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
       {/* Detalhes por Tipo */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Avaliações de Tarefas */}
-        <div className="bg-white dark:bg-[#192734] rounded-xl p-6 border border-gray-200 dark:border-[#38444D]">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
           <h4 className="text-base font-medium mb-3 text-gray-900 dark:text-white flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[#1DA1F2]" />
+            <TrendingUp className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
             Avaliações de Tarefas
           </h4>
           <div className="flex items-center gap-3">
@@ -397,9 +397,9 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
         </div>
 
         {/* Avaliações de Desempenho */}
-        <div className="bg-white dark:bg-[#192734] rounded-xl p-6 border border-gray-200 dark:border-[#38444D]">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
           <h4 className="text-base font-medium mb-3 text-gray-900 dark:text-white flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-[#1DA1F2]" />
+            <MessageSquare className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
             Avaliações de Desempenho
           </h4>
           <div className="flex items-center gap-3">
@@ -419,7 +419,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {avaliacoesPorTipo.desempenho.total} avaliações
               </span>
-              <span className="text-sm font-medium text-[#1DA1F2]">
+              <span className="text-sm font-medium text-blue-500 dark:text-[#1D9BF0]">
                 {pontosDesempenho} pontos
               </span>
             </div>
@@ -447,7 +447,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
           {avaliacoes.map((avaliacao) => (
             <div
               key={avaliacao.id}
-              className="bg-[#192734] rounded-xl p-6 border border-[#38444D] mb-4"
+              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600 mb-4"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -463,7 +463,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
                       />
                     ))}
                   </div>
-                  <p className="text-[#8899A6] mt-2">{avaliacao.comentario}</p>
+                  <p className="text-gray-500 dark:text-gray-400 mt-2">{avaliacao.comentario}</p>
                 </div>
                 <button
                   onClick={() => handleDelete(avaliacao.id)}
@@ -473,7 +473,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
                   <Trash2 className="w-5 h-5" />
                 </button>
               </div>
-              <div className="mt-4 flex items-center gap-4 text-sm text-[#8899A6]">
+              <div className="mt-4 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
                   <span>{formatarData(avaliacao.data)}</span>
@@ -500,7 +500,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
                 )}
 
                 {/* Data, Hora e Avaliador */}
-                <div className="mt-2 flex items-center justify-between gap-2 text-sm text-[#8899A6] bg-[#192734] rounded-lg p-2">
+                <div className="mt-2 flex items-center justify-between gap-2 text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg p-2">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     <span>{formatarData(avaliacao.data)}</span>
@@ -519,8 +519,8 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
 
       {/* Modal de Confirmação de Exclusão */}
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#192734] rounded-xl p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Confirmar Exclusão</h3>
               <button
@@ -528,13 +528,13 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
                   setShowConfirmModal(false);
                   setAvaliacaoParaExcluir(null);
                 }}
-                className="p-2 text-gray-500 dark:text-[#8899A6] hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
+                className="p-2 text-gray-500 dark:text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="mb-6">
-              <p className="text-gray-600 dark:text-[#8899A6] mb-4">
+              <p className="text-gray-600 dark:text-gray-500 dark:text-gray-400 mb-4">
                 Tem certeza que deseja excluir esta avaliação? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3">
@@ -543,13 +543,13 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
                     setShowConfirmModal(false);
                     setAvaliacaoParaExcluir(null);
                   }}
-                  className="px-4 py-2 text-gray-600 dark:text-[#8899A6] hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
+                  className="px-4 py-2 text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmarExclusao}
-                  className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-red-500 text-gray-900 dark:text-white rounded-full hover:bg-red-600 transition-colors flex items-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
                   Excluir Avaliação
@@ -562,13 +562,13 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
 
       {/* Modal de Nova Avaliação */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#192734] rounded-xl p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Nova Avaliação</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="p-2 text-gray-500 dark:text-[#8899A6] hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
+                className="p-2 text-gray-500 dark:text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -577,7 +577,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
             <div className="space-y-6">
               {/* Estrelas */}
               <div className="flex flex-col items-center gap-2">
-                <span className="text-gray-600 dark:text-[#8899A6] text-sm">Avaliação</span>
+                <span className="text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm">Avaliação</span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((estrela) => (
                     <button
@@ -603,22 +603,22 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
               {/* Data e Hora */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-600 dark:text-[#8899A6] mb-2">Data</label>
+                  <label className="block text-sm text-gray-600 dark:text-gray-500 dark:text-gray-400 mb-2">Data</label>
                   <input
                     type="date"
                     value={novaAvaliacao.data}
                     onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, data: e.target.value }))}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#253341] text-gray-900 dark:text-white border border-gray-300 dark:border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent outline-none"
+                    className="w-full px-3 py-2 bg-white dark:bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent outline-none"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 dark:text-[#8899A6] mb-2">Hora</label>
+                  <label className="block text-sm text-gray-600 dark:text-gray-500 dark:text-gray-400 mb-2">Hora</label>
                   <input
                     type="time"
                     value={novaAvaliacao.hora}
                     onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, hora: e.target.value }))}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#253341] text-gray-900 dark:text-white border border-gray-300 dark:border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent outline-none"
+                    className="w-full px-3 py-2 bg-white dark:bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent outline-none"
                     required
                   />
                 </div>
@@ -626,7 +626,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
 
               {/* Tipo de Avaliação */}
               <div>
-                <label className="block text-sm text-gray-600 dark:text-[#8899A6] mb-2">Tipo de Avaliação</label>
+                <label className="block text-sm text-gray-600 dark:text-gray-500 dark:text-gray-400 mb-2">Tipo de Avaliação</label>
                 <div className="grid grid-cols-2 gap-2">
                   {tiposAvaliacao.map((tipo) => (
                     <button
@@ -636,7 +636,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         novaAvaliacao.tipo === tipo.valor
                           ? tipo.cor + ' ring-2 ring-offset-2 ring-offset-[#192734] ring-current'
-                          : 'bg-[#253341] text-[#8899A6] hover:bg-[#283340]'
+                          : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-[#283340]'
                       }`}
                     >
                       {tipo.label}
@@ -652,11 +652,11 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
                   id="avaliacaoAnonima"
                   checked={novaAvaliacao.anonima}
                   onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, anonima: e.target.checked }))}
-                  className="w-4 h-4 text-[#1DA1F2] bg-white dark:bg-[#253341] border border-gray-300 dark:border-[#38444D] rounded focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent"
+                  className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0] bg-white dark:bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-200 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent"
                 />
                 <label
                   htmlFor="avaliacaoAnonima"
-                  className="text-sm text-gray-600 dark:text-[#8899A6] cursor-pointer"
+                  className="text-sm text-gray-600 dark:text-gray-500 dark:text-gray-400 cursor-pointer"
                 >
                   Tornar avaliação anônima
                 </label>
@@ -664,11 +664,11 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
 
               {/* Comentário */}
               <div>
-                <label className="block text-sm text-gray-600 dark:text-[#8899A6] mb-2">Comentário</label>
+                <label className="block text-sm text-gray-600 dark:text-gray-500 dark:text-gray-400 mb-2">Comentário</label>
                 <textarea
                   value={novaAvaliacao.comentario}
                   onChange={(e) => setNovaAvaliacao(prev => ({ ...prev, comentario: e.target.value }))}
-                  className="w-full h-32 px-4 py-2 bg-white dark:bg-[#253341] text-gray-900 dark:text-white border border-gray-300 dark:border-[#38444D] rounded-lg resize-none focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent outline-none"
+                  className="w-full h-32 px-4 py-2 bg-white dark:bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-200 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent outline-none"
                   placeholder="Deixe um feedback sobre o desempenho do funcionário..."
                   required
                 />
@@ -679,7 +679,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-gray-600 dark:text-[#8899A6] hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
+                  className="px-4 py-2 text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283340] rounded-full transition-colors"
                 >
                   Cancelar
                 </button>
@@ -687,7 +687,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
                   type="button"
                   onClick={handleSubmit}
                   disabled={novaAvaliacao.estrelas === 0}
-                  className="px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Check className="w-4 h-4" />
                   Salvar Avaliação
@@ -702,3 +702,9 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
 }
 
 export default AvaliacoesTab;
+
+
+
+
+
+

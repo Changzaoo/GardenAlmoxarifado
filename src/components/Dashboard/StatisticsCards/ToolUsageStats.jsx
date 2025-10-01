@@ -83,11 +83,11 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
     });
 
   return (
-    <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D] hover:border-[#1DA1F2] transition-colors">
+    <div className="bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4 hover:border-blue-500 dark:hover:border-[#1D9BF0] transition-colors">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Wrench className="w-5 h-5 text-[#1DA1F2]" />
-          <h3 className="text-lg font-semibold text-white">Ferramentas Mais Utilizadas</h3>
+          <Wrench className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ferramentas Mais Utilizadas</h3>
         </div>
         
         <div className="flex gap-2">
@@ -98,8 +98,8 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
             }}
             className={`px-3 py-1 rounded-full text-sm transition-colors relative ${
               filterType === 'mensal'
-                ? 'bg-[#1DA1F2] text-white'
-                : 'text-[#8899A6] hover:bg-[#283340]'
+                ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                : 'text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283340]'
             }`}
           >
             <div className="flex items-center gap-1.5">
@@ -111,7 +111,7 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
             {isDatePickerOpen && filterType === 'mensal' && (
               <div 
                 id="date-picker-dropdown"
-                className="absolute right-0 mt-2 w-[280px] bg-[#192734] rounded-xl shadow-lg border border-[#38444D] z-50"
+                className="absolute right-0 mt-2 w-[280px] bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-lg z-50"
               >
                 <div className="p-3">
                   {/* Header com ano e navegação */}
@@ -121,19 +121,19 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
                         e.stopPropagation();
                         setSelectedYear(selectedYear - 1);
                       }}
-                      className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors text-[#8899A6] hover:text-white"
+                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#38444D] rounded-full transition-colors text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     
-                    <span className="text-white font-medium">{selectedYear}</span>
+                    <span className="text-gray-900 dark:text-white font-medium">{selectedYear}</span>
                     
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedYear(selectedYear + 1);
                       }}
-                      className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors text-[#8899A6] hover:text-white"
+                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#38444D] rounded-full transition-colors text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -152,8 +152,8 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
                         className={`
                           p-2 rounded text-sm font-medium transition-colors
                           ${selectedMonth === mes.valor 
-                            ? 'bg-[#1DA1F2] text-white' 
-                            : 'text-[#8899A6] hover:bg-[#38444D] hover:text-white'}
+                            ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white' 
+                            : 'text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#38444D] hover:text-gray-900 dark:hover:text-white'}
                         `}
                       >
                         {mes.nome.substring(0, 3)}
@@ -169,8 +169,8 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
             onClick={() => setFilterType('total')}
             className={`px-3 py-1 rounded-full text-sm transition-colors ${
               filterType === 'total'
-                ? 'bg-[#1DA1F2] text-white'
-                : 'text-[#8899A6] hover:bg-[#283340]'
+                ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                : 'text-gray-600 dark:text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#283340]'
             }`}
           >
             <div className="flex items-center gap-1.5">
@@ -183,7 +183,7 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
       <div className="space-y-2">
         {sortedTools.length > 0 ? (
           sortedTools.map(({ nome, count }, index) => (
-            <div key={nome} className="flex items-center justify-between p-2 rounded hover:bg-[#253341] transition-colors">
+            <div key={nome} className="flex items-center justify-between p-2 rounded hover:bg-gray-50 dark:hover:bg-white dark:bg-gray-700 transition-colors">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="flex items-center justify-center w-6">
                   {index < 3 ? (
@@ -195,23 +195,23 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
                       }`} 
                     />
                   ) : (
-                    <span className="text-[#8899A6] text-sm font-medium">
+                    <span className="text-gray-600 dark:text-gray-500 dark:text-gray-400 text-sm font-medium">
                       {index + 1}
                     </span>
                   )}
                 </div>
-                <span className="text-[#8899A6] truncate">
+                <span className="text-gray-700 dark:text-gray-500 dark:text-gray-400 truncate">
                   {nome.charAt(0).toUpperCase() + nome.slice(1)}
                 </span>
               </div>
               <div className="flex items-center gap-2 ml-3">
-                <Clock className="w-4 h-4 text-[#1DA1F2]" />
-                <span className="text-white font-medium whitespace-nowrap">{count}x</span>
+                <Clock className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
+                <span className="text-gray-900 dark:text-white font-medium whitespace-nowrap">{count}x</span>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center text-[#8899A6] py-4">
+          <div className="text-center text-gray-600 dark:text-gray-500 dark:text-gray-400 py-4">
             {filterType === 'mensal' 
               ? 'Nenhum empréstimo registrado este mês'
               : 'Nenhum empréstimo registrado ainda'
@@ -224,3 +224,5 @@ const ToolUsageStats = ({ emprestimos, inventario }) => {
 };
 
 export default ToolUsageStats;
+
+

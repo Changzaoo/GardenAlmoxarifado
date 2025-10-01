@@ -689,7 +689,7 @@ const WorkflowChat = ({
                             }}
                             className="w-full px-4 py-2 text-left text-[#dcddde] hover:bg-white/5 flex items-center gap-2"
                           >
-                            <div className="workflow-chat-user-avatar w-8 h-8 flex-shrink-0 flex items-center justify-center bg-white/10 text-white text-sm">
+                            <div className="workflow-chat-user-avatar w-8 h-8 flex-shrink-0 flex items-center justify-center bg-white/10 text-gray-900 dark:text-white text-sm">
                               {activeChat.type === 'group' 
                                 ? activeChat.name.charAt(0).toUpperCase()
                                 : availableUsers.find(u => activeChat.participants.includes(u.id))?.nome.charAt(0).toUpperCase()}
@@ -794,7 +794,7 @@ const WorkflowChat = ({
                   <button
                     onClick={createNewGroup}
                     disabled={!newGroupName.trim() || selectedUsers.length === 0}
-                    className="mt-4 w-full py-2 px-4 rounded bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white transition-colors disabled:opacity-50"
+                    className="mt-4 w-full py-2 px-4 rounded bg-[#1d9bf0] hover:bg-[#1a8cd8] text-gray-900 dark:text-white transition-colors disabled:opacity-50"
                   >
                     Criar Grupo
                   </button>
@@ -1000,7 +1000,7 @@ const WorkflowChat = ({
                       {newMessage.trim() && (
                         <button
                           type="submit"
-                          className="workflow-chat-send-button bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white p-2 rounded-full transition-colors"
+                          className="workflow-chat-send-button bg-[#1d9bf0] hover:bg-[#1a8cd8] text-gray-900 dark:text-white p-2 rounded-full transition-colors"
                         >
                           <Send className="w-4 h-4" />
                         </button>
@@ -1016,7 +1016,7 @@ const WorkflowChat = ({
                         onTouchEnd={stopRecording}
                         className={`workflow-chat-send-button rounded-full p-2 transition-colors ${
                           isRecording 
-                            ? 'bg-red-500 text-white hover:bg-red-600' 
+                            ? 'bg-red-500 text-gray-900 dark:text-white hover:bg-red-600' 
                             : 'text-[#1d9bf0] hover:text-[#1a8cd8] hover:bg-white/5'
                         }`}
                         title="Pressione e segure para gravar"
@@ -1144,3 +1144,4 @@ const WorkflowChat = ({
 };
 
 export default WorkflowChat;
+

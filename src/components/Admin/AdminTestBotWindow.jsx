@@ -5,7 +5,7 @@ const AdminTestBotWindow = ({ isOpen, onClose, isRunning, currentTest, progress,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-20 right-20 z-50 w-96 rounded-lg overflow-hidden shadow-xl border border-[#38444D] bg-[#15202B]">
+    <div className="fixed bottom-20 right-20 z-50 w-96 rounded-lg overflow-hidden shadow-xl border border-gray-300 dark:border-gray-600 bg-[#15202B]">
       {/* Header */}
       <div className="bg-[#1D9BF0] p-4 flex justify-between items-center">
         <h3 className="text-white font-medium">Admin Test Bot</h3>
@@ -43,7 +43,7 @@ const AdminTestBotWindow = ({ isOpen, onClose, isRunning, currentTest, progress,
           {testResults.map((result, index) => (
             <div
               key={index}
-              className="p-3 rounded-lg bg-[#192734] border border-[#38444D]"
+              className="p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600"
             >
               <div className="flex items-start space-x-3">
                 {result.success ? (

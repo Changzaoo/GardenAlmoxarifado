@@ -67,7 +67,7 @@ const FullscreenPrompt = () => {
         </div>
         <button
           onClick={requestFullscreen}
-          className="px-3 py-1.5 bg-[#1D9BF0] text-white rounded-full text-sm hover:bg-[#1a91da] transition-colors"
+          className="px-3 py-1.5 bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full text-sm hover:bg-[#1a91da] transition-colors"
         >
           Ativar
         </button>
@@ -77,3 +77,4 @@ const FullscreenPrompt = () => {
 };
 
 export default FullscreenPrompt;
+

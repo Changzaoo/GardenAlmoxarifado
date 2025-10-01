@@ -24,19 +24,19 @@ const ConfirmationDialog = ({ isOpen, onClose, onConfirm, message }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] rounded-xl shadow-lg w-full max-w-md mx-4 p-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-gray-200 dark:bg-gray-700 rounded-xl shadow-lg w-full max-w-md mx-4 p-4">
         <div className="flex items-start gap-3 mb-4">
           <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h3 className="text-white font-medium mb-2">Confirmar Remoção</h3>
-            <p className="text-[#8899A6] text-sm">{message}</p>
+            <h3 className="text-gray-900 dark:text-white font-medium mb-2">Confirmar Remoção</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{message}</p>
           </div>
         </div>
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-[#8899A6] hover:text-white transition-colors"
+            className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
           >
             Cancelar
           </button>
@@ -56,13 +56,13 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] rounded-xl shadow-lg w-full max-w-2xl mx-4">
-        <div className="p-4 border-b border-[#38444D] flex items-center justify-between">
-          <h3 className="text-white font-medium">{title}</h3>
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-gray-200 dark:bg-gray-700 rounded-xl shadow-lg w-full max-w-2xl mx-4">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-600 dark:border-gray-600 flex items-center justify-between">
+          <h3 className="text-gray-900 dark:text-white font-medium">{title}</h3>
           <button
             onClick={onClose}
-            className="text-[#8899A6] hover:text-white transition-colors"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -161,26 +161,60 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
     return acc;
   }, {});
 
-  // Obtém as semanas do mês selecionado
+  // Obtém as semanas do mês selecionado (segunda a sábado)
   const getSemanasDoMes = () => {
-    const ultimoDiaDoMes = new Date(selectedYear, selectedMonth + 1, 0).getDate();
     const semanas = {};
+    const primeiroDiaDoMes = new Date(selectedYear, selectedMonth, 1);
+    const ultimoDiaDoMes = new Date(selectedYear, selectedMonth + 1, 0).getDate();
     
-    for (let dia = 1; dia <= ultimoDiaDoMes; dia++) {
-      const data = new Date(selectedYear, selectedMonth, dia);
-      const semana = Math.ceil(dia / 7);
-      const { start, end } = getWeekRange(data);
-      
-      // Só adiciona se for uma nova semana
-      if (!semanas[`Semana ${semana}`]) {
-        semanas[`Semana ${semana}`] = {
-          count: 0,
-          emprestimos: [],
-          dateRange: formatDateRange(start, end)
-        };
-      }
+    // Encontra a primeira segunda-feira do período
+    let dataAtual = new Date(primeiroDiaDoMes);
+    // Se não for segunda (1), volta para a segunda anterior
+    const diasParaSegunda = dataAtual.getDay() === 0 ? 1 : dataAtual.getDay() === 1 ? 0 : 8 - dataAtual.getDay();
+    if (dataAtual.getDay() !== 1) {
+      dataAtual.setDate(dataAtual.getDate() - dataAtual.getDay() + 1);
     }
+    
+    let numeroSemana = 1;
+    
+    while (dataAtual.getMonth() === selectedMonth || dataAtual.getDate() <= 7) {
+      const inicioSemana = new Date(dataAtual);
+      const fimSemana = new Date(dataAtual);
+      fimSemana.setDate(fimSemana.getDate() + 5); // Segunda + 5 = Sábado
+      
+      const chaveSemanaSemana = `Semana ${numeroSemana}`;
+      semanas[chaveSemanaSemana] = {
+        count: 0,
+        emprestimos: [],
+        dateRange: formatDateRange(inicioSemana, fimSemana)
+      };
+      
+      // Próxima segunda-feira
+      dataAtual.setDate(dataAtual.getDate() + 7);
+      numeroSemana++;
+      
+      // Para se passou muito do mês
+      if (inicioSemana.getMonth() > selectedMonth) break;
+    }
+    
     return semanas;
+  };
+
+  // Função para determinar qual semana uma data pertence
+  const getNumeroSemana = (data) => {
+    const primeiroDiaDoMes = new Date(data.getFullYear(), data.getMonth(), 1);
+    
+    // Encontra a primeira segunda-feira do período
+    let primeiraSegunda = new Date(primeiroDiaDoMes);
+    if (primeiraSegunda.getDay() !== 1) {
+      primeiraSegunda.setDate(primeiraSegunda.getDate() - primeiraSegunda.getDay() + 1);
+    }
+    
+    // Calcula quantos dias se passaram desde a primeira segunda
+    const diasDiferenca = Math.floor((data - primeiraSegunda) / (1000 * 60 * 60 * 24));
+    
+    // Determina o número da semana (1, 2, 3, etc.)
+    return Math.floor(diasDiferenca / 7) + 1;
   };
 
   // Análise por semanas do mês selecionado
@@ -188,15 +222,27 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
   const semanaStats = emprestimosFiltrados.reduce((acc, emp) => {
     if (emp.dataEmprestimo) {
       const data = new Date(emp.dataEmprestimo);
-      const semana = Math.ceil(data.getDate() / 7);
-      const semanaKey = `Semana ${semana}`;
+      const numeroSemana = getNumeroSemana(data);
+      const semanaKey = `Semana ${numeroSemana}`;
       
       if (!acc[semanaKey]) {
-        const { start, end } = getWeekRange(data);
+        // Se não existe, cria baseado na lógica das semanas
+        const primeiroDiaDoMes = new Date(data.getFullYear(), data.getMonth(), 1);
+        let primeiraSegunda = new Date(primeiroDiaDoMes);
+        if (primeiraSegunda.getDay() !== 1) {
+          primeiraSegunda.setDate(primeiraSegunda.getDate() - primeiraSegunda.getDay() + 1);
+        }
+        
+        const inicioSemana = new Date(primeiraSegunda);
+        inicioSemana.setDate(inicioSemana.getDate() + (numeroSemana - 1) * 7);
+        
+        const fimSemana = new Date(inicioSemana);
+        fimSemana.setDate(fimSemana.getDate() + 5); // Segunda + 5 = Sábado
+        
         acc[semanaKey] = {
           count: 0,
           emprestimos: [],
-          dateRange: formatDateRange(start, end)
+          dateRange: formatDateRange(inicioSemana, fimSemana)
         };
       }
       
@@ -238,37 +284,37 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
 
   return (
     <>
-      <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D] hover:border-[#1DA1F2] transition-colors">
+      <div className="bg-gray-200 dark:bg-gray-700 p-4 rounded-xl border border-gray-200 dark:border-gray-600 dark:border-gray-600 hover:border-blue-500 dark:hover:border-[#1D9BF0] transition-colors">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-[#1DA1F2]" />
-            <h3 className="text-white font-medium">Análise de Tempo</h3>
+            <Clock className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
+            <h3 className="text-gray-900 dark:text-white font-medium">Análise de Tempo</h3>
             <div className="relative ml-2">
               <button
                 onClick={() => setIsDatePickerOpen(prev => !prev)}
-                className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-1 focus:ring-offset-[#192734]"
+                className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:ring-offset-1 focus:ring-offset-[#192734]"
                 title="Selecionar período"
               >
-                <Calendar className="w-5 h-5 text-[#1DA1F2]" />
+                <Calendar className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
               </button>
               
               {isDatePickerOpen && (
-                <div id="date-picker-dropdown" className="absolute right-0 mt-2 w-[280px] bg-[#192734] rounded-xl shadow-lg border border-[#38444D] z-50">
+                <div id="date-picker-dropdown" className="absolute right-0 mt-2 w-[280px] bg-gray-200 dark:bg-gray-700 dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600 z-50">
                   <div className="p-3">
                     {/* Header com ano e navegação */}
                     <div className="flex items-center justify-between mb-4">
                       <button 
                         onClick={() => setSelectedYear(selectedYear - 1)}
-                        className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors text-[#8899A6] hover:text-white"
+                        className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors text-gray-500 dark:text-gray-400 hover:text-white"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                       
-                      <span className="text-white font-medium">{selectedYear}</span>
+                      <span className="text-gray-900 dark:text-white font-medium">{selectedYear}</span>
                       
                       <button 
                         onClick={() => setSelectedYear(selectedYear + 1)}
-                        className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors text-[#8899A6] hover:text-white"
+                        className="p-1.5 hover:bg-[#38444D] rounded-full transition-colors text-gray-500 dark:text-gray-400 hover:text-white"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
@@ -286,8 +332,8 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                           className={`
                             p-2 rounded text-sm font-medium transition-colors
                             ${selectedMonth === mes.valor 
-                              ? 'bg-[#1DA1F2] text-white' 
-                              : 'text-[#8899A6] hover:bg-[#38444D] hover:text-white'}
+                              ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white' 
+                              : 'text-gray-500 dark:text-gray-400 hover:bg-[#38444D] hover:text-white'}
                           `}
                         >
                           {mes.nome.substring(0, 3)}
@@ -300,7 +346,7 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
             </div>
           </div>
           
-          <div className="text-[#8899A6] text-sm">
+          <div className="text-gray-500 dark:text-gray-400 text-sm">
             {mesesDoAno[selectedMonth].nome} {selectedYear}
           </div>
         </div>
@@ -308,7 +354,7 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
         <div className="space-y-6">
           {/* Dias da Semana */}
           <div>
-            <h4 className="text-[#8899A6] text-sm mb-2">Dias da Semana</h4>
+            <h4 className="text-gray-500 dark:text-gray-400 text-sm mb-2">Dias da Semana</h4>
             <div className="space-y-1">
               {Object.entries(diasStats)
                 .filter(([_, stats]) => stats.count > 0)
@@ -324,7 +370,7 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                       key={dia}
                       className={`flex items-center gap-2 cursor-pointer p-1 rounded transition-colors ${
                         isToday 
-                          ? 'bg-[#1DA1F2]/10 hover:bg-[#1DA1F2]/20' 
+                          ? 'bg-blue-500 dark:bg-[#1D9BF0]/10 hover:bg-blue-500 dark:bg-[#1D9BF0]/20' 
                           : 'hover:bg-[#38444D]/30'
                       }`}
                       onClick={() => {
@@ -333,21 +379,21 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                       }}
                     >
                       <div className="w-48 text-sm flex items-center gap-2">
-                        <span className={`w-20 ${isToday ? 'text-[#1DA1F2] font-medium' : 'text-[#8899A6]'}`}>
+                        <span className={`w-20 ${isToday ? 'text-blue-500 dark:text-[#1D9BF0] font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
                           {dia} {isToday && '(Hoje)'}
                         </span>
-                        <span className="text-[#8899A6]/70">
+                        <span className="text-gray-500 dark:text-gray-400/70">
                           ({stats.ultimaData})
                         </span>
                       </div>
                       <div className="flex-1 bg-[#38444D] rounded-full h-2">
                         <div
-                          className="bg-[#1DA1F2] h-2 rounded-full"
+                          className="bg-blue-500 dark:bg-[#1D9BF0] h-2 rounded-full"
                           style={{ width: `${(stats.count || 0) / maxEmprestimos * 100}%` }}
                         />
                       </div>
-                      <div className="w-8 text-right text-[#8899A6] text-sm">{stats.count}</div>
-                      <ChevronRight className="w-4 h-4 text-[#8899A6]" />
+                      <div className="w-8 text-right text-gray-500 dark:text-gray-400 text-sm">{stats.count}</div>
+                      <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     </div>
                   );
                 })}
@@ -356,7 +402,7 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
 
           {/* Semanas do Mês */}
           <div>
-            <h4 className="text-[#8899A6] text-sm mb-2">Semanas do Mês</h4>
+            <h4 className="text-gray-500 dark:text-gray-400 text-sm mb-2">Semanas do Mês</h4>
             <div className="space-y-1">
               {Object.entries(semanaStats)
                 .filter(([_, stats]) => stats.count > 0)
@@ -369,20 +415,20 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                     setSelectedType('semana');
                   }}
                 >
-                  <div className="w-48 text-[#8899A6] text-sm flex items-center gap-2">
+                  <div className="w-48 text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                     <span className="w-20">{semana}</span>
-                    <span className="text-[#8899A6]/70">
+                    <span className="text-gray-500 dark:text-gray-400/70">
                       ({stats.dateRange})
                     </span>
                   </div>
                   <div className="flex-1 bg-[#38444D] rounded-full h-2">
                     <div
-                      className="bg-[#1DA1F2] h-2 rounded-full"
+                      className="bg-blue-500 dark:bg-[#1D9BF0] h-2 rounded-full"
                       style={{ width: `${(stats.count || 0) / maxEmprestimos * 100}%` }}
                     />
                   </div>
-                  <div className="w-8 text-right text-[#8899A6] text-sm">{stats.count}</div>
-                  <ChevronRight className="w-4 h-4 text-[#8899A6]" />
+                  <div className="w-8 text-right text-gray-500 dark:text-gray-400 text-sm">{stats.count}</div>
+                  <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 </div>
               ))}
             </div>
@@ -390,7 +436,7 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
 
           {/* Períodos do Dia */}
           <div>
-            <h4 className="text-[#8899A6] text-sm mb-2">Períodos do Dia</h4>
+            <h4 className="text-gray-500 dark:text-gray-400 text-sm mb-2">Períodos do Dia</h4>
             <div className="space-y-1">
               {['Manhã', 'Tarde', 'Noite'].map((periodo) => (
                 <div
@@ -401,15 +447,15 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                     setSelectedType('periodo');
                   }}
                 >
-                  <div className="w-20 text-[#8899A6] text-sm">{periodo}</div>
+                  <div className="w-20 text-gray-500 dark:text-gray-400 text-sm">{periodo}</div>
                   <div className="flex-1 bg-[#38444D] rounded-full h-2">
                     <div
-                      className="bg-[#1DA1F2] h-2 rounded-full"
+                      className="bg-blue-500 dark:bg-[#1D9BF0] h-2 rounded-full"
                       style={{ width: `${(horarioStats[periodo]?.count || 0) / maxEmprestimos * 100}%` }}
                     />
                   </div>
-                  <div className="w-8 text-right text-[#8899A6] text-sm">{horarioStats[periodo]?.count || 0}</div>
-                  <ChevronRight className="w-4 h-4 text-[#8899A6]" />
+                  <div className="w-8 text-right text-gray-500 dark:text-gray-400 text-sm">{horarioStats[periodo]?.count || 0}</div>
+                  <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 </div>
               ))}
             </div>
@@ -471,18 +517,18 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                   className="bg-[#38444D] rounded-lg overflow-hidden transition-all duration-200 ease-in-out"
                 >
                   <div 
-                    className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-[#1DA1F2]/10 transition-colors ${
-                      expandedUser === nomeFuncionario ? 'bg-[#1DA1F2]/10' : ''
+                    className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-blue-500 dark:bg-[#1D9BF0]/10 transition-colors ${
+                      expandedUser === nomeFuncionario ? 'bg-blue-500 dark:bg-[#1D9BF0]/10' : ''
                     }`}
                     onClick={() => setExpandedUser(
                       expandedUser === nomeFuncionario ? null : nomeFuncionario
                     )}
                   >
-                    <User className="w-5 h-5 text-[#1DA1F2]" />
+                    <User className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
                     <div className="flex-1">
-                      <h4 className="text-white font-medium">{nomeFuncionario}</h4>
+                      <h4 className="text-gray-900 dark:text-white font-medium">{nomeFuncionario}</h4>
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                           <span>{emprestimos.length} empréstimo{emprestimos.length !== 1 ? 's' : ''}</span>
                         </div>
                         <div className="flex items-center gap-3 text-sm">
@@ -505,24 +551,24 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                       </div>
                     </div>
                     <ChevronRight 
-                      className={`w-5 h-5 text-[#8899A6] transition-transform ${
+                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${
                         expandedUser === nomeFuncionario ? 'rotate-90' : ''
                       }`}
                     />
                   </div>
 
                   {expandedUser === nomeFuncionario && (
-                    <div className="p-4 border-t border-[#192734] space-y-3 bg-[#192734]/50">
+                    <div className="p-4 border-t border-[#192734] space-y-3 bg-gray-200 dark:bg-gray-700 dark:bg-gray-800/50">
                       {emprestimos.map((emp, idx) => (
                         <div
                           key={idx}
-                          className="bg-[#192734] p-4 rounded-lg"
+                          className="bg-gray-200 dark:bg-gray-700 p-4 rounded-lg"
                         >
                           <div className="flex flex-col gap-2">
                             <div className="flex justify-between items-start">
                               <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-[#1DA1F2]" />
-                                <span className="text-white">{formatarData(emp.dataEmprestimo)}</span>
+                                <Calendar className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
+                                <span className="text-gray-900 dark:text-white">{formatarData(emp.dataEmprestimo)}</span>
                               </div>
                               <div className="flex justify-end">
                                 <button
@@ -543,9 +589,9 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                             </div>
 
                             <div className="flex items-start gap-2">
-                              <Package className="w-4 h-4 text-[#1DA1F2] mt-1" />
+                              <Package className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0] mt-1" />
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 text-[#8899A6] mb-1">
+                                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1">
                                   <span>Ferramentas:</span>
                                   <span className={`text-sm px-2 py-0.5 rounded ${
                                     emp.dataDevolucao ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500'
@@ -566,7 +612,7 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
                               </div>
                             </div>
                             {emp.dataDevolucao && (
-                              <div className="flex items-center gap-2 mt-2 text-sm text-[#8899A6]">
+                              <div className="flex items-center gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
                                 <Calendar className="w-4 h-4 text-green-500" />
                                 <span>Devolvido em: {formatarData(emp.dataDevolucao)}</span>
                               </div>
@@ -611,3 +657,6 @@ const TimeAnalysisStats = ({ emprestimos, onEmprestimoRemovido }) => {
 };
 
 export default TimeAnalysisStats;
+
+
+

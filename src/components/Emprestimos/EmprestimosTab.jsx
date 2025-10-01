@@ -1,4 +1,4 @@
-﻿import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 import NovoEmprestimo from './NovoEmprestimo';
 import ListaEmprestimos from './ListaEmprestimos';
 

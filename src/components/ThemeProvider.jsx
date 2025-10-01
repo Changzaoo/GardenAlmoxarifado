@@ -9,63 +9,63 @@ const ThemeContext = createContext({
 export const themeColors = {
   colors: {
     // Backgrounds
-    background: 'bg-[#15202B]',
-    card: 'bg-[#192734]',
-    input: 'bg-[#253341]',
-    modal: 'bg-[#192734]',
+    background: 'bg-white dark:bg-[#15202B]',
+    card: 'bg-white dark:bg-gray-800',
+    input: 'bg-white dark:bg-white dark:bg-gray-700',
+    modal: 'bg-white dark:bg-gray-800',
     
     // Primary Colors
-    primary: 'bg-[#1DA1F2] hover:bg-[#1a91da]',
-    secondary: 'bg-[#253341] hover:bg-[#2C3D4F]',
-    danger: 'bg-[#F4212E] hover:bg-[#dc1e29]',
-    success: 'bg-[#1DA1F2] hover:bg-[#1a91da]',
-    warning: 'bg-[#FFD700] hover:bg-[#E6C200]',
-    info: 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]',
+    primary: 'bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1a8cd8]',
+    secondary: 'bg-gray-200 dark:bg-white dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-[#2C3D4F]',
+    danger: 'bg-red-500 dark:bg-[#F4212E] hover:bg-red-600 dark:hover:bg-[#dc1e29]',
+    success: 'bg-green-500 dark:bg-[#1D9BF0] hover:bg-green-600 dark:hover:bg-[#1a8cd8]',
+    warning: 'bg-yellow-500 dark:bg-[#FFD700] hover:bg-yellow-600 dark:hover:bg-[#E6C200]',
+    info: 'bg-blue-100 dark:bg-[#1D9BF0] dark:bg-opacity-10 text-blue-500 dark:text-[#1D9BF0]',
     
     // Text Colors
-    text: 'text-white',
-    textSecondary: 'text-[#8899A6]',
-    textMuted: 'text-[#536471]',
+    text: 'text-gray-900 dark:text-white',
+    textSecondary: 'text-gray-600 dark:text-gray-500 dark:text-gray-400',
+    textMuted: 'text-gray-500 dark:text-[#536471]',
     
     // Borders
-    border: 'border-[#38444D]',
+    border: 'border-gray-200 dark:border-gray-300 dark:border-gray-600',
     
     // Form Elements
-    inputBg: 'bg-[#253341]',
-    inputBorder: 'border-[#38444D]',
-    inputFocus: 'focus:ring-[#1DA1F2] focus:border-[#1DA1F2]',
-    inputText: 'text-white placeholder-[#8899A6]',
+    inputBg: 'bg-white dark:bg-white dark:bg-gray-700',
+    inputBorder: 'border-gray-300 dark:border-gray-300 dark:border-gray-600',
+    inputFocus: 'focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-blue-500 dark:focus:border-[#1D9BF0]',
+    inputText: 'text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 dark:placeholder-gray-400',
     
     // Status Colors
-    successLight: 'bg-[#1DA1F2] bg-opacity-10 text-[#1DA1F2]',
-    warningLight: 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]',
-    dangerLight: 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]',
+    successLight: 'bg-green-100 dark:bg-[#1D9BF0] dark:bg-opacity-10 text-green-600 dark:text-[#1D9BF0]',
+    warningLight: 'bg-yellow-100 dark:bg-[#FFD700] dark:bg-opacity-10 text-yellow-600 dark:text-[#FFD700]',
+    dangerLight: 'bg-red-100 dark:bg-[#F4212E] dark:bg-opacity-10 text-red-600 dark:text-[#F4212E]',
     
     // Tables
-    tableHeader: 'bg-[#253341]',
-    tableRow: 'border-[#38444D] hover:bg-[#253341]',
-    tableBorder: 'border-[#38444D]',
+    tableHeader: 'bg-gray-100 dark:bg-white dark:bg-gray-700',
+    tableRow: 'border-gray-200 dark:border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white dark:bg-gray-700',
+    tableBorder: 'border-gray-200 dark:border-gray-300 dark:border-gray-600',
     
     // Shadows
-    shadow: 'shadow-lg shadow-[#15202B]/50'
+    shadow: 'shadow-lg shadow-gray-200/50 dark:shadow-[#15202B]/50'
   },
   
   components: {
     // Buttons
     button: 'rounded-full font-medium transition-colors',
-    buttonPrimary: 'bg-[#1DA1F2] hover:bg-[#1a91da] text-white',
-    buttonSecondary: 'bg-[#253341] hover:bg-[#2C3D4F] text-white',
-    buttonDanger: 'bg-[#F4212E] hover:bg-[#dc1e29] text-white',
-    buttonOutline: 'border border-[#38444D] hover:bg-[#253341] text-white',
+    buttonPrimary: 'bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1a8cd8] text-white',
+    buttonSecondary: 'bg-gray-200 dark:bg-white dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-[#2C3D4F] text-gray-900 dark:text-white',
+    buttonDanger: 'bg-red-500 dark:bg-[#F4212E] hover:bg-red-600 dark:hover:bg-[#dc1e29] text-white',
+    buttonOutline: 'border border-gray-300 dark:border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
     
     // Inputs
-    input: 'w-full rounded-full bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]',
+    input: 'w-full rounded-full bg-white dark:bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]',
     
     // Cards
-    card: 'bg-[#192734] border border-[#38444D] rounded-xl shadow-sm',
+    card: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-300 dark:border-gray-600 rounded-xl shadow-sm',
     
     // Modal
-    modal: 'bg-[#192734] border border-[#38444D] rounded-xl shadow-xl',
+    modal: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-300 dark:border-gray-600 rounded-xl shadow-xl',
     
     // Status Badges
     badge: 'rounded-full px-2 py-1 text-xs font-medium'
@@ -76,7 +76,7 @@ export const themeColors = {
 export const commonStyles = {
   button: (theme, variant = 'primary') => `
     px-4 py-2 rounded-lg font-medium transition-colors
-    ${themeColors[theme][variant]} text-white
+    ${themeColors[theme][variant]} text-gray-900 dark:text-white
   `,
   input: (theme) => `
     block w-full px-3 py-2 rounded-md shadow-sm 
@@ -131,3 +131,5 @@ const ThemeProvider = ({ children }) => {
 };
 
 export default ThemeProvider;
+
+

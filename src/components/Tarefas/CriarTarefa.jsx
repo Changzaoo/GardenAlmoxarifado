@@ -64,20 +64,20 @@ const CriarTarefa = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] rounded-xl p-6 w-full max-w-md relative">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md relative">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-[#8899A6] hover:text-white transition-colors"
+          className="absolute right-4 top-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
 
-        <h2 className="text-xl font-bold text-white mb-6">Nova Tarefa</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Nova Tarefa</h2>
 
         <button
           type="button"
           onClick={() => setShowTemplates(true)}
-          className="w-full mb-4 py-2 px-4 bg-[#253341] text-[#8899A6] rounded-lg border border-[#38444D] hover:bg-[#2C3E50] transition-colors flex items-center justify-center gap-2"
+          className="w-full mb-4 py-2 px-4 bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-[#2C3E50] transition-colors flex items-center justify-center gap-2"
         >
           <ListChecks className="w-5 h-5" />
           Usar Modelo de Tarefa
@@ -85,7 +85,7 @@ const CriarTarefa = ({ onClose }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="titulo" className="block text-sm font-medium text-[#8899A6] mb-1">
+            <label htmlFor="titulo" className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Título
             </label>
             <input
@@ -93,47 +93,47 @@ const CriarTarefa = ({ onClose }) => {
               id="titulo"
               value={formData.titulo}
               onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-              className="w-full px-4 py-2 bg-[#253341] border border-[#38444D] rounded-lg text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+              className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
               placeholder="Digite o título da tarefa"
             />
           </div>
 
           <div>
-            <label htmlFor="descricao" className="block text-sm font-medium text-[#8899A6] mb-1">
+            <label htmlFor="descricao" className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Descrição
             </label>
             <textarea
               id="descricao"
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-              className="w-full px-4 py-2 bg-[#253341] border border-[#38444D] rounded-lg text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] min-h-[100px]"
+              className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] min-h-[100px]"
               placeholder="Digite a descrição da tarefa. Use @ para mencionar usuários (ex: @João)"
             />
-            <p className="text-[#8899A6] text-xs mt-1">
+            <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
               Dica: Use @ para mencionar outros funcionários (ex: @João)
             </p>
           </div>
 
           <div>
-            <label htmlFor="prioridade" className="block text-sm font-medium text-[#8899A6] mb-1">
+            <label htmlFor="prioridade" className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Prioridade
             </label>
             <select
               id="prioridade"
               value={formData.prioridade}
               onChange={(e) => setFormData({ ...formData, prioridade: e.target.value })}
-              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+              className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none"
               required
             >
-              <option value="" className="bg-[#192734]">Selecione a prioridade</option>
-              <option value="baixa" className="bg-[#192734]">Baixa</option>
-              <option value="media" className="bg-[#192734]">Média</option>
-              <option value="alta" className="bg-[#192734]">Alta</option>
+              <option value="" className="bg-white dark:bg-gray-800">Selecione a prioridade</option>
+              <option value="baixa" className="bg-white dark:bg-gray-800">Baixa</option>
+              <option value="media" className="bg-white dark:bg-gray-800">Média</option>
+              <option value="alta" className="bg-white dark:bg-gray-800">Alta</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="funcionarios" className="block text-sm font-medium text-[#8899A6] mb-1">
+            <label htmlFor="funcionarios" className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
               Funcionários Responsáveis
             </label>
             <div className="space-y-3">
@@ -150,16 +150,16 @@ const CriarTarefa = ({ onClose }) => {
                     }
                     e.target.value = ""; // Reset select após selecionar
                   }}
-                  className="w-full bg-[#253341] border border-[#38444D] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors"
+                  className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors"
                   required={formData.funcionariosIds.length === 0}
                 >
-                  <option value="" className="bg-[#192734]">Selecione os funcionários</option>
+                  <option value="" className="bg-white dark:bg-gray-800">Selecione os funcionários</option>
                   {["Adriano", "Alex", "Anderson", "Bryan", "Carlos", "Claudio", "David",
                     "Ezequiel", "Fabian", "Israel", "João", "Jonathan", "Lucas", "Luan",
                     "Marcelo", "Marcos Paulo", "Moisés", "Nilton", "Ramon", "Robson", "Ruan",
                     "Vinicius"].filter(nome => !formData.funcionariosIds.includes(nome))
                     .map(nome => (
-                      <option key={nome} value={nome} className="bg-[#192734] p-2">{nome}</option>
+                      <option key={nome} value={nome} className="bg-white dark:bg-gray-800 p-2">{nome}</option>
                     ))
                   }
                 </select>
@@ -171,7 +171,7 @@ const CriarTarefa = ({ onClose }) => {
                   {formData.funcionariosIds.map((nome) => (
                     <div
                       key={nome}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-[#253341] border border-[#38444D] rounded-full text-white text-sm"
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-gray-900 dark:text-white text-sm"
                     >
                       {nome}
                       <button
@@ -197,14 +197,14 @@ const CriarTarefa = ({ onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-[#8899A6] hover:text-white transition-colors"
+              className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-[#1a91da] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Criando...' : 'Criar Tarefa'}
             </button>
@@ -224,3 +224,4 @@ const CriarTarefa = ({ onClose }) => {
 };
 
 export default CriarTarefa;
+

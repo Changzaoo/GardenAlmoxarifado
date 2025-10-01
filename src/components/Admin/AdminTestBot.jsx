@@ -288,7 +288,7 @@ const AdminTestBot = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 bg-[#253341] p-4 rounded-lg shadow-lg border border-[#38444D] w-96">
+    <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-700 p-4 rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 w-96">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-white">Admin Test Bot</h3>
         <button

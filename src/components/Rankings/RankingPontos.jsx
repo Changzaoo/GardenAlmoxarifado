@@ -573,7 +573,7 @@ const RankingPontos = () => {
                 }}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                   periodoAtual === 'semana'
-                    ? 'bg-[#1DA1F2] text-white'
+                    ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
@@ -583,7 +583,7 @@ const RankingPontos = () => {
               </button>
 
               {showSemanaSelector && (
-                <div className="absolute z-20 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
+                <div className="absolute z-20 mt-2 w-48 bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
                   {semanasDoMes.map((semana, index) => (
                     <button
                       key={index}
@@ -592,7 +592,7 @@ const RankingPontos = () => {
                         setShowSemanaSelector(false);
                       }}
                       className={`w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-left flex items-center justify-between ${
-                        semanaSelected === index ? 'text-[#1DA1F2] font-medium' : 'text-gray-700 dark:text-gray-300'
+                        semanaSelected === index ? 'text-blue-500 dark:text-[#1D9BF0] font-medium' : 'text-gray-700 dark:text-gray-300'
                       }`}
                     >
                       <span>Semana {index + 1}</span>
@@ -613,7 +613,7 @@ const RankingPontos = () => {
                 }}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                   periodoAtual === 'mes'
-                    ? 'bg-[#1DA1F2] text-white'
+                    ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
@@ -623,7 +623,7 @@ const RankingPontos = () => {
               </button>
               
               {showMesSelector && (
-                <div className="absolute z-10 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 grid grid-cols-2 gap-1">
+                <div className="absolute z-10 mt-2 w-48 bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 grid grid-cols-2 gap-1">
                   {MESES.map((mes, index) => (
                     <button
                       key={mes}
@@ -632,7 +632,7 @@ const RankingPontos = () => {
                         setShowMesSelector(false);
                       }}
                       className={`px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-left ${
-                        mesSelected === index ? 'text-[#1DA1F2] font-medium' : 'text-gray-700 dark:text-gray-300'
+                        mesSelected === index ? 'text-blue-500 dark:text-[#1D9BF0] font-medium' : 'text-gray-700 dark:text-gray-300'
                       }`}
                     >
                       {mes}
@@ -652,7 +652,7 @@ const RankingPontos = () => {
                 }}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                   periodoAtual === 'ano'
-                    ? 'bg-[#1DA1F2] text-white'
+                    ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
@@ -662,7 +662,7 @@ const RankingPontos = () => {
               </button>
 
               {showAnoSelector && (
-                <div className="absolute z-10 mt-2 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
+                <div className="absolute z-10 mt-2 w-32 bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
                   {[...Array(5)].map((_, i) => {
                     const ano = new Date().getFullYear() - i;
                     return (
@@ -673,7 +673,7 @@ const RankingPontos = () => {
                           setShowAnoSelector(false);
                         }}
                         className={`w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-left ${
-                          anoSelected === ano ? 'text-[#1DA1F2] font-medium' : 'text-gray-700 dark:text-gray-300'
+                          anoSelected === ano ? 'text-blue-500 dark:text-[#1D9BF0] font-medium' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {ano}
@@ -686,7 +686,7 @@ const RankingPontos = () => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-[#2C3E50] to-[#3498DB] text-white rounded-lg shadow-lg w-full md:w-auto overflow-hidden">
+        <div className="bg-gradient-to-br from-[#2C3E50] to-[#3498DB] text-gray-900 dark:text-white rounded-lg shadow-lg w-full md:w-auto overflow-hidden">
           <div className="p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -720,7 +720,7 @@ const RankingPontos = () => {
                         onClick={() => setShowPontosExplicacao(false)}
                       >
                         <div
-                          className="absolute top-full left-0 mt-2 w-64 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-lg z-50"
+                          className="absolute top-full left-0 mt-2 w-64 bg-gray-800 text-gray-900 dark:text-white text-xs rounded-lg p-3 shadow-lg z-50"
                           style={{ pointerEvents: 'auto' }}
                           onClick={e => e.stopPropagation()}
                         >
@@ -794,7 +794,7 @@ const RankingPontos = () => {
                     ) && (
                       <>
                         <span className="ml-1 text-yellow-400 text-xs">★</span>
-                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block bg-gray-800 text-xs text-white p-2 rounded whitespace-nowrap">
+                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block bg-gray-800 text-xs text-gray-900 dark:text-white p-2 rounded whitespace-nowrap">
                           Inclui bônus de horário
                         </div>
                       </>
@@ -925,7 +925,7 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl shadow-xl max-h-[80vh] flex flex-col">
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -1134,7 +1134,7 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center text-base font-bold">
             <span className="text-gray-900 dark:text-white">Pontuação da data selecionada:</span>
-            <span className="text-[#1DA1F2]">{funcionario.pontuacao.total} pontos</span>
+            <span className="text-blue-500 dark:text-[#1D9BF0]">{funcionario.pontuacao.total} pontos</span>
           </div>
         </div>
       </div>
@@ -1143,3 +1143,6 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
 };
 
 export default RankingPontos;
+
+
+

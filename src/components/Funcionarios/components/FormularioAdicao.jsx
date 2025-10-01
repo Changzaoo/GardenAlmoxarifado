@@ -26,7 +26,7 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
         placeholder="Nome"
         value={dados.nome}
         onChange={e => setDados({ ...dados, nome: e.target.value })}
-        className="px-4 py-2 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] w-36"
+        className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] w-36"
         required
       />
       <input
@@ -34,7 +34,7 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
         placeholder="Cargo"
         value={dados.cargo}
         onChange={e => setDados({ ...dados, cargo: e.target.value })}
-        className="px-4 py-2 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] w-36"
+        className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] w-36"
         required
       />
       <input
@@ -45,13 +45,13 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
           const onlyNums = e.target.value.replace(/[^0-9]/g, '');
           setDados({ ...dados, telefone: onlyNums });
         }}
-        className="px-4 py-2 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] w-36"
+        className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] w-36"
         required
         maxLength={15}
       />
       <button 
         type="submit" 
-        className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-[#1a91da] transition-colors text-sm" 
+        className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors text-sm" 
         disabled={loading}
       >
         <Plus className="w-3 h-3" /> Adicionar
@@ -61,3 +61,5 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
 };
 
 export default FormularioAdicao;
+
+

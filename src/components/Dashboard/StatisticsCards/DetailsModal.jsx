@@ -8,12 +8,12 @@ const EmprestimoCard = ({ emprestimo }) => {
   };
 
   return (
-    <div className="bg-[#253341] rounded-xl p-4 flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-700 rounded-xl p-4 flex flex-col h-full">
       {/* Cabeçalho com Data/Hora e Status */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-[#1DA1F2]" />
-          <span className="text-[#8899A6] text-sm">
+          <Clock className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
+          <span className="text-gray-500 dark:text-gray-400 text-sm">
             {new Date(emprestimo.dataEmprestimo).toLocaleString('pt-BR', {
               day: '2-digit',
               month: '2-digit',
@@ -35,17 +35,17 @@ const EmprestimoCard = ({ emprestimo }) => {
       <div className="flex-grow space-y-2">
         {(emprestimo.ferramentas || emprestimo.nomeFerramentas || []).map((ferramenta, idx) => (
           <div key={idx} className="flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-[#8899A6]" />
-            <span className="text-[#8899A6] text-sm">{getFerramentaNome(ferramenta)}</span>
+            <Wrench className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <span className="text-gray-500 dark:text-gray-400 text-sm">{getFerramentaNome(ferramenta)}</span>
           </div>
         ))}
       </div>
 
       {/* Data de Devolução (se houver) */}
       {emprestimo.dataDevolucao && (
-        <div className="mt-3 pt-3 border-t border-[#38444D] flex items-center gap-2">
-          <Clock className="w-4 h-4 text-[#8899A6]" />
-          <span className="text-[#8899A6] text-sm">
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 dark:border-gray-600 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <span className="text-gray-500 dark:text-gray-400 text-sm">
             Devolvido: {new Date(emprestimo.dataDevolucao).toLocaleString('pt-BR')}
           </span>
         </div>
@@ -57,13 +57,13 @@ const EmprestimoCard = ({ emprestimo }) => {
 const FuncionarioCard = ({ nome, emprestimos, onClick }) => (
   <div
     onClick={onClick}
-    className="bg-[#253341] rounded-xl p-4 cursor-pointer hover:bg-[#2C3E50] transition-colors flex flex-col"
+    className="bg-white dark:bg-gray-700 rounded-xl p-4 cursor-pointer hover:bg-[#2C3E50] transition-colors flex flex-col"
   >
     <div className="flex items-center gap-3 mb-2">
-      <User className="w-5 h-5 text-[#1DA1F2]" />
+      <User className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
       <h4 className="text-white font-medium">{nome}</h4>
     </div>
-    <p className="text-sm text-[#8899A6] mt-auto">
+    <p className="text-sm text-gray-500 dark:text-gray-400 mt-auto">
       {emprestimos.length} empréstimo{emprestimos.length !== 1 ? 's' : ''}
     </p>
   </div>
@@ -103,17 +103,17 @@ const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-[#192734] rounded-xl border border-[#38444D] p-4 shadow-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 dark:bg-black/70 z-50">
+      <div className="bg-gray-200 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 dark:border-gray-600 p-4 shadow-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             {selectedFuncionario && (
               <button
                 onClick={voltarParaLista}
-                className="p-1 hover:bg-[#253341] rounded-full transition-colors"
+                className="p-1 hover:bg-white dark:bg-gray-700 rounded-full transition-colors"
               >
-                <ChevronLeft className="w-5 h-5 text-[#8899A6]" />
+                <ChevronLeft className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               </button>
             )}
             <div>
@@ -121,15 +121,15 @@ const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
                 {selectedFuncionario ? selectedFuncionario : title}
               </h3>
               {dateRange && !selectedFuncionario && (
-                <p className="text-sm text-[#8899A6]">{dateRange}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{dateRange}</p>
               )}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[#253341] rounded-full transition-colors"
+            className="p-2 hover:bg-white dark:bg-gray-700 rounded-full transition-colors"
           >
-            <X className="w-5 h-5 text-[#8899A6]" />
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -162,7 +162,7 @@ const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
               </div>
             )
           ) : (
-            <div className="text-center text-[#8899A6] py-8">
+            <div className="text-center text-gray-500 dark:text-gray-400 py-8">
               Nenhum empréstimo encontrado neste período.
             </div>
           )}
@@ -173,3 +173,5 @@ const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
 };
 
 export default DetailsModal;
+
+

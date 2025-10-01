@@ -41,27 +41,27 @@ const TaskAnalysisStats = ({ emprestimos, funcionarios }) => {
   });
 
   return (
-    <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D] hover:border-[#1DA1F2] transition-colors">
+    <div className="bg-gray-200 dark:bg-gray-700 p-4 rounded-xl border border-gray-200 dark:border-gray-600 dark:border-gray-600 hover:border-blue-500 dark:hover:border-[#1D9BF0] transition-colors">
       <div className="flex items-center gap-2 mb-4">
-        <Activity className="w-5 h-5 text-[#1DA1F2]" />
-        <h3 className="text-lg font-semibold text-white">Análise de Tarefas</h3>
+        <Activity className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Análise de Tarefas</h3>
       </div>
 
       <div className="space-y-6">
         {topWorkers.map((task, index) => (
           <div key={index} className="space-y-3">
             <div className="flex justify-between items-center">
-              <h4 className="text-[#8899A6] font-medium">{task.nome}</h4>
-              <span className="text-white bg-[#1DA1F2]/20 px-2 py-1 rounded-full text-sm">
+              <h4 className="text-gray-500 dark:text-gray-400 font-medium">{task.nome}</h4>
+              <span className="text-white bg-blue-500 dark:bg-[#1D9BF0]/20 px-2 py-1 rounded-full text-sm">
                 {task.count}x realizadas
               </span>
             </div>
             
-            <div className="pl-4 border-l-2 border-[#38444D] space-y-2">
+            <div className="pl-4 border-l-2 border-gray-200 dark:border-gray-600 dark:border-gray-600 space-y-2">
               {task.topFuncionarios.map((func, idx) => (
                 <div key={idx} className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[#1DA1F2]" />
-                  <span className="text-[#8899A6] text-sm">{func.funcionario}</span>
+                  <Users className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">{func.funcionario}</span>
                   <span className="text-white text-sm">({func.count}x)</span>
                 </div>
               ))}
@@ -74,3 +74,4 @@ const TaskAnalysisStats = ({ emprestimos, funcionarios }) => {
 };
 
 export default TaskAnalysisStats;
+

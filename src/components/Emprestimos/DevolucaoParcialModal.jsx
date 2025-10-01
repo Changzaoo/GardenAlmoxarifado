@@ -15,7 +15,7 @@ const DevolucaoParcialModal = ({ emprestimo, onClose, onConfirm }) => {
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 bg-gray-600 text-gray-900 dark:text-white rounded hover:bg-gray-700 transition-colors"
           >
             Fechar
           </button>
@@ -58,7 +58,7 @@ const DevolucaoParcialModal = ({ emprestimo, onClose, onConfirm }) => {
               type="checkbox"
               checked={devolvidoPorTerceiros}
               onChange={(e) => setDevolvidoPorTerceiros(e.target.checked)}
-              className="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 dark:border-gray-600"
+              className="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-200 dark:border-gray-600 dark:border-gray-600"
             />
             <span className="text-gray-700 dark:text-gray-200">
               Devolvido por terceiros
@@ -76,7 +76,7 @@ const DevolucaoParcialModal = ({ emprestimo, onClose, onConfirm }) => {
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-gray-900 dark:text-white rounded hover:bg-blue-700 transition-colors"
           >
             Confirmar Devolução
           </button>
@@ -87,3 +87,5 @@ const DevolucaoParcialModal = ({ emprestimo, onClose, onConfirm }) => {
 };
 
 export default DevolucaoParcialModal;
+
+

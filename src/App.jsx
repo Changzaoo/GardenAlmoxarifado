@@ -5,7 +5,7 @@ import { AuthProvider } from './hooks/useAuth';
 import Chat from './components/Chat/Chat';
 import { FuncionariosProvider } from './components/Funcionarios/FuncionariosProvider';
 import { InventarioProvider } from './components/Inventario/InventarioProvider';
-import { TwitterThemeProvider } from './components/TwitterThemeProvider';
+import { ThemeProvider } from './components/Theme/ThemeSystem';
 import { RouteStateManager } from './components/RouteStateManager';
 import { ScrollPersistence } from './hooks/useScrollPersistence';
 import Layout from './components/Layout/Layout';
@@ -30,8 +30,8 @@ import './App.css';
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <TwitterThemeProvider>
+      <ThemeProvider>
+        <AuthProvider>
           <FuncionariosProvider>
             <InventarioProvider>
               <div className="App">
@@ -43,10 +43,10 @@ function App() {
                   autoClose={3000}
                   theme="dark"
                   toastStyle={{
-                    background: '#192734',
-                    color: '#ffffff',
+                    background: 'var(--color-card)',
+                    color: 'var(--color-text)',
                     borderRadius: '1rem',
-                    border: '1px solid #38444D'
+                    border: '1px solid var(--color-border)'
                   }}
                 />
                 <Routes>
@@ -64,8 +64,8 @@ function App() {
               </div>
             </InventarioProvider>
           </FuncionariosProvider>
-        </TwitterThemeProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }

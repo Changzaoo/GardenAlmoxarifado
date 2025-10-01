@@ -31,7 +31,7 @@ const AvaliacoesCard = ({
     : '0';
 
   return (
-    <div className="bg-[#253341] rounded-xl p-3 mb-3">
+    <div className="bg-white dark:bg-gray-700 rounded-xl p-3 mb-3">
 
 
       <button
@@ -44,13 +44,13 @@ const AvaliacoesCard = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {tipo === 'autoavaliacao' ? (
-              <Users className="w-5 h-5 text-[#1DA1F2]" />
+              <Users className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
             ) : tipo === 'desempenho' ? (
-              <Gauge className="w-5 h-5 text-[#1DA1F2]" />
+              <Gauge className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
             ) : (
-              <ThumbsUp className="w-5 h-5 text-[#1DA1F2]" />
+              <ThumbsUp className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
             )}
-            <span className="text-sm font-bold text-white">
+            <span className="text-sm font-bold text-gray-900 dark:text-white">
               {tipo === 'desempenho' 
                 ? 'Avaliações de Desempenho' 
                 : tipo === 'autoavaliacao'
@@ -58,13 +58,13 @@ const AvaliacoesCard = ({
                   : 'Avaliações de Tarefas'}
             </span>
             <div className="flex items-center">
-              <span className="text-xs text-[#8899A6] ml-2">
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                 {avaliacoesExpandidas === funcionarioId ? 'Clique para recolher' : `Clique para ver (${avaliacoesFiltradas.length})`}
               </span>
             </div>
           </div>
           <svg
-            className={`w-5 h-5 text-[#8899A6] transform transition-transform duration-200 ${
+            className={`w-5 h-5 text-gray-500 dark:text-gray-400 transform transition-transform duration-200 ${
               avaliacoesExpandidas === funcionarioId ? 'rotate-180' : ''
             }`}
             fill="none"
@@ -82,7 +82,7 @@ const AvaliacoesCard = ({
             {avaliacoesFiltradas
               .sort((a, b) => new Date(b.data) - new Date(a.data))
               .map((avaliacao, index) => (
-                <div key={index} className="bg-[#1E2732] rounded-lg p-3 border border-[#38444D] min-h-[180px] flex flex-col">
+                <div key={index} className="bg-[#1E2732] rounded-lg p-3 border border-gray-200 dark:border-gray-600 min-h-[180px] flex flex-col">
                   {/* Cabeçalho da avaliação */}
                   <div className="space-y-2 mb-3">
                     {/* Tipo de avaliação */}
@@ -96,13 +96,13 @@ const AvaliacoesCard = ({
                               {avaliacao.isAutoAvaliacao ? 'Autoavaliação' : getTipoAvaliacaoConfig(avaliacao.tipoAvaliacao).label}
                             </span>
                             {avaliacao.tipoAvaliacao === 'tarefa' && avaliacao.nomeTarefa && (
-                              <span className="text-xs text-[#8899A6]">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
                                 - {avaliacao.nomeTarefa}
                               </span>
                             )}
                           </div>
                           {avaliacao.tipoAvaliacao === 'tarefa' && avaliacao.descricaoTarefa && (
-                            <p className="text-xs text-[#8899A6] leading-relaxed pl-2">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed pl-2">
                               {avaliacao.descricaoTarefa}
                             </p>
                           )}
@@ -113,9 +113,9 @@ const AvaliacoesCard = ({
                       {/* Nota da avaliação */}
                     <div className="flex flex-col space-y-2">                      {/* Data, hora e avaliador */}
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-[#253341] px-2 py-1 rounded-md">
-                          <Clock className="w-3 h-3 text-[#1DA1F2]" />
-                          <span className="text-xs text-white">
+                        <div className="flex items-center gap-1 bg-white dark:bg-gray-700 px-2 py-1 rounded-md">
+                          <Clock className="w-3 h-3 text-blue-500 dark:text-[#1D9BF0]" />
+                          <span className="text-xs text-gray-900 dark:text-white">
                             {new Date(avaliacao.data).toLocaleDateString('pt-BR', {
                               day: '2-digit',
                               month: '2-digit',
@@ -126,16 +126,16 @@ const AvaliacoesCard = ({
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between flex-1 bg-[#253341] px-2 py-1 rounded-md">
+                        <div className="flex items-center justify-between flex-1 bg-white dark:bg-gray-700 px-2 py-1 rounded-md">
                           <div className="flex items-center gap-1">
-                            <Users className="w-3 h-3 text-[#1DA1F2]" />
-                            <span className="text-xs text-white">
+                            <Users className="w-3 h-3 text-blue-500 dark:text-[#1D9BF0]" />
+                            <span className="text-xs text-gray-900 dark:text-white">
                               {avaliacao.anonimo || avaliacao.anonima ? "Anônimo" : (avaliacao.avaliador || avaliacao.autor || avaliacao.supervisorNome)}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <StarRating rating={Number(avaliacao.nota || avaliacao.estrelas || 0)} />
-                            <span className="text-xs text-white">
+                            <span className="text-xs text-gray-900 dark:text-white">
                               {(avaliacao.nota || avaliacao.estrelas || 0).toFixed(1)}
                             </span>
                           </div>
@@ -146,8 +146,8 @@ const AvaliacoesCard = ({
 
                   {/* Comentário da avaliação */}
                   {avaliacao.comentario && (
-                    <div className="bg-[#253341] rounded-md p-2">
-                      <p className="text-[#8899A6] text-sm leading-relaxed">
+                    <div className="bg-white dark:bg-gray-700 rounded-md p-2">
+                      <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
                         {avaliacao.comentario}
                       </p>
                     </div>
@@ -162,3 +162,5 @@ const AvaliacoesCard = ({
 };
 
 export default AvaliacoesCard;
+
+

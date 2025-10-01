@@ -8,7 +8,8 @@ import SupportTab from './Support/SupportTab';
 import { Shield } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { FuncionariosProvider, useFuncionarios } from './Funcionarios/FuncionariosProvider';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from './Theme/ThemeSystem';
+import ThemeToggle from './Theme/ThemeToggle';
 
 import UserProfileModal from './Auth/UserProfileModal';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
@@ -857,7 +858,7 @@ const LoginForm = () => {
               carregando 
                 ? 'bg-gray-400 cursor-not-allowed' 
                 : 'bg-green-600 hover:bg-green-700'
-            } text-white`}
+            } text-gray-900 dark:text-white`}
           >
             {carregando ? (
               <div className="flex items-center justify-center gap-2">
@@ -1866,10 +1867,10 @@ const AlmoxarifadoSistema = () => {
 
   return (
     <FuncionariosProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-white dark:bg-black transition-colors duration-200">
         {/* Header móvel */}
       {isMobile && (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b dark:border-[#2F3336] shadow-sm">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center justify-between px-4 h-16">
             <div className="flex items-center w-full relative">
               {/* Logo e título no header mobile */}
@@ -1878,6 +1879,11 @@ const AlmoxarifadoSistema = () => {
                   <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
                   <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
                 </div>
+              </div>
+              
+              {/* Toggle de tema no canto direito */}
+              <div className="absolute right-0">
+                <ThemeToggle size="sm" />
               </div>
             </div>
           </div>
@@ -1897,12 +1903,12 @@ const AlmoxarifadoSistema = () => {
         isMobile 
           ? `fixed top-0 bottom-0 left-0 z-50 w-full h-full transform transition-transform duration-300 ease-in-out ${
               menuOpen ? 'translate-x-0' : '-translate-x-full'
-            } bg-white dark:bg-black shadow-lg border-r border-gray-200 dark:border-[#38444D]`
-          : `${menuRecolhido ? 'w-16' : 'w-80'} fixed h-full left-0 transition-all duration-300 ease-in-out bg-white dark:bg-black shadow-lg rounded-lg mt-2 border-r border-gray-200 dark:border-[#38444D]`
+            } bg-white dark:bg-black shadow-lg border-r border-gray-200 dark:border-gray-700`
+          : `${menuRecolhido ? 'w-16' : 'w-80'} fixed h-full left-0 transition-all duration-300 ease-in-out bg-white dark:bg-black shadow-lg rounded-lg mt-2 border-r border-gray-200 dark:border-gray-700`
       }`}>
         <div className="flex flex-col h-full">
           {!isMobile && (
-            <div className="p-4 border-b border-gray-200 dark:border-[#38444D] flex items-center justify-between">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className={`flex items-center ${menuRecolhido ? 'justify-center w-full' : ''}`}>
                 <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-auto" />
                 {!menuRecolhido && (
@@ -1927,7 +1933,7 @@ const AlmoxarifadoSistema = () => {
           
           {/* Botão de expandir quando menu recolhido */}
           {!isMobile && menuRecolhido && (
-            <div className="p-2 flex justify-center border-b border-gray-200 dark:border-[#38444D]">
+            <div className="p-2 flex justify-center border-b border-gray-200 dark:border-gray-600">
               <button
                 onClick={() => setMenuRecolhido(!menuRecolhido)}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -1942,7 +1948,7 @@ const AlmoxarifadoSistema = () => {
 
           {/* Header personalizado para menu fullscreen mobile */}
           {isMobile && menuOpen && (
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-[#38444D]">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
               {/* Logo e nome centralizado */}
               <div className="flex-1 flex items-center justify-center">
                 <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-3" />
@@ -1975,7 +1981,7 @@ const AlmoxarifadoSistema = () => {
                       }}
                       className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
                         abaAtiva === aba.id
-                          ? 'bg-[#1D9BF0] text-white shadow-lg'
+                          ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
@@ -1995,7 +2001,7 @@ const AlmoxarifadoSistema = () => {
                   }}
                   className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
                     abaAtiva === 'suporte'
-                      ? 'bg-[#1D9BF0] text-white shadow-lg'
+                      ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -2017,7 +2023,7 @@ const AlmoxarifadoSistema = () => {
                     }}
                     className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
                       abaAtiva === 'usuarios'
-                        ? 'bg-[#1D9BF0] text-white shadow-lg'
+                        ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                   >
@@ -2037,7 +2043,7 @@ const AlmoxarifadoSistema = () => {
                       }}
                       className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
                         abaAtiva === 'dashboard'
-                          ? 'bg-[#1D9BF0] text-white shadow-lg'
+                          ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
@@ -2054,7 +2060,7 @@ const AlmoxarifadoSistema = () => {
                       }}
                       className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
                         abaAtiva === 'historico-emprestimos'
-                          ? 'bg-[#1D9BF0] text-white shadow-lg'
+                          ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
@@ -2071,7 +2077,7 @@ const AlmoxarifadoSistema = () => {
                       }}
                       className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
                         abaAtiva === 'historico-transferencias'
-                          ? 'bg-[#1D9BF0] text-white shadow-lg'
+                          ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
@@ -2090,7 +2096,7 @@ const AlmoxarifadoSistema = () => {
                   }}
                   className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
                     abaAtiva === 'legal'
-                      ? 'bg-[#1D9BF0] text-white shadow-lg'
+                      ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -2118,15 +2124,15 @@ const AlmoxarifadoSistema = () => {
                     }}
                     className={`${menuRecolhido ? 'justify-center' : 'justify-start'} w-full flex items-center ${menuRecolhido ? 'px-0' : 'space-x-3 px-4'} ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-[20px] transition-all duration-200 ${
                       abaAtiva === aba.id
-                        ? 'bg-[#1D9BF0] text-white'
-                        : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                        ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                        : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
                     }`}
                     title={menuRecolhido ? aba.nome : ''}
                   >
                     <Icone className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} flex-shrink-0 ${
                       abaAtiva === aba.id 
                         ? 'text-white' 
-                        : 'text-[#E7E9EA] group-hover:text-[#1D9BF0]'
+                        : 'text-gray-700 dark:text-[#E7E9EA] group-hover:text-blue-500 dark:group-hover:text-[#1D9BF0]'
                     }`} />
                     {!menuRecolhido && <span>{aba.nome}</span>}
                   </button>
@@ -2138,14 +2144,14 @@ const AlmoxarifadoSistema = () => {
 
         {/* Botões secundários no modo recolhido */}
         {!isMobile && menuRecolhido && (
-          <div className="px-2 py-2 border-t border-gray-200 dark:border-[#38444D]">
+          <div className="px-2 py-2 border-t border-gray-200 dark:border-gray-600">
             <div className="space-y-1">
               <button
                 onClick={() => setAbaAtiva('suporte')}
                 className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
                   abaAtiva === 'suporte'
-                    ? 'bg-[#1D9BF0] text-white'
-                    : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                    ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                    : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
                 }`}
                 title="Ajuda"
               >
@@ -2161,8 +2167,8 @@ const AlmoxarifadoSistema = () => {
                   onClick={() => setAbaAtiva('usuarios')}
                   className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
                     abaAtiva === 'usuarios'
-                      ? 'bg-[#1D9BF0] text-white'
-                      : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                      ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                      : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
                   }`}
                   title="Usuários"
                 >
@@ -2176,8 +2182,8 @@ const AlmoxarifadoSistema = () => {
                     onClick={() => setAbaAtiva('dashboard')}
                     className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
                       abaAtiva === 'dashboard'
-                        ? 'bg-[#1D9BF0] text-white'
-                        : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                        ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                        : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
                     }`}
                     title="Dashboard"
                   >
@@ -2188,8 +2194,8 @@ const AlmoxarifadoSistema = () => {
                     onClick={() => setAbaAtiva('historico-emprestimos')}
                     className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
                       abaAtiva === 'historico-emprestimos'
-                        ? 'bg-[#1D9BF0] text-white'
-                        : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                        ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                        : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
                     }`}
                     title="Histórico de Empréstimos"
                   >
@@ -2200,8 +2206,8 @@ const AlmoxarifadoSistema = () => {
                     onClick={() => setAbaAtiva('historico-transferencias')}
                     className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
                       abaAtiva === 'historico-transferencias'
-                        ? 'bg-[#1D9BF0] text-white'
-                        : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                        ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                        : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
                     }`}
                     title="Histórico de Transferências"
                   >
@@ -2210,12 +2216,19 @@ const AlmoxarifadoSistema = () => {
                 </>
               )}
               
+              {/* Toggle de tema para mobile */}
+              {isMobile && (
+                <div className="w-full flex justify-center p-2">
+                  <ThemeToggle size="sm" />
+                </div>
+              )}
+              
               <button
                 onClick={() => setAbaAtiva('legal')}
                 className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
                   abaAtiva === 'legal'
-                    ? 'bg-[#1D9BF0] text-white'
-                    : 'text-[#E7E9EA] hover:bg-[#1D9BF0]/10'
+                    ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                    : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
                 }`}
                 title="Legal"
               >
@@ -2226,7 +2239,7 @@ const AlmoxarifadoSistema = () => {
         )}
 
         {!menuRecolhido && (
-          <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-3 px-4 bg-white dark:bg-black rounded-b-lg border-t border-gray-200 dark:border-[#38444D]`}>
+          <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-3 px-4 bg-white dark:bg-black rounded-b-lg border-t border-gray-200 dark:border-gray-600`}>
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
               {funcionarioInfo?.photoURL ? (
@@ -2248,6 +2261,11 @@ const AlmoxarifadoSistema = () => {
               </p>
             </div>
             <div className="flex items-center space-x-2">
+              {/* Toggle de tema para desktop */}
+              {!isMobile && (
+                <ThemeToggle size="sm" />
+              )}
+              
               <button
                 onClick={() => {
                   logout();
@@ -2537,15 +2555,15 @@ const AlmoxarifadoSistema = () => {
           onClick={() => {
             setChatOpen(!chatOpen);
           }}
-          className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-[#1D9BF0] hover:bg-[#1A8CD8] rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
+          className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1A8CD8] rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
         >
-          <MessageCircle className="w-6 h-6 text-white" />
+          <MessageCircle className="w-6 h-6 text-gray-900 dark:text-white" />
         </button>
       )}
 
       {/* Menu inferior para mobile */}
       {isMobile && !menuOpen && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-gray-200 dark:border-[#38444D] px-2 py-0.5">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-600 px-2 py-0.5">
           <div className="flex justify-around items-center">
             {/* Primeiros 2 ícones à esquerda (excluindo ranking e meu-perfil) */}
             {abas.filter(aba => aba.permissao() && aba.id !== 'ranking' && aba.id !== 'emprestimos' && aba.id !== 'meu-perfil').slice(0, 2).map((aba) => {
@@ -2559,13 +2577,13 @@ const AlmoxarifadoSistema = () => {
                   }}
                   className={`flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
                     abaAtiva === aba.id
-                      ? 'text-[#1D9BF0]'
+                      ? 'text-blue-500 dark:text-[#1D9BF0]'
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
                   <Icone className={`w-4 h-4 mb-0.5 ${
                     abaAtiva === aba.id 
-                      ? 'text-[#1D9BF0]' 
+                      ? 'text-blue-500 dark:text-[#1D9BF0]' 
                       : 'text-gray-500 dark:text-gray-400'
                   }`} />
                   <span className="text-xs font-medium truncate w-full text-center leading-tight">
@@ -2585,14 +2603,14 @@ const AlmoxarifadoSistema = () => {
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-0.5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-200 dark:hover:shadow-blue-900 ${
                 abaAtiva === 'emprestimos'
-                  ? 'bg-[#1D9BF0] shadow-lg'
-                  : 'bg-[#1D9BF0]'
+                  ? 'bg-blue-500 dark:bg-[#1D9BF0] shadow-lg'
+                  : 'bg-blue-500 dark:bg-[#1D9BF0]'
               }`}>
                 <ClipboardList className="w-5 h-5 text-white" />
               </div>
               <span className={`text-xs font-medium text-center leading-tight ${
                 abaAtiva === 'emprestimos'
-                  ? 'text-[#1D9BF0]'
+                  ? 'text-blue-500 dark:text-[#1D9BF0]'
                   : 'text-gray-500 dark:text-gray-400'
               }`}>
                 Empréstimos
@@ -2611,13 +2629,13 @@ const AlmoxarifadoSistema = () => {
                   }}
                   className={`flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 min-w-0 flex-1 ${
                     abaAtiva === aba.id
-                      ? 'text-[#1D9BF0]'
+                      ? 'text-blue-500 dark:text-[#1D9BF0]'
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
                   <Icone className={`w-4 h-4 mb-0.5 ${
                     abaAtiva === aba.id 
-                      ? 'text-[#1D9BF0]' 
+                      ? 'text-blue-500 dark:text-[#1D9BF0]' 
                       : 'text-gray-500 dark:text-gray-400'
                   }`} />
                   <span className="text-xs font-medium truncate w-full text-center leading-tight">
@@ -2687,3 +2705,4 @@ const Seed = () => {
 // Export do hook useAuth e componente principal
 export { useAuth };
 export default Seed;
+

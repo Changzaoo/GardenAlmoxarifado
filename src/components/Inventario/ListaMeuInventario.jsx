@@ -102,7 +102,7 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
       {/* Seção de Transferências para Receber */}
       {transferenciasRecebimento.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Transferências Aguardando Sua Aprovação ({transferenciasRecebimento.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -147,7 +147,7 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
                     </button>
                     <button
                       onClick={() => handleAceitarTransferencia(transferencia)}
-                      className="px-4 py-2 text-sm bg-[#1DA1F2] text-white hover:bg-[#1a91da] rounded-lg transition-colors"
+                      className="px-4 py-2 text-sm bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white hover:bg-blue-600 dark:hover:bg-[#1a8cd8] rounded-lg transition-colors"
                     >
                       Aceitar
                     </button>
@@ -162,7 +162,7 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
       {/* Seção de Transferências Enviadas */}
       {transferenciasEnvio.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Transferências Enviadas ({transferenciasEnvio.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -211,14 +211,14 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
       {/* Seção de Empréstimos */}
       <div>
         {meusEmprestimosAtivos.length === 0 ? (
-          <div className="bg-[#192734] rounded-xl p-6 text-center border border-[#38444D]">
-            <Package className="w-12 h-12 text-[#8899A6] mx-auto mb-3" />
-            <p className="text-[#8899A6]">{showEmptyMessage}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-600 dark:border-gray-600">
+            <Package className="w-12 h-12 text-gray-500 dark:text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400">{showEmptyMessage}</p>
           </div>
         ) : (
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <ToolCase className="w-6 h-6 text-[#1DA1F2]" />
+              <ToolCase className="w-6 h-6 text-blue-500 dark:text-[#1D9BF0]" />
               <h3 className="text-lg font-semibold text-white">
                 Histórico de Empréstimos ({meusEmprestimosAtivos.length})
               </h3>
@@ -227,23 +227,23 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
               {meusEmprestimosAtivos.map((emprestimo) => (
                 <div
                   key={emprestimo.id}
-                  className="bg-[#192734] rounded-xl p-6 border border-[#38444D] hover:border-[#1DA1F2] transition-colors"
+                  className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600 dark:border-gray-600 hover:border-blue-500 dark:border-[#1D9BF0] transition-colors"
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <div className="flex items-center gap-2 text-white mb-1">
+                      <div className="flex items-center gap-2 text-gray-900 dark:text-white mb-1">
                         <ToolCase className="w-5 h-5" />
                         <h3 className="text-lg font-semibold">
                           {emprestimo.ferramentas?.length} {emprestimo.ferramentas?.length === 1 ? 'Ferramenta' : 'Ferramentas'}
                         </h3>
                       </div>
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                           <Clock className="w-4 h-4" />
                           <span>Retirada em {formatarDataHora(emprestimo.dataEmprestimo)}</span>
                         </div>
                         {emprestimo.status === 'devolvido' && (
-                          <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                             <CheckCircle className="w-4 h-4" />
                             <span>Devolvido em {formatarDataHora(emprestimo.dataDevolucao)}</span>
                           </div>
@@ -270,7 +270,7 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
                     {!readOnly && emprestimo.status !== 'devolvido' && (
                       <button
                         onClick={() => setTransferindoEmprestimo(emprestimo)}
-                        className="text-[#1DA1F2] hover:text-[#1a91da] flex items-center gap-1 text-sm font-medium transition-colors"
+                        className="text-blue-500 dark:text-[#1D9BF0] hover:text-[#1a91da] flex items-center gap-1 text-sm font-medium transition-colors"
                       >
                         <ArrowRight className="w-4 h-4" /> Transferir
                       </button>
@@ -280,12 +280,12 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
                   <div className="space-y-2">
                     <div className="space-y-1">
                       {emprestimo.ferramentas?.map((ferramenta, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-sm text-[#8899A6]">
+                        <div key={idx} className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                           <CircleDotDashed className="w-3 h-3" />
                           <span>
                             {ferramenta.nome || ferramenta}
                             {ferramenta.quantidade > 1 && (
-                              <span className="text-[#8899A6]/70 ml-1">({ferramenta.quantidade} unidades)</span>
+                              <span className="text-gray-500 dark:text-gray-400/70 ml-1">({ferramenta.quantidade} unidades)</span>
                             )}
                           </span>
                         </div>
@@ -311,3 +311,5 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
 };
 
 export default ListaMeuInventario;
+
+

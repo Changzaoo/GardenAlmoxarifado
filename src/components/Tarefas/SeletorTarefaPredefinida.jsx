@@ -58,27 +58,27 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-xl font-bold text-white">Selecione um Modelo de Tarefa</h2>
-            <p className="text-sm text-[#8899A6]">Escolha um modelo existente ou crie um novo</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Selecione um Modelo de Tarefa</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Escolha um modelo existente ou crie um novo</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-[#8899A6] hover:text-white cursor-pointer">
+              <label className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white cursor-pointer">
                 <input
                   type="checkbox"
                   checked={mostrarTemplatesSistema}
                   onChange={(e) => setMostrarTemplatesSistema(e.target.checked)}
-                  className="w-4 h-4 rounded border-[#38444D] text-[#1DA1F2] focus:ring-[#1DA1F2] focus:ring-offset-0 bg-[#253341]"
+                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 dark:text-[#1D9BF0] focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:ring-offset-0 bg-white dark:bg-gray-700"
                 />
                 <span className="text-sm">Mostrar modelos do sistema</span>
               </label>
               {usuario.nivel >= 2 && (
                 <button
                   onClick={() => setShowCriarTemplate(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   Criar Modelo
@@ -86,7 +86,7 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
               )}
               <button
                 onClick={onClose}
-                className="p-2 text-[#8899A6] hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-white/10 rounded-full transition-colors"
               >
                 &times;
               </button>
@@ -97,7 +97,7 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
         <div className="space-y-6">
           {tiposTarefa.map(tipo => (
             <div key={tipo}>
-              <h3 className="text-lg font-medium text-[#8899A6] mb-3">{tipo}</h3>
+              <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-3">{tipo}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {todasTarefas
                   .filter(t => t.tipo === tipo)
@@ -108,12 +108,12 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
                     onClick={() => onSelect(tarefa)}
                     className={`text-left p-4 bg-[#22303C] rounded-xl border ${
                       tarefa.personalizado 
-                        ? 'border-[#1DA1F2]/30 hover:border-[#1DA1F2]' 
-                        : 'border-[#38444D] hover:border-[#1DA1F2]'
+                        ? 'border-blue-500 dark:border-[#1D9BF0]/30 hover:border-blue-500 dark:border-[#1D9BF0]' 
+                        : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:border-[#1D9BF0]'
                     } transition-colors`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="text-white font-medium">{tarefa.titulo}</h4>
+                      <h4 className="text-gray-900 dark:text-white font-medium">{tarefa.titulo}</h4>
                       <div className="flex items-center gap-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           tarefa.prioridade === 'alta' ? 'bg-red-500/10 text-red-500' :
@@ -131,7 +131,7 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
                                 setTemplateParaEditar(tarefa);
                                 setShowCriarTemplate(true);
                               }}
-                              className="p-1 text-[#1DA1F2] hover:bg-[#1DA1F2]/10 rounded-full transition-colors"
+                              className="p-1 text-blue-500 dark:text-[#1D9BF0] hover:bg-blue-500 dark:bg-[#1D9BF0]/10 rounded-full transition-colors"
                               title={tarefa.personalizado ? "Editar modelo" : "Criar cópia personalizada"}
                             >
                               <Pencil className="w-4 h-4" />
@@ -149,10 +149,10 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
                         )}
                       </div>
                     </div>
-                    <p className="text-[#8899A6] text-sm whitespace-pre-line mb-3">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm whitespace-pre-line mb-3">
                       {tarefa.descricao}
                     </p>
-                    <div className="flex items-center text-[#8899A6] text-xs">
+                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-xs">
                       <Clock className="w-3 h-3 mr-1" />
                       Tempo estimado: {tarefa.tempoEstimado}
                     </div>
@@ -176,21 +176,21 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
         {/* Modal de Confirmação de Exclusão */}
         {confirmExclusao.show && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
-            <div className="bg-[#192734] rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-white mb-4">Confirmar Exclusão</h3>
-              <p className="text-[#8899A6] mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Confirmar Exclusão</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
                 Tem certeza que deseja excluir este modelo de tarefa? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setConfirmExclusao({ show: false, templateId: null })}
-                  className="px-4 py-2 text-[#8899A6] hover:text-white transition-colors"
+                  className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmarExclusao}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  className="px-4 py-2 bg-red-500 text-gray-900 dark:text-white rounded-lg hover:bg-red-600 transition-colors"
                 >
                   Excluir
                 </button>
@@ -204,3 +204,4 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
 };
 
 export default SeletorTarefaPredefinida;
+

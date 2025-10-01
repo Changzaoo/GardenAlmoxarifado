@@ -19,8 +19,8 @@ const AdminPanel = ({ onClose }) => {
   };
 
   return (
-    <div className="bg-[#192734] border border-[#38444D] rounded-xl p-6 shadow-lg">
-      <h3 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-xl p-6 shadow-lg">
+      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
         <Shield className="w-5 h-5 text-[#1D9BF0]" />
         Painel de Administração
       </h3>
@@ -77,3 +77,5 @@ const AdminPanel = ({ onClose }) => {
 };
 
 export default AdminPanel;
+
+

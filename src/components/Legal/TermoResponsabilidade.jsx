@@ -96,7 +96,7 @@ const TermoResponsabilidade = ({ items, usuario, onSign, onCancel }) => {
           </button>
           <button
             onClick={handleSign}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-gray-900 dark:text-white rounded hover:bg-blue-700"
             disabled={loading}
           >
             {loading ? 'Processando...' : 'Assinar e Aceitar'}
@@ -108,3 +108,4 @@ const TermoResponsabilidade = ({ items, usuario, onSign, onCancel }) => {
 };
 
 export default TermoResponsabilidade;
+

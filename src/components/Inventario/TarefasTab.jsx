@@ -264,7 +264,7 @@ const TarefasTab = ({ funcionarios = [], showOnlyUserTasks = false, showAddButto
             placeholder="     Buscar tarefas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white"
+            className="w-full h-10 pl-10 pr-4 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-white dark:bg-gray-700 dark:text-white"
           />
         </div>
 
@@ -272,7 +272,7 @@ const TarefasTab = ({ funcionarios = [], showOnlyUserTasks = false, showAddButto
           <select
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
-            className="w-40 border border-gray-300 dark:border-[#38444D] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
+            className="w-40 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
           >
             <option value="todas">Todas as tarefas</option>
             <option value="pendente">Pendentes</option>
@@ -284,7 +284,7 @@ const TarefasTab = ({ funcionarios = [], showOnlyUserTasks = false, showAddButto
           {showAddButton && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
             <button
               onClick={() => setShowCriarTarefa(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-lg hover:bg-[#1a91da] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
             >
               <Plus className="w-4 h-4" /> Nova Tarefa
             </button>
@@ -393,7 +393,7 @@ const TarefasTab = ({ funcionarios = [], showOnlyUserTasks = false, showAddButto
         <div className="flex justify-center mt-6">
           <button
             onClick={() => setQuantidadeExibida(prev => prev + 10)}
-            className="px-4 py-2 text-[#1DA1F2] hover:bg-[#1DA1F2]/10 rounded-lg transition-colors"
+            className="px-4 py-2 text-blue-500 dark:text-[#1D9BF0] hover:bg-blue-500 dark:bg-[#1D9BF0]/10 rounded-lg transition-colors"
           >
             Carregar mais
           </button>
@@ -455,3 +455,5 @@ const TarefasTab = ({ funcionarios = [], showOnlyUserTasks = false, showAddButto
 };
 
 export default TarefasTab;
+
+

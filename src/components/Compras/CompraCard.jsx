@@ -92,7 +92,7 @@ const CompraCard = ({
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
+      <div className="bg-gray-200 dark:bg-gray-700 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
         <div className="p-4 h-[22rem] relative">
           {/* Cabeçalho do Card */}
           <div className="mb-4">
@@ -102,7 +102,7 @@ const CompraCard = ({
                 <div className="flex items-center gap-2 ml-4">
                   <button
                     onClick={() => onEdit(compra)}
-                    className="p-1.5 text-[#1DA1F2] hover:bg-[#1DA1F2]/10 rounded-full transition-colors"
+                    className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-colors"
                     title="Editar"
                   >
                     <Edit className="w-4 h-4" />
@@ -134,7 +134,7 @@ const CompraCard = ({
                   {!readonly && <ChevronDown className="w-3 h-3 ml-1" />}
                 </button>
                 {showStatusMenu && !readonly && (
-                  <div className="absolute top-full left-0 mt-1 w-40 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                  <div className="absolute top-full left-0 mt-1 w-40 bg-gray-50 dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
                     <div className="py-1">
                       {Object.entries(STATUS_LABELS).map(([value, label]) => (
                         <button
@@ -165,7 +165,7 @@ const CompraCard = ({
                   {!readonly && <ChevronDown className="w-3 h-3 ml-1" />}
                 </button>
                 {showPriorityMenu && !readonly && (
-                  <div className="absolute top-full left-0 mt-1 w-32 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                  <div className="absolute top-full left-0 mt-1 w-32 bg-gray-50 dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
                     <div className="py-1">
                       {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
                         <button
@@ -233,7 +233,7 @@ const CompraCard = ({
               href={compra.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-full hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
               <span className="text-sm">Ver produto</span>
@@ -257,3 +257,5 @@ const CompraCard = ({
 };
 
 export default CompraCard;
+
+

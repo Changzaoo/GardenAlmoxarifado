@@ -90,9 +90,9 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] rounded-xl p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white">{tarefa.titulo}</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{tarefa.titulo}</h2>
           <div className="flex items-center gap-2">
             {/* Botões de ação apenas se não estiver em modo somente leitura */}
             {!readOnly && (
@@ -101,7 +101,7 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
                 {usuario.nivel >= NIVEIS_PERMISSAO.FUNCIONARIO && tarefa.status !== 'concluida' && (
                   <button
                     onClick={() => onConcluir?.(tarefa)}
-                    className="px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center gap-2"
+                    className="px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors flex items-center gap-2"
                   >
                     <Star className="w-4 h-4" />
                     Concluir e Avaliar
@@ -122,7 +122,7 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
             )}
             <button
               onClick={onClose}
-              className="p-2 text-[#8899A6] hover:text-white hover:bg-white/10 rounded-full transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-white/10 rounded-full transition-colors"
               title="Fechar"
             >
               <X className="w-5 h-5" />
@@ -165,7 +165,7 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
 
           {/* Descrição */}
           <div>
-            <h3 className="text-sm font-medium text-[#8899A6] mb-2">Descrição</h3>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Descrição</h3>
             <p className="text-white whitespace-pre-wrap">
               {tarefa.descricao.split(/(@\w+)/).map((parte, index) => {
                 if (parte.startsWith('@')) {
@@ -183,21 +183,21 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
           {/* Datas e Tempo */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h3 className="text-sm font-medium text-[#8899A6] mb-2">Datas</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Datas</h3>
               <div className="space-y-2 text-sm">
                 <p>
-                  <span className="text-[#8899A6]">Criação: </span>
+                  <span className="text-gray-500 dark:text-gray-400">Criação: </span>
                   <span className="text-white">{formatarData(tarefa.dataCriacao)}</span>
                 </p>
                 {tarefa.dataInicio && (
                   <p>
-                    <span className="text-[#8899A6]">Início: </span>
+                    <span className="text-gray-500 dark:text-gray-400">Início: </span>
                     <span className="text-white">{formatarData(tarefa.dataInicio)}</span>
                   </p>
                 )}
                 {tarefa.status === 'concluida' && (
                   <p>
-                    <span className="text-[#8899A6]">Conclusão: </span>
+                    <span className="text-gray-500 dark:text-gray-400">Conclusão: </span>
                     <span className="text-white">{formatarData(tarefa.dataConclusao)}</span>
                   </p>
                 )}
@@ -205,7 +205,7 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-[#8899A6] mb-2">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 {tarefa.status === 'concluida' ? 'Tempo Total' : 'Tempo Decorrido'}
               </h3>
               <p className="text-white">
@@ -221,12 +221,12 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
 
           {/* Funcionários */}
           <div>
-            <h3 className="text-sm font-medium text-[#8899A6] mb-2">Funcionários Atribuídos</h3>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Funcionários Atribuídos</h3>
             <div className="flex flex-wrap gap-2 mb-2">
               {tarefa.funcionarios?.map((func) => (
                 <span
                   key={func.nome}
-                  className="bg-[#253341] px-3 py-1 rounded-full text-white text-sm"
+                  className="bg-white dark:bg-gray-700 px-3 py-1 rounded-full text-gray-900 dark:text-white text-sm"
                 >
                   {func.nome}
                 </span>
@@ -237,12 +237,12 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
           {/* Avaliações */}
           {tarefa.status === 'concluida' && (
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-[#8899A6] mb-2">Avaliações</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Avaliações</h3>
               
               {/* Avaliação do Funcionário */}
               {tarefa.avaliacaoFuncionario && (
-                <div className="border border-[#38444D] rounded-lg p-4">
-                  <div className="text-[#8899A6] text-sm mb-2">Avaliação do Funcionário</div>
+                <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                  <div className="text-gray-500 dark:text-gray-400 text-sm mb-2">Avaliação do Funcionário</div>
                   <div className="flex items-center gap-1 mb-2">
                     {[1, 2, 3, 4, 5].map((estrela) => (
                       <Star
@@ -263,8 +263,8 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
 
               {/* Avaliação do Supervisor - Visível apenas para níveis acima de funcionário */}
               {tarefa.avaliacaoSupervisor && usuario.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
-                <div className="border border-[#38444D] rounded-lg p-4">
-                  <div className="text-[#8899A6] text-sm mb-2">Avaliação do Supervisor</div>
+                <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                  <div className="text-gray-500 dark:text-gray-400 text-sm mb-2">Avaliação do Supervisor</div>
                   <div className="flex items-center gap-1 mb-2">
                     {[1, 2, 3, 4, 5].map((estrela) => (
                       <Star
@@ -287,7 +287,7 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
               {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && !tarefa.avaliacaoSupervisor && (
                 <button
                   onClick={() => onConcluir?.(tarefa)}
-                  className="w-full px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors flex items-center justify-center gap-2 mt-4"
+                  className="w-full px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors flex items-center justify-center gap-2 mt-4"
                 >
                   <Star className="w-4 h-4" />
                   Avaliar Desempenho
@@ -311,3 +311,4 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
 };
 
 export default DetalheTarefa;
+

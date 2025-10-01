@@ -22,9 +22,9 @@ const ModalEditar = ({
   loading
 }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] rounded-2xl max-w-md w-full mx-4 p-6 border border-[#38444D]">
-        <h3 className="text-xl font-semibold text-white mb-6">Editar Funcionário</h3>
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 dark:bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full mx-4 p-6 border border-gray-200 dark:border-gray-600">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Editar Funcionário</h3>
         <div className="space-y-4">
           <div className="flex justify-center mb-6">
             <div className="relative">
@@ -33,7 +33,7 @@ const ModalEditar = ({
                   <img 
                     src={preview} 
                     alt="Preview" 
-                    className="w-32 h-32 rounded-full object-cover border-4 border-[#38444D]"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-600"
                     onError={(e) => {
                       e.target.onerror = null;
                       setPreview(null);
@@ -52,20 +52,20 @@ const ModalEditar = ({
                         fileInputRef.current.value = '';
                       }
                     }}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    className="absolute -top-2 -right-2 bg-red-500 text-gray-900 dark:text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                     title="Remover imagem"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ) : (
-                <div className="w-32 h-32 rounded-full bg-[#253341] flex items-center justify-center border-4 border-[#38444D]">
-                  <Users className="w-16 h-16 text-[#8899A6]" />
+                <div className="w-32 h-32 rounded-full bg-white dark:bg-gray-700 flex items-center justify-center border-4 border-gray-200 dark:border-gray-600">
+                  <Users className="w-16 h-16 text-gray-500 dark:text-gray-400" />
                 </div>
               )}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 bg-[#1DA1F2] text-white rounded-full p-2.5 hover:bg-[#1a91da] transition-colors"
+                className="absolute bottom-0 right-0 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full p-2.5 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
               >
                 <Camera className="w-5 h-5" />
               </button>
@@ -89,7 +89,7 @@ const ModalEditar = ({
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-[#8899A6]">URL da Imagem</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">URL da Imagem</p>
             <input
               type="url"
               placeholder="https://exemplo.com/imagem.jpg"
@@ -99,9 +99,9 @@ const ModalEditar = ({
                 setFormEdit(prev => ({ ...prev, photoURL: url }));
                 setPreview(url || null);
               }}
-              className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+              className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
             />
-            <p className="text-xs text-[#8899A6]">ou</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">ou</p>
           </div>
 
           <input
@@ -109,34 +109,34 @@ const ModalEditar = ({
             placeholder="Nome"
             value={formEdit.nome}
             onChange={e => setFormEdit({ ...formEdit, nome: e.target.value })}
-            className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+            className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
           />
           <input
             type="text"
             placeholder="Cargo"
             value={formEdit.cargo}
             onChange={e => setFormEdit({ ...formEdit, cargo: e.target.value })}
-            className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+            className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
           />
           <input
             type="text"
             placeholder="(00) 00000-0000"
             value={formEdit.telefone ? formatarTelefone(formEdit.telefone) : ''}
             onChange={e => setFormEdit({ ...formEdit, telefone: e.target.value.replace(/[^0-9]/g, '') })}
-            className="w-full px-4 py-2 rounded-lg text-sm bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+            className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
             maxLength={15}
           />
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={() => setEditando(null)}
-            className="px-4 py-2 text-[#8899A6] bg-[#253341] hover:bg-[#192734] rounded-lg transition-colors"
+            className="px-4 py-2 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
           >
             Cancelar
           </button>
           <button
             onClick={() => handleSalvarEdicao(formEdit)}
-            className="px-4 py-2 bg-[#1DA1F2] hover:bg-[#1a91da] text-white rounded-lg transition-colors"
+            className="px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1a8cd8] text-gray-900 dark:text-white rounded-lg transition-colors"
             disabled={loading}
           >
             {loading ? 'Salvando...' : 'Salvar'}
@@ -148,3 +148,7 @@ const ModalEditar = ({
 };
 
 export default ModalEditar;
+
+
+
+

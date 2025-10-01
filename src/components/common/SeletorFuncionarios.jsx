@@ -15,7 +15,7 @@ const SeletorFuncionarios = ({ selecionados = [], onChange, disabled = false }) 
 
   return (
     <div className="space-y-2">
-      <label className="flex items-center gap-2 text-sm text-[#8899A6]">
+      <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
         <Users className="w-4 h-4" />
         Responsáveis
       </label>

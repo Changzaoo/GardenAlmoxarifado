@@ -44,19 +44,19 @@ const DataRetentionPanel = ({ usuario }) => {
   };
 
   if (loading) {
-    return <div className="text-[#8899A6]">Carregando...</div>;
+    return <div className="text-gray-500 dark:text-gray-400">Carregando...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         {Object.entries(DATA_RETENTION_PERIODS).map(([key, days]) => (
-          <div key={key} className="bg-[#22303C] p-4 rounded-lg border border-[#38444D]">
+          <div key={key} className="bg-[#22303C] p-4 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600">
             <h4 className="text-white font-medium mb-2">{formatRetentionKey(key)}</h4>
-            <p className="text-[#8899A6]">{days} dias de retenção</p>
+            <p className="text-gray-500 dark:text-gray-400">{days} dias de retenção</p>
             {stats?.[key.toLowerCase()] && (
               <div className="mt-2 text-sm">
-                <p className="text-[#1DA1F2]">
+                <p className="text-blue-500 dark:text-[#1D9BF0]">
                   {stats[key.toLowerCase()].current} registros ativos
                 </p>
                 <p className="text-[#FF5555]">
@@ -68,18 +68,18 @@ const DataRetentionPanel = ({ usuario }) => {
         ))}
       </div>
 
-      <div className="bg-[#22303C] p-6 rounded-lg border border-[#38444D]">
+      <div className="bg-[#22303C] p-6 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600">
         <div className="flex justify-between items-center mb-4">
           <div>
             <h3 className="text-lg text-white">Limpeza Automática</h3>
-            <p className="text-[#8899A6]">
+            <p className="text-gray-500 dark:text-gray-400">
               Remove automaticamente dados que excederam o período de retenção
             </p>
           </div>
           <button
             onClick={handleCleanup}
             disabled={cleaning}
-            className="flex items-center space-x-2 px-4 py-2 bg-[#1DA1F2] text-white rounded hover:bg-[#1A91DA] disabled:opacity-50"
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded hover:bg-blue-600 dark:hover:bg-[#1a8cd8] disabled:opacity-50"
           >
             {cleaning ? (
               <>
@@ -96,7 +96,7 @@ const DataRetentionPanel = ({ usuario }) => {
         </div>
 
         {stats?.lastCleanup && (
-          <div className="text-sm text-[#8899A6]">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             Última limpeza: {new Date(stats.lastCleanup).toLocaleString()}
           </div>
         )}
@@ -113,3 +113,5 @@ const formatRetentionKey = (key) => {
 };
 
 export default DataRetentionPanel;
+
+

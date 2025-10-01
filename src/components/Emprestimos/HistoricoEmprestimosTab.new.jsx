@@ -250,14 +250,14 @@ const HistoricoEmprestimosTab = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setShowFiltros(!showFiltros)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50"
             >
               <Filter className="w-4 h-4" />
               Filtros
             </button>
             <button
               onClick={exportarCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-gray-900 dark:text-white rounded-lg hover:bg-green-700"
             >
               <Download className="w-4 h-4" />
               Exportar
@@ -345,9 +345,9 @@ const HistoricoEmprestimosTab = () => {
               <select
                 value={filtros.status}
                 onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+                className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none"
               >
-                <option value="todos" className="bg-[#192734]">Todos os Status</option>
+                <option value="todos" className="bg-white dark:bg-gray-800">Todos os Status</option>
                 <option value="emprestado">Emprestados</option>
                 <option value="devolvido">Devolvidos</option>
                 <option value="atrasado">Atrasados</option>
@@ -359,7 +359,7 @@ const HistoricoEmprestimosTab = () => {
               <select
                 value={filtros.periodo}
                 onChange={(e) => setFiltros(prev => ({ ...prev, periodo: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-lg border-gray-200 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="todos">Todo Período</option>
                 <option value="hoje">Hoje</option>
@@ -375,9 +375,9 @@ const HistoricoEmprestimosTab = () => {
               <select
                 value={filtros.funcionario}
                 onChange={(e) => setFiltros(prev => ({ ...prev, funcionario: e.target.value }))}
-                className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+                className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none"
               >
-                <option value="" className="bg-[#192734]">Todos os Funcionários</option>
+                <option value="" className="bg-white dark:bg-gray-800">Todos os Funcionários</option>
                 {funcionariosUnicos.map(func => (
                   <option key={func} value={func}>{func}</option>
                 ))}
@@ -389,7 +389,7 @@ const HistoricoEmprestimosTab = () => {
               <select
                 value={filtros.ferramenta}
                 onChange={(e) => setFiltros(prev => ({ ...prev, ferramenta: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-lg border-gray-200 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Todas as Ferramentas</option>
                 {ferramentasUnicos.map(ferr => (
@@ -404,7 +404,7 @@ const HistoricoEmprestimosTab = () => {
                 type="date"
                 value={filtros.dataInicio}
                 onChange={(e) => setFiltros(prev => ({ ...prev, dataInicio: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-lg border-gray-200 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
@@ -414,7 +414,7 @@ const HistoricoEmprestimosTab = () => {
                 type="date"
                 value={filtros.dataFim}
                 onChange={(e) => setFiltros(prev => ({ ...prev, dataFim: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-lg border-gray-200 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
@@ -423,7 +423,7 @@ const HistoricoEmprestimosTab = () => {
               <select
                 value={filtros.criticidade}
                 onChange={(e) => setFiltros(prev => ({ ...prev, criticidade: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-lg border-gray-200 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="todos">Todas</option>
                 <option value="baixa">Baixa</option>
@@ -437,7 +437,7 @@ const HistoricoEmprestimosTab = () => {
               <select
                 value={filtros.ordenacao}
                 onChange={(e) => setFiltros(prev => ({ ...prev, ordenacao: e.target.value }))}
-                className="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-lg border-gray-200 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="recentes">Mais Recentes</option>
                 <option value="antigos">Mais Antigos</option>
@@ -562,3 +562,5 @@ const HistoricoEmprestimosTab = () => {
 };
 
 export default HistoricoEmprestimosTab;
+
+

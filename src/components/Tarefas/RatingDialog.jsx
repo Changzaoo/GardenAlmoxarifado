@@ -21,12 +21,12 @@ const RatingDialog = ({ isOpen, onClose, onSubmit, title }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#192734] rounded-xl p-6 w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">{title}</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
           <button
             onClick={onClose}
-            className="p-2 text-[#8899A6] hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-white/10 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -56,7 +56,7 @@ const RatingDialog = ({ isOpen, onClose, onSubmit, title }) => {
           </div>
 
           {/* Rating Text */}
-          <div className="text-center text-[#8899A6]">
+          <div className="text-center text-gray-500 dark:text-gray-400">
             {rating === 1 && "Ruim"}
             {rating === 2 && "Regular"}
             {rating === 3 && "Bom"}
@@ -70,7 +70,7 @@ const RatingDialog = ({ isOpen, onClose, onSubmit, title }) => {
               value={comentario}
               onChange={(e) => setComentario(e.target.value)}
               placeholder="Deixe um comentário..."
-              className="w-full bg-[#273340] text-white rounded-lg p-3 placeholder-[#8899A6] border border-[#38444D] focus:border-[#1DA1F2] focus:outline-none resize-none h-24"
+              className="w-full bg-[#273340] text-gray-900 dark:text-white rounded-lg p-3 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:border-[#1D9BF0] focus:outline-none resize-none h-24"
               required
             />
           </div>
@@ -81,8 +81,8 @@ const RatingDialog = ({ isOpen, onClose, onSubmit, title }) => {
             disabled={rating === 0 || !comentario}
             className={`w-full py-2 px-4 rounded-full font-medium ${
               rating === 0 || !comentario
-                ? 'bg-[#1DA1F2]/50 text-white/50 cursor-not-allowed'
-                : 'bg-[#1DA1F2] text-white hover:bg-[#1a91da] transition-colors'
+                ? 'bg-blue-500 dark:bg-[#1D9BF0]/50 text-gray-900/50 dark:text-white/50 cursor-not-allowed'
+                : 'bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors'
             }`}
           >
             Enviar Avaliação
@@ -94,3 +94,4 @@ const RatingDialog = ({ isOpen, onClose, onSubmit, title }) => {
 };
 
 export default RatingDialog;
+

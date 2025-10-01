@@ -3,7 +3,6 @@ import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
-import logo from '../../assets/logo.png';
 
 const LoginForm = ({ 
   loginData, 
@@ -21,7 +20,7 @@ const LoginForm = ({
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
-            <img src={logo} alt="Logo WorkFlow" className="w-full h-full object-contain" />
+            <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
           </div>
           <h1 className={`text-2xl font-bold ${colors.text}`}>
             WorkFlow
@@ -65,7 +64,7 @@ const LoginForm = ({
               id="lembrar"
               checked={loginData.lembrar || false}
               onChange={e => setLoginData({ ...loginData, lembrar: e.target.checked })}
-              className={`rounded ${colors.border} ${colors.backgroundInput} checked:bg-[#1DA1F2] checked:border-[#1DA1F2]`}
+              className={`rounded ${colors.border} ${colors.backgroundInput} checked:bg-blue-500 checked:border-blue-500 dark:checked:bg-[#1D9BF0] dark:checked:border-[#1D9BF0]`}
             />
             <label 
               htmlFor="lembrar" 

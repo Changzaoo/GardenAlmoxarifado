@@ -18,7 +18,7 @@ const AvaliacoesList = ({ avaliacoes, onDelete, canDelete = false }) => {
           avaliacoes.map((avaliacao) => (
             <div
               key={avaliacao.id}
-              className="bg-white dark:bg-[#192734] border border-gray-200 dark:border-[#38444D] rounded-lg p-4 relative hover:shadow-md transition-shadow duration-200"
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-300 dark:border-gray-600 rounded-lg p-4 relative hover:shadow-md transition-shadow duration-200"
             >
               {/* Cabeçalho */}
               <div className="flex justify-between items-start mb-3">
@@ -97,3 +97,4 @@ const AvaliacoesList = ({ avaliacoes, onDelete, canDelete = false }) => {
 };
 
 export default AvaliacoesList;
+

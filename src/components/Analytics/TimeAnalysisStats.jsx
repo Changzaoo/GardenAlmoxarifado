@@ -140,20 +140,20 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
   const renderStatItem = ({ name, count, onClick }) => (
     <div
       onClick={onClick}
-      className="flex items-center justify-between p-3 bg-[#253341] rounded-lg cursor-pointer hover:bg-[#2C3E50] transition-colors"
+      className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-[#2C3E50] transition-colors"
     >
       <div className="space-y-1">
         <h4 className="text-white capitalize">{name}</h4>
-        <p className="text-sm text-[#8899A6]">{count} empréstimos</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{count} empréstimos</p>
       </div>
-      <ChevronRight className="w-5 h-5 text-[#8899A6]" />
+      <ChevronRight className="w-5 h-5 text-gray-500 dark:text-gray-400" />
     </div>
   );
 
   if (!Array.isArray(emprestimos)) {
     return (
-      <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D]">
-        <div className="text-[#8899A6] text-center py-4">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-600 dark:border-gray-600">
+        <div className="text-gray-500 dark:text-gray-400 text-center py-4">
           Dados de empréstimos indisponíveis
         </div>
       </div>
@@ -162,10 +162,10 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
 
   return (
     <div className="relative">
-      <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D]">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-600 dark:border-gray-600">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-blue-500/20 rounded-lg">
-            <Calendar className="w-5 h-5 text-[#1DA1F2]" />
+            <Calendar className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
           </div>
           <h3 className="text-lg font-semibold text-white">Análise Temporal</h3>
         </div>
@@ -173,7 +173,7 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
         <div className="space-y-4">
           {/* Dias da Semana */}
           <div className="space-y-2">
-            <h4 className="text-[#8899A6] text-sm font-medium">Dias mais ativos</h4>
+            <h4 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Dias mais ativos</h4>
             <div className="space-y-2">
               {weekdays.map((day) => (
                 <div key={day.name}>
@@ -190,7 +190,7 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
           {/* Semanas */}
           {weeklyStats.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-[#8899A6] text-sm font-medium">Semanas mais ativas</h4>
+              <h4 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Semanas mais ativas</h4>
               <div className="space-y-2">
                 {weeklyStats.map((week, index) => (
                   <div key={week.start.toISOString()}>
@@ -210,19 +210,19 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
       {/* Modal de Detalhes */}
       {isModalOpen && selectedDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#192734] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-4">
               {/* Cabeçalho */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-semibold text-white">{selectedDetails.title}</h3>
                   {selectedDetails.dateRange && (
-                    <p className="text-[#8899A6] text-sm">{selectedDetails.dateRange}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">{selectedDetails.dateRange}</p>
                   )}
                 </div>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-[#1DA1F2] hover:text-[#1A91DA] transition-colors"
+                  className="text-blue-500 dark:text-[#1D9BF0] hover:text-blue-600 dark:hover:text-[#1a8cd8] transition-colors"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -233,26 +233,26 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
                 {/* Empréstimos Ativos */}
                 {selectedDetails.emprestimosAgrupados.emprestado.length > 0 && (
                   <div>
-                    <h4 className="text-[#1DA1F2] font-medium mb-3 flex items-center gap-2">
+                    <h4 className="text-blue-500 dark:text-[#1D9BF0] font-medium mb-3 flex items-center gap-2">
                       <Clock className="w-4 h-4" />
                       Ainda Emprestadas ({selectedDetails.emprestimosAgrupados.emprestado.length})
                     </h4>
                     <div className="space-y-3">
                       {selectedDetails.emprestimosAgrupados.emprestado.map((emp, index) => (
-                        <div key={index} className="bg-[#253341] p-3 rounded-lg">
+                        <div key={index} className="bg-white dark:bg-gray-700 p-3 rounded-lg">
                           <div className="flex justify-between items-start">
                             <div className="space-y-1">
                               <div className="text-white font-medium">{emp.nomeFerramentas?.join(', ')}</div>
-                              <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                 <User className="w-4 h-4" />
                                 {emp.nomeFuncionario}
                               </div>
                             </div>
                             <div className="text-right text-sm">
-                              <div className="text-[#8899A6]">
+                              <div className="text-gray-500 dark:text-gray-400">
                                 {new Date(emp.dataEmprestimo).toLocaleDateString('pt-BR')}
                               </div>
-                              <div className="text-[#8899A6]">
+                              <div className="text-gray-500 dark:text-gray-400">
                                 {new Date(emp.dataEmprestimo).toLocaleTimeString('pt-BR', {
                                   hour: '2-digit',
                                   minute: '2-digit'
@@ -275,17 +275,17 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
                     </h4>
                     <div className="space-y-3">
                       {selectedDetails.emprestimosAgrupados.devolvido.map((emp, index) => (
-                        <div key={index} className="bg-[#253341] p-3 rounded-lg">
+                        <div key={index} className="bg-white dark:bg-gray-700 p-3 rounded-lg">
                           <div className="flex justify-between items-start">
                             <div className="space-y-1">
                               <div className="text-white font-medium">{emp.nomeFerramentas?.join(', ')}</div>
-                              <div className="flex items-center gap-2 text-sm text-[#8899A6]">
+                              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                 <User className="w-4 h-4" />
                                 {emp.nomeFuncionario}
                               </div>
                             </div>
                             <div className="text-right text-sm space-y-1">
-                              <div className="flex items-center justify-end gap-1 text-[#8899A6]">
+                              <div className="flex items-center justify-end gap-1 text-gray-500 dark:text-gray-400">
                                 <ArrowUpRight className="w-3 h-3" />
                                 {new Date(emp.dataEmprestimo).toLocaleTimeString('pt-BR', {
                                   hour: '2-digit',
@@ -316,3 +316,4 @@ const TimeAnalysisStats = ({ emprestimos = [] }) => {
 };
 
 export default TimeAnalysisStats;
+

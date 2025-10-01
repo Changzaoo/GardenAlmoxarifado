@@ -88,7 +88,7 @@ const CargoSelect = ({ value, onChange, className }) => {
         <select
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
-          className={`bg-[#253341] text-white rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] ${className}`}
+          className={`bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] ${className}`}
         >
           <option value="">Selecione um cargo</option>
           {cargos.map(cargo => (
@@ -99,19 +99,19 @@ const CargoSelect = ({ value, onChange, className }) => {
         </select>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-[#253341] p-2 rounded-lg hover:bg-[#2C3E50] transition-colors"
+          className="bg-white dark:bg-gray-700 p-2 rounded-lg hover:bg-[#2C3E50] transition-colors"
           title="Gerenciar cargos"
         >
-          <Plus className="w-5 h-5 text-[#1DA1F2]" />
+          <Plus className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
         </button>
       </div>
 
       {/* Modal de Gerenciamento de Cargos */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#192734] rounded-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">Gerenciar Cargos</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Gerenciar Cargos</h3>
               <button
                 onClick={() => {
                   setIsModalOpen(false);
@@ -119,7 +119,7 @@ const CargoSelect = ({ value, onChange, className }) => {
                   setNovoCargo('');
                   setIsEditing(false);
                 }}
-                className="text-[#8899A6] hover:text-white transition-colors"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -132,12 +132,12 @@ const CargoSelect = ({ value, onChange, className }) => {
                   value={novoCargo}
                   onChange={(e) => setNovoCargo(e.target.value)}
                   placeholder={isEditing ? "Editar cargo" : "Novo cargo"}
-                  className="flex-1 bg-[#253341] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+                  className="flex-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
                 />
                 <button
                   onClick={isEditing ? handleEditCargo : handleAddCargo}
                   disabled={!novoCargo.trim()}
-                  className="bg-[#1DA1F2] text-white px-4 py-2 rounded-lg hover:bg-[#1A91DA] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isEditing ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                 </button>
@@ -148,9 +148,9 @@ const CargoSelect = ({ value, onChange, className }) => {
               {cargos.map(cargo => (
                 <div
                   key={cargo.id}
-                  className="flex items-center justify-between bg-[#253341] p-3 rounded-lg"
+                  className="flex items-center justify-between bg-white dark:bg-gray-700 p-3 rounded-lg"
                 >
-                  <span className="text-white">{cargo.nome}</span>
+                  <span className="text-gray-900 dark:text-white">{cargo.nome}</span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
@@ -158,7 +158,7 @@ const CargoSelect = ({ value, onChange, className }) => {
                         setNovoCargo(cargo.nome);
                         setIsEditing(true);
                       }}
-                      className="text-[#1DA1F2] hover:text-[#1A91DA] transition-colors"
+                      className="text-blue-500 dark:text-[#1D9BF0] hover:text-blue-600 dark:hover:text-[#1a8cd8] transition-colors"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -180,3 +180,6 @@ const CargoSelect = ({ value, onChange, className }) => {
 };
 
 export default CargoSelect;
+
+
+

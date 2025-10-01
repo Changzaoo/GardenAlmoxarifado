@@ -50,7 +50,7 @@ const PRIORIDADE_LABELS = {
 };
 
 const PRIORIDADE_COLORS = {
-  baixa: 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]',
+  baixa: 'bg-[#8899A6] bg-opacity-10 text-gray-500 dark:text-gray-400',
   media: 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]',
   alta: 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]',
   urgente: 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]'
@@ -204,7 +204,7 @@ const ComprasTab = ({
         {!readonly && (
           <button
             onClick={() => setModalAberto(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1DA1F2] text-white rounded-full hover:bg-[#1a91da] transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-full hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nova Compra
@@ -214,31 +214,31 @@ const ComprasTab = ({
 
       {/* Cards de estatísticas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className={`${classes.card} p-4`}>
+        <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
           <div className="flex flex-col">
             <p className={`text-sm font-medium ${colors.textSecondary}`}>Total</p>
             <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.total}</p>
           </div>
         </div>
-        <div className={`${classes.card} p-4`}>
+        <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
           <div className="flex flex-col">
             <p className={`text-sm font-medium ${colors.textSecondary}`}>Solicitado</p>
             <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.solicitado}</p>
           </div>
         </div>
-        <div className={`${classes.card} p-4`}>
+        <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
           <div className="flex flex-col">
             <p className={`text-sm font-medium ${colors.textSecondary}`}>Aprovado</p>
             <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.aprovado}</p>
           </div>
         </div>
-        <div className={`${classes.card} p-4`}>
+        <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
           <div className="flex flex-col">
             <p className={`text-sm font-medium ${colors.textSecondary}`}>Enviado</p>
             <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.pedido_enviado}</p>
           </div>
         </div>
-        <div className={`${classes.card} p-4`}>
+        <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
           <div className="flex flex-col">
             <p className={`text-sm font-medium ${colors.textSecondary}`}>Recebido</p>
             <p className={`text-xl font-bold ${colors.text}`}>{estatisticas.recebido}</p>
@@ -247,23 +247,23 @@ const ComprasTab = ({
       </div>
 
       {/* Filtros */}
-      <div className={`${classes.card} p-4 space-y-4`}>
+      <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4 space-y-4`}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8899A6]" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
             <input
               type="text"
               placeholder="     Pesquisar compras..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className="h-10 w-full pl-10 pr-4 bg-[#253341] border border-[#38444D] rounded-full text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] text-sm"
+              className="h-10 w-full pl-10 pr-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500 text-sm"
             />
           </div>
 
           <select
             value={statusFiltro}
             onChange={(e) => setStatusFiltro(e.target.value)}
-            className="bg-[#253341] border border-[#38444D] text-white rounded-full px-4 h-10 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] text-sm [&>option]:bg-[#253341] hover:bg-[#2C3C4C]"
+            className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 h-10 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500 text-sm [&>option]:bg-white [&>option]:dark:bg-gray-700"
           >
             <option value="todos">Todos os status</option>
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -274,7 +274,7 @@ const ComprasTab = ({
           <select
             value={prioridadeFiltro}
             onChange={(e) => setPrioridadeFiltro(e.target.value)}
-            className="bg-[#253341] border border-[#38444D] text-white rounded-full px-4 h-10 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] text-sm [&>option]:bg-[#253341] hover:bg-[#2C3C4C]"
+            className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 h-10 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500 text-sm [&>option]:bg-white [&>option]:dark:bg-gray-700"
           >
             <option value="todas">Todas as prioridades</option>
             {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
@@ -306,8 +306,8 @@ const ComprasTab = ({
 
       {/* Modal de Nova/Editar Compra */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`${classes.card} p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto`}>
             <form onSubmit={salvarCompra} className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className={`text-lg font-medium ${colors.text}`}>
@@ -345,7 +345,7 @@ const ComprasTab = ({
                     type="text"
                     value={novaCompra.descricao}
                     onChange={(e) => setNovaCompra({ ...novaCompra, descricao: e.target.value })}
-                    className={`${classes.input} w-full`}
+                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     placeholder="Ex: Furadeira elétrica 1/2"
                     required
                   />
@@ -360,7 +360,7 @@ const ComprasTab = ({
                     min="1"
                     value={novaCompra.quantidade}
                     onChange={(e) => setNovaCompra({ ...novaCompra, quantidade: e.target.value })}
-                    className={`${classes.input} w-full`}
+                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     required
                   />
                 </div>
@@ -375,7 +375,7 @@ const ComprasTab = ({
                     step="0.01"
                     value={novaCompra.valorUnitario}
                     onChange={(e) => setNovaCompra({ ...novaCompra, valorUnitario: e.target.value })}
-                    className={`${classes.input} w-full`}
+                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     required
                   />
                 </div>
@@ -390,7 +390,7 @@ const ComprasTab = ({
                     step="0.01"
                     value={novaCompra.valorFrete}
                     onChange={(e) => setNovaCompra({ ...novaCompra, valorFrete: e.target.value })}
-                    className={`${classes.input} w-full`}
+                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     placeholder="Deixe vazio para frete grátis"
                   />
                 </div>
@@ -403,7 +403,7 @@ const ComprasTab = ({
                     type="text"
                     value={novaCompra.fornecedor}
                     onChange={(e) => setNovaCompra({ ...novaCompra, fornecedor: e.target.value })}
-                    className={`${classes.input} w-full`}
+                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     placeholder="Nome do fornecedor"
                   />
                 </div>
@@ -416,7 +416,7 @@ const ComprasTab = ({
                     type="text"
                     value={novaCompra.solicitante}
                     onChange={(e) => setNovaCompra({ ...novaCompra, solicitante: e.target.value })}
-                    className={`${classes.input} w-full`}
+                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     required
                   />
                 </div>
@@ -428,7 +428,7 @@ const ComprasTab = ({
                   <select
                     value={novaCompra.status}
                     onChange={(e) => setNovaCompra({ ...novaCompra, status: e.target.value })}
-                    className={`${classes.input} w-full h-[38px] appearance-none bg-[#253341] dark:bg-gray-700 border border-[#38444D] dark:border-gray-600 rounded-lg px-4 text-white dark:text-gray-200`}
+                    className="w-full h-[38px] appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     style={{
                       backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238899A6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                       backgroundRepeat: 'no-repeat',
@@ -437,7 +437,7 @@ const ComprasTab = ({
                     }}
                   >
                     {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                      <option key={value} value={value} className="bg-[#253341] dark:bg-gray-700">{label}</option>
+                      <option key={value} value={value} className="bg-gray-50 dark:bg-gray-700">{label}</option>
                     ))}
                   </select>
                 </div>
@@ -449,7 +449,7 @@ const ComprasTab = ({
                   <select
                     value={novaCompra.prioridade}
                     onChange={(e) => setNovaCompra({ ...novaCompra, prioridade: e.target.value })}
-                    className={`${classes.input} w-full h-[38px] appearance-none bg-[#253341] dark:bg-gray-700 border border-[#38444D] dark:border-gray-600 rounded-lg px-4 text-white dark:text-gray-200`}
+                    className="w-full h-[38px] appearance-none bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     style={{
                       backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%238899A6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                       backgroundRepeat: 'no-repeat',
@@ -459,7 +459,7 @@ const ComprasTab = ({
                     required
                   >
                     {Object.entries(PRIORIDADE_LABELS).map(([value, label]) => (
-                      <option key={value} value={value} className="bg-[#253341] dark:bg-gray-700">{label}</option>
+                      <option key={value} value={value} className="bg-white dark:bg-gray-700 dark:bg-gray-700">{label}</option>
                     ))}
                   </select>
                 </div>
@@ -472,7 +472,7 @@ const ComprasTab = ({
                     type="url"
                     value={novaCompra.link}
                     onChange={(e) => setNovaCompra({ ...novaCompra, link: e.target.value })}
-                    className={`${classes.input} w-full`}
+                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     placeholder="https://..."
                   />
                 </div>
@@ -484,7 +484,7 @@ const ComprasTab = ({
                   <textarea
                     value={novaCompra.observacoes}
                     onChange={(e) => setNovaCompra({ ...novaCompra, observacoes: e.target.value })}
-                    className={`${classes.input} w-full h-24 resize-none`}
+                    className="w-full h-24 resize-none px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500"
                     placeholder="Informações adicionais sobre a compra..."
                   />
                 </div>
@@ -508,14 +508,14 @@ const ComprasTab = ({
                       status: STATUS_COMPRAS.SOLICITADO
                     });
                   }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#F7F9F9] bg-[#253341] border border-[#38444D] rounded-lg hover:bg-[#1e2732] transition-colors duration-200"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
                 >
                   <X className="w-4 h-4" />
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#F7F9F9] bg-[#1D9BF0] rounded-lg hover:bg-[#1a8cd8] transition-colors duration-200"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 dark:bg-blue-600 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors duration-200"
                 >
                   {compraEditando ? (
                     <>
@@ -537,8 +537,8 @@ const ComprasTab = ({
 
       {/* Modal de Confirmação de Exclusão */}
       {modalConfirmacao && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`${classes.card} p-6 max-w-md`}>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-6 max-w-md`}>
             <h3 className={`text-lg font-medium ${colors.text} mb-4`}>
               Confirmar Exclusão
             </h3>
@@ -548,14 +548,14 @@ const ComprasTab = ({
             <div className="flex justify-end gap-3">
               <button
                 onClick={cancelarExclusao}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#F7F9F9] bg-[#253341] border border-[#38444D] rounded-lg hover:bg-[#1e2732] transition-colors duration-200"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
               >
                 <X className="w-4 h-4" />
                 Cancelar
               </button>
               <button
                 onClick={confirmarExclusao}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#F7F9F9] bg-[#f4212e] rounded-lg hover:bg-[#dc1e29] transition-colors duration-200"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 dark:bg-red-500 rounded-lg hover:bg-red-700 dark:hover:bg-red-400 transition-colors duration-200"
               >
                 <Trash2 className="w-4 h-4" />
                 Excluir
@@ -569,3 +569,6 @@ const ComprasTab = ({
 };
 
 export default ComprasTab;
+
+
+

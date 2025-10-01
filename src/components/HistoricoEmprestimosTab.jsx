@@ -138,7 +138,7 @@ const HistoricoEmprestimosTab = () => {
         </div>
         <button
           onClick={exportarCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-gray-900 dark:text-white rounded-lg hover:bg-green-700 transition-colors"
         >
           <Download className="w-4 h-4" />
           Exportar CSV
@@ -147,7 +147,7 @@ const HistoricoEmprestimosTab = () => {
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total de Registros</p>
@@ -156,7 +156,7 @@ const HistoricoEmprestimosTab = () => {
             <Package className="w-8 h-8 text-blue-500" />
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Empréstimos Ativos</p>
@@ -165,7 +165,7 @@ const HistoricoEmprestimosTab = () => {
             <Clock className="w-8 h-8 text-green-500" />
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Empréstimos Devolvidos</p>
@@ -174,7 +174,7 @@ const HistoricoEmprestimosTab = () => {
             <RefreshCw className="w-8 h-8 text-gray-500" />
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total de Ferramentas</p>
@@ -186,13 +186,13 @@ const HistoricoEmprestimosTab = () => {
       </div>
 
       {/* Barra de pesquisa e Filtros */}
-      <div className="bg-white p-4 rounded-lg shadow">
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-600">
         {/* Barra de pesquisa com botão de filtro */}
         <div className="relative flex items-center mb-4">
           <input
             type="text"
             placeholder="Pesquisar em todo o histórico..."
-            className="w-full px-2 py-1 md:px-4 md:py-2 text-sm md:text-base rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full px-2 py-1 md:px-4 md:py-2 text-sm md:text-base rounded-lg border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent"
           />
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -216,7 +216,7 @@ const HistoricoEmprestimosTab = () => {
           {/* Conteúdo do modal em mobile, conteúdo normal em desktop */}
           <div className={`
             relative w-full md:w-auto
-            bg-white md:bg-transparent
+            bg-white dark:bg-gray-800 md:bg-transparent
             p-4 md:p-0
             ${showFilters ? 'mt-16 md:mt-0' : ''}
             rounded-t-2xl md:rounded-none
@@ -246,7 +246,7 @@ const HistoricoEmprestimosTab = () => {
                 type="date"
                 value={filtros.dataInicio}
                 onChange={(e) => setFiltros(prev => ({ ...prev, dataInicio: e.target.value }))}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                className="block w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
               />
             </div>
           </div>
@@ -257,7 +257,7 @@ const HistoricoEmprestimosTab = () => {
                 type="date"
                 value={filtros.dataFim}
                 onChange={(e) => setFiltros(prev => ({ ...prev, dataFim: e.target.value }))}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                className="block w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
               />
             </div>
           </div>
@@ -269,7 +269,7 @@ const HistoricoEmprestimosTab = () => {
                 value={filtros.funcionario}
                 onChange={(e) => setFiltros(prev => ({ ...prev, funcionario: e.target.value }))}
                 placeholder="Nome do funcionário"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                className="block w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
               />
             </div>
           </div>
@@ -281,7 +281,7 @@ const HistoricoEmprestimosTab = () => {
                 value={filtros.ferramenta}
                 onChange={(e) => setFiltros(prev => ({ ...prev, ferramenta: e.target.value }))}
                 placeholder="Nome da ferramenta"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                className="block w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
               />
             </div>
           </div>
@@ -290,7 +290,7 @@ const HistoricoEmprestimosTab = () => {
             <select
               value={filtros.status}
               onChange={(e) => setFiltros(prev => ({ ...prev, status: e.target.value }))}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
             >
               <option value="todos">Todos</option>
               <option value="ativos">Ativos</option>
@@ -302,7 +302,7 @@ const HistoricoEmprestimosTab = () => {
             <select
               value={filtros.ordenacao}
               onChange={(e) => setFiltros(prev => ({ ...prev, ordenacao: e.target.value }))}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+              className="mt-1 block w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
             >
               <option value="recentes">Mais Recentes</option>
               <option value="antigos">Mais Antigos</option>
@@ -390,3 +390,5 @@ const HistoricoEmprestimosTab = () => {
 };
 
 export default HistoricoEmprestimosTab;
+
+

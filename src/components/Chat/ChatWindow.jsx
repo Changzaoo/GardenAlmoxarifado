@@ -58,7 +58,7 @@ const ChatWindow = ({
 
   return isOpen ? (
     <div
-      className={`fixed right-4 bottom-[73px] bg-[#192734] border border-[#38444D] rounded-lg shadow-xl w-80 mb-2 max-h-[calc(100vh-100px)] flex flex-col`}
+      className={`fixed right-4 bottom-[73px] bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-lg shadow-xl w-80 mb-2 max-h-[calc(100vh-100px)] flex flex-col`}
       style={{
         zIndex: 1000,
       }}
@@ -128,7 +128,7 @@ const ChatWindow = ({
                 <div
                   className={`max-w-[70%] p-3 rounded-lg ${
                     message.sender.id === currentUser.id
-                      ? 'bg-[#1DA1F2] text-white'
+                      ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
                       : `${colors.backgroundSecondary} ${colors.text}`
                   }`}
                 >
@@ -148,7 +148,7 @@ const ChatWindow = ({
             <div ref={messagesEndRef} />
           </div>
 
-          <form onSubmit={handleSendMessage} className="p-4 flex gap-2 border-t border-[#38444D]">
+          <form onSubmit={handleSendMessage} className="p-4 flex gap-2 border-t border-gray-200 dark:border-gray-600 dark:border-gray-600">
             <input
               type="text"
               value={newMessage}
@@ -193,7 +193,7 @@ const ChatWindow = ({
                       <>
                         <div className="w-[8px] h-[8px] rounded-full bg-[#FF3040] animate-pulse" />
                         {chat.unreadCount > 1 && (
-                          <div className="min-w-[18px] h-[18px] rounded-full bg-[#FF3040] flex items-center justify-center text-[11px] text-white font-bold px-1">
+                          <div className="min-w-[18px] h-[18px] rounded-full bg-[#FF3040] flex items-center justify-center text-[11px] text-gray-900 dark:text-white font-bold px-1">
                             {chat.unreadCount}
                           </div>
                         )}
@@ -211,3 +211,5 @@ const ChatWindow = ({
 };
 
 export default ChatWindow;
+
+

@@ -20,8 +20,8 @@ const TransferenciaFerramentasModal = ({ onClose, onConfirm, emprestimo, funcion
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-100 dark:bg-[#192734] rounded-lg shadow-lg max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-gray-100 dark:bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Transferir Ferramentas
@@ -43,7 +43,7 @@ const TransferenciaFerramentasModal = ({ onClose, onConfirm, emprestimo, funcion
               {emprestimo?.ferramentas.map(tool => (
                 <div
                   key={tool.id}
-                  className="flex items-center justify-between gap-3 p-2 bg-[#253341] rounded-lg"
+                  className="flex items-center justify-between gap-3 p-2 bg-white dark:bg-gray-800 dark:bg-gray-700 rounded-lg"
                 >
                   <span className="text-sm text-white">
                     {tool.nome} ({tool.quantidade} {tool.quantidade > 1 ? 'unidades' : 'unidade'})
@@ -60,14 +60,14 @@ const TransferenciaFerramentasModal = ({ onClose, onConfirm, emprestimo, funcion
             <select
               value={selectedFuncionario}
               onChange={(e) => setSelectedFuncionario(e.target.value)}
-              className="w-full bg-[#253341] border border-[#38444D] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors hover:bg-[#2C3640]"
+              className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors hover:bg-[#2C3640]"
             >
-              <option value="" className="bg-[#192734]">Selecione um funcionário</option>
+              <option value="" className="bg-white dark:bg-gray-800">Selecione um funcionário</option>
               {funcionarios?.map(func => (
                 <option 
                   key={func.id} 
                   value={func.id}
-                  className="bg-[#192734]"
+                  className="bg-white dark:bg-gray-800"
                   disabled={func.id === emprestimo?.funcionarioId}
                 >
                   {func.nome}
@@ -84,7 +84,7 @@ const TransferenciaFerramentasModal = ({ onClose, onConfirm, emprestimo, funcion
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
               placeholder="Adicione uma observação sobre a transferência..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-[#22303c] focus:ring-[#1D9BF0] focus:border-[#1D9BF0] h-24 resize-none"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 dark:bg-[#22303c] focus:ring-[#1D9BF0] focus:border-[#1D9BF0] h-24 resize-none"
             />
           </div>
         </div>
@@ -98,7 +98,7 @@ const TransferenciaFerramentasModal = ({ onClose, onConfirm, emprestimo, funcion
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-sm font-medium text-white bg-[#1D9BF0] hover:bg-[#1A8CD8] dark:bg-[#1A8CD8] dark:hover:bg-[#1A8CD8]/80 rounded-lg"
+            className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white bg-[#1D9BF0] hover:bg-[#1A8CD8] dark:bg-[#1A8CD8] dark:hover:bg-[#1A8CD8]/80 rounded-lg"
           >
             Confirmar Transferência
           </button>
@@ -109,3 +109,6 @@ const TransferenciaFerramentasModal = ({ onClose, onConfirm, emprestimo, funcion
 };
 
 export default TransferenciaFerramentasModal;
+
+
+

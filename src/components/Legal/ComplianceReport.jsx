@@ -46,7 +46,7 @@ const ComplianceReport = ({ usuario }) => {
   };
 
   if (loading) {
-    return <div className="text-[#8899A6]">Gerando relatório...</div>;
+    return <div className="text-gray-500 dark:text-gray-400">Gerando relatório...</div>;
   }
 
   return (
@@ -78,13 +78,13 @@ const ComplianceReport = ({ usuario }) => {
         />
       </div>
 
-      <div className="bg-[#22303C] p-6 rounded-lg border border-[#38444D]">
-        <h3 className="text-lg text-white mb-4">Recomendações</h3>
+      <div className="bg-[#22303C] p-6 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600">
+        <h3 className="text-lg text-gray-900 dark:text-white mb-4">Recomendações</h3>
         <div className="space-y-3">
           {report.recommendations.map((rec, index) => (
             <div key={index} className="flex items-start space-x-3">
               <AlertTriangle className="w-5 h-5 text-[#FFD700] flex-shrink-0 mt-0.5" />
-              <p className="text-[#8899A6]">{rec}</p>
+              <p className="text-gray-500 dark:text-gray-400">{rec}</p>
             </div>
           ))}
         </div>
@@ -94,10 +94,10 @@ const ComplianceReport = ({ usuario }) => {
 };
 
 const ComplianceCard = ({ title, score, items, icon: Icon }) => (
-  <div className="bg-[#22303C] p-4 rounded-lg border border-[#38444D]">
+  <div className="bg-[#22303C] p-4 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600">
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center">
-        <Icon className="w-5 h-5 text-[#1DA1F2] mr-2" />
+        <Icon className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0] mr-2" />
         <h4 className="text-white font-medium">{title}</h4>
       </div>
       <div className={`text-lg font-bold ${getScoreColor(score)}`}>
@@ -112,7 +112,7 @@ const ComplianceCard = ({ title, score, items, icon: Icon }) => (
           ) : (
             <AlertTriangle className="w-4 h-4 text-[#FFD700] mr-2" />
           )}
-          <span className={item.status ? 'text-[#8899A6]' : 'text-[#FFD700]'}>
+          <span className={item.status ? 'text-gray-500 dark:text-gray-400' : 'text-[#FFD700]'}>
             {item.text}
           </span>
         </div>
@@ -164,3 +164,5 @@ const analyzeCompliance = ({ auditLogs, consentStatus, documents, retentionStatu
 };
 
 export default ComplianceReport;
+
+

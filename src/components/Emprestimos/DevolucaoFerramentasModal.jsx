@@ -22,8 +22,8 @@ const DevolucaoFerramentasModal = ({ emprestimo, onConfirm, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-100 dark:bg-[#192734] rounded-lg shadow-lg max-w-xl w-full p-6">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-100 dark:bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-xl w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Devolução de Ferramentas
@@ -71,7 +71,7 @@ const DevolucaoFerramentasModal = ({ emprestimo, onConfirm, onClose }) => {
                   type="checkbox"
                   checked={ferramentasSelecionadas.includes(ferramenta)}
                   onChange={() => handleToggleFerramenta(ferramenta)}
-                  className="h-4 w-4 text-[#1D9BF0] rounded border-gray-300 dark:border-gray-600"
+                  className="h-4 w-4 text-[#1D9BF0] rounded border-gray-200 dark:border-gray-600 dark:border-gray-600"
                 />
                 <div className="ml-3 flex-1">
                   <span className="text-sm font-medium text-gray-900 dark:text-white">
@@ -87,7 +87,7 @@ const DevolucaoFerramentasModal = ({ emprestimo, onConfirm, onClose }) => {
               type="checkbox"
               checked={devolvidoPorTerceiros}
               onChange={(e) => setDevolvidoPorTerceiros(e.target.checked)}
-              className="mt-1 h-4 w-4 text-[#1D9BF0] border-gray-300 dark:border-gray-600 rounded"
+              className="mt-1 h-4 w-4 text-[#1D9BF0] border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded"
             />
             <div className="space-y-1">
               <span className="text-sm font-medium text-gray-900 dark:text-white">
@@ -110,7 +110,7 @@ const DevolucaoFerramentasModal = ({ emprestimo, onConfirm, onClose }) => {
           <button
             onClick={handleConfirmar}
             disabled={ferramentasSelecionadas.length === 0}
-            className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-[#1A8CD8] dark:hover:bg-[#1A8CD8]/80 rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white bg-green-600 hover:bg-green-700 dark:bg-[#1A8CD8] dark:hover:bg-[#1A8CD8]/80 rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Confirmar Devolução
           </button>
@@ -121,3 +121,6 @@ const DevolucaoFerramentasModal = ({ emprestimo, onConfirm, onClose }) => {
 };
 
 export default DevolucaoFerramentasModal;
+
+
+

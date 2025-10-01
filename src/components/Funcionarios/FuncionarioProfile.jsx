@@ -239,24 +239,24 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
   }, [funcionario?.id, funcionario?.nome, emprestimos]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 dark:bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
       <div 
-        className="bg-[#192734] rounded-2xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto relative"
+        className="bg-white dark:bg-gray-800 rounded-2xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto relative"
         onClick={e => e.stopPropagation()}
       >
-        <div className="sticky top-0 right-0 z-10 flex justify-end p-4 bg-[#192734]">
+        <div className="sticky top-0 right-0 z-10 flex justify-end p-4 bg-white dark:bg-gray-800">
           <button 
             onClick={onClose}
-            className="text-[#8899A6] hover:text-white transition-colors p-2 hover:bg-[#253341] rounded-lg"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="relative">
-          <div className="h-32 bg-[#1DA1F2]/10"></div>
+          <div className="h-32 bg-blue-500 dark:bg-[#1D9BF0]/10"></div>
           <div className="absolute -bottom-16 left-6">
-            <div className="w-32 h-32 rounded-full border-4 border-[#192734] bg-[#253341] flex items-center justify-center overflow-hidden">
+            <div className="w-32 h-32 rounded-full border-4 border-[#192734] bg-white dark:bg-gray-700 flex items-center justify-center overflow-hidden">
               {funcionario.photoURL ? (
                 <img 
                   src={funcionario.photoURL} 
@@ -264,28 +264,28 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <Users className="w-16 h-16 text-[#8899A6]" />
+                <Users className="w-16 h-16 text-gray-500 dark:text-gray-400" />
               )}
             </div>
           </div>
         </div>
 
         <div className="mt-20 px-6">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             {funcionario.nome}
           </h2>
           <div className="flex items-center gap-2 mt-1">
-            <Briefcase className="w-4 h-4 text-[#8899A6]" />
+            <Briefcase className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             <div className="flex-1">
               {editandoCargo ? (
                 <CargoSelect
                   value={cargoTemp}
                   onChange={setCargoPerfil}
-                  className="bg-[#253341] text-[#8899A6]"
+                  className="bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                 />
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-[#8899A6]">{funcionario.cargo || 'Cargo não definido'}</span>
+                  <span className="text-gray-500 dark:text-gray-400">{funcionario.cargo || 'Cargo não definido'}</span>
                   {usuario?.nivel >= 2 && (
                     <button 
                       onClick={(e) => {
@@ -293,9 +293,9 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
                         setEditandoCargo(true);
                         setCargoPerfil(funcionario.cargo || '');
                       }}
-                      className="p-1 hover:bg-[#253341] rounded transition-colors"
+                      className="p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
                     >
-                      <Edit2 className="w-3 h-3 text-[#1DA1F2]" />
+                      <Edit2 className="w-3 h-3 text-blue-500 dark:text-[#1D9BF0]" />
                     </button>
                   )}
                 </div>
@@ -315,7 +315,7 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
                     console.error('Erro ao atualizar cargo:', error);
                   }
                 }}
-                className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
+                className="px-3 py-1 bg-green-500 text-gray-900 dark:text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
               >
                 Salvar
               </button>
@@ -325,15 +325,15 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
                   setEditandoCargo(false);
                   setCargoPerfil(funcionario.cargo || '');
                 }}
-                className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+                className="px-3 py-1 bg-red-500 text-gray-900 dark:text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
               >
                 Cancelar
               </button>
             </div>
           )}
           <div className="flex items-center gap-2 mt-1">
-            <Phone className="w-4 h-4 text-[#8899A6]" />
-            <span className="text-[#8899A6]">{funcionario.telefone}</span>
+            <Phone className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <span className="text-gray-500 dark:text-gray-400">{funcionario.telefone}</span>
           </div>
         </div>
 
@@ -348,41 +348,41 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
             <button 
               className={`px-6 py-4 font-medium text-sm relative ${
                 activeTab === 'inventario' 
-                  ? 'text-[#1DA1F2] font-bold' 
-                  : 'text-[#8899A6]'
+                  ? 'text-blue-500 dark:text-[#1D9BF0] font-bold' 
+                  : 'text-gray-500 dark:text-gray-400'
               }`}
               onClick={() => setActiveTab('inventario')}
             >
               Inventário
               {activeTab === 'inventario' && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1DA1F2] rounded-full" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 dark:bg-[#1D9BF0] rounded-full" />
               )}
             </button>
             <button 
               className={`px-6 py-4 font-medium text-sm relative ${
                 activeTab === 'tarefas' 
-                  ? 'text-[#1DA1F2] font-bold' 
-                  : 'text-[#8899A6]'
+                  ? 'text-blue-500 dark:text-[#1D9BF0] font-bold' 
+                  : 'text-gray-500 dark:text-gray-400'
               }`}
               onClick={() => setActiveTab('tarefas')}
             >
               Tarefas
               {activeTab === 'tarefas' && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1DA1F2] rounded-full" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 dark:bg-[#1D9BF0] rounded-full" />
               )}
             </button>
             {usuario?.nivel >= 2 && (
               <button 
                 className={`px-6 py-4 font-medium text-sm relative ${
                   activeTab === 'avaliacoes' 
-                    ? 'text-[#1DA1F2] font-bold' 
-                    : 'text-[#8899A6]'
+                    ? 'text-blue-500 dark:text-[#1D9BF0] font-bold' 
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}
                 onClick={() => setActiveTab('avaliacoes')}
               >
                 Avaliações
                 {activeTab === 'avaliacoes' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1DA1F2] rounded-full" />
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 dark:bg-[#1D9BF0] rounded-full" />
                 )}
               </button>
             )}
@@ -394,19 +394,19 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
             <>
               <div className="flex gap-4 items-center mb-4">
                 <div className="relative flex-1 min-w-[350px]">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8899A6]" />
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
                   <input
                     type="text"
                     placeholder="Buscar por ferramenta..."
                     value={filtroEmprestimos}
                     onChange={(e) => setFiltroEmprestimos(e.target.value)}
-                    className="w-full h-10 pl-10 pr-4 border border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] bg-[#253341] text-white placeholder-[#8899A6] text-sm"
+                    className="w-full h-10 pl-10 pr-4 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
                   />
                 </div>
                 <select
                   value={filtroPeriodo}
                   onChange={(e) => setFiltroPeriodo(e.target.value)}
-                  className="border border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] bg-[#253341] text-white hover:bg-[#2C3A48]"
+                  className="border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
                 >
                   <option value="todos">Todos os períodos</option>
                   <option value="hoje">Hoje</option>
@@ -416,14 +416,14 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
                 <select
                   value={filtroStatus}
                   onChange={(e) => setFiltroStatus(e.target.value)}
-                  className="border border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] bg-[#253341] text-white hover:bg-[#2C3A48]"
+                  className="border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
                 >
                   <option value="todos">Todos os status</option>
                   <option value="emprestado">Não devolvidos</option>
                   <option value="devolvido">Devolvidos</option>
                 </select>
               </div>
-              <div className="text-sm text-[#8899A6] mb-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 {emprestimos.length === 0 ? (
                   'Nenhum empréstimo encontrado para este funcionário'
                 ) : (
@@ -481,7 +481,7 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
           )}
           {activeTab === 'tarefas' && (
             <>
-              <div className="text-sm text-[#8899A6] mb-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 {stats.tarefasConcluidas > 0 && (
                   `${stats.tarefasConcluidas} tarefa${stats.tarefasConcluidas !== 1 ? 's' : ''}`
                 )}
@@ -517,3 +517,8 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
 };
 
 export default FuncionarioProfile;
+
+
+
+
+

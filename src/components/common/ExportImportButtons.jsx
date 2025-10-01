@@ -36,7 +36,7 @@ const ExportImportButtons = ({ colecao, onSuccess, onError }) => {
       {/* Botão de Exportar */}
       <button
         onClick={handleExportar}
-        className="px-4 py-2 bg-[#1DA1F2] bg-opacity-10 hover:bg-opacity-20 text-[#1DA1F2] rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+        className="px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] bg-opacity-10 hover:bg-opacity-20 text-blue-500 dark:text-[#1D9BF0] rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
         title="Exportar dados"
       >
         <Download className="w-4 h-4" />
@@ -44,7 +44,7 @@ const ExportImportButtons = ({ colecao, onSuccess, onError }) => {
       </button>
 
       {/* Botão de Importar */}
-      <label className="px-4 py-2 bg-[#1DA1F2] bg-opacity-10 hover:bg-opacity-20 text-[#1DA1F2] rounded-full text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer">
+      <label className="px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] bg-opacity-10 hover:bg-opacity-20 text-blue-500 dark:text-[#1D9BF0] rounded-full text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer">
         <Upload className="w-4 h-4" />
         Importar
         <input
@@ -57,8 +57,8 @@ const ExportImportButtons = ({ colecao, onSuccess, onError }) => {
 
       {/* Ícone de ajuda */}
       <div className="group relative">
-        <AlertCircle className="w-5 h-5 text-[#8899A6] cursor-help" />
-        <div className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-64 bg-[#15202B] text-[#FFFFFF] text-xs p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#38444D]">
+        <AlertCircle className="w-5 h-5 text-gray-500 dark:text-gray-400 cursor-help" />
+        <div className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-64 bg-[#15202B] text-[#FFFFFF] text-xs p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-gray-200 dark:border-gray-600 dark:border-gray-600">
           <p className="mb-1"><strong>Exportar:</strong> Baixa os dados em formato JSON.</p>
           <p><strong>Importar:</strong> Carrega dados de um arquivo JSON compatível.</p>
         </div>
@@ -68,3 +68,4 @@ const ExportImportButtons = ({ colecao, onSuccess, onError }) => {
 };
 
 export default ExportImportButtons;
+

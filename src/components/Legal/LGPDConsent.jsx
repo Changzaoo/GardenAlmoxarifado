@@ -65,14 +65,14 @@ const LGPDConsent = ({ usuario }) => {
   };
 
   if (loading) {
-    return <div className="text-[#8899A6]">Carregando...</div>;
+    return <div className="text-gray-500 dark:text-gray-400">Carregando...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="bg-[#22303C] p-6 rounded-lg border border-[#38444D]">
-        <h3 className="text-lg text-white mb-4 flex items-center">
-          <Shield className="w-5 h-5 mr-2 text-[#1DA1F2]" />
+      <div className="bg-[#22303C] p-6 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600">
+        <h3 className="text-lg text-gray-900 dark:text-white mb-4 flex items-center">
+          <Shield className="w-5 h-5 mr-2 text-blue-500 dark:text-[#1D9BF0]" />
           Seus Consentimentos
         </h3>
 
@@ -81,7 +81,7 @@ const LGPDConsent = ({ usuario }) => {
             <div key={purpose} className="flex items-center justify-between">
               <div>
                 <p className="text-white">{purpose.replace('_', ' ').toUpperCase()}</p>
-                <p className="text-sm text-[#8899A6]">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {getPurposeDescription(purpose)}
                 </p>
               </div>
@@ -89,8 +89,8 @@ const LGPDConsent = ({ usuario }) => {
                 onClick={() => handleToggleConsent(purpose)}
                 className={`p-2 rounded ${
                   consentStatus?.purposes?.includes(purpose)
-                    ? 'bg-[#1DA1F2] text-white'
-                    : 'bg-[#38444D] text-[#8899A6]'
+                    ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                    : 'bg-[#38444D] text-gray-500 dark:text-gray-400'
                 }`}
               >
                 <CheckCircle className="w-5 h-5" />
@@ -104,7 +104,7 @@ const LGPDConsent = ({ usuario }) => {
         <button
           onClick={handleRequestData}
           disabled={requestingData}
-          className="flex items-center justify-center space-x-2 p-4 bg-[#22303C] rounded-lg border border-[#38444D] text-white hover:bg-[#2C3E50]"
+          className="flex items-center justify-center space-x-2 p-4 bg-[#22303C] rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-[#2C3E50]"
         >
           <Download className="w-5 h-5" />
           <span>Solicitar Meus Dados</span>
@@ -112,7 +112,7 @@ const LGPDConsent = ({ usuario }) => {
 
         <button
           onClick={handleRequestDeletion}
-          className="flex items-center justify-center space-x-2 p-4 bg-[#22303C] rounded-lg border border-[#38444D] text-[#FF5555] hover:bg-[#2C3E50]"
+          className="flex items-center justify-center space-x-2 p-4 bg-[#22303C] rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-[#FF5555] hover:bg-[#2C3E50]"
         >
           <Trash2 className="w-5 h-5" />
           <span>Solicitar Exclusão</span>
@@ -133,3 +133,5 @@ const getPurposeDescription = (purpose) => {
 };
 
 export default LGPDConsent;
+
+

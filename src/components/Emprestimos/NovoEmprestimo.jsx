@@ -145,7 +145,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                 setNovoEmprestimo({...novoEmprestimo, colaborador: valor});
                 setFuncionarioSelecionado(valor);
               }}
-              className="h-[36px] w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-[#38444D] rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] transition-colors appearance-none px-4"
+              className="h-[36px] w-full bg-white dark:bg-gray-800 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] transition-colors appearance-none px-4"
               required
             >
               <option value="" className="dark:bg-gray-800">Selecione o funcionário</option>
@@ -180,7 +180,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
 
         {/* Modal de Ajuda */}
         {showHelp && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">Como realizar um empréstimo</h3>
@@ -237,7 +237,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
               <Backpack className="w-4 h-4" />
               Ferramentas Selecionadas
             </h3>
-            <div className="border border-gray-200 dark:border-[#38444D] rounded-lg p-4 min-h-[200px] max-h-[calc(50vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800">
+            <div className="border border-gray-200 dark:border-gray-300 dark:border-gray-600 rounded-lg p-4 min-h-[200px] max-h-[calc(50vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800 dark:bg-gray-800">
               {novoEmprestimo.ferramentas.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <p className="text-gray-400 dark:text-gray-500 text-sm">Nenhuma ferramenta selecionada</p>
@@ -247,7 +247,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                   {novoEmprestimo.ferramentas.map((ferramenta, index) => (
                     <div 
                       key={index} 
-                      className="flex flex-col p-3 rounded-lg border border-gray-100 dark:border-[#38444D] bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors min-h-[160px] relative"
+                      className="flex flex-col p-3 rounded-lg border border-gray-100 dark:border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors min-h-[160px] relative"
                     >
                       <div className="flex flex-col h-full">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-200 break-words mb-auto" title={ferramenta.nome}>
@@ -257,7 +257,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                           <select
                             value={ferramenta.quantidade}
                             onChange={(e) => atualizarQuantidade(ferramenta.nome, e.target.value)}
-                            className="h-[36px] w-24 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-[#38444D] rounded-lg focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent px-2 transition-colors ml-auto"
+                            className="h-[36px] w-24 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent px-2 transition-colors ml-auto"
                           >
                             {[...Array(ferramenta.disponivel)].map((_, i) => (
                               <option key={i + 1} value={i + 1}>
@@ -267,7 +267,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                           </select>
                           <button
                             onClick={() => removerFerramenta(ferramenta.nome)}
-                            className="h-[36px] w-[36px] flex items-center justify-center text-red-500 hover:text-white dark:text-red-400 dark:hover:text-white rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-500 dark:hover:bg-red-500/80 transition-all"
+                            className="h-[36px] w-[36px] flex items-center justify-center text-red-500 hover:text-gray-700 dark:hover:text-white dark:text-red-400 dark:hover:text-white rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-500 dark:hover:bg-red-500/80 transition-all"
                             title="Remover ferramenta"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -284,7 +284,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
           <button
             onClick={handleSubmit}
             disabled={!novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0}
-            className="h-[36px] w-full flex items-center justify-center gap-2 bg-[#1D9BF0] hover:bg-[#1A8CD8] disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+            className="h-[36px] w-full flex items-center justify-center gap-2 bg-[#1D9BF0] hover:bg-[#1A8CD8] disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-gray-900 dark:text-white font-medium rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Registrar Empréstimo
@@ -296,3 +296,6 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
 }
 
 export default NovoEmprestimo;
+
+
+

@@ -59,7 +59,7 @@ const Sidebar = ({ onProfileClick }) => {
               <div key={item.path} className="relative">
                 <button
                   onClick={() => navigate(item.path)}
-                  className={`w-full flex items-center px-4 py-3 text-white hover:bg-[#1D9BF0]/10 transition-colors duration-200
+                  className={`w-full flex items-center px-4 py-3 text-gray-900 dark:text-white hover:bg-[#1D9BF0]/10 transition-colors duration-200
                     ${isActive(item.path) ? 'bg-[#1D9BF0]/10' : ''}`}
                 >
                   {item.icon}
@@ -76,10 +76,10 @@ const Sidebar = ({ onProfileClick }) => {
           {/* Profile Button */}
           <button
             onClick={onProfileClick}
-            className="w-full flex items-center p-6 text-white hover:bg-[#1D9BF0]/10 transition-colors duration-200"
+            className="w-full flex items-center p-6 text-gray-900 dark:text-white hover:bg-[#1D9BF0]/10 transition-colors duration-200"
           >
             <div className="flex items-center flex-1">
-              <div className="w-10 h-10 rounded-full bg-[#2F3336] flex items-center justify-center border-2 border-[#38444D]">
+              <div className="w-10 h-10 rounded-full bg-[#2F3336] flex items-center justify-center border-2 border-gray-200 dark:border-gray-600 dark:border-gray-600">
                 {usuario?.foto ? (
                   <img src={usuario.foto} alt="Profile" className="w-full h-full rounded-full object-cover" />
                 ) : (
@@ -96,7 +96,7 @@ const Sidebar = ({ onProfileClick }) => {
           <div className="border-t border-[#2F3336]">
             <button 
               onClick={() => signOut()}
-              className="w-full flex items-center px-6 py-4 text-white hover:bg-[#1D9BF0]/10 transition-colors duration-200"
+              className="w-full flex items-center px-6 py-4 text-gray-900 dark:text-white hover:bg-[#1D9BF0]/10 transition-colors duration-200"
             >
               <LogOut className="w-5 h-5" />
               <span className="ml-4">Sair</span>
@@ -109,3 +109,5 @@ const Sidebar = ({ onProfileClick }) => {
 };
 
 export default Sidebar;
+
+

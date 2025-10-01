@@ -1,20 +1,20 @@
 import React from 'react';
 
 export const TwitterThemedPage = ({ children, className = '' }) => (
-  <div className={`min-h-screen bg-[#15202B] text-white p-4 ${className}`}>
+  <div className={`min-h-screen bg-[#15202B] text-gray-900 dark:text-white p-4 ${className}`}>
     {children}
   </div>
 );
 
 export const TwitterCard = ({ children, className = '' }) => (
-  <div className={`bg-[#192734] border border-[#38444D] rounded-2xl p-6 shadow-sm ${className}`}>
+  <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-2xl p-6 shadow-sm ${className}`}>
     {children}
   </div>
 );
 
 export const TwitterInput = ({ className = '', ...props }) => (
   <input
-    className={`w-full bg-[#253341] border border-[#38444D] rounded-full px-4 py-2 text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] ${className}`}
+    className={`w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-full px-4 py-2 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] ${className}`}
     {...props}
   />
 );
@@ -22,7 +22,7 @@ export const TwitterInput = ({ className = '', ...props }) => (
 export const TwitterSearchInput = ({ className = '', ...props }) => (
   <div className="relative">
     <svg
-      className="w-5 h-5 absolute left-3 top-2.5 text-[#8899A6]"
+      className="w-5 h-5 absolute left-3 top-2.5 text-gray-500 dark:text-gray-400"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
@@ -36,7 +36,7 @@ export const TwitterSearchInput = ({ className = '', ...props }) => (
       />
     </svg>
     <input
-      className={`w-full pl-10 pr-4 py-2 bg-[#253341] border border-[#38444D] rounded-full text-white placeholder-[#8899A6] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] ${className}`}
+      className={`w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-full text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] ${className}`}
       {...props}
     />
   </div>
@@ -44,14 +44,14 @@ export const TwitterSearchInput = ({ className = '', ...props }) => (
 
 export const TwitterButton = ({ variant = 'primary', className = '', children, ...props }) => {
   const variants = {
-    primary: 'bg-[#1DA1F2] hover:bg-[#1a91da]',
+    primary: 'bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1a8cd8]',
     danger: 'bg-[#F4212E] hover:bg-[#dc1e29]',
     secondary: 'bg-[#38444D] hover:bg-[#465A6C]'
   };
 
   return (
     <button
-      className={`px-4 py-2 rounded-full text-white transition-colors ${variants[variant]} ${className}`}
+      className={`px-4 py-2 rounded-full text-gray-900 dark:text-white transition-colors ${variants[variant]} ${className}`}
       {...props}
     >
       {children}
@@ -65,7 +65,7 @@ export const TwitterBadge = ({ variant = 'info', className = '', children }) => 
     success: 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]',
     warning: 'bg-[#FFD700] bg-opacity-10 text-[#FFD700]',
     error: 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]',
-    neutral: 'bg-[#8899A6] bg-opacity-10 text-[#8899A6]'
+    neutral: 'bg-[#8899A6] bg-opacity-10 text-gray-500 dark:text-gray-400'
   };
 
   return (
@@ -79,7 +79,7 @@ export const TwitterBadge = ({ variant = 'info', className = '', children }) => 
 
 export const TwitterSelect = ({ className = '', children, ...props }) => (
   <select
-    className={`bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none ${className}`}
+    className={`bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none ${className}`}
     {...props}
   >
     {children}
@@ -91,7 +91,7 @@ export const TwitterModal = ({ isOpen, onClose, children, className = '' }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`bg-[#192734] border border-[#38444D] rounded-2xl p-6 max-w-2xl w-full m-4 max-h-[90vh] overflow-y-auto ${className}`}>
+      <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-2xl p-6 max-w-2xl w-full m-4 max-h-[90vh] overflow-y-auto ${className}`}>
         {children}
       </div>
     </div>
@@ -99,7 +99,7 @@ export const TwitterModal = ({ isOpen, onClose, children, className = '' }) => {
 };
 
 export const TwitterTable = ({ children, className = '' }) => (
-  <div className={`bg-[#192734] border border-[#38444D] rounded-2xl overflow-hidden ${className}`}>
+  <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-2xl overflow-hidden ${className}`}>
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-[#38444D]">
         {children}
@@ -109,13 +109,15 @@ export const TwitterTable = ({ children, className = '' }) => (
 );
 
 export const TwitterTableHeader = ({ children, className = '' }) => (
-  <th className={`px-6 py-3 text-left text-xs font-medium text-[#8899A6] uppercase tracking-wider ${className}`}>
+  <th className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${className}`}>
     {children}
   </th>
 );
 
 export const TwitterTableCell = ({ children, className = '' }) => (
-  <td className={`px-6 py-4 whitespace-nowrap text-sm text-white ${className}`}>
+  <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white ${className}`}>
     {children}
   </td>
 );
+
+

@@ -9,7 +9,7 @@ const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, on
       <select
         value={filtroAtual}
         onChange={(e) => setFiltroAtual(e.target.value)}
-        className="bg-[#192734] text-[#8899A6] hover:bg-[#253341] hover:text-white px-3 py-2 rounded-lg text-sm border border-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] dark:bg-[#192734] dark:text-[#8899A6] dark:border-[#38444D] dark:hover:bg-[#253341] dark:hover:text-white transition-colors cursor-pointer w-[200px]"
+        className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors cursor-pointer w-[200px]"
       >
         <option value="nome">Nome</option>
         <option value="pontos">Mais Pontos</option>
@@ -26,11 +26,11 @@ const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, on
           placeholder="         Buscar..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 pl-12 rounded-lg text-sm bg-[#192734] border border-[#38444D] text-white focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]"
+          className="w-full px-4 py-2 pl-12 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
         />
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8899A6]"
+          className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -48,7 +48,7 @@ const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, on
       {showGroupsButton && (
         <button
           onClick={onManageGroups}
-          className="bg-[#1DA1F2] text-white px-4 py-2 rounded-lg hover:bg-[#1A91DA] transition-colors flex items-center gap-2"
+          className="bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors flex items-center gap-2"
           title="Gerenciar grupos de funcionários"
         >
           <UsersRound className="w-4 h-4" />
@@ -59,48 +59,48 @@ const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, on
       {/* Ícone de Ajuda */}
       <button
         onClick={() => setShowHelp(true)}
-        className="p-2 hover:bg-[#253341] rounded-full transition-colors"
+        className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-full transition-colors"
         title="Ajuda"
       >
-        <HelpCircle className="w-5 h-5 text-[#1DA1F2]" />
+        <HelpCircle className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
       </button>
 
       {/* Modal de Ajuda */}
       {showHelp && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#15202B] rounded-xl p-6 max-w-2xl w-full mx-4 relative border border-[#38444D]">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#15202B] rounded-xl p-6 max-w-2xl w-full mx-4 relative border border-gray-200 dark:border-gray-600">
             <button
               onClick={() => setShowHelp(false)}
-              className="absolute top-4 right-4 text-[#8899A6] hover:text-white"
+              className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h2 className="text-xl font-bold text-white mb-4">Guia do Cartão de Funcionário</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Guia do Cartão de Funcionário</h2>
             
-            <div className="space-y-4 text-[#8899A6]">
+            <div className="space-y-4 text-gray-500 dark:text-gray-400">
               <div>
-                <h3 className="text-white font-semibold mb-2">📊 Avaliações</h3>
-                <p>• <span className="text-white">Medidor (Gauge)</span>: Média das avaliações de desempenho do funcionário.</p>
-                <p>• <span className="text-white">Martelo (Hammer)</span>: Média das avaliações de tarefas concluídas.</p>
+                <h3 className="text-gray-900 dark:text-white font-semibold mb-2">📊 Avaliações</h3>
+                <p>• <span className="text-gray-900 dark:text-white">Medidor (Gauge)</span>: Média das avaliações de desempenho do funcionário.</p>
+                <p>• <span className="text-gray-900 dark:text-white">Martelo (Hammer)</span>: Média das avaliações de tarefas concluídas.</p>
                 <p className="text-sm mt-1">As cores indicam o desempenho: Dourado (⭐ 4.5+), Verde (🟢 3.5+), Amarelo (🟡 2.5+), Vermelho (🔴 abaixo de 2.5)</p>
               </div>
 
               <div>
-                <h3 className="text-white font-semibold mb-2">📈 Estatísticas</h3>
-                <p>• <span className="text-white">Tarefas Concluídas</span>: Número total de tarefas finalizadas.</p>
-                <p>• <span className="text-white">Em Andamento</span>: Tarefas atualmente em execução.</p>
+                <h3 className="text-gray-900 dark:text-white font-semibold mb-2">📈 Estatísticas</h3>
+                <p>• <span className="text-gray-900 dark:text-white">Tarefas Concluídas</span>: Número total de tarefas finalizadas.</p>
+                <p>• <span className="text-gray-900 dark:text-white">Em Andamento</span>: Tarefas atualmente em execução.</p>
               </div>
 
               <div>
-                <h3 className="text-white font-semibold mb-2">🏆 Sistema de Pontos</h3>
-                <p>• <span className="text-white">Ferramentas Devolvidas</span>: 20 pontos por ferramenta</p>
-                <p>• <span className="text-white">Tarefas Concluídas</span>: 50 pontos por tarefa</p>
-                <p>• <span className="text-white">Média de Avaliação</span>: Até 10 pontos baseado na média</p>
+                <h3 className="text-gray-900 dark:text-white font-semibold mb-2">🏆 Sistema de Pontos</h3>
+                <p>• <span className="text-gray-900 dark:text-white">Ferramentas Devolvidas</span>: 20 pontos por ferramenta</p>
+                <p>• <span className="text-gray-900 dark:text-white">Tarefas Concluídas</span>: 50 pontos por tarefa</p>
+                <p>• <span className="text-gray-900 dark:text-white">Média de Avaliação</span>: Até 10 pontos baseado na média</p>
               </div>
 
               <div>
-                <h3 className="text-white font-semibold mb-2">📱 Contato</h3>
+                <h3 className="text-gray-900 dark:text-white font-semibold mb-2">📱 Contato</h3>
                 <p>Inclui informações como telefone e outros meios de contato disponíveis.</p>
               </div>
             </div>
@@ -112,3 +112,8 @@ const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, on
 };
 
 export default BarraBusca;
+
+
+
+
+

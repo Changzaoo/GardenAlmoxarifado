@@ -19,7 +19,7 @@ const NovoItem = ({ adicionarItem }) => {
   };
 
   return (
-    <div className="bg-[#192734] rounded-2xl shadow-sm p-6 border border-[#38444D]">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-200 dark:border-gray-600 dark:border-gray-600">
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <input
@@ -27,7 +27,7 @@ const NovoItem = ({ adicionarItem }) => {
           placeholder="Nome do item"
           value={novoItem.nome}
           onChange={(e) => setNovoItem({...novoItem, nome: e.target.value})}
-          className="w-full bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors"
+          className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors"
         />
         <input
           type="number"
@@ -35,23 +35,23 @@ const NovoItem = ({ adicionarItem }) => {
           placeholder="Quantidade"
           value={novoItem.quantidade}
           onChange={(e) => setNovoItem({...novoItem, quantidade: e.target.value})}
-          className="w-full bg-[#253341] border border-[#38444D] text-white placeholder-[#8899A6] rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors"
+          className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors"
         />
         <select
           value={novoItem.categoria}
           onChange={(e) => setNovoItem({...novoItem, categoria: e.target.value})}
-          className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none"
+          className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none"
         >
-          <option value="" className="bg-[#192734]">Selecione a categoria</option>
-          <option value="Ferramentas" className="bg-[#192734]">Ferramentas</option>
-          <option value="Equipamentos" className="bg-[#192734]">Equipamentos</option>
-          <option value="EPI" className="bg-[#192734]">EPI</option>
-          <option value="Outros" className="bg-[#192734]">Outros</option>
+          <option value="" className="bg-white dark:bg-gray-800">Selecione a categoria</option>
+          <option value="Ferramentas" className="bg-white dark:bg-gray-800">Ferramentas</option>
+          <option value="Equipamentos" className="bg-white dark:bg-gray-800">Equipamentos</option>
+          <option value="EPI" className="bg-white dark:bg-gray-800">EPI</option>
+          <option value="Outros" className="bg-white dark:bg-gray-800">Outros</option>
         </select>
         <button
           onClick={handleSubmit}
           disabled={!novoItem.nome || !novoItem.quantidade || !novoItem.categoria}
-          className="bg-[#1DA1F2] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-[#1a91da] transition-colors disabled:bg-[#38444D] disabled:text-[#8899A6] disabled:cursor-not-allowed"
+          className="bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors disabled:bg-[#38444D] disabled:text-gray-500 dark:text-gray-400 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" />
           Adicionar Item
@@ -62,3 +62,5 @@ const NovoItem = ({ adicionarItem }) => {
 };
 
 export default NovoItem;
+
+

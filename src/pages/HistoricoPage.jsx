@@ -1,6 +1,6 @@
 import React from 'react';
-import { useEmprestimos } from '../../hooks/useEmprestimos';
-import HistoricoEmprestimosTab from '../Emprestimos/HistoricoEmprestimosTab';
+import { useEmprestimos } from '../hooks/useEmprestimos';
+import HistoricoEmprestimosTab from '../components/Emprestimos/HistoricoEmprestimosTab';
 
 const HistoricoPage = () => {
   const { emprestimos, devolverFerramentas, removerEmprestimo, atualizarDisponibilidade } = useEmprestimos();

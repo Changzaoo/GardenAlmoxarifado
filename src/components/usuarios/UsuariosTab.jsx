@@ -48,7 +48,7 @@ const UsuariosTab = () => {
   // Check if context is properly loaded
   if (!usuarioLogado) {
     return (
-      <div className={`${classes.card} p-8 text-center`}>
+      <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-8 text-center`}>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D9BF0] mx-auto mb-4"></div>
         <p className={colors.textSecondary}>Carregando dados do usuário...</p>
       </div>
@@ -247,11 +247,11 @@ const UsuariosTab = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className={`${classes.card} p-6`}>
+      <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-6`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#1D9BF0] bg-opacity-10 rounded-lg flex items-center justify-center">
-              <UserCog className="w-5 h-5 text-[#1D9BF0]" />
+            <div className="w-10 h-10 bg-blue-500 bg-opacity-10 dark:bg-[#1D9BF0] dark:bg-opacity-10 rounded-lg flex items-center justify-center">
+              <UserCog className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
             </div>
             <div>
               <p className={colors.textSecondary}>Gerencie os usuários do sistema de acordo com suas permissões</p>
@@ -265,14 +265,14 @@ const UsuariosTab = () => {
               placeholder="Buscar por nome ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+              className={`w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
             />
           </div>
 
           {niveisDisponiveis.length > 0 && (
             <button
               onClick={abrirModalCriar}
-              className="flex items-center gap-2 bg-[#1D9BF0] text-white px-4 py-2 rounded-full hover:bg-[#1A8CD8] transition-colors"
+              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 dark:bg-[#1D9BF0] dark:hover:bg-[#1A8CD8] text-white px-4 py-2 rounded-full transition-colors"
             >
               <Plus className="w-4 h-4" />
               Novo Usuário
@@ -282,20 +282,20 @@ const UsuariosTab = () => {
 
         {/* Mensagens */}
         {erro && (
-          <div className={`${classes.card} mt-4 p-4 border border-[#F4212E] border-opacity-20 bg-[#F4212E] bg-opacity-10 text-[#F4212E]`}>
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm mt-4 p-4 border border-red-500 border-opacity-20 bg-red-500 bg-opacity-10 text-red-500 dark:border-[#F4212E] dark:bg-[#F4212E] dark:text-[#F4212E]`}>
             {erro}
           </div>
         )}
         
         {sucesso && (
-          <div className={`${classes.card} mt-4 p-4 border border-[#00BA7C] border-opacity-20 bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]`}>
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm mt-4 p-4 border border-green-500 border-opacity-20 bg-green-500 bg-opacity-10 text-green-500 dark:border-[#00BA7C] dark:bg-[#00BA7C] dark:text-[#00BA7C]`}>
             {sucesso}
           </div>
         )}
       </div>
 
       {/* Lista de Usuários */}
-      <div className={`${classes.card} overflow-hidden`}>
+      <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm overflow-hidden`}>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y dark:divide-[#2F3336]">
             <thead className="bg-black bg-opacity-5 dark:bg-[#2F3336]">
@@ -323,15 +323,15 @@ const UsuariosTab = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
-                        <div className="h-8 w-8 bg-[#1D9BF0] bg-opacity-10 rounded-full flex items-center justify-center">
-                          <User className="w-4 h-4 text-[#1D9BF0]" />
+                        <div className="h-8 w-8 bg-blue-500 bg-opacity-10 dark:bg-[#1D9BF0] dark:bg-opacity-10 rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
                         </div>
                       </div>
                       <div className="ml-3">
                         <div className={`text-sm font-medium ${colors.text}`}>
                           {usuario.nome}
                           {usuario.id === usuarioLogado.id && (
-                            <span className="ml-2 text-xs text-[#1D9BF0] font-medium">(Você)</span>
+                            <span className="ml-2 text-xs text-blue-500 dark:text-[#1D9BF0] font-medium">(Você)</span>
                           )}
                         </div>
                         <div className={`text-sm ${colors.textSecondary}`}>{usuario.email}</div>
@@ -340,12 +340,12 @@ const UsuariosTab = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <Shield className="w-4 h-4 text-[#1D9BF0] mr-2" />
+                      <Shield className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0] mr-2" />
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]' :
-                        usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-[#1D9BF0] bg-opacity-10 text-[#1D9BF0]' :
-                        usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]' :
-                        'bg-[#FFD700] bg-opacity-10 text-[#FFD700]'
+                        usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-red-500 bg-opacity-10 text-red-500 dark:bg-[#F4212E] dark:bg-opacity-10 dark:text-[#F4212E]' :
+                        usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-blue-500 bg-opacity-10 text-blue-500 dark:bg-[#1D9BF0] dark:bg-opacity-10 dark:text-[#1D9BF0]' :
+                        usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-green-500 bg-opacity-10 text-green-500 dark:bg-[#00BA7C] dark:bg-opacity-10 dark:text-[#00BA7C]' :
+                        'bg-yellow-500 bg-opacity-10 text-yellow-600 dark:bg-[#FFD700] dark:bg-opacity-10 dark:text-[#FFD700]'
                       }`}>
                         {NIVEIS_LABELS[usuario.nivel]}
                       </span>
@@ -396,8 +396,8 @@ const UsuariosTab = () => {
 
       {/* Modal de Usuário */}
       {mostrarModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`${classes.card} max-w-md w-full mx-4 max-h-screen overflow-y-auto`}>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm max-w-md w-full mx-4 max-h-screen overflow-y-auto`}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`text-lg font-medium ${colors.text}`}>
@@ -420,7 +420,7 @@ const UsuariosTab = () => {
                     type="text"
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                    className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                     placeholder="Digite o nome completo"
                     disabled={carregando}
                   />
@@ -434,7 +434,7 @@ const UsuariosTab = () => {
                     type="text"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                    className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                     placeholder="Digite o email ou nome de usuário"
                     disabled={carregando}
                   />
@@ -449,7 +449,7 @@ const UsuariosTab = () => {
                       type={mostrarSenha ? 'text' : 'password'}
                       value={formData.senha}
                       onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-                      className={`w-full px-3 py-2 pr-10 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                      className={`w-full px-3 py-2 pr-10 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                       placeholder={usuarioEditando ? "Nova senha" : "Digite a senha"}
                       disabled={carregando}
                     />
@@ -474,7 +474,7 @@ const UsuariosTab = () => {
                   <select
                     value={formData.nivel}
                     onChange={(e) => setFormData({ ...formData, nivel: parseInt(e.target.value) })}
-                    className={`w-full px-3 py-2 ${classes.input} focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                    className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                     disabled={carregando}
                   >
                     {niveisDisponiveis.map(nivel => (
@@ -507,13 +507,13 @@ const UsuariosTab = () => {
               </div>
 
               {erro && (
-                <div className={`${classes.card} mt-4 p-4 border border-[#F4212E] border-opacity-20 bg-[#F4212E] bg-opacity-10 text-[#F4212E]`}>
+                <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm mt-4 p-4 border border-[#F4212E] border-opacity-20 bg-[#F4212E] bg-opacity-10 text-[#F4212E]`}>
                   {erro}
                 </div>
               )}
 
               {sucesso && (
-                <div className={`${classes.card} mt-4 p-4 border border-[#00BA7C] border-opacity-20 bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]`}>
+                <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm mt-4 p-4 border border-[#00BA7C] border-opacity-20 bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]`}>
                   {sucesso}
                 </div>
               )}
@@ -548,8 +548,8 @@ const UsuariosTab = () => {
 
       {/* Modal de Confirmação de Remoção */}
       {confirmacaoRemocao && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className={`${classes.card} max-w-md w-full mx-4`}>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm max-w-md w-full mx-4`}>
             <div className="p-6">
               <div className="flex items-center mb-4">
                 <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-[#F4212E] bg-opacity-10">
@@ -597,3 +597,5 @@ const UsuariosTab = () => {
 };
 
 export default UsuariosTab;
+
+

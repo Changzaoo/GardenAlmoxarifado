@@ -11,7 +11,7 @@ function FerramentaSelector({ ferramentasDisponiveis, onAdicionarFerramenta }) {
             e.target.value = ''; // Reset select after adding
           }
         }}
-        className="h-[36px] w-full text-sm font-medium rounded-lg appearance-none pl-4 pr-10 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-[#38444D] focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
+        className="h-[36px] w-full text-sm font-medium rounded-lg appearance-none pl-4 pr-10 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
       >
         <option value="">Selecione uma ferramenta...</option>
         {ferramentasDisponiveis
@@ -30,3 +30,4 @@ function FerramentaSelector({ ferramentasDisponiveis, onAdicionarFerramenta }) {
 }
 
 export default FerramentaSelector;
+

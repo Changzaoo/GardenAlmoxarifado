@@ -82,12 +82,7 @@ const FerramentasPerdidasTab = ({
         draggable: true,
         progress: undefined,
         theme: "dark",
-        style: {
-          background: '#192734',
-          color: '#ffffff',
-          borderRadius: '1rem',
-          border: '1px solid #38444D'
-        }
+        className: 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl border border-gray-200 dark:border-gray-600'
       });
       return;
     }
@@ -151,11 +146,11 @@ const FerramentasPerdidasTab = ({
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'buscando': return 'bg-[#FFD700] bg-opacity-100 text-black font-semibold hover:bg-[#FFD700] hover:bg-opacity-90';
-      case 'encontrada': return 'bg-[#00BA7C] bg-opacity-100 text-white font-semibold hover:bg-[#00BA7C] hover:bg-opacity-90';
-      case 'perdida_definitiva': return 'bg-[#F4212E] bg-opacity-100 text-white font-semibold hover:bg-[#F4212E] hover:bg-opacity-90';
-      case 'substituida': return 'bg-[#1D9BF0] bg-opacity-100 text-white font-semibold hover:bg-[#1D9BF0] hover:bg-opacity-90';
-      default: return 'bg-[#8899A6] bg-opacity-100 text-white font-semibold hover:bg-[#8899A6] hover:bg-opacity-90';
+      case 'buscando': return 'bg-yellow-500 dark:bg-[#FFD700] bg-opacity-100 text-black font-semibold hover:bg-yellow-600 dark:hover:bg-[#FFD700] hover:bg-opacity-90';
+      case 'encontrada': return 'bg-green-500 dark:bg-[#00BA7C] bg-opacity-100 text-gray-900 dark:text-white font-semibold hover:bg-green-600 dark:hover:bg-[#00BA7C] hover:bg-opacity-90';
+      case 'perdida_definitiva': return 'bg-red-500 dark:bg-[#F4212E] bg-opacity-100 text-gray-900 dark:text-white font-semibold hover:bg-red-600 dark:hover:bg-[#F4212E] hover:bg-opacity-90';
+      case 'substituida': return 'bg-blue-500 dark:bg-[#1D9BF0] bg-opacity-100 text-gray-900 dark:text-white font-semibold hover:bg-blue-600 dark:hover:bg-[#1D9BF0] hover:bg-opacity-90';
+      default: return 'bg-gray-500 dark:bg-[#8899A6] bg-opacity-100 text-gray-900 dark:text-white font-semibold hover:bg-gray-600 dark:hover:bg-[#8899A6] hover:bg-opacity-90';
     }
   };
 
@@ -171,10 +166,10 @@ const FerramentasPerdidasTab = ({
 
   const getPrioridadeColor = (prioridade) => {
     switch (prioridade) {
-      case 'baixa': return 'bg-[#00BA7C] text-white font-semibold';
-      case 'media': return 'bg-[#FFD700] text-black font-semibold';
-      case 'alta': return 'bg-[#F4212E] text-white font-semibold';
-      default: return 'bg-[#8899A6] text-white font-semibold';
+      case 'baixa': return 'bg-green-500 dark:bg-[#00BA7C] text-gray-900 dark:text-white font-semibold';
+      case 'media': return 'bg-yellow-500 dark:bg-[#FFD700] text-black font-semibold';
+      case 'alta': return 'bg-red-500 dark:bg-[#F4212E] text-gray-900 dark:text-white font-semibold';
+      default: return 'bg-gray-500 dark:bg-[#8899A6] text-gray-900 dark:text-white font-semibold';
     }
   };
 
@@ -202,11 +197,11 @@ const FerramentasPerdidasTab = ({
   return (
     <div className="space-y-6">
       {/* Header com botão */}
-      <div className={`${classes.card} p-6`}>
+      <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-6`}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#F4212E] bg-opacity-10 rounded-lg flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-[#F4212E]" />
+            <div className="w-10 h-10 bg-red-100 dark:bg-[#F4212E] dark:bg-opacity-10 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-red-500 dark:text-[#F4212E]" />
             </div>
             <div>
 
@@ -217,7 +212,7 @@ const FerramentasPerdidasTab = ({
           {!isFuncionario && !readonly && (
             <button
               onClick={() => setModalAberto(true)}
-              className="bg-[#1DA1F2] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-[#1a91da] transition-colors"
+              className="bg-blue-500 dark:bg-[#1D9BF0] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
             >
               <Plus className="w-4 h-4" />
               Registrar Perda
@@ -227,10 +222,10 @@ const FerramentasPerdidasTab = ({
 
         {/* Estatísticas */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          <div className={`${classes.card} p-4`}>
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
             <div className="flex items-center">
-              <div className="bg-[#1DA1F2] bg-opacity-10 p-3 rounded-full">
-                <AlertCircle className="w-5 h-5 text-[#1DA1F2]" />
+              <div className="bg-blue-100 dark:bg-blue-500 dark:bg-[#1D9BF0] dark:bg-opacity-10 p-3 rounded-full">
+                <AlertCircle className="w-5 h-5 text-blue-500 dark:text-blue-500 dark:text-[#1D9BF0]" />
               </div>
               <div className="ml-3">
                 <p className={`text-sm ${colors.textSecondary}`}>Total</p>
@@ -238,34 +233,34 @@ const FerramentasPerdidasTab = ({
               </div>
             </div>
           </div>
-          <div className={`${classes.card} p-4`}>
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
             <div className="flex flex-col">
               <p className={`text-sm ${colors.textSecondary}`}>Buscando</p>
-              <p className="text-xl font-bold text-[#FFD700]">{estatisticas.buscando}</p>
+              <p className="text-xl font-bold text-yellow-500 dark:text-[#FFD700]">{estatisticas.buscando}</p>
             </div>
           </div>
-          <div className={`${classes.card} p-4`}>
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
             <div className="flex flex-col">
               <p className={`text-sm ${colors.textSecondary}`}>Encontradas</p>
-              <p className="text-xl font-bold text-[#00BA7C]">{estatisticas.encontradas}</p>
+              <p className="text-xl font-bold text-green-500 dark:text-[#00BA7C]">{estatisticas.encontradas}</p>
             </div>
           </div>
-          <div className={`${classes.card} p-4`}>
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
             <div className="flex flex-col">
               <p className={`text-sm ${colors.textSecondary}`}>Perdidas</p>
-              <p className="text-xl font-bold text-[#F4212E]">{estatisticas.perdidasDefinitivas}</p>
+              <p className="text-xl font-bold text-red-500 dark:text-[#F4212E]">{estatisticas.perdidasDefinitivas}</p>
             </div>
           </div>
-          <div className={`${classes.card} p-4`}>
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
             <div className="flex flex-col">
               <p className={`text-sm ${colors.textSecondary}`}>Substituídas</p>
-              <p className="text-xl font-bold text-[#1D9BF0]">{estatisticas.substituidas}</p>
+              <p className="text-xl font-bold text-blue-500 dark:text-[#1D9BF0]">{estatisticas.substituidas}</p>
             </div>
           </div>
-          <div className={`${classes.card} p-4`}>
+          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4`}>
             <div className="flex flex-col">
               <p className={`text-sm ${colors.textSecondary}`}>Valor Perdido</p>
-              <p className="text-xl font-bold text-[#F4212E]">
+              <p className="text-xl font-bold text-red-500 dark:text-[#F4212E]">
                 R$ {estatisticas.valorTotalPerdido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -292,7 +287,7 @@ const FerramentasPerdidasTab = ({
               className={`
                 pl-12 w-full py-2 
                 ${classes.input} 
-                focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent
+                focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent
               `}
             />
           </div>
@@ -301,20 +296,20 @@ const FerramentasPerdidasTab = ({
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
             className={`w-full md:w-48 px-4 py-2 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 transition-colors appearance-none cursor-pointer ${
-              filtroStatus === 'todos' ? 'bg-[#253341] text-white' :
-              filtroStatus === 'buscando' ? 'bg-[#FFD700] text-black' :
-              filtroStatus === 'encontrada' ? 'bg-[#00BA7C] text-white' :
-              filtroStatus === 'perdida_definitiva' ? 'bg-[#F4212E] text-white' :
-              filtroStatus === 'substituida' ? 'bg-[#1D9BF0] text-white' : 'bg-[#8899A6] text-white'
+              filtroStatus === 'todos' ? 'bg-gray-500 dark:bg-gray-700 text-white' :
+              filtroStatus === 'buscando' ? 'bg-yellow-500 dark:bg-[#FFD700] text-black' :
+              filtroStatus === 'encontrada' ? 'bg-green-500 dark:bg-[#00BA7C] text-white' :
+              filtroStatus === 'perdida_definitiva' ? 'bg-red-500 dark:bg-[#F4212E] text-white' :
+              filtroStatus === 'substituida' ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white' : 'bg-gray-500 dark:bg-[#8899A6] text-white'
             }`}
             style={{
               colorScheme: 'dark'
             }}
           >
-            <option value="todos" style={{ backgroundColor: '#192734', color: 'white' }} className="font-semibold">Todos os Status</option>
-            <option value="buscando" style={{ backgroundColor: '#192734', color: '#FFD700' }} className="font-semibold">Buscando</option>
-            <option value="encontrada" style={{ backgroundColor: '#192734', color: '#00BA7C' }} className="font-semibold">Encontrada</option>
-            <option value="perdida_definitiva" style={{ backgroundColor: '#192734', color: '#F4212E' }} className="font-semibold">Perda Definitiva</option>
+            <option value="todos" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold">Todos os Status</option>
+            <option value="buscando" className="bg-white dark:bg-gray-800 text-yellow-500 font-semibold">Buscando</option>
+            <option value="encontrada" className="bg-white dark:bg-gray-800 text-green-500 font-semibold">Encontrada</option>
+            <option value="perdida_definitiva" className="bg-white dark:bg-gray-800 text-red-500 font-semibold">Perda Definitiva</option>
             <option value="substituida" style={{ backgroundColor: '#192734', color: '#1D9BF0' }} className="font-semibold">Substituída</option>
           </select>
         </div>
@@ -323,11 +318,11 @@ const FerramentasPerdidasTab = ({
       {/* Lista de ferramentas perdidas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {ferramentasFiltradas.map(item => (
-          <div key={item.id} className={`${classes.card} p-6`}>
+          <div key={item.id} className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-6`}>
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
                 <h3 className={`font-bold ${colors.text} text-lg flex items-center gap-2`}>
-                  <AlertCircle className="w-5 h-5 text-[#F4212E]" />
+                  <AlertCircle className="w-5 h-5 text-red-500 dark:text-[#F4212E]" />
                   {item.nomeItem}
                 </h3>
                 {item.categoria && (
@@ -352,9 +347,9 @@ const FerramentasPerdidasTab = ({
                           color: item.statusBusca === 'buscando' ? 'black' : 'white'
                         }}
                       >
-                        <option value="buscando" style={{ backgroundColor: '#192734', color: '#FFD700' }} className="font-semibold">Buscando</option>
-                        <option value="encontrada" style={{ backgroundColor: '#192734', color: '#00BA7C' }} className="font-semibold">Encontrada</option>
-                        <option value="perdida_definitiva" style={{ backgroundColor: '#192734', color: '#F4212E' }} className="font-semibold">Perda Definitiva</option>
+                        <option value="buscando" className="bg-white dark:bg-gray-800 text-yellow-500 font-semibold">Buscando</option>
+                        <option value="encontrada" className="bg-white dark:bg-gray-800 text-green-500 font-semibold">Encontrada</option>
+                        <option value="perdida_definitiva" className="bg-white dark:bg-gray-800 text-red-500 font-semibold">Perda Definitiva</option>
                         <option value="substituida" style={{ backgroundColor: '#192734', color: '#1D9BF0' }} className="font-semibold">Substituída</option>
                       </select>
                     )}
@@ -371,7 +366,7 @@ const FerramentasPerdidasTab = ({
                     <div className="flex gap-2">
                       <button
                         onClick={() => openEditModal(item)}
-                        className="text-[#1DA1F2] hover:text-white transition-colors text-sm"
+                        className="text-blue-500 dark:text-blue-500 dark:text-[#1D9BF0] hover:text-gray-700 dark:hover:text-white transition-colors text-sm"
                         title="Editar"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,7 +375,7 @@ const FerramentasPerdidasTab = ({
                       </button>
                       <button
                         onClick={() => openDeleteModal(item.id)}
-                        className="text-[#F4212E] hover:text-white transition-colors text-sm"
+                        className="text-red-500 dark:text-[#F4212E] hover:text-gray-700 dark:hover:text-white transition-colors text-sm"
                         title="Excluir"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -394,12 +389,12 @@ const FerramentasPerdidasTab = ({
             </div>
 
             <div className="space-y-3 text-sm">
-              <div className={`${classes.card} p-3 bg-[#F4212E] bg-opacity-5`}>
-                <div className={`flex items-center gap-2 font-medium text-[#F4212E] mb-1`}>
+              <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-3 bg-red-50 dark:bg-[#F4212E] dark:bg-opacity-5`}>
+                <div className={`flex items-center gap-2 font-medium text-red-500 dark:text-[#F4212E] mb-1`}>
                   <FileText className="w-4 h-4" />
                   Descrição da Perda
                 </div>
-                <p className="text-[#F4212E]">{item.descricaoPerda}</p>
+                <p className="text-red-500 dark:text-[#F4212E]">{item.descricaoPerda}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-2">
@@ -422,9 +417,9 @@ const FerramentasPerdidasTab = ({
               </div>
 
               {item.valorEstimado > 0 && (
-                <div className={`${classes.card} p-2 bg-[#FFD700] bg-opacity-5 flex items-center gap-2`}>
-                  <DollarSign className="w-4 h-4 text-[#FFD700]" />
-                  <span className="text-[#FFD700]">
+                <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-2 bg-yellow-50 dark:bg-[#FFD700] dark:bg-opacity-5 flex items-center gap-2`}>
+                  <DollarSign className="w-4 h-4 text-yellow-500 dark:text-[#FFD700]" />
+                  <span className="text-yellow-500 dark:text-[#FFD700]">
                     <strong>Valor Estimado:</strong> 
                     <span className="ml-1">
                       R$ {item.valorEstimado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -434,7 +429,7 @@ const FerramentasPerdidasTab = ({
               )}
 
               {item.observacoes && (
-                <div className={`${classes.card} p-2`}>
+                <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-2`}>
                   <strong className={colors.text}>Observações:</strong>
                   <p className={colors.textSecondary}>{item.observacoes}</p>
                 </div>
@@ -450,7 +445,7 @@ const FerramentasPerdidasTab = ({
       </div>
 
       {ferramentasFiltradas.length === 0 && (
-        <div className={`${classes.card} p-8 text-center`}>
+        <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-8 text-center`}>
           <Search className={`w-16 h-16 mx-auto ${colors.textSecondary} mb-4`} />
           <p className={`text-lg font-medium ${colors.text}`}>
             {filtro || filtroStatus !== 'todos' 
@@ -469,17 +464,17 @@ const FerramentasPerdidasTab = ({
 
       {/* Modal de Nova Ferramenta Perdida */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Search className="w-5 h-5 text-[#F4212E]" />
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Search className="w-5 h-5 text-red-500 dark:text-[#F4212E]" />
                   Registrar Ferramenta Perdida
                 </h3>
                 <button
                   onClick={() => setModalAberto(false)}
-                  className="text-[#8899A6] hover:text-white transition-colors"
+                  className="text-gray-500 dark:text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
                 >
                   ✕
                 </button>
@@ -488,14 +483,14 @@ const FerramentasPerdidasTab = ({
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Nome da Ferramenta *
                     </label>
                     <input
                       type="text"
                       value={novaFerramenta.nomeItem}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, nomeItem: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center"
                       placeholder="Ex: Martelo Tramontina 25mm"
                       list="inventario-list"
                       required
@@ -508,48 +503,48 @@ const FerramentasPerdidasTab = ({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Categoria
                     </label>
                     <input
                       type="text"
                       value={novaFerramenta.categoria}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, categoria: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center"
                       placeholder="Ex: Ferramenta Manual"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white text-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                     Descrição da Perda *
                   </label>
                   <textarea
                     value={novaFerramenta.descricaoPerda}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, descricaoPerda: e.target.value})}
-                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-24"
+                    className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center h-24"
                     placeholder="Descreva detalhadamente as circunstâncias da perda..."
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white text-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                     Último Local Visto
                   </label>
                   <input
                     type="text"
                     value={novaFerramenta.localUltimaVez}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, localUltimaVez: e.target.value})}
-                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                    className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center"
                     placeholder="Ex: Obra da Rua A, Almoxarifado, Canteiro 3..."
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Valor Estimado (R$)
                     </label>
                     <input
@@ -558,21 +553,21 @@ const FerramentasPerdidasTab = ({
                       min="0"
                       value={novaFerramenta.valorEstimado}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, valorEstimado: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center"
                       placeholder="0,00"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Status da Busca
                     </label>
                     <select
                       value={novaFerramenta.statusBusca}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, statusBusca: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none text-center"
                     >
-                      <option value="buscando" className="bg-[#192734]">Buscando</option>
+                      <option value="buscando" className="bg-white dark:bg-gray-800">Buscando</option>
                       <option value="encontrada">Encontrada</option>
                       <option value="perdida_definitiva">Perda Definitiva</option>
                       <option value="substituida">Substituída</option>
@@ -580,15 +575,15 @@ const FerramentasPerdidasTab = ({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Prioridade
                     </label>
                     <select
                       value={novaFerramenta.prioridade}
                       onChange={(e) => setNovaFerramenta({...novaFerramenta, prioridade: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none text-center"
                     >
-                      <option value="baixa" className="bg-[#192734]">Baixa</option>
+                      <option value="baixa" className="bg-white dark:bg-gray-800">Baixa</option>
                       <option value="media">Média</option>
                       <option value="alta">Alta</option>
                     </select>
@@ -596,23 +591,23 @@ const FerramentasPerdidasTab = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white text-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                     Observações e Ações Tomadas
                   </label>
                   <textarea
                     value={novaFerramenta.observacoes}
                     onChange={(e) => setNovaFerramenta({...novaFerramenta, observacoes: e.target.value})}
-                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-20 resize-none"
+                    className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center h-20 resize-none"
                     placeholder="Ex: Já foi feita busca no almoxarifado, verificado com outros funcionários..."
                   />
                 </div>
 
-                <div className="bg-[#1DA1F2] bg-opacity-5 p-4 rounded-lg border border-[#1DA1F2] border-opacity-10">
-                  <div className="flex items-center gap-2 text-[#1DA1F2] mb-2">
+                <div className="bg-blue-500 dark:bg-[#1D9BF0] bg-opacity-5 p-4 rounded-lg border border-blue-500 dark:border-[#1D9BF0] border-opacity-10">
+                  <div className="flex items-center gap-2 text-blue-500 dark:text-[#1D9BF0] mb-2">
                     <AlertCircle className="w-4 h-4" />
                     <span className="font-medium">Dicas para recuperação:</span>
                   </div>
-                  <ul className="text-sm text-[#1DA1F2] space-y-1">
+                  <ul className="text-sm text-blue-500 dark:text-[#1D9BF0] space-y-1">
                     <li>• Verifique os locais de trabalho recentes</li>
                     <li>• Consulte outros funcionários da equipe</li>
                     <li>• Confira veículos e equipamentos utilizados</li>
@@ -623,14 +618,14 @@ const FerramentasPerdidasTab = ({
                 <div className="flex gap-3 pt-4">
                   <button 
                     type="submit"
-                    className="flex-1 bg-[#1DA1F2] text-white font-bold py-2 px-4 rounded-full hover:bg-[#1a91da] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                    className="flex-1 bg-blue-500 dark:bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white font-bold py-2 px-4 rounded-full hover:bg-blue-600 dark:hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#15202B]"
                   >
                     Registrar Ferramenta Perdida
                   </button>
                   <button
                     type="button"
                     onClick={() => setModalAberto(false)}
-                    className="flex-1 border border-[#1DA1F2] text-[#1DA1F2] font-bold py-2 px-4 rounded-full hover:bg-[#1DA1F2] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                    className="flex-1 border border-blue-500 dark:border-blue-500 dark:border-[#1D9BF0] text-blue-500 dark:text-blue-500 dark:text-[#1D9BF0] font-bold py-2 px-4 rounded-full hover:bg-blue-100 dark:hover:bg-blue-500 dark:bg-[#1D9BF0] dark:hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#15202B]"
                   >
                     Cancelar
                   </button>
@@ -643,17 +638,17 @@ const FerramentasPerdidasTab = ({
 
       {/* Modal de Edição de Ferramenta Perdida */}
       {editModalAberto && editingFerramenta && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Search className="w-5 h-5 text-[#1DA1F2]" />
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Search className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
                   Editar Ferramenta Perdida
                 </h3>
                 <button
                   onClick={closeEditModal}
-                  className="text-[#8899A6] hover:text-white transition-colors"
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
                 >
                   ✕
                 </button>
@@ -701,14 +696,14 @@ const FerramentasPerdidasTab = ({
               }} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Nome da Ferramenta *
                     </label>
                     <input
                       type="text"
                       value={editingFerramenta.nomeItem}
                       onChange={(e) => setEditingFerramenta({...editingFerramenta, nomeItem: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center"
                       placeholder="Ex: Martelo Tramontina 25mm"
                       list="inventario-list"
                       required
@@ -716,48 +711,48 @@ const FerramentasPerdidasTab = ({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Categoria
                     </label>
                     <input
                       type="text"
                       value={editingFerramenta.categoria}
                       onChange={(e) => setEditingFerramenta({...editingFerramenta, categoria: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center"
                       placeholder="Ex: Ferramenta Manual"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white text-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                     Descrição da Perda *
                   </label>
                   <textarea
                     value={editingFerramenta.descricaoPerda}
                     onChange={(e) => setEditingFerramenta({...editingFerramenta, descricaoPerda: e.target.value})}
-                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-24"
+                    className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center h-24"
                     placeholder="Descreva detalhadamente as circunstâncias da perda..."
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white text-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                     Último Local Visto
                   </label>
                   <input
                     type="text"
                     value={editingFerramenta.localUltimaVez}
                     onChange={(e) => setEditingFerramenta({...editingFerramenta, localUltimaVez: e.target.value})}
-                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                    className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center"
                     placeholder="Ex: Obra da Rua A, Almoxarifado, Canteiro 3..."
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Valor Estimado (R$)
                     </label>
                     <input
@@ -766,21 +761,21 @@ const FerramentasPerdidasTab = ({
                       min="0"
                       value={editingFerramenta.valorEstimado}
                       onChange={(e) => setEditingFerramenta({...editingFerramenta, valorEstimado: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center"
                       placeholder="0,00"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Status da Busca
                     </label>
                     <select
                       value={editingFerramenta.statusBusca}
                       onChange={(e) => setEditingFerramenta({...editingFerramenta, statusBusca: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none text-center"
                     >
-                      <option value="buscando" className="bg-[#192734]">Buscando</option>
+                      <option value="buscando" className="bg-white dark:bg-gray-800">Buscando</option>
                       <option value="encontrada">Encontrada</option>
                       <option value="perdida_definitiva">Perda Definitiva</option>
                       <option value="substituida">Substituída</option>
@@ -788,15 +783,15 @@ const FerramentasPerdidasTab = ({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-white text-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                       Prioridade
                     </label>
                     <select
                       value={editingFerramenta.prioridade}
                       onChange={(e) => setEditingFerramenta({...editingFerramenta, prioridade: e.target.value})}
-                      className="w-full bg-[#253341] border border-[#38444D] text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors appearance-none text-center"
+                      className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors appearance-none text-center"
                     >
-                      <option value="baixa" className="bg-[#192734]">Baixa</option>
+                      <option value="baixa" className="bg-white dark:bg-gray-800">Baixa</option>
                       <option value="media">Média</option>
                       <option value="alta">Alta</option>
                     </select>
@@ -804,13 +799,13 @@ const FerramentasPerdidasTab = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-white text-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-white text-center mb-2">
                     Observações e Ações Tomadas
                   </label>
                   <textarea
                     value={editingFerramenta.observacoes}
                     onChange={(e) => setEditingFerramenta({...editingFerramenta, observacoes: e.target.value})}
-                    className="w-full bg-[#253341] border border-[#38444D] text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] transition-colors text-center h-20 resize-none"
+                    className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors text-center h-20 resize-none"
                     placeholder="Ex: Já foi feita busca no almoxarifado, verificado com outros funcionários..."
                   />
                 </div>
@@ -818,14 +813,14 @@ const FerramentasPerdidasTab = ({
                 <div className="flex gap-3 pt-4">
                   <button 
                     type="submit"
-                    className="flex-1 bg-[#1DA1F2] text-white font-bold py-2 px-4 rounded-full hover:bg-[#1a91da] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                    className="flex-1 bg-blue-500 dark:bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white font-bold py-2 px-4 rounded-full hover:bg-blue-600 dark:hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#15202B]"
                   >
                     Salvar Alterações
                   </button>
                   <button
                     type="button"
                     onClick={closeEditModal}
-                    className="flex-1 border border-[#1DA1F2] text-[#1DA1F2] font-bold py-2 px-4 rounded-full hover:bg-[#1DA1F2] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                    className="flex-1 border border-blue-500 dark:border-blue-500 dark:border-[#1D9BF0] text-blue-500 dark:text-blue-500 dark:text-[#1D9BF0] font-bold py-2 px-4 rounded-full hover:bg-blue-100 dark:hover:bg-blue-500 dark:bg-[#1D9BF0] dark:hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#15202B]"
                   >
                     Cancelar
                   </button>
@@ -838,14 +833,14 @@ const FerramentasPerdidasTab = ({
 
       {/* Modal de Confirmação de Exclusão */}
       {deleteModalAberto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#192734] border border-[#38444D] rounded-xl shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-[#F4212E] bg-opacity-10 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-[#F4212E]" />
+                <div className="w-10 h-10 bg-red-100 dark:bg-[#F4212E] dark:bg-opacity-10 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-500 dark:text-[#F4212E]" />
                 </div>
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                   Confirmar Exclusão
                 </h3>
               </div>
@@ -895,13 +890,13 @@ const FerramentasPerdidasTab = ({
                       });
                     }
                   }}
-                  className="flex-1 bg-[#F4212E] text-white font-bold py-2 px-4 rounded-full hover:bg-[#d91d28] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F4212E] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                  className="flex-1 bg-[#F4212E] text-gray-900 dark:text-white font-bold py-2 px-4 rounded-full hover:bg-[#d91d28] transition-colors focus:outline-none focus:ring-2 focus:ring-[#F4212E] focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#15202B]"
                 >
                   Excluir
                 </button>
                 <button
                   onClick={closeDeleteModal}
-                  className="flex-1 border border-[#38444D] text-white font-bold py-2 px-4 rounded-full hover:bg-[#38444D] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#38444D] focus:ring-offset-2 focus:ring-offset-[#15202B]"
+                  className="flex-1 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white font-bold py-2 px-4 rounded-full hover:bg-[#38444D] hover:bg-opacity-10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#38444D] focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#15202B]"
                 >
                   Cancelar
                 </button>
@@ -915,3 +910,8 @@ const FerramentasPerdidasTab = ({
 };
 
 export default FerramentasPerdidasTab;
+
+
+
+
+

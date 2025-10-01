@@ -28,20 +28,20 @@ const TermosDeUso = () => {
   return (
     <div className="space-y-6">
       {termos.map(termo => (
-        <div key={termo.id} className="bg-[#192734] p-6 rounded-lg border border-[#38444D]">
+        <div key={termo.id} className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600">
           <div className="flex justify-between items-start mb-4">
             <div>
               <h3 className="text-lg font-medium text-white">{termo.titulo}</h3>
-              <p className="text-sm text-[#8899A6]">Versão {termo.versao}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Versão {termo.versao}</p>
             </div>
             <span className="px-2 py-1 bg-green-500/10 text-green-500 rounded-full text-xs">
               {termo.status}
             </span>
           </div>
           <div className="prose prose-invert max-w-none">
-            <p className="text-[#8899A6] whitespace-pre-wrap">{termo.conteudo}</p>
+            <p className="text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{termo.conteudo}</p>
           </div>
-          <div className="mt-4 pt-4 border-t border-[#38444D] text-sm text-[#8899A6]">
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-400">
             Publicado por {termo.criadoPor} em {new Date(termo.dataCriacao).toLocaleDateString()}
           </div>
         </div>
@@ -51,3 +51,4 @@ const TermosDeUso = () => {
 };
 
 export default TermosDeUso;
+

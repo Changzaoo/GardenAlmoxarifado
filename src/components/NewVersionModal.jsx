@@ -47,7 +47,7 @@ const NewVersionModal = ({ isOpen, onClose, version, changes, onUpdate }) => {
         <div className="flex flex-col gap-3">
           <button
             onClick={onUpdate}
-            className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+            className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-gray-900 dark:text-white rounded-lg font-medium transition-colors"
           >
             Atualizar agora
           </button>
@@ -69,3 +69,4 @@ const NewVersionModal = ({ isOpen, onClose, version, changes, onUpdate }) => {
 };
 
 export default NewVersionModal;
+

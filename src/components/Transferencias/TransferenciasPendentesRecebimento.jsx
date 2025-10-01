@@ -104,13 +104,13 @@ const TransferenciasPendentesRecebimento = ({ usuario }) => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAceitarTransferencia(transferencia)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    className="px-4 py-2 bg-green-600 text-gray-900 dark:text-white rounded-md hover:bg-green-700 transition-colors"
                   >
                     Aceitar
                   </button>
                   <button
                     onClick={() => handleRecusarTransferencia(transferencia)}
-                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                    className="px-4 py-2 bg-red-600 text-gray-900 dark:text-white rounded-md hover:bg-red-700 transition-colors"
                   >
                     Recusar
                   </button>
@@ -125,3 +125,4 @@ const TransferenciasPendentesRecebimento = ({ usuario }) => {
 };
 
 export default TransferenciasPendentesRecebimento;
+

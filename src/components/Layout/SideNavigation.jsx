@@ -5,7 +5,7 @@ const SideNavigation = () => {
   const location = useLocation();
   
   return (
-    <nav className="fixed left-0 h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out">
+    <nav className="fixed left-0 h-full w-64 bg-white dark:bg-gray-800 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out">
       <div className="flex flex-col h-full">
         <div className="overflow-y-auto flex-grow scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
           {/* Main Navigation */}
@@ -70,3 +70,4 @@ const SideNavigation = () => {
 };
 
 export default SideNavigation;
+

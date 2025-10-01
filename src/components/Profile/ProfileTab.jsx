@@ -386,7 +386,7 @@ const ProfileTab = () => {
   }, [usuario.id]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
+    <div className="min-h-screen bg-white dark:bg-gray-800 dark:bg-black">
       {/* Cover & Profile Picture */}
       <div className="relative">
         <div className="h-32 bg-[#1D9BF0]/10"></div>
@@ -411,7 +411,7 @@ const ProfileTab = () => {
         </div>
         
         {/* Points Display */}
-        <div className="absolute -bottom-12 right-4 flex items-center gap-2 bg-white dark:bg-gray-800 rounded-full px-4 py-2 shadow-md">
+        <div className="absolute -bottom-12 right-4 flex items-center gap-2 bg-white dark:bg-gray-800 dark:bg-gray-800 rounded-full px-4 py-2 shadow-md">
           <Trophy className="w-5 h-5 text-yellow-500" />
           <div className="text-lg font-semibold">{stats.pontos.total} pontos</div>
         </div>
@@ -550,3 +550,4 @@ const WrappedProfileTab = () => {
 };
 
 export default WrappedProfileTab;
+

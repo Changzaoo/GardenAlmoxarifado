@@ -217,13 +217,13 @@ const HistoricoEmprestimosTab = ({
               placeholder="       Buscar por colaborador ou ferramenta..."
               value={filtroEmprestimos}
               onChange={(e) => setFiltroEmprestimos(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 border border-gray-300 dark:border-[#38444D] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white dark:placeholder-gray-500 text-sm"
+              className="w-full h-10 pl-10 pr-4 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-white dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 text-sm"
             />
           </div>
           <select
             value={filtroPeriodo}
             onChange={(e) => setFiltroPeriodo(e.target.value)}
-            className="border border-gray-300 dark:border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <option value="todos">Todos os períodos</option>
             <option value="hoje">Hoje</option>
@@ -233,7 +233,7 @@ const HistoricoEmprestimosTab = ({
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="border border-gray-300 dark:border-[#38444D] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-[#253341] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <option value="todos">Todos os status</option>
             <option value="emprestado">Não devolvidos</option>
@@ -408,7 +408,7 @@ const HistoricoEmprestimosTab = ({
       </div>
 
       {showDevolucaoModal && selectedEmprestimo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
           <DevolucaoTerceirosModal
             emprestimo={selectedEmprestimo}
             onClose={() => {
@@ -421,7 +421,7 @@ const HistoricoEmprestimosTab = ({
       )}
 
       {showDevolucaoParcialModal && emprestimoParaDevolucaoParcial && Array.isArray(emprestimoParaDevolucaoParcial.ferramentas) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
           <DevolucaoParcialModal
             emprestimo={emprestimoParaDevolucaoParcial}
             onClose={() => {
@@ -441,12 +441,12 @@ const HistoricoEmprestimosTab = ({
 
       {/* Modal de Confirmação de Exclusão */}
       {showConfirmacaoExclusao && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#253341] rounded-lg p-6 max-w-md w-full border border-[#38444D]">
-            <h3 className="text-lg font-medium text-white mb-4">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-700 rounded-lg p-6 max-w-md w-full border border-gray-200 dark:border-gray-600 dark:border-gray-600">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               Confirmar Exclusão
             </h3>
-            <p className="text-[#8899A6] mb-6">
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
               Tem certeza que deseja excluir este registro de empréstimo do histórico?
               {emprestimoParaExcluir?.nomeFuncionario && (
                 <span className="block mt-2">
@@ -457,13 +457,13 @@ const HistoricoEmprestimosTab = ({
             <div className="flex justify-end gap-3">
               <button
                 onClick={cancelarExclusao}
-                className="px-4 py-2 text-sm rounded-lg bg-[#38444D] text-white hover:bg-[#454F59] transition-colors"
+                className="px-4 py-2 text-sm rounded-lg bg-[#38444D] text-gray-900 dark:text-white hover:bg-[#454F59] transition-colors"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmarExclusao}
-                className="px-4 py-2 text-sm rounded-lg bg-[#F4212E] text-white hover:bg-[#E01D29] transition-colors"
+                className="px-4 py-2 text-sm rounded-lg bg-[#F4212E] text-gray-900 dark:text-white hover:bg-[#E01D29] transition-colors"
               >
                 Excluir
               </button>
@@ -476,3 +476,6 @@ const HistoricoEmprestimosTab = ({
 };
 
 export default HistoricoEmprestimosTab;
+
+
+

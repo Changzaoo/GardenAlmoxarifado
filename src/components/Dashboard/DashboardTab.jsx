@@ -5,14 +5,14 @@ import TimeAnalysisStats from './StatisticsCards/TimeAnalysisStats';
 import TaskAnalysisStats from './StatisticsCards/TaskAnalysisStats';
 
 const DashboardCard = ({ title, value, icon: Icon, color }) => (
-  <div className="bg-[#192734] p-4 rounded-xl border border-[#38444D] hover:border-[#1DA1F2] transition-colors">
+  <div className="bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4 hover:border-blue-500 dark:hover:border-[#1D9BF0] transition-colors">
     <div className="flex items-center gap-4">
-      <div className={`p-3 rounded-lg ${color || 'bg-[#1DA1F2]/10'}`}>
-        <Icon className={`w-6 h-6 ${color ? 'text-white' : 'text-[#1DA1F2]'}`} />
+      <div className={`p-3 rounded-lg ${color || 'bg-blue-500/10 dark:bg-[#1D9BF0]/10'}`}>
+        <Icon className={`w-6 h-6 ${color ? 'text-white' : 'text-blue-500 dark:text-[#1D9BF0]'}`} />
       </div>
       <div>
-        <h3 className="text-sm text-[#8899A6] font-medium">{title}</h3>
-        <p className="text-2xl font-bold text-white">{value}</p>
+        <h3 className="text-sm text-gray-900 dark:text-gray-300 font-medium">{title}</h3>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
       </div>
     </div>
   </div>
@@ -30,7 +30,7 @@ const DashboardTab = ({ stats }) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-white mb-4">Dashboard</h2>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Dashboard</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <DashboardCard
@@ -103,3 +103,4 @@ const DashboardTab = ({ stats }) => {
 };
 
 export default DashboardTab;
+

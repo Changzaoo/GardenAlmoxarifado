@@ -41,11 +41,11 @@ export const NotificationBadge = () => {
       {/* Botão da notificação */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-400 hover:text-white focus:outline-none focus:text-white"
+        className="relative p-2 text-gray-400 hover:text-gray-700 dark:hover:text-white focus:outline-none focus:text-white"
       >
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+          <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-gray-900 dark:text-white bg-red-500 rounded-full">
             {unreadCount}
           </span>
         )}
@@ -53,14 +53,14 @@ export const NotificationBadge = () => {
 
       {/* Dropdown de notificações */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-[#253341] rounded-lg shadow-lg z-50 border border-[#38444D] overflow-hidden">
-          <div className="p-4 border-b border-[#38444D] flex justify-between items-center">
+        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-700 rounded-lg shadow-lg z-50 border border-gray-300 dark:border-gray-600 overflow-hidden">
+          <div className="p-4 border-b border-gray-300 dark:border-gray-600 flex justify-between items-center">
             <h3 className="text-lg font-medium text-white">Notificações</h3>
             <div className="flex space-x-4">
               {notifications.length > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-sm text-[#1DA1F2] hover:text-[#1a91da]"
+                  className="text-sm text-blue-500 dark:text-[#1D9BF0] hover:text-blue-600 dark:hover:text-[#1a8cd8]"
                 >
                   Marcar todas como lidas
                 </button>
@@ -82,8 +82,8 @@ export const NotificationBadge = () => {
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 border-b border-[#38444D] hover:bg-[#192734] transition-colors cursor-pointer ${
-                    !notification.lida ? 'bg-[#192734]' : ''
+                  className={`p-4 border-b border-gray-300 dark:border-gray-600 hover:bg-white dark:bg-gray-800 transition-colors cursor-pointer ${
+                    !notification.lida ? 'bg-white dark:bg-gray-800' : ''
                   }`}
                   onClick={() => markAsRead(notification.id)}
                 >
@@ -114,5 +114,6 @@ export const NotificationBadge = () => {
 };
 
 export default NotificationBadge;
+
 
 

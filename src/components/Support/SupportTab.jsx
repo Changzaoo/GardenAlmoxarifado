@@ -342,7 +342,7 @@ const SupportTab = () => {
           placeholder="Pesquisar funcionalidades, tutoriais ou FAQs..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-3 pl-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 pl-12 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600 bg-white dark:bg-gray-800 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
         <Search className="w-5 h-5 absolute left-4 top-3.5 text-gray-400" />
       </div>
@@ -377,7 +377,7 @@ const SupportTab = () => {
             </button>
             
             {expandedSection === module.id && (
-              <div className="px-6 py-4 bg-white dark:bg-gray-900">
+              <div className="px-6 py-4 bg-white dark:bg-gray-800 dark:bg-gray-900">
                 <div className="space-y-6">
                   {module.features.map((feature, index) => (
                     <div key={index} className="border-b dark:border-gray-700 last:border-0 pb-6 last:pb-0">
@@ -424,7 +424,7 @@ const SupportTab = () => {
           >
             <button
               onClick={() => setExpandedSection(expandedSection === `faq-${index}` ? null : `faq-${index}`)}
-              className="w-full px-6 py-4 flex items-center justify-between bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="w-full px-6 py-4 flex items-center justify-between bg-white dark:bg-gray-800 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <div className="flex items-center space-x-3">
                 <HelpCircle className="w-5 h-5 text-blue-500" />
@@ -580,3 +580,4 @@ const SupportTab = () => {
 };
 
 export default SupportTab;
+
