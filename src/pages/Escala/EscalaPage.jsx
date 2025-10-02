@@ -1,19 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Info, Filter, Check, X, Eye, EyeOff } from 'lucide-react';
-import { collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { Calendar, ChevronLeft, ChevronRight, Info, Filter, Check, X, Eye, EyeOff, StickyNote, MessageSquare, Settings, Building2 } from 'lucide-react';
+import { collection, doc, setDoc, onSnapshot, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 
 const EscalaPage = ({ usuarioAtual }) => {
   const [dataAtual, setDataAtual] = useState(new Date());
+  const [mesAtual, setMesAtual] = useState(new Date());
   const [funcionarios, setFuncionarios] = useState([]);
   const [escalas, setEscalas] = useState({});
   const [presencas, setPresencas] = useState({});
+  const [anotacoesFuncionarios, setAnotacoesFuncionarios] = useState({});
+  const [anotacoesDias, setAnotacoesDias] = useState({});
+  const [funcionariosOcultos, setFuncionariosOcultos] = useState([]);
+  const [empresaSelecionada, setEmpresaSelecionada] = useState('todas');
   const [setorSelecionado, setSetorSelecionado] = useState('todos');
+  const [empresas, setEmpresas] = useState([]);
   const [setores, setSetores] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [mostrarLegenda, setMostrarLegenda] = useState(true);
-  const [modoVisualizacao, setModoVisualizacao] = useState('semanal');
-  const [mostrarPresenca, setMostrarPresenca] = useState(true);
+  const [mostrarLegenda, setMostrarLegenda] = useState(false);
+  const [modoVisualizacao, setModoVisualizacao] = useState('diario');
+  const [modalAnotacao, setModalAnotacao] = useState({ aberto: false, tipo: null, funcionarioId: null, dia: null, anotacao: '' });
+  const [modalAnotacaoDia, setModalAnotacaoDia] = useState({ aberto: false, dia: null, anotacao: '' });
+  const [modalGerenciarFuncionarios, setModalGerenciarFuncionarios] = useState(false);
+  const [modalConfiguracoes, setModalConfiguracoes] = useState(false);
+  const [configuracoesEscala, setConfiguracoesEscala] = useState({});
 
   // Tipos de escala com cores
   const TIPOS_ESCALA = {
@@ -85,6 +95,23 @@ const EscalaPage = ({ usuarioAtual }) => {
     { id: 'anual', label: 'Anual', dias: 365 }
   ];
 
+  // Carregar empresas
+  useEffect(() => {
+    const carregarEmpresas = async () => {
+      try {
+        const empresasSnapshot = await getDocs(collection(db, 'empresas'));
+        const empresasData = empresasSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setEmpresas(empresasData);
+      } catch (error) {
+        console.error('Erro ao carregar empresas:', error);
+      }
+    };
+    carregarEmpresas();
+  }, []);
+
   // Carregar funcionários
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -108,6 +135,24 @@ const EscalaPage = ({ usuarioAtual }) => {
       }
     );
 
+    return () => unsubscribe();
+  }, []);
+
+  // Carregar configurações de escala
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'configuracoes_escala'),
+      (snapshot) => {
+        const configs = {};
+        snapshot.docs.forEach(doc => {
+          configs[doc.id] = doc.data();
+        });
+        setConfiguracoesEscala(configs);
+      },
+      (error) => {
+        console.error('Erro ao carregar configurações:', error);
+      }
+    );
     return () => unsubscribe();
   }, []);
 
@@ -153,47 +198,150 @@ const EscalaPage = ({ usuarioAtual }) => {
     return () => unsubscribe();
   }, [mesAtual]);
 
+  // Carregar anotações de funcionários
+  useEffect(() => {
+    const mesAno = `${mesAtual.getFullYear()}-${String(mesAtual.getMonth() + 1).padStart(2, '0')}`;
+    
+    const unsubscribe = onSnapshot(
+      collection(db, 'anotacoes_funcionarios', mesAno, 'registros'),
+      (snapshot) => {
+        const anotacoesData = {};
+        snapshot.docs.forEach(doc => {
+          anotacoesData[doc.id] = doc.data();
+        });
+        setAnotacoesFuncionarios(anotacoesData);
+      },
+      (error) => {
+        console.error('Erro ao carregar anotações de funcionários:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [mesAtual]);
+
+  // Carregar anotações de dias
+  useEffect(() => {
+    const mesAno = `${mesAtual.getFullYear()}-${String(mesAtual.getMonth() + 1).padStart(2, '0')}`;
+    
+    const unsubscribe = onSnapshot(
+      collection(db, 'anotacoes_dias', mesAno, 'registros'),
+      (snapshot) => {
+        const anotacoesData = {};
+        snapshot.docs.forEach(doc => {
+          anotacoesData[doc.id] = doc.data();
+        });
+        setAnotacoesDias(anotacoesData);
+      },
+      (error) => {
+        console.error('Erro ao carregar anotações de dias:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [mesAtual]);
+
   // Verificar permissão
   const temPermissao = useMemo(() => {
     if (!usuarioAtual) return false;
     return usuarioAtual.nivel >= 2; // Supervisor ou superior (nivel 2, 3 ou 4)
   }, [usuarioAtual]);
 
-  // Filtrar funcionários por setor
+  // Filtrar funcionários por empresa, setor e ocultos
   const funcionariosFiltrados = useMemo(() => {
-    if (setorSelecionado === 'todos') {
-      return funcionarios;
+    let filtrados = funcionarios;
+    
+    // Filtrar por empresa
+    if (empresaSelecionada !== 'todas') {
+      filtrados = filtrados.filter(f => f.empresa === empresaSelecionada);
     }
-    return funcionarios.filter(f => f.setor === setorSelecionado);
-  }, [funcionarios, setorSelecionado]);
+    
+    // Filtrar por setor
+    if (setorSelecionado !== 'todos') {
+      filtrados = filtrados.filter(f => f.setor === setorSelecionado);
+    }
+    
+    // Remover funcionários ocultos
+    filtrados = filtrados.filter(f => !funcionariosOcultos.includes(f.id));
+    
+    return filtrados;
+  }, [funcionarios, empresaSelecionada, setorSelecionado, funcionariosOcultos]);
 
-  // Obter dias do mês
+  // Obter setores filtrados por empresa
+  const setoresFiltrados = useMemo(() => {
+    if (empresaSelecionada === 'todas') {
+      return setores;
+    }
+    const setoresDaEmpresa = funcionarios
+      .filter(f => f.empresa === empresaSelecionada)
+      .map(f => f.setor)
+      .filter(Boolean);
+    return [...new Set(setoresDaEmpresa)].sort();
+  }, [funcionarios, empresaSelecionada, setores]);
+
+  // Obter dias conforme o modo de visualização
   const diasDoMes = useMemo(() => {
     const ano = mesAtual.getFullYear();
     const mes = mesAtual.getMonth();
-    const primeiroDia = new Date(ano, mes, 1);
-    const ultimoDia = new Date(ano, mes + 1, 0);
     const dias = [];
 
-    for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
-      const data = new Date(ano, mes, dia);
+    if (modoVisualizacao === 'diario') {
+      // Modo diário: mostra apenas o dia atual
+      const diaAtual = mesAtual.getDate();
+      const data = new Date(ano, mes, diaAtual);
       const diaSemana = data.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase();
       dias.push({
-        dia,
+        dia: diaAtual,
         data,
         diaSemana: diaSemana.replace('.', ''),
         ehFimDeSemana: data.getDay() === 0 || data.getDay() === 6
       });
+    } else if (modoVisualizacao === 'semanal') {
+      // Modo semanal: mostra 7 dias a partir do dia atual
+      const diaAtual = mesAtual.getDate();
+      for (let i = 0; i < 7; i++) {
+        const data = new Date(ano, mes, diaAtual + i);
+        const diaSemana = data.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase();
+        dias.push({
+          dia: data.getDate(),
+          data,
+          diaSemana: diaSemana.replace('.', ''),
+          ehFimDeSemana: data.getDay() === 0 || data.getDay() === 6
+        });
+      }
+    } else {
+      // Modo mensal: mostra todos os dias do mês
+      const ultimoDia = new Date(ano, mes + 1, 0);
+      for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+        const data = new Date(ano, mes, dia);
+        const diaSemana = data.toLocaleDateString('pt-BR', { weekday: 'short' }).toUpperCase();
+        dias.push({
+          dia,
+          data,
+          diaSemana: diaSemana.replace('.', ''),
+          ehFimDeSemana: data.getDay() === 0 || data.getDay() === 6
+        });
+      }
     }
 
     return dias;
-  }, [mesAtual]);
+  }, [mesAtual, modoVisualizacao]);
 
-  // Navegar entre meses
+  // Navegar entre períodos
   const navegarMes = (direcao) => {
     setMesAtual(prev => {
       const novaData = new Date(prev);
-      novaData.setMonth(novaData.getMonth() + direcao);
+      
+      if (modoVisualizacao === 'diario') {
+        // Navega dia a dia
+        novaData.setDate(novaData.getDate() + direcao);
+      } else if (modoVisualizacao === 'semanal') {
+        // Navega semana a semana (7 dias)
+        novaData.setDate(novaData.getDate() + (direcao * 7));
+      } else {
+        // Modo mensal: navega mês a mês
+        novaData.setMonth(novaData.getMonth() + direcao);
+      }
+      
       return novaData;
     });
   };
@@ -265,12 +413,141 @@ const EscalaPage = ({ usuarioAtual }) => {
     return presenca?.presente;
   };
 
-  // Obter tipo de escala
+  // Salvar anotação de funcionário
+  const salvarAnotacaoFuncionario = async (funcionarioId, dia, anotacao) => {
+    if (!temPermissao) {
+      alert('Você não tem permissão para adicionar anotações.');
+      return;
+    }
+
+    try {
+      const mesAno = `${mesAtual.getFullYear()}-${String(mesAtual.getMonth() + 1).padStart(2, '0')}`;
+      const dataFormatada = `${mesAno}-${String(dia).padStart(2, '0')}`;
+      const docId = `${funcionarioId}_${dataFormatada}`;
+
+      if (!anotacao || anotacao.trim() === '') {
+        await deleteDoc(doc(db, 'anotacoes_funcionarios', mesAno, 'registros', docId));
+      } else {
+        await setDoc(doc(db, 'anotacoes_funcionarios', mesAno, 'registros', docId), {
+          funcionarioId,
+          data: dataFormatada,
+          anotacao: anotacao.trim(),
+          criadoPor: usuarioAtual?.email || 'Sistema',
+          criadoEm: new Date()
+        });
+      }
+      setModalAnotacao({ aberto: false, tipo: null, funcionarioId: null, dia: null, anotacao: '' });
+    } catch (error) {
+      console.error('Erro ao salvar anotação:', error);
+      alert('Erro ao salvar anotação. Tente novamente.');
+    }
+  };
+
+  // Salvar anotação do dia
+  const salvarAnotacaoDia = async (dia, anotacao) => {
+    if (!temPermissao) {
+      alert('Você não tem permissão para adicionar anotações.');
+      return;
+    }
+
+    try {
+      const mesAno = `${mesAtual.getFullYear()}-${String(mesAtual.getMonth() + 1).padStart(2, '0')}`;
+      const dataFormatada = `${mesAno}-${String(dia).padStart(2, '0')}`;
+
+      if (!anotacao || anotacao.trim() === '') {
+        await deleteDoc(doc(db, 'anotacoes_dias', mesAno, 'registros', dataFormatada));
+      } else {
+        await setDoc(doc(db, 'anotacoes_dias', mesAno, 'registros', dataFormatada), {
+          data: dataFormatada,
+          anotacao: anotacao.trim(),
+          criadoPor: usuarioAtual?.email || 'Sistema',
+          criadoEm: new Date()
+        });
+      }
+      setModalAnotacaoDia({ aberto: false, dia: null, anotacao: '' });
+    } catch (error) {
+      console.error('Erro ao salvar anotação do dia:', error);
+      alert('Erro ao salvar anotação. Tente novamente.');
+    }
+  };
+
+  // Obter anotação de funcionário
+  const obterAnotacaoFuncionario = (funcionarioId, dia) => {
+    const mesAno = `${mesAtual.getFullYear()}-${String(mesAtual.getMonth() + 1).padStart(2, '0')}`;
+    const dataFormatada = `${mesAno}-${String(dia).padStart(2, '0')}`;
+    const docId = `${funcionarioId}_${dataFormatada}`;
+    return anotacoesFuncionarios[docId]?.anotacao || '';
+  };
+
+  // Obter anotação do dia
+  const obterAnotacaoDia = (dia) => {
+    const mesAno = `${mesAtual.getFullYear()}-${String(mesAtual.getMonth() + 1).padStart(2, '0')}`;
+    const dataFormatada = `${mesAno}-${String(dia).padStart(2, '0')}`;
+    return anotacoesDias[dataFormatada]?.anotacao || '';
+  };
+
+  // Alternar visibilidade do funcionário
+  const toggleFuncionarioOculto = (funcionarioId) => {
+    setFuncionariosOcultos(prev => {
+      if (prev.includes(funcionarioId)) {
+        return prev.filter(id => id !== funcionarioId);
+      } else {
+        return [...prev, funcionarioId];
+      }
+    });
+  };
+
+  // Abrir modal de anotação
+  const abrirModalAnotacao = (funcionarioId, dia) => {
+    const anotacaoExistente = obterAnotacaoFuncionario(funcionarioId, dia);
+    setModalAnotacao({
+      aberto: true,
+      tipo: 'funcionario',
+      funcionarioId,
+      dia,
+      anotacao: anotacaoExistente
+    });
+  };
+
+  // Abrir modal de anotação do dia
+  const abrirModalAnotacaoDia = (dia) => {
+    const anotacaoExistente = obterAnotacaoDia(dia);
+    setModalAnotacaoDia({
+      aberto: true,
+      dia,
+      anotacao: anotacaoExistente
+    });
+  };
+
+  // Salvar configuração de escala padrão
+  const salvarConfiguracaoEscala = async (funcionarioId, tipoEscala) => {
+    try {
+      await setDoc(doc(db, 'configuracoes_escala', funcionarioId), {
+        funcionarioId,
+        tipoEscala,
+        atualizadoPor: usuarioAtual?.email || 'Sistema',
+        atualizadoEm: new Date()
+      });
+      alert('Configuração salva com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar configuração:', error);
+      alert('Erro ao salvar configuração. Tente novamente.');
+    }
+  };
+
+  // Obter tipo de escala (com fallback para configuração padrão)
   const obterTipoEscala = (funcionarioId, dia) => {
     const mesAno = `${mesAtual.getFullYear()}-${String(mesAtual.getMonth() + 1).padStart(2, '0')}`;
     const dataFormatada = `${mesAno}-${String(dia).padStart(2, '0')}`;
     const docId = `${funcionarioId}_${dataFormatada}`;
-    return escalas[docId]?.tipo || 'VAZIO';
+    
+    // Se já existe marcação específica, usa ela
+    if (escalas[docId]?.tipo) {
+      return escalas[docId].tipo;
+    }
+    
+    // Senão, usa a configuração padrão do funcionário
+    return configuracoesEscala[funcionarioId]?.tipoEscala || 'VAZIO';
   };
 
   // Estatísticas por funcionário
@@ -344,18 +621,24 @@ const EscalaPage = ({ usuarioAtual }) => {
             </p>
           </div>
 
-          {/* Navegação de Mês */}
+          {/* Navegação de Período */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => navegarMes(-1)}
               className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              title={modoVisualizacao === 'diario' ? 'Dia anterior' : modoVisualizacao === 'semanal' ? 'Semana anterior' : 'Mês anterior'}
             >
               <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-300" />
             </button>
             
-            <div className="text-center min-w-[180px]">
+            <div className="text-center min-w-[200px]">
               <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                {mesAtual.toLocaleDateString('pt-BR', { month: 'long' })}
+                {modoVisualizacao === 'diario' 
+                  ? mesAtual.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })
+                  : modoVisualizacao === 'semanal'
+                  ? `Semana ${Math.ceil(mesAtual.getDate() / 7)}`
+                  : mesAtual.toLocaleDateString('pt-BR', { month: 'long' })
+                }
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {mesAtual.getFullYear()}
@@ -365,15 +648,84 @@ const EscalaPage = ({ usuarioAtual }) => {
             <button
               onClick={() => navegarMes(1)}
               className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              title={modoVisualizacao === 'diario' ? 'Próximo dia' : modoVisualizacao === 'semanal' ? 'Próxima semana' : 'Próximo mês'}
             >
               <ChevronRight className="w-6 h-6 text-gray-600 dark:text-gray-300" />
             </button>
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
+        {/* Filtros e Controles */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Filtro de Visualização */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Modo de Visualização
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setModoVisualizacao('diario')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  modoVisualizacao === 'diario'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                Diário
+              </button>
+              <button
+                onClick={() => setModoVisualizacao('semanal')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  modoVisualizacao === 'semanal'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                Semanal
+              </button>
+              <button
+                onClick={() => setModoVisualizacao('mensal')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  modoVisualizacao === 'mensal'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                Mensal
+              </button>
+            </div>
+            <button
+              onClick={() => setMesAtual(new Date())}
+              className="w-full mt-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              title="Voltar para hoje"
+            >
+              Hoje
+            </button>
+          </div>
+
+          {/* Filtro de Empresa */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Filtrar por Empresa
+            </label>
+            <select
+              value={empresaSelecionada}
+              onChange={(e) => {
+                setEmpresaSelecionada(e.target.value);
+                setSetorSelecionado('todos');
+              }}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600"
+            >
+              <option value="todas">Todas as Empresas</option>
+              {empresas.map(empresa => (
+                <option key={empresa.id} value={empresa.id}>{empresa.nome}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtro de Setor */}
+          <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Filtrar por Setor
             </label>
@@ -383,32 +735,49 @@ const EscalaPage = ({ usuarioAtual }) => {
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600"
             >
               <option value="todos">Todos os Setores</option>
-              {setores.map(setor => (
+              {setoresFiltrados.map(setor => (
                 <option key={setor} value={setor}>{setor}</option>
               ))}
             </select>
           </div>
 
-          <div className="flex gap-2">
+          {/* Botões de Ação */}
+          <div className="flex flex-col gap-2">
             <button
-              onClick={() => setMostrarPresenca(!mostrarPresenca)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                mostrarPresenca
-                  ? 'bg-green-600 text-white hover:bg-green-700'
+              onClick={() => setModalGerenciarFuncionarios(true)}
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                funcionariosOcultos.length > 0
+                  ? 'bg-orange-600 text-white hover:bg-orange-700'
                   : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
               }`}
+              title="Gerenciar funcionários visíveis"
             >
-              {mostrarPresenca ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-              {mostrarPresenca ? 'Ocultar' : 'Mostrar'} Presença
+              <Filter className="w-5 h-5" />
+              <span className="text-sm">Funcionários</span>
+              {funcionariosOcultos.length > 0 && (
+                <span className="bg-white text-orange-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                  {funcionariosOcultos.length}
+                </span>
+              )}
             </button>
-            
-            <button
-              onClick={() => setMostrarLegenda(!mostrarLegenda)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Info className="w-5 h-5" />
-              {mostrarLegenda ? 'Ocultar' : 'Mostrar'} Legenda
-            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setModalConfiguracoes(true)}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                title="Configurar escalas padrão"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+              
+              <button
+                onClick={() => setMostrarLegenda(!mostrarLegenda)}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                title={mostrarLegenda ? 'Ocultar legenda' : 'Mostrar legenda'}
+              >
+                <Info className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -450,17 +819,33 @@ const EscalaPage = ({ usuarioAtual }) => {
                 <th className="sticky left-[100px] z-20 bg-green-600 dark:bg-green-700 px-4 py-3 text-left font-semibold border-r border-green-500 dark:border-green-600 min-w-[200px]">
                   Colaborador
                 </th>
-                {diasDoMes.map(({ dia, diaSemana, ehFimDeSemana }) => (
-                  <th
-                    key={dia}
-                    className={`px-2 py-3 text-center font-semibold text-xs border-r border-green-500 dark:border-green-600 min-w-[60px] ${
-                      ehFimDeSemana ? 'bg-green-700 dark:bg-green-800' : ''
-                    }`}
-                  >
-                    <div>{diaSemana}</div>
-                    <div className="text-lg">{dia}</div>
-                  </th>
-                ))}
+                {diasDoMes.map(({ dia, diaSemana, ehFimDeSemana }) => {
+                  const temAnotacao = obterAnotacaoDia(dia);
+                  return (
+                    <th
+                      key={dia}
+                      className={`px-2 py-3 text-center font-semibold text-xs border-r border-green-500 dark:border-green-600 min-w-[60px] ${
+                        ehFimDeSemana ? 'bg-green-700 dark:bg-green-800' : ''
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-1">
+                        <div>{diaSemana}</div>
+                        <div className="text-lg">{dia}</div>
+                        <button
+                          onClick={() => abrirModalAnotacaoDia(dia)}
+                          className={`p-1 rounded transition-colors ${
+                            temAnotacao
+                              ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                              : 'bg-green-500 bg-opacity-30 hover:bg-opacity-50'
+                          }`}
+                          title={temAnotacao ? 'Ver anotação do dia' : 'Adicionar anotação do dia'}
+                        >
+                          <StickyNote className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </th>
+                  );
+                })}
                 <th className="px-4 py-3 text-center font-semibold border-l-2 border-green-500 dark:border-green-600 min-w-[120px]">
                   Estatísticas
                 </th>
@@ -502,6 +887,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                         const tipo = obterTipoEscala(func.id, dia);
                         const config = TIPOS_ESCALA[tipo] || TIPOS_ESCALA.VAZIO;
                         const presencaStatus = obterPresenca(func.id, dia);
+                        const temAnotacao = obterAnotacaoFuncionario(func.id, dia);
                         return (
                           <td
                             key={dia}
@@ -522,16 +908,15 @@ const EscalaPage = ({ usuarioAtual }) => {
                                 ))}
                               </select>
                               
-                              {mostrarPresenca && (
-                                <div className="flex gap-0.5 justify-center">
-                                  <button
-                                    onClick={() => marcarPresenca(func.id, dia, presencaStatus === true ? null : true)}
-                                    className={`flex-1 px-1 py-0.5 rounded text-xs font-bold transition-all ${
-                                      presencaStatus === true
-                                        ? 'bg-green-600 text-white scale-105'
-                                        : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-800'
-                                    }`}
-                                    title="Presente"
+                              <div className="flex gap-0.5 justify-center">
+                                <button
+                                  onClick={() => marcarPresenca(func.id, dia, presencaStatus === true ? null : true)}
+                                  className={`flex-1 px-1 py-0.5 rounded text-xs font-bold transition-all ${
+                                    presencaStatus === true
+                                      ? 'bg-green-600 text-white scale-105'
+                                      : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-800'
+                                  }`}
+                                  title="Presente"
                                   >
                                     <Check className="w-3 h-3 mx-auto" />
                                   </button>
@@ -545,9 +930,20 @@ const EscalaPage = ({ usuarioAtual }) => {
                                     title="Falta"
                                   >
                                     <X className="w-3 h-3 mx-auto" />
-                                  </button>
-                                </div>
-                              )}
+                                </button>
+                              </div>
+                              
+                              <button
+                                onClick={() => abrirModalAnotacao(func.id, dia)}
+                                className={`w-full px-1 py-0.5 rounded text-xs transition-colors ${
+                                  temAnotacao
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-800'
+                                }`}
+                                title={temAnotacao ? 'Ver anotação' : 'Adicionar anotação'}
+                              >
+                                <MessageSquare className="w-3 h-3 mx-auto" />
+                              </button>
                             </div>
                           </td>
                         );
@@ -570,19 +966,15 @@ const EscalaPage = ({ usuarioAtual }) => {
                             <span className="text-gray-600 dark:text-gray-400">Atestados:</span>
                             <span className="font-bold text-red-600 dark:text-red-400">{stats.atestados}</span>
                           </div>
-                          {mostrarPresenca && (
-                            <>
-                              <div className="h-px bg-gray-300 dark:bg-gray-600 my-1"></div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">✓ Presenças:</span>
-                                <span className="font-bold text-green-600 dark:text-green-400">{stats.presencas}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">✗ Faltas:</span>
-                                <span className="font-bold text-red-600 dark:text-red-400">{stats.faltas}</span>
-                              </div>
-                            </>
-                          )}
+                          <div className="h-px bg-gray-300 dark:bg-gray-600 my-1"></div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">✓ Presenças:</span>
+                            <span className="font-bold text-green-600 dark:text-green-400">{stats.presencas}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">✗ Faltas:</span>
+                            <span className="font-bold text-red-600 dark:text-red-400">{stats.faltas}</span>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -634,6 +1026,227 @@ const EscalaPage = ({ usuarioAtual }) => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Gerenciar Funcionários */}
+      {modalGerenciarFuncionarios && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <Filter className="w-6 h-6" />
+                Gerenciar Visibilidade dos Funcionários
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Selecione os funcionários que deseja ocultar da tabela de escala
+              </p>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-2">
+                {funcionarios
+                  .filter(f => setorSelecionado === 'todos' || f.setor === setorSelecionado)
+                  .map(func => (
+                    <div
+                      key={func.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+                        funcionariosOcultos.includes(func.id)
+                          ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-750'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-gray-800 dark:text-white">
+                            {func.nome}
+                          </span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {func.cargo} • {func.setor}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => toggleFuncionarioOculto(func.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          funcionariosOcultos.includes(func.id)
+                            ? 'bg-green-600 text-white hover:bg-green-700'
+                            : 'bg-orange-600 text-white hover:bg-orange-700'
+                        }`}
+                      >
+                        {funcionariosOcultos.includes(func.id) ? (
+                          <>
+                            <Eye className="w-4 h-4" />
+                            Mostrar
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-4 h-4" />
+                            Ocultar
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+              {funcionariosOcultos.length > 0 && (
+                <button
+                  onClick={() => setFuncionariosOcultos([])}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  Mostrar Todos ({funcionariosOcultos.length})
+                </button>
+              )}
+              <button
+                onClick={() => setModalGerenciarFuncionarios(false)}
+                className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors font-medium"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Configurações de Escala */}
+      {modalConfiguracoes && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <Settings className="w-6 h-6" />
+                Configurar Escalas Padrão
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Defina a escala padrão (M, M1, M4) para cada funcionário. Esta será aplicada automaticamente quando não houver marcação específica.
+              </p>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-3">
+                {funcionariosFiltrados.map(func => (
+                  <div
+                    key={func.id}
+                    className="flex items-center justify-between p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-750"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-gray-800 dark:text-white">
+                        {func.nome}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {func.cargo} • {func.setor}
+                      </span>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {['M', 'M1', 'M4', 'VAZIO'].map(tipo => {
+                        const config = TIPOS_ESCALA[tipo];
+                        const isAtivo = configuracoesEscala[func.id]?.tipoEscala === tipo;
+                        return (
+                          <button
+                            key={tipo}
+                            onClick={() => salvarConfiguracaoEscala(func.id, tipo)}
+                            className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                              isAtivo
+                                ? `${config.cor} ${config.corTexto} ring-2 ring-offset-2 ring-green-500`
+                                : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                            }`}
+                          >
+                            {config.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setModalConfiguracoes(false)}
+                className="w-full px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors font-medium"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Anotação do Funcionário */}
+      {modalAnotacao.aberto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+              <MessageSquare className="w-6 h-6" />
+              Anotação do Funcionário
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Funcionário: {funcionarios.find(f => f.id === modalAnotacao.funcionarioId)?.nome}
+              <br />
+              Dia: {modalAnotacao.dia}/{mesAtual.getMonth() + 1}/{mesAtual.getFullYear()}
+            </p>
+            <textarea
+              value={modalAnotacao.anotacao}
+              onChange={(e) => setModalAnotacao({ ...modalAnotacao, anotacao: e.target.value })}
+              className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 resize-none"
+              placeholder="Digite sua anotação aqui..."
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => salvarAnotacaoFuncionario(modalAnotacao.funcionarioId, modalAnotacao.dia, modalAnotacao.anotacao)}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Salvar
+              </button>
+              <button
+                onClick={() => setModalAnotacao({ aberto: false, tipo: null, funcionarioId: null, dia: null, anotacao: '' })}
+                className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Anotação do Dia */}
+      {modalAnotacaoDia.aberto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+              <StickyNote className="w-6 h-6" />
+              Anotação do Dia
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Data: {modalAnotacaoDia.dia}/{mesAtual.getMonth() + 1}/{mesAtual.getFullYear()}
+            </p>
+            <textarea
+              value={modalAnotacaoDia.anotacao}
+              onChange={(e) => setModalAnotacaoDia({ ...modalAnotacaoDia, anotacao: e.target.value })}
+              className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-yellow-500 resize-none"
+              placeholder="Digite uma anotação geral para este dia..."
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => salvarAnotacaoDia(modalAnotacaoDia.dia, modalAnotacaoDia.anotacao)}
+                className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+              >
+                Salvar
+              </button>
+              <button
+                onClick={() => setModalAnotacaoDia({ aberto: false, dia: null, anotacao: '' })}
+                className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

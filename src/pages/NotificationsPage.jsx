@@ -16,7 +16,8 @@ import {
   X,
   AlertTriangle,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Users
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -236,15 +237,6 @@ const NotificationsPage = ({ onNavigate }) => {
           )}
         </div>
 
-        {/* Debug Info */}
-        {usuario && (
-          <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 text-sm">
-            <p className="text-yellow-800 dark:text-yellow-300">
-              <strong>Debug:</strong> Usuário: {usuario.nome || usuario.email} (ID: {usuario.id}) | Buscando por: {usuario.nome || usuario.id} | Tarefas encontradas: {tarefas.length}
-            </p>
-          </div>
-        )}
-
         {/* Mensagem quando não há tarefas */}
         {(filter === 'todas' || filter === 'tarefa') && tarefas.length === 0 && (
           <div className="mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 text-center">
@@ -310,6 +302,23 @@ const NotificationsPage = ({ onNavigate }) => {
                         <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap">
                           {tarefa.descricao}
                         </p>
+
+                        {/* Funcionários Atribuídos */}
+                        {tarefa.funcionarios && tarefa.funcionarios.length > 0 && (
+                          <div className="mb-3 flex items-center gap-2 flex-wrap">
+                            <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                            <div className="flex gap-1 flex-wrap">
+                              {tarefa.funcionarios.map((func, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-2 py-1 text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full border border-blue-200 dark:border-blue-800"
+                                >
+                                  {func.nome}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">

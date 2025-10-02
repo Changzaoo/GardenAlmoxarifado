@@ -34,7 +34,6 @@ import AnalyticsProvider from './Analytics/AnalyticsProvider';
 import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
-import PontoPage from '../pages/Ponto/PontoPage';
 import EscalaPage from '../pages/Escala/EscalaPage';
 import { notifyNewLoan } from '../utils/notificationHelpers';
 import CadastroEmpresas from './Empresas/CadastroEmpresas';
@@ -75,7 +74,10 @@ import {
   MessageCircle,
   Bell,
   Building2,
-  Briefcase
+  Briefcase,
+  GripVertical,
+  Check,
+  Save
 } from 'lucide-react';
 
 // Função para bloquear teclas de atalho e menu de contexto
@@ -415,6 +417,82 @@ const AuthProvider = ({ children }) => {
     };
   }, [firebaseStatus]);
 
+  // Listener em tempo real para o usuário logado - Atualiza automaticamente quando dados mudam
+  useEffect(() => {
+    if (!usuario || !usuario.id) return;
+
+    let unsubscribe = null;
+
+    const setupUserListener = () => {
+      try {
+        console.log('🔄 Configurando listener para o usuário logado:', usuario.email);
+        
+        unsubscribe = onSnapshot(doc(db, 'usuarios', usuario.id), (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const dadosAtualizados = { id: docSnapshot.id, ...docSnapshot.data() };
+            
+            // Verificar se houve mudanças relevantes
+            const mudouNivel = dadosAtualizados.nivel !== usuario.nivel;
+            const mudouAtivo = dadosAtualizados.ativo !== usuario.ativo;
+            const mudouEmpresa = dadosAtualizados.empresaId !== usuario.empresaId;
+            const mudouSetor = dadosAtualizados.setorId !== usuario.setorId;
+            
+            if (mudouNivel || mudouAtivo || mudouEmpresa || mudouSetor) {
+              console.log('⚡ Dados do usuário alterados em tempo real:', {
+                nivel: { antes: usuario.nivel, depois: dadosAtualizados.nivel },
+                ativo: { antes: usuario.ativo, depois: dadosAtualizados.ativo },
+                empresa: { antes: usuario.empresaId, depois: dadosAtualizados.empresaId },
+                setor: { antes: usuario.setorId, depois: dadosAtualizados.setorId }
+              });
+
+              // Se o usuário foi desativado, fazer logout
+              if (!dadosAtualizados.ativo) {
+                console.log('❌ Usuário foi desativado. Fazendo logout...');
+                alert('Sua conta foi desativada. Você será desconectado.');
+                logout();
+                return;
+              }
+
+              // Atualizar estado do usuário
+              setUsuario(dadosAtualizados);
+
+              // Atualizar cookies se "lembrar de mim" estiver ativado
+              if (CookieManager.getCookie(COOKIE_NAMES.LEMBRAR) === 'true') {
+                salvarDadosLogin(dadosAtualizados, true);
+              }
+
+              // Se mudou nível, redirecionar para notificações
+              if (mudouNivel) {
+                console.log('⚡ Nível de permissão alterado! Redirecionando para notificações...');
+                // O AlmoxarifadoSistema detectará e mostrará o modal
+              }
+            }
+          } else {
+            // Usuário foi removido do banco de dados
+            console.log('❌ Usuário foi removido do sistema. Fazendo logout...');
+            alert('Sua conta foi removida do sistema. Você será desconectado.');
+            logout();
+          }
+        }, (error) => {
+          console.error('Erro no listener do usuário logado:', error);
+        });
+      } catch (error) {
+        console.error('Erro ao configurar listener do usuário:', error);
+      }
+    };
+
+    if (firebaseStatus === 'connected') {
+      setupUserListener();
+    }
+
+    return () => {
+      if (unsubscribe) {
+        console.log('🔌 Desconectando listener do usuário logado');
+        unsubscribe();
+      }
+    };
+  }, [usuario?.id, firebaseStatus]);
+
   // Função para verificar usuário salvo nos cookies
   const verificarUsuarioSalvo = async () => {
     try {
@@ -604,26 +682,46 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, senha, lembrarLogin = false) => {
     try {
+      console.log('🔐 Tentativa de login:', { email, senhaLength: senha.length });
+      console.log('📋 Total de usuários carregados:', usuarios.length);
+      
       const usuarioEncontrado = usuarios.find(u => u.email === email && u.ativo);
 
       if (!usuarioEncontrado) {
+        console.log('❌ Usuário não encontrado ou inativo');
+        console.log('Usuários disponíveis:', usuarios.map(u => ({ email: u.email, ativo: u.ativo })));
         return { success: false, message: 'Email ou senha incorretos' };
       }
+
+      console.log('✅ Usuário encontrado:', {
+        email: usuarioEncontrado.email,
+        nivel: usuarioEncontrado.nivel,
+        temSenhaHash: !!usuarioEncontrado.senhaHash,
+        temSenhaSalt: !!usuarioEncontrado.senhaSalt,
+        temSenhaTexto: !!usuarioEncontrado.senha,
+        senhaVersion: usuarioEncontrado.senhaVersion
+      });
 
       // Verificar senha com criptografia SHA-512
       let senhaValida = false;
       
       if (usuarioEncontrado.senhaHash && usuarioEncontrado.senhaSalt) {
         // Senha criptografada (SHA-512)
+        console.log('🔒 Verificando senha criptografada SHA-512...');
         senhaValida = verifyPassword(
           senha, 
           usuarioEncontrado.senhaHash, 
           usuarioEncontrado.senhaSalt,
           usuarioEncontrado.senhaVersion || 2
         );
+        console.log('Resultado da verificação SHA-512:', senhaValida);
       } else if (usuarioEncontrado.senha) {
         // Senha em texto plano (sistema legado) - comparação direta
+        console.log('📝 Verificando senha em texto plano...');
+        console.log('Senha digitada:', senha);
+        console.log('Senha armazenada:', usuarioEncontrado.senha);
         senhaValida = usuarioEncontrado.senha === senha;
+        console.log('Resultado da comparação:', senhaValida);
         
         // Se válida, migrar para SHA-512
         if (senhaValida) {
@@ -644,8 +742,12 @@ const AuthProvider = ({ children }) => {
       }
 
       if (!senhaValida) {
+        console.log('❌ Senha inválida!');
+        console.log('💡 Dica: A senha padrão do admin é "admin@362*"');
         return { success: false, message: 'Email ou senha incorretos' };
       }
+
+      console.log('✅ Senha válida! Prosseguindo com login...');
 
       // Verificar se o usuário tem setor e empresa definidos
       // EXCEÇÃO: Administradores (nivel 4) não precisam ter setor, empresa ou cargo
@@ -1018,10 +1120,127 @@ const AlmoxarifadoSistema = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuRecolhido, setMenuRecolhido] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showPermissionAlert, setShowPermissionAlert] = useState(false);
+  const [permissionAlertData, setPermissionAlertData] = useState(null);
+  const [permissaoAlterada, setPermissaoAlterada] = useState(false); // Flag para controlar fluxo após mudança de permissão
+  
+  // Estados para personalização do menu
+  const [menuPersonalizado, setMenuPersonalizado] = useState(null);
+  const [itemFavorito, setItemFavorito] = useState('emprestimos'); // Item que fica no centro/destaque
+  const [showMenuConfig, setShowMenuConfig] = useState(false);
+  const [menuLongPressTimer, setMenuLongPressTimer] = useState(null);
+  const [menuLongPressProgress, setMenuLongPressProgress] = useState(0);
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [dragOverItem, setDragOverItem] = useState(null);
+  const [menuConfigSaved, setMenuConfigSaved] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
+
+  // ===== SISTEMA DE PERSISTÊNCIA DE ESTADO =====
+  const STORAGE_KEY = `workflow_state_${usuario?.id}`;
+
+  // Salvar estado de formulário específico
+  const salvarEstadoFormulario = useCallback((abaId, dados) => {
+    if (!usuario?.id) return;
+    
+    try {
+      const estadoAtual = localStorage.getItem(STORAGE_KEY);
+      const estado = estadoAtual ? JSON.parse(estadoAtual) : {};
+      
+      if (!estado.formStates) {
+        estado.formStates = {};
+      }
+      
+      estado.formStates[abaId] = dados;
+      estado.timestamp = new Date().toISOString();
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+      console.log(`💾 Estado do formulário "${abaId}" salvo:`, dados);
+    } catch (error) {
+      console.error('Erro ao salvar estado do formulário:', error);
+    }
+  }, [usuario?.id, STORAGE_KEY]);
+
+  // Carregar estado de formulário específico
+  const carregarEstadoFormulario = useCallback((abaId) => {
+    if (!usuario?.id) return null;
+    
+    try {
+      const estadoSalvo = localStorage.getItem(STORAGE_KEY);
+      if (estadoSalvo) {
+        const estado = JSON.parse(estadoSalvo);
+        return estado.formStates?.[abaId] || null;
+      }
+    } catch (error) {
+      console.error('Erro ao carregar estado do formulário:', error);
+    }
+    return null;
+  }, [usuario?.id, STORAGE_KEY]);
+
+  // Salvar estado da aplicação
+  const salvarEstadoApp = useCallback(() => {
+    if (!usuario?.id) return;
+    
+    try {
+      const estadoAtual = localStorage.getItem(STORAGE_KEY);
+      const estado = estadoAtual ? JSON.parse(estadoAtual) : { formStates: {} };
+      
+      // Atualizar apenas navegação e scroll, preservar formStates
+      estado.abaAtiva = abaAtiva;
+      estado.scrollPosition = window.scrollY;
+      estado.timestamp = new Date().toISOString();
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+      console.log('💾 Estado salvo:', { abaAtiva, scrollPosition: estado.scrollPosition });
+    } catch (error) {
+      console.error('Erro ao salvar estado:', error);
+    }
+  }, [usuario?.id, abaAtiva, STORAGE_KEY]);
+
+  // Carregar estado da aplicação
+  const carregarEstadoApp = useCallback(() => {
+    if (!usuario?.id) return null;
+    
+    try {
+      const estadoSalvo = localStorage.getItem(STORAGE_KEY);
+      if (estadoSalvo) {
+        const estado = JSON.parse(estadoSalvo);
+        console.log('📂 Estado carregado:', estado);
+        return estado;
+      }
+    } catch (error) {
+      console.error('Erro ao carregar estado:', error);
+    }
+    return null;
+  }, [usuario?.id, STORAGE_KEY]);
+
+  // Salvar estado automaticamente ao mudar de aba
+  useEffect(() => {
+    if (usuario?.id) {
+      salvarEstadoApp();
+    }
+  }, [abaAtiva, usuario?.id, salvarEstadoApp]);
+
+  // Carregar estado ao montar componente
+  useEffect(() => {
+    if (usuario?.id && !permissaoAlterada) {
+      // Só restaura estado se NÃO houver mudança de permissão pendente
+      const estadoSalvo = carregarEstadoApp();
+      if (estadoSalvo && estadoSalvo.abaAtiva) {
+        console.log('🔄 Restaurando última página:', estadoSalvo.abaAtiva);
+        setAbaAtiva(estadoSalvo.abaAtiva);
+        
+        // Restaurar posição de scroll
+        setTimeout(() => {
+          if (estadoSalvo.scrollPosition) {
+            window.scrollTo(0, estadoSalvo.scrollPosition);
+          }
+        }, 100);
+      }
+    }
+  }, [usuario?.id, carregarEstadoApp, permissaoAlterada]);
 
   // Define a aba inicial baseada no nível do usuário
   useEffect(() => {
@@ -1031,6 +1250,62 @@ const AlmoxarifadoSistema = () => {
       setAbaAtiva('dashboard');
     }
   }, [usuario?.nivel]);
+
+  // Detectar mudanças de nível de permissão em tempo real
+  useEffect(() => {
+    if (!usuario?.id) return;
+
+    let nivelAnterior = usuario.nivel;
+    
+    const unsubscribe = onSnapshot(doc(db, 'usuarios', usuario.id), (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const dadosAtualizados = { id: docSnapshot.id, ...docSnapshot.data() };
+        
+        // Verificar se mudou o nível de permissão
+        if (dadosAtualizados.nivel !== nivelAnterior) {
+          const niveisLabels = {
+            1: 'Funcionário',
+            2: 'Supervisor/Encarregado',
+            3: 'Gerente',
+            4: 'Administrador'
+          };
+          
+          console.log('⚡ Nível de permissão alterado:', {
+            antes: nivelAnterior,
+            depois: dadosAtualizados.nivel
+          });
+          
+          // Verificar se usuário já viu o alerta para este nível
+          const alertKey = `permission_alert_seen_${usuario.id}_${dadosAtualizados.nivel}`;
+          const jaViu = localStorage.getItem(alertKey);
+          
+          if (!jaViu) {
+            // Só mostra o modal se ainda não viu
+            // Salvar estado atual antes de mostrar o modal
+            salvarEstadoApp();
+            
+            // Marcar que houve mudança de permissão
+            setPermissaoAlterada(true);
+            
+            // Mostrar modal de alerta
+            setPermissionAlertData({
+              oldLevel: nivelAnterior,
+              newLevel: dadosAtualizados.nivel,
+              newLevelLabel: niveisLabels[dadosAtualizados.nivel]
+            });
+            setShowPermissionAlert(true);
+          } else {
+            console.log('✅ Usuário já viu o alerta de mudança de permissão');
+          }
+          
+          // Atualizar referência do nível
+          nivelAnterior = dadosAtualizados.nivel;
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [usuario?.id, salvarEstadoApp]);
 
   // ===== INVENTÁRIO =====
   const [inventario, setInventario] = useState([]);
@@ -2124,12 +2399,6 @@ const AlmoxarifadoSistema = () => {
       permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Apenas nível 2 (Supervisor) ou superior
     },
     { 
-      id: 'ponto', 
-      nome: 'Ponto', 
-      icone: Calendar,
-      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Supervisor ou superior
-    },
-    { 
       id: 'escala', 
       nome: 'Escala', 
       icone: Calendar,
@@ -2166,13 +2435,237 @@ const AlmoxarifadoSistema = () => {
       permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas Admin
     },
     
-  ].filter(aba => aba.permissao());  // Permissão para aba de usuários (apenas nível 4)
+  ].filter(aba => aba.permissao());  
+  
+  // Permissão para aba de usuários (apenas nível 4)
   const podeVerUsuarios = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
   
   // Permissão para aba legal (todos podem ver, nível 1 apenas visualiza)
   const podeEditarLegal = usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO;
 
-  // Expõe funções de diagnóstico no console para facilitar testes
+  // Carregar configuração do menu personalizado do Firebase
+  useEffect(() => {
+    if (!usuario?.id || !abas.length) return;
+    
+    // Previne recarregar se já tem configuração
+    if (menuPersonalizado !== null) return;
+
+    const carregarMenuConfig = async () => {
+      try {
+        console.log('🔄 Carregando configuração do menu...');
+        const usuarioDoc = await getDoc(doc(db, 'usuarios', usuario.id));
+        const dados = usuarioDoc.data();
+        const menuConfig = dados?.menuConfig;
+        const favorito = dados?.itemFavorito || 'emprestimos';
+        
+        if (menuConfig && menuConfig.length > 0) {
+          console.log('✅ Configuração carregada:', { menuConfig, favorito });
+          setMenuPersonalizado(menuConfig);
+          setItemFavorito(favorito);
+        } else {
+          console.log('📝 Criando configuração padrão...');
+          // Configuração padrão: primeiros 4 itens visíveis (exceto ranking e meu-perfil)
+          const abasDisponiveis = abas.filter(a => a.id !== 'ranking' && a.id !== 'meu-perfil');
+          const configPadrao = abasDisponiveis.map((aba, index) => ({
+            id: aba.id,
+            visivel: index < 4, // Primeiros 4 visíveis no menu inferior
+            ordem: index
+          }));
+          setMenuPersonalizado(configPadrao);
+          setItemFavorito('emprestimos');
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar menu config:', error);
+      }
+    };
+
+    carregarMenuConfig();
+  }, [usuario?.id, abas.length]);
+
+  // Salvar configuração do menu no Firebase
+  const salvarMenuConfig = async (novaConfig, novoFavorito) => {
+    if (!usuario?.id) return;
+    
+    try {
+      const favoritoFinal = novoFavorito || itemFavorito;
+      console.log('💾 Salvando configuração...', { 
+        menuConfig: novaConfig, 
+        itemFavorito: favoritoFinal 
+      });
+      
+      await updateDoc(doc(db, 'usuarios', usuario.id), {
+        menuConfig: novaConfig,
+        itemFavorito: favoritoFinal
+      });
+      
+      setMenuPersonalizado(novaConfig);
+      setItemFavorito(favoritoFinal);
+      setMenuConfigSaved(true);
+      
+      console.log('✅ Configuração salva com sucesso!');
+      
+      // Remove mensagem após 2 segundos
+      setTimeout(() => setMenuConfigSaved(false), 2000);
+    } catch (error) {
+      console.error('❌ Erro ao salvar menu config:', error);
+      alert('Erro ao salvar configuração. Tente novamente.');
+    }
+  };
+
+  // Funções para manipular menu personalizado
+  const reordenarMenuItem = (fromIndex, toIndex) => {
+    if (!menuPersonalizado) return;
+    
+    const novosItens = [...menuPersonalizado];
+    const [item] = novosItens.splice(fromIndex, 1);
+    novosItens.splice(toIndex, 0, item);
+    
+    // Atualizar ordem
+    const comOrdemAtualizada = novosItens.map((item, index) => ({
+      ...item,
+      ordem: index
+    }));
+    
+    setMenuPersonalizado(comOrdemAtualizada);
+  };
+
+  const toggleMenuItemVisibilidade = (itemId) => {
+    if (!menuPersonalizado) return;
+    
+    const novosItens = menuPersonalizado.map(item =>
+      item.id === itemId ? { ...item, visivel: !item.visivel } : item
+    );
+    
+    setMenuPersonalizado(novosItens);
+  };
+
+  // Funções de drag & drop
+  const handleDragStart = (index) => {
+    setDraggedItem(index);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedItem === null || draggedItem === index) return;
+    setDragOverItem(index);
+  };
+
+  const handleDrop = (e, index) => {
+    e.preventDefault();
+    if (draggedItem === null || draggedItem === index) return;
+    reordenarMenuItem(draggedItem, index);
+    setDraggedItem(null);
+    setDragOverItem(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverItem(null);
+  };
+
+  // Obter abas na ordem personalizada
+  const getAbasOrdenadas = () => {
+    if (!menuPersonalizado) return abas;
+    
+    const abasMap = new Map(abas.map(aba => [aba.id, aba]));
+    return menuPersonalizado
+      .sort((a, b) => a.ordem - b.ordem)
+      .map(config => abasMap.get(config.id))
+      .filter(aba => aba !== undefined);
+  };
+
+  // Obter abas visíveis no menu inferior
+  const getAbasMenuInferior = () => {
+    if (!menuPersonalizado) {
+      // Configuração padrão se não houver personalização
+      return abas
+        .filter(a => a.id !== 'ranking' && a.id !== 'meu-perfil' && a.id !== itemFavorito)
+        .filter(aba => {
+          // Filtrar por permissão
+          if (aba.permissao && typeof aba.permissao === 'function') {
+            return aba.permissao();
+          }
+          return true;
+        })
+        .slice(0, 3);
+    }
+    
+    const abasOrdenadas = getAbasOrdenadas();
+    return abasOrdenadas.filter(aba => {
+      const config = menuPersonalizado.find(c => c.id === aba.id);
+      
+      // Verificar permissão
+      if (aba.permissao && typeof aba.permissao === 'function') {
+        if (!aba.permissao()) {
+          return false; // Usuário não tem permissão para ver esta aba
+        }
+      }
+      
+      return config?.visivel && aba.id !== itemFavorito; // item favorito tem posição fixa no centro
+    });
+  };
+
+  // Obter aba favorita (item central)
+  const getAbaFavorita = () => {
+    const favorita = abas.find(aba => aba.id === itemFavorito) || abas.find(aba => aba.id === 'emprestimos');
+    
+    // Verificar se usuário tem permissão para a aba favorita
+    if (favorita && favorita.permissao && typeof favorita.permissao === 'function') {
+      if (!favorita.permissao()) {
+        // Se não tem permissão, retornar a primeira aba com permissão
+        return abas.find(aba => {
+          if (aba.permissao && typeof aba.permissao === 'function') {
+            return aba.permissao();
+          }
+          return true;
+        });
+      }
+    }
+    
+    return favorita;
+  };
+
+  // Debug: Monitorar mudanças no menuPersonalizado e itemFavorito
+  useEffect(() => {
+    if (menuPersonalizado) {
+      console.log('🔍 Estado do menu:', { 
+        menuPersonalizado, 
+        itemFavorito,
+        visíveis: menuPersonalizado.filter(m => m.visivel).length 
+      });
+    }
+  }, [menuPersonalizado, itemFavorito]);
+
+  // Verificar permissões da aba atual
+  useEffect(() => {
+    if (!usuario || !abaAtiva || !abas || abas.length === 0) return;
+    
+    const abaAtual = abas.find(aba => aba.id === abaAtiva);
+    
+    // Se a aba tem função de permissão e o usuário não tem acesso
+    if (abaAtual && abaAtual.permissao && typeof abaAtual.permissao === 'function') {
+      if (!abaAtual.permissao()) {
+        console.log(`⚠️ Usuário não tem permissão para acessar "${abaAtiva}", redirecionando...`);
+        
+        // Buscar primeira aba com permissão
+        const abaComPermissao = abas.find(aba => {
+          if (aba.permissao && typeof aba.permissao === 'function') {
+            return aba.permissao();
+          }
+          return true;
+        });
+        
+        if (abaComPermissao) {
+          setAbaAtiva(abaComPermissao.id);
+        } else {
+          // Fallback: meu-perfil sempre acessível
+          setAbaAtiva('meu-perfil');
+        }
+      }
+    }
+  }, [usuario, abaAtiva, abas]);
+
+  // Expõe funções de diagnóstico e persistência no console para facilitar testes
   useEffect(() => {
     window.workflowDebug = {
       diagnosticarInventario,
@@ -2203,15 +2696,34 @@ const AlmoxarifadoSistema = () => {
       }
     };
     
-    console.log('🛠️ Funções de debug disponíveis no console:');
+    // Expor funções de persistência globalmente
+    window.workflowPersistence = {
+      salvarFormulario: salvarEstadoFormulario,
+      carregarFormulario: carregarEstadoFormulario,
+      limparEstado: () => {
+        localStorage.removeItem(STORAGE_KEY);
+        console.log('�️ Estado do aplicativo limpo');
+      },
+      verEstado: () => {
+        const estado = localStorage.getItem(STORAGE_KEY);
+        console.log('📋 Estado atual:', estado ? JSON.parse(estado) : null);
+      }
+    };
+    
+    console.log('🛠️ Funções disponíveis no console:');
     console.log('  - window.workflowDebug.diagnosticarInventario()');
     console.log('  - window.workflowDebug.corrigirEstadoItem("nome do item")');
     console.log('  - window.workflowDebug.corrigirTodoInventario()');
+    console.log('  - window.workflowPersistence.salvarFormulario("abaId", {dados})');
+    console.log('  - window.workflowPersistence.carregarFormulario("abaId")');
+    console.log('  - window.workflowPersistence.limparEstado()');
+    console.log('  - window.workflowPersistence.verEstado()');
     
     return () => {
       delete window.workflowDebug;
+      delete window.workflowPersistence;
     };
-  }, []);
+  }, [salvarEstadoFormulario, carregarEstadoFormulario, STORAGE_KEY]);
 
   return (
     <FuncionariosProvider>
@@ -2318,7 +2830,7 @@ const AlmoxarifadoSistema = () => {
           {isMobile && menuOpen ? (
             <div className="flex-1 p-3">
               <div className="grid grid-cols-4 gap-3">
-                {abas.filter(aba => aba.permissao()).map((aba) => {
+                {getAbasOrdenadas().map((aba) => {
                   const Icone = aba.icone;
                   return (
                     <button
@@ -2675,6 +3187,7 @@ const AlmoxarifadoSistema = () => {
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-[#E7E9EA]"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
                 </button>
+                {/* Usuários - Apenas Admin */}
                 {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
                   <button
                     onClick={() => {
@@ -2687,7 +3200,8 @@ const AlmoxarifadoSistema = () => {
                     <Users className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
                   </button>
                 )}
-                {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
+                {/* Dashboard, Históricos - Apenas Admin (Gerente, Supervisor e Encarregado NÃO veem) */}
+                {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
                   <>
                     <button
                       onClick={() => {
@@ -2753,7 +3267,7 @@ const AlmoxarifadoSistema = () => {
           <div className="py-3">
 
             {abaAtiva === 'dashboard' && (
-              usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO ? (
+              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
                 <DashboardTab stats={stats} />
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar o dashboard." />
@@ -2871,7 +3385,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'historico-emprestimos' && (
-              PermissionChecker.canView(usuario?.nivel) ? (
+              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
                 <HistoricoEmprestimosTab
                   emprestimos={emprestimos}
                   devolverFerramentas={devolverFerramentas}
@@ -2880,23 +3394,23 @@ const AlmoxarifadoSistema = () => {
                   inventario={inventario}
                 />
               ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar o histórico de empréstimos." />
+                <PermissionDenied message="Apenas administradores podem visualizar o histórico de empréstimos." />
               )
             )}
 
             {abaAtiva === 'usuarios' && (
-              PermissionChecker.canManageUsers(usuario?.nivel) ? (
+              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
                 <UsuariosTab />
               ) : (
-                <PermissionDenied message="Você não tem permissão para gerenciar usuários do sistema." />
+                <PermissionDenied message="Apenas administradores podem gerenciar usuários do sistema." />
               )
             )}
 
             {abaAtiva === 'historico-transferencias' && (
-              usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR ? (
+              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
                 <HistoricoTransferenciasTab />
               ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar o histórico de transferências." />
+                <PermissionDenied message="Apenas administradores podem visualizar o histórico de transferências." />
               )
             )}
 
@@ -2907,14 +3421,6 @@ const AlmoxarifadoSistema = () => {
                 />
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar as tarefas." />
-              )
-            )}
-
-            {abaAtiva === 'ponto' && (
-              usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR ? (
-                <PontoPage usuarioAtual={usuario} />
-              ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar o controle de ponto." />
               )
             )}
 
@@ -2937,8 +3443,8 @@ const AlmoxarifadoSistema = () => {
       {isMobile && !menuOpen && (
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-600 px-2 py-0.5">
           <div className="flex justify-around items-center">
-            {/* Primeiros 2 ícones à esquerda (excluindo ranking e meu-perfil) */}
-            {abas.filter(aba => aba.permissao() && aba.id !== 'ranking' && aba.id !== 'emprestimos' && aba.id !== 'meu-perfil').slice(0, 2).map((aba) => {
+            {/* Itens personalizáveis do menu inferior */}
+            {getAbasMenuInferior().slice(0, 2).map((aba) => {
               const Icone = aba.icone;
               return (
                 <button
@@ -2965,32 +3471,38 @@ const AlmoxarifadoSistema = () => {
               );
             })}
             
-            {/* Ícone especial de empréstimos no centro com fundo azul circular - 20% para cima com efeitos minimalistas */}
-            <button
-              onClick={() => {
-                setAbaAtiva('emprestimos');
-                setMenuOpen(false);
-              }}
-              className="flex flex-col items-center justify-center p-1 transition-all duration-200 min-w-0 flex-1 transform -translate-y-[20%] hover:scale-105"
-            >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-0.5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-200 dark:hover:shadow-blue-900 ${
-                abaAtiva === 'emprestimos'
-                  ? 'bg-blue-500 dark:bg-[#1D9BF0] shadow-lg'
-                  : 'bg-blue-500 dark:bg-[#1D9BF0]'
-              }`}>
-                <ClipboardList className="w-5 h-5 text-white" />
-              </div>
-              <span className={`text-xs font-medium text-center leading-tight ${
-                abaAtiva === 'emprestimos'
-                  ? 'text-blue-500 dark:text-[#1D9BF0]'
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}>
-                Empréstimos
-              </span>
-            </button>
+            {/* Ícone favorito no centro com fundo azul circular - 20% para cima com efeitos minimalistas */}
+            {(() => {
+              const abaFavorita = getAbaFavorita();
+              const IconeFavorito = abaFavorita.icone;
+              return (
+                <button
+                  onClick={() => {
+                    setAbaAtiva(abaFavorita.id);
+                    setMenuOpen(false);
+                  }}
+                  className="flex flex-col items-center justify-center p-1 transition-all duration-200 min-w-0 flex-1 transform -translate-y-[20%] hover:scale-105"
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-0.5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-200 dark:hover:shadow-blue-900 ${
+                    abaAtiva === abaFavorita.id
+                      ? 'bg-blue-500 dark:bg-[#1D9BF0] shadow-lg'
+                      : 'bg-blue-500 dark:bg-[#1D9BF0]'
+                  }`}>
+                    <IconeFavorito className="w-5 h-5 text-white" />
+                  </div>
+                  <span className={`text-xs font-medium text-center leading-tight ${
+                    abaAtiva === abaFavorita.id
+                      ? 'text-blue-500 dark:text-[#1D9BF0]'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    {abaFavorita.nome}
+                  </span>
+                </button>
+              );
+            })()}
 
-            {/* Próximos 1 ícone à direita (excluindo ranking e meu-perfil) */}
-            {abas.filter(aba => aba.permissao() && aba.id !== 'ranking' && aba.id !== 'emprestimos' && aba.id !== 'meu-perfil').slice(2, 3).map((aba) => {
+            {/* Próximos 1 ícone à direita */}
+            {getAbasMenuInferior().slice(2, 3).map((aba) => {
               const Icone = aba.icone;
               return (
                 <button
@@ -3017,18 +3529,341 @@ const AlmoxarifadoSistema = () => {
               );
             })}
 
-            {/* Botão de menu (movido do cabeçalho) */}
+            {/* Botão de menu com long press para configurar */}
             <button
               onClick={toggleMenu}
-              className="flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 min-w-0 flex-1 text-gray-500 dark:text-gray-400"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                const timer = setTimeout(() => {
+                  setShowMenuConfig(true);
+                  setMenuLongPressProgress(0);
+                }, 500); // Reduzido para 0.5 segundo
+                setMenuLongPressTimer(timer);
+                
+                // Animação de progresso (20% a cada 100ms = 5 frames = 500ms)
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                  progress += 20;
+                  setMenuLongPressProgress(progress);
+                  if (progress >= 100) {
+                    clearInterval(progressInterval);
+                  }
+                }, 100);
+              }}
+              onTouchEnd={() => {
+                if (menuLongPressTimer) {
+                  clearTimeout(menuLongPressTimer);
+                  setMenuLongPressTimer(null);
+                }
+                setMenuLongPressProgress(0);
+              }}
+              onTouchMove={() => {
+                if (menuLongPressTimer) {
+                  clearTimeout(menuLongPressTimer);
+                  setMenuLongPressTimer(null);
+                }
+                setMenuLongPressProgress(0);
+              }}
+              className="flex flex-col items-center justify-center p-1 rounded-lg transition-all duration-200 min-w-0 flex-1 text-gray-500 dark:text-gray-400 relative"
             >
-              <MenuIcon className="w-4 h-4 mb-0.5" />
-              <span className="text-xs font-medium truncate w-full text-center leading-tight">
+              {menuLongPressProgress > 0 && (
+                <div 
+                  className="absolute inset-0 bg-blue-500 dark:bg-[#1D9BF0] opacity-20 rounded-lg transition-all"
+                  style={{ 
+                    clipPath: `inset(${100 - menuLongPressProgress}% 0 0 0)`
+                  }}
+                />
+              )}
+              <MenuIcon className="w-4 h-4 mb-0.5 relative z-10" />
+              <span className="text-xs font-medium truncate w-full text-center leading-tight relative z-10">
                 Menu
               </span>
             </button>
           </div>
         </nav>
+      )}
+
+      {/* Modal de Configuração do Menu */}
+      {showMenuConfig && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Personalizar Menu
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Escolha quais itens aparecem no menu inferior e sua ordem
+                </p>
+              </div>
+              <button
+                onClick={() => setShowMenuConfig(false)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Seletor de Página Favorita */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                    <Trophy className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white">Página Favorita</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Aparece destacada no centro do menu inferior</p>
+                  </div>
+                </div>
+                <select
+                  value={itemFavorito}
+                  onChange={(e) => setItemFavorito(e.target.value)}
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-blue-300 dark:border-blue-600 rounded-lg text-gray-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {abas.map((aba) => (
+                    <option key={aba.id} value={aba.id}>
+                      {aba.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Lista de Itens */}
+              <h3 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                <GripVertical className="w-5 h-5 text-gray-400" />
+                Arraste para Reordenar
+              </h3>
+              <div className="space-y-3">
+                {menuPersonalizado && getAbasOrdenadas().map((aba, index) => {
+                    const config = menuPersonalizado.find(c => c.id === aba.id);
+                    const Icone = aba.icone;
+                    const isDragging = draggedItem === index;
+                    const isDragOver = dragOverItem === index;
+                    
+                    return (
+                      <div
+                        key={aba.id}
+                        draggable
+                        onDragStart={() => handleDragStart(index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDrop={(e) => handleDrop(e, index)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-move ${
+                          isDragging 
+                            ? 'opacity-50 scale-95'
+                            : isDragOver
+                              ? 'border-yellow-400 dark:border-yellow-500 shadow-lg scale-105'
+                              : config?.visivel
+                                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 dark:border-blue-400'
+                                : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                        } ${aba.id === itemFavorito ? 'ring-2 ring-yellow-400 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
+                      >
+                        {/* Drag handle */}
+                        <div className="flex items-center justify-center">
+                          <GripVertical className={`w-6 h-6 ${
+                            config?.visivel
+                              ? 'text-blue-400 dark:text-blue-300'
+                              : 'text-gray-400 dark:text-gray-500'
+                          }`} />
+                        </div>
+
+                        {/* Ícone e nome */}
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`p-2 rounded-lg ${
+                            config?.visivel
+                              ? 'bg-blue-500 dark:bg-blue-600 text-white'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                          }`}>
+                            <Icone className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className={`font-medium ${
+                                config?.visivel
+                                  ? 'text-gray-900 dark:text-white'
+                                  : 'text-gray-500 dark:text-gray-400'
+                              }`}>
+                                {aba.nome}
+                              </p>
+                              {aba.id === itemFavorito && (
+                                <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full flex items-center gap-1">
+                                  <Trophy className="w-3 h-3" />
+                                  Favorito
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Posição: {index + 1}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Toggle visibilidade */}
+                        <button
+                          onClick={() => toggleMenuItemVisibilidade(aba.id)}
+                          className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                            config?.visivel
+                              ? 'bg-blue-500 dark:bg-blue-600'
+                              : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                              config?.visivel ? 'translate-x-7' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Preview do menu inferior */}
+              <div className="mt-8 p-4 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-xl border-2 border-gray-300 dark:border-gray-700">
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  Preview do Menu Inferior:
+                </p>
+                <div className="flex justify-around items-center bg-white dark:bg-black rounded-xl p-2 border-2 border-gray-300 dark:border-gray-600 shadow-lg">
+                  {getAbasMenuInferior().slice(0, 2).map((aba) => {
+                    const Icone = aba.icone;
+                    return (
+                      <div key={aba.id} className="flex flex-col items-center p-2 flex-1">
+                        <Icone className="w-4 h-4 text-gray-500 dark:text-gray-400 mb-1" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-full">{aba.nome}</span>
+                      </div>
+                    );
+                  })}
+                  {(() => {
+                    const abaFavorita = getAbaFavorita();
+                    const IconeFavorito = abaFavorita.icone;
+                    return (
+                      <div className="flex flex-col items-center p-2 flex-1 relative">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-1 shadow-lg ring-2 ring-blue-300 dark:ring-blue-700">
+                          <IconeFavorito className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="text-xs text-blue-500 dark:text-blue-400 font-bold truncate max-w-full">{abaFavorita.nome}</span>
+                        <div className="absolute -top-1 -right-1">
+                          <Trophy className="w-3 h-3 text-yellow-500" />
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {getAbasMenuInferior().slice(2, 3).map((aba) => {
+                    const Icone = aba.icone;
+                    return (
+                      <div key={aba.id} className="flex flex-col items-center p-2 flex-1">
+                        <Icone className="w-4 h-4 text-gray-500 dark:text-gray-400 mb-1" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-full">{aba.nome}</span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex flex-col items-center p-2 flex-1">
+                    <MenuIcon className="w-4 h-4 text-gray-500 dark:text-gray-400 mb-1" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Menu</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowMenuConfig(false)}
+                className="px-6 py-2.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  await salvarMenuConfig(menuPersonalizado, itemFavorito);
+                  setTimeout(() => setShowMenuConfig(false), 500);
+                }}
+                className="px-6 py-2.5 rounded-full bg-blue-500 dark:bg-blue-600 text-white font-medium hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg"
+              >
+                {menuConfigSaved ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Salvo!
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Salvar Configuração
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Alerta de Alteração de Permissão */}
+      {showPermissionAlert && permissionAlertData && (
+        <div className="fixed inset-0 bg-black/80 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-300">
+            {/* Header com Ícone */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                  <Bell className="w-7 h-7 text-white animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Nível de Acesso Alterado
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    Suas permissões foram atualizadas
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                <p className="text-gray-700 dark:text-gray-200 text-center font-medium">
+                  Seu nível de acesso foi alterado para:
+                </p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 text-center mt-2">
+                  ⚡ {permissionAlertData.newLevelLabel}
+                </p>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                  Você será redirecionado para a página de <strong>notificações</strong> para ver os detalhes desta alteração.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setShowPermissionAlert(false);
+                  setAbaAtiva('notificacoes');
+                  console.log('🔔 Redirecionando para notificações após alteração de permissão');
+                  
+                  // Marcar no localStorage que o usuário já viu o alerta
+                  localStorage.setItem(`permission_alert_seen_${usuario.id}_${permissionAlertData.newLevel}`, 'true');
+                  
+                  // Após 1 segundo, limpar flag para permitir restauração de estado
+                  setTimeout(() => {
+                    setPermissaoAlterada(false);
+                    console.log('✅ Flag de permissão alterada limpa. Sistema pode restaurar estado normal.');
+                  }, 1000);
+                }}
+                className="w-full py-3.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-lg shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
     </FuncionariosProvider>

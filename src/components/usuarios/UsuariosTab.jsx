@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { NIVEIS_PERMISSAO, NIVEIS_LABELS, PermissionChecker } from '../../constants/permissoes';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../firebaseConfig';
 import { 
   UserCog,
   Plus, 
@@ -13,7 +15,9 @@ import {
   Check,
   X,
   AlertTriangle,
-  User
+  User,
+  Building2,
+  Briefcase
 } from 'lucide-react';
 
 const { classes, colors } = twitterThemeConfig;
@@ -37,13 +41,38 @@ const UsuariosTab = () => {
   const [sucesso, setSucesso] = useState('');
   const [confirmacaoRemocao, setConfirmacaoRemocao] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [empresas, setEmpresas] = useState([]);
+  const [setores, setSetores] = useState([]);
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     senha: '',
     nivel: NIVEIS_PERMISSAO.FUNCIONARIO,
-    ativo: true
+    ativo: true,
+    empresaId: '',
+    setorId: '',
+    cargo: '',
+    semEmpresaSetor: false
   });
+
+  // Carregar empresas e setores
+  useEffect(() => {
+    const carregarDados = async () => {
+      try {
+        const [empresasSnapshot, setoresSnapshot] = await Promise.all([
+          getDocs(collection(db, 'empresas')),
+          getDocs(collection(db, 'setores'))
+        ]);
+
+        setEmpresas(empresasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setSetores(setoresSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error('Erro ao carregar empresas e setores:', error);
+      }
+    };
+
+    carregarDados();
+  }, []);
 
   // Check if context is properly loaded
   if (!usuarioLogado) {
@@ -64,7 +93,11 @@ const UsuariosTab = () => {
       email: '',
       senha: '',
       nivel: NIVEIS_PERMISSAO.FUNCIONARIO,
-      ativo: true
+      ativo: true,
+      empresaId: '',
+      setorId: '',
+      cargo: '',
+      semEmpresaSetor: false
     });
     setUsuarioEditando(null);
     setMostrarSenha(false);
@@ -91,7 +124,11 @@ const UsuariosTab = () => {
       email: usuario.email,
       senha: '', // Não mostrar senha por segurança
       nivel: usuario.nivel,
-      ativo: usuario.ativo
+      ativo: usuario.ativo,
+      empresaId: usuario.empresaId || '',
+      setorId: usuario.setorId || '',
+      cargo: usuario.cargo || '',
+      semEmpresaSetor: !usuario.empresaId && !usuario.setorId
     });
     setUsuarioEditando(usuario);
     setMostrarModal(true);
@@ -126,6 +163,17 @@ const UsuariosTab = () => {
       return 'Este email/usuário já está em uso';
     }
 
+    // Validar empresa e setor para níveis que não são ADMIN
+    // Se não marcou "sem empresa/setor", deve preencher os campos
+    if (formData.nivel !== NIVEIS_PERMISSAO.ADMIN && !formData.semEmpresaSetor) {
+      if (!formData.empresaId) {
+        return 'Selecione uma empresa ou marque "Registrar sem empresa/setor"';
+      }
+      if (!formData.setorId) {
+        return 'Selecione um setor ou marque "Registrar sem empresa/setor"';
+      }
+    }
+
     return null;
   };
 
@@ -149,6 +197,24 @@ const UsuariosTab = () => {
         nivel: formData.nivel,
         ativo: formData.ativo
       };
+
+      // Incluir empresa, setor e cargo se não marcou "sem empresa/setor"
+      if (!formData.semEmpresaSetor && formData.nivel !== NIVEIS_PERMISSAO.ADMIN) {
+        dadosParaSalvar.empresaId = formData.empresaId;
+        dadosParaSalvar.setorId = formData.setorId;
+        
+        // Buscar nomes de empresa e setor para exibição
+        const empresa = empresas.find(e => e.id === formData.empresaId);
+        const setor = setores.find(s => s.id === formData.setorId);
+        
+        if (empresa) dadosParaSalvar.empresaNome = empresa.nome;
+        if (setor) dadosParaSalvar.setorNome = setor.nome;
+      }
+
+      // Incluir cargo se fornecido
+      if (formData.cargo?.trim()) {
+        dadosParaSalvar.cargo = formData.cargo.trim();
+      }
 
       // Incluir senha apenas se foi fornecida
       if (formData.senha) {
@@ -260,8 +326,12 @@ const UsuariosTab = () => {
                 <UserCog className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className={`text-xl font-bold ${colors.text}`}>Gerenciamento de Usuários</h2>
-                <p className={`text-sm ${colors.textSecondary}`}>Usuários com acesso ao sistema - Segurança SHA-512</p>
+                <h2 className={`text-xl font-bold ${colors.text}`}>
+                  <span className="hidden sm:inline">Gerenciamento de Usuários</span>
+                  <span className="sm:hidden">Usuários</span>
+                </h2>
+                <p className={`text-sm ${colors.textSecondary} hidden sm:block`}>Usuários com acesso ao sistema - Segurança SHA-512</p>
+                <p className={`text-xs ${colors.textSecondary} sm:hidden`}>Acesso ao sistema</p>
               </div>
             </div>
             
@@ -271,7 +341,8 @@ const UsuariosTab = () => {
                 className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-[#1D9BF0] dark:to-[#1A8CD8] dark:hover:from-[#1A8CD8] dark:hover:to-[#1D9BF0] text-white px-6 py-2.5 rounded-full transition-all shadow-md hover:shadow-lg transform hover:scale-105"
               >
                 <Plus className="w-5 h-5" />
-                <span className="font-medium">Novo Usuário</span>
+                <span className="font-medium hidden sm:inline">Novo Usuário</span>
+                <span className="font-medium sm:hidden">Novo</span>
               </button>
             )}
           </div>
@@ -318,8 +389,8 @@ const UsuariosTab = () => {
         )}
       </div>
 
-      {/* Lista de Usuários */}
-      <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden`}>
+      {/* Lista de Usuários - Desktop (Tabela) */}
+      <div className={`hidden md:block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden`}>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750">
@@ -483,24 +554,196 @@ const UsuariosTab = () => {
         </div>
       </div>
 
-      {/* Modal de Usuário */}
-      {mostrarModal && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
-          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm max-w-md w-full mx-4 max-h-screen overflow-y-auto`}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className={`text-lg font-medium ${colors.text}`}>
-                  {usuarioEditando ? 'Editar Usuário' : 'Novo Usuário'}
-                </h3>
-                <button
-                  onClick={fecharModal}
-                  className="p-2 hover:bg-[#1D9BF0] hover:bg-opacity-10 rounded-full transition-colors"
-                >
-                  <X className="w-6 h-6 text-[#1D9BF0]" />
-                </button>
+      {/* Lista de Usuários - Mobile (Cards) */}
+      <div className="md:hidden space-y-4">
+        {usuariosVisiveis.length === 0 ? (
+          <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-8`}>
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <User className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+              </div>
+              <div className="text-center">
+                <p className={`text-lg font-medium ${colors.text}`}>Nenhum usuário encontrado</p>
+                <p className={`text-sm ${colors.textSecondary} mt-1`}>
+                  {searchTerm ? 'Tente ajustar os termos de busca' : 'Adicione usuários para começar'}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          usuariosVisiveis.map((usuario) => (
+            <div
+              key={usuario.id}
+              className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden`}
+            >
+              {/* Header do Card */}
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750 p-4 border-b border-gray-200 dark:border-gray-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-shrink-0">
+                      <div className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-white shadow-md ${
+                        usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-br from-red-500 to-red-600' :
+                        usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
+                        usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-br from-green-500 to-green-600' :
+                        'bg-gradient-to-br from-yellow-500 to-yellow-600'
+                      }`}>
+                        {usuario.nome.charAt(0).toUpperCase()}
+                      </div>
+                      {usuario.senhaVersion === 2 && (
+                        <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
+                          <Shield className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className={`text-base font-bold ${colors.text}`}>
+                          {usuario.nome}
+                        </p>
+                        {usuario.id === usuarioLogado.id && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                            Você
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-sm ${colors.textSecondary}`}>{usuario.email}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-4">
+              {/* Corpo do Card */}
+              <div className="p-4 space-y-3">
+                {/* Empresa e Setor */}
+                <div className="flex items-start gap-2">
+                  <Building2 className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs ${colors.textSecondary} font-medium`}>Empresa / Setor</p>
+                    <p className={`text-sm font-medium ${colors.text}`}>
+                      {usuario.empresaNome || <span className="text-gray-400 dark:text-gray-500 italic text-xs">Não atribuída</span>}
+                    </p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-[#1D9BF0]"></div>
+                      <p className={`text-xs ${colors.textSecondary}`}>
+                        {usuario.setorNome || <span className="text-gray-400 dark:text-gray-500 italic">Não atribuído</span>}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Função */}
+                <div className="flex items-start gap-2">
+                  <Briefcase className="w-5 h-5 text-purple-500 dark:text-purple-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs ${colors.textSecondary} font-medium`}>Função</p>
+                    <p className={`text-sm font-medium ${colors.text}`}>
+                      {usuario.cargo || <span className="text-gray-400 dark:text-gray-500 italic text-xs">Não definida</span>}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Badges: Nível e Status */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <div className="flex-1">
+                    <p className={`text-xs ${colors.textSecondary} font-medium mb-1`}>Nível de Acesso</p>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
+                      usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' :
+                      usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
+                      usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' :
+                      'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white'
+                    }`}>
+                      <Shield className="w-3.5 h-3.5" />
+                      {NIVEIS_LABELS[usuario.nivel]}
+                    </span>
+                  </div>
+
+                  <div className="flex-1">
+                    <p className={`text-xs ${colors.textSecondary} font-medium mb-1`}>Status</p>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
+                      usuario.ativo 
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' 
+                        : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                    }`}>
+                      {usuario.ativo ? '✓ Ativo' : '✗ Inativo'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Último Login */}
+                <div className="flex items-start gap-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                  <svg className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs ${colors.textSecondary} font-medium`}>Último Login</p>
+                    <p className={`text-sm font-medium ${colors.text}`}>
+                      {usuario.ultimoLogin ? (
+                        <>
+                          {new Date(usuario.ultimoLogin).toLocaleDateString('pt-BR')}
+                          <span className={`text-xs ${colors.textSecondary} ml-1`}>
+                            às {new Date(usuario.ultimoLogin).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-gray-400 dark:text-gray-500 italic text-xs">Nunca acessou</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer do Card - Ações */}
+              {(PermissionChecker.canEditUser(usuarioLogado.nivel, usuarioLogado.id, usuario.id, usuario.nivel) ||
+                (usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN && usuario.email !== 'admin' && usuario.id !== usuarioLogado.id)) && (
+                <div className="bg-gray-50 dark:bg-gray-750 p-3 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex gap-2 justify-end">
+                    {PermissionChecker.canEditUser(usuarioLogado.nivel, usuarioLogado.id, usuario.id, usuario.nivel) && (
+                      <button
+                        onClick={() => abrirModalEditar(usuario)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm"
+                      >
+                        <Edit className="w-4 h-4" />
+                        <span className="text-sm font-medium">Editar</span>
+                      </button>
+                    )}
+                    {usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN &&
+                      usuario.email !== 'admin' && usuario.id !== usuarioLogado.id && (
+                      <button
+                        onClick={() => confirmarRemocao(usuario)}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg transition-all shadow-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="text-sm font-medium">Remover</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Modal de Usuário */}
+      {mostrarModal && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-w-md w-full flex flex-col max-h-[90vh] md:max-h-[85vh]`}>
+            {/* Header fixo */}
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <h3 className={`text-lg md:text-xl font-bold ${colors.text}`}>
+                {usuarioEditando ? 'Editar Usuário' : 'Novo Usuário'}
+              </h3>
+              <button
+                onClick={fecharModal}
+                className="p-2 hover:bg-[#1D9BF0] hover:bg-opacity-10 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 md:w-6 md:h-6 text-[#1D9BF0]" />
+              </button>
+            </div>
+
+            {/* Conteúdo scrollável */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+              <div className="space-y-3 md:space-y-4">
                 <div>
                   <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Nome Completo *
@@ -580,6 +823,97 @@ const UsuariosTab = () => {
                   </p>
                 </div>
 
+                {/* Checkbox para registrar sem empresa/setor */}
+                {formData.nivel !== NIVEIS_PERMISSAO.ADMIN && (
+                  <div className="flex items-center p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="semEmpresaSetor"
+                      checked={formData.semEmpresaSetor}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFormData({ 
+                          ...formData, 
+                          semEmpresaSetor: checked,
+                          empresaId: checked ? '' : formData.empresaId,
+                          setorId: checked ? '' : formData.setorId
+                        });
+                      }}
+                      className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-yellow-400 rounded"
+                      disabled={carregando}
+                    />
+                    <label htmlFor="semEmpresaSetor" className={`ml-2 text-sm ${colors.text}`}>
+                      Registrar sem empresa/setor (não recomendado)
+                    </label>
+                  </div>
+                )}
+
+                {/* Campos de Empresa e Setor */}
+                {formData.nivel !== NIVEIS_PERMISSAO.ADMIN && !formData.semEmpresaSetor && (
+                  <>
+                    <div>
+                      <label className={`flex items-center gap-2 text-sm font-medium ${colors.text} mb-2`}>
+                        <Building2 className="w-4 h-4" />
+                        Empresa *
+                      </label>
+                      <select
+                        value={formData.empresaId}
+                        onChange={(e) => setFormData({ ...formData, empresaId: e.target.value, setorId: '' })}
+                        className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                        disabled={carregando}
+                      >
+                        <option value="">Selecione uma empresa</option>
+                        {empresas.map(empresa => (
+                          <option key={empresa.id} value={empresa.id}>
+                            {empresa.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={`flex items-center gap-2 text-sm font-medium ${colors.text} mb-2`}>
+                        <Briefcase className="w-4 h-4" />
+                        Setor *
+                      </label>
+                      <select
+                        value={formData.setorId}
+                        onChange={(e) => setFormData({ ...formData, setorId: e.target.value })}
+                        className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                        disabled={carregando || !formData.empresaId}
+                      >
+                        <option value="">Selecione um setor</option>
+                        {setores
+                          .filter(setor => !formData.empresaId || setor.empresaId === formData.empresaId)
+                          .map(setor => (
+                            <option key={setor.id} value={setor.id}>
+                              {setor.nome}
+                            </option>
+                          ))}
+                      </select>
+                      {!formData.empresaId && (
+                        <p className={`text-xs ${colors.textSecondary} mt-1`}>
+                          Selecione uma empresa primeiro
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-medium ${colors.text} mb-2`}>
+                        Cargo/Função
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.cargo}
+                        onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
+                        className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                        placeholder="Ex: Analista, Supervisor, etc."
+                        disabled={carregando}
+                      />
+                    </div>
+                  </>
+                )}
+
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -593,43 +927,44 @@ const UsuariosTab = () => {
                     Usuário ativo
                   </label>
                 </div>
+
+                {erro && (
+                  <div className="mt-4 p-3 md:p-4 rounded-lg border border-[#F4212E] border-opacity-20 bg-[#F4212E] bg-opacity-10 text-[#F4212E] text-sm">
+                    {erro}
+                  </div>
+                )}
+
+                {sucesso && (
+                  <div className="mt-4 p-3 md:p-4 rounded-lg border border-[#00BA7C] border-opacity-20 bg-[#00BA7C] bg-opacity-10 text-[#00BA7C] text-sm">
+                    {sucesso}
+                  </div>
+                )}
               </div>
+            </div>
 
-              {erro && (
-                <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm mt-4 p-4 border border-[#F4212E] border-opacity-20 bg-[#F4212E] bg-opacity-10 text-[#F4212E]`}>
-                  {erro}
-                </div>
-              )}
-
-              {sucesso && (
-                <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm mt-4 p-4 border border-[#00BA7C] border-opacity-20 bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]`}>
-                  {sucesso}
-                </div>
-              )}
-
-              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t dark:border-[#2F3336]">
-                <button
-                  onClick={fecharModal}
-                  disabled={carregando}
-                  className={`px-4 py-2 bg-black bg-opacity-5 dark:bg-opacity-20 ${colors.text} rounded-full hover:bg-opacity-10 dark:hover:bg-opacity-30 transition-colors disabled:opacity-50`}
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={salvarUsuario}
-                  disabled={carregando}
-                  className="px-4 py-2 bg-[#1D9BF0] text-white rounded-full hover:bg-[#1A8CD8] transition-colors disabled:opacity-50"
-                >
-                  {carregando ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Salvando...
-                    </div>
-                  ) : (
-                    usuarioEditando ? 'Atualizar' : 'Criar'
-                  )}
-                </button>
-              </div>
+            {/* Footer fixo */}
+            <div className="flex justify-end gap-3 p-4 md:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0">
+              <button
+                onClick={fecharModal}
+                disabled={carregando}
+                className={`px-4 md:px-6 py-2 md:py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 ${colors.text} rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-all disabled:opacity-50 font-medium text-sm md:text-base`}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={salvarUsuario}
+                disabled={carregando}
+                className="px-4 md:px-6 py-2 md:py-2.5 bg-[#1D9BF0] text-white rounded-full hover:bg-[#1A8CD8] transition-all disabled:opacity-50 font-medium text-sm md:text-base shadow-lg"
+              >
+                {carregando ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Salvando...</span>
+                  </div>
+                ) : (
+                  usuarioEditando ? 'Atualizar' : 'Criar'
+                )}
+              </button>
             </div>
           </div>
         </div>
