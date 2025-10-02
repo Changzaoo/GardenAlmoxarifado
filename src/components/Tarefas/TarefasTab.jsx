@@ -216,41 +216,66 @@ const TarefasTab = ({
   };
 
   const isUserAssigned = (tarefa) => {
-    const checkName = (name1, name2) => {
-      if (!name1 || !name2) return false;
-      return name1.toLowerCase() === name2.toLowerCase();
+    if (!usuario) return false;
+    
+    const usuarioNome = usuario?.nome?.toLowerCase();
+    const usuarioId = usuario?.id;
+    const usuarioEmail = usuario?.email?.toLowerCase();
+    
+    // Função helper melhorada - match por ID, nome ou email
+    const matchUser = (value) => {
+      if (!value) return false;
+      const valueLower = String(value).toLowerCase();
+      
+      // Match exato por ID
+      if (valueLower === usuarioId) return true;
+      
+      // Match por nome (exato ou parcial)
+      if (usuarioNome && valueLower === usuarioNome) return true;
+      if (usuarioNome && valueLower.includes(usuarioNome)) return true;
+      if (usuarioNome && usuarioNome.includes(valueLower)) return true;
+      
+      // Match por email
+      if (usuarioEmail && valueLower === usuarioEmail) return true;
+      
+      return false;
     };
-
+    
+    // Se tem filtro de usuário específico
     if (userFilter) {
-      return checkName(tarefa.funcionario, userFilter) || 
-             checkName(tarefa.responsavel, userFilter) ||
-             tarefa.funcionariosIds?.some(id => checkName(id, userFilter));
+      const filterLower = userFilter.toLowerCase();
+      const matchFilter = (value) => {
+        if (!value) return false;
+        return String(value).toLowerCase().includes(filterLower);
+      };
+      
+      return matchFilter(tarefa.funcionario) || 
+             matchFilter(tarefa.responsavel) ||
+             tarefa.funcionariosIds?.some(matchFilter);
     }
     
-    // Verificar por NOME (tarefas antigas) e por ID (tarefas novas)
-    const usuarioNome = usuario?.nome;
-    const usuarioId = usuario?.id;
+    // Verificar array de funcionáriosIds (pode conter IDs ou nomes)
+    const estaNosIds = tarefa.funcionariosIds?.some(matchUser);
     
-    console.log('TarefasTab: Verificando tarefa', {
-      tarefaTitulo: tarefa.titulo,
-      funcionariosIds: tarefa.funcionariosIds,
-      usuarioNome,
-      usuarioId
-    });
+    // Verificar campos legados (funcionario e responsavel)
+    const ehResponsavel = matchUser(tarefa.responsavel);
+    const ehFuncionario = matchUser(tarefa.funcionario);
     
-    // Verifica se o usuário está no array funcionariosIds (por nome OU por ID)
-    const estaNosIds = tarefa.funcionariosIds?.some(id => {
-      const matchNome = checkName(id, usuarioNome);
-      const matchId = id === usuarioId;
-      console.log('TarefasTab: Comparando', { id, usuarioNome, usuarioId, matchNome, matchId });
-      return matchNome || matchId;
-    });
+    const resultado = estaNosIds || ehResponsavel || ehFuncionario;
     
-    const resultado = checkName(tarefa.funcionario, usuarioNome) || 
-                     checkName(tarefa.responsavel, usuarioNome) ||
-                     estaNosIds;
+    // Debug apenas se não encontrou match
+    if (!resultado && showOnlyUserTasks) {
+      console.log('❌ Tarefa NÃO atribuída ao usuário:', {
+        tarefaTitulo: tarefa.titulo,
+        funcionariosIds: tarefa.funcionariosIds,
+        funcionario: tarefa.funcionario,
+        responsavel: tarefa.responsavel,
+        usuarioId,
+        usuarioNome,
+        usuarioEmail
+      });
+    }
     
-    console.log('TarefasTab: Resultado final:', resultado);
     return resultado;
   };
 
@@ -513,15 +538,30 @@ const TarefasTab = ({
                       <div className="flex flex-wrap gap-2">
                         {[...(tarefa.funcionariosIds || []), tarefa.funcionario]
                           .filter(Boolean)
-                          .map((func, idx) => (
-                            <div 
-                              key={idx}
-                              className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-sm text-gray-500 dark:text-gray-400"
-                            >
-                              <User className="w-3 h-3" />
-                              {func}
-                            </div>
-                          ))}
+                          .map((func, idx) => {
+                            // Se func é um ID (formato hash), buscar o nome do funcionário
+                            let nomeFuncionario = func;
+                            
+                            // Verificar se é um ID (contém letras e números misturados tipo hash)
+                            const pareceId = /^[a-zA-Z0-9]{10,}$/.test(func);
+                            
+                            if (pareceId && funcionarios && funcionarios.length > 0) {
+                              const funcionarioEncontrado = funcionarios.find(f => f.id === func);
+                              if (funcionarioEncontrado) {
+                                nomeFuncionario = funcionarioEncontrado.nome || funcionarioEncontrado.username || funcionarioEncontrado.email || func;
+                              }
+                            }
+                            
+                            return (
+                              <div 
+                                key={idx}
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-sm text-gray-500 dark:text-gray-400"
+                              >
+                                <User className="w-3 h-3" />
+                                {nomeFuncionario}
+                              </div>
+                            );
+                          })}
                       </div>
                     </div>
 

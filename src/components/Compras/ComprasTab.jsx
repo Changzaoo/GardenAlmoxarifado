@@ -5,6 +5,8 @@ import CompraCard from './CompraCard';
 import { useAuth } from '../../hooks/useAuth';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 import { PermissionChecker } from '../../constants/permissoes';
+import CompraAnimation from '../Inventario/CompraAnimation';
+import CancelamentoCompraAnimation from '../Inventario/CancelamentoCompraAnimation';
 
 const STATUS_COMPRAS = {
   SOLICITADO: 'solicitado',
@@ -100,6 +102,14 @@ const ComprasTab = ({
   });
   
   const [detalhesCompra, setDetalhesCompra] = useState(null);
+  
+  // Estados para controlar a animação de compra
+  const [showCompraAnimation, setShowCompraAnimation] = useState(false);
+  const [dadosCompraAnimacao, setDadosCompraAnimacao] = useState(null);
+  
+  // Estados para controlar a animação de cancelamento
+  const [showCancelamentoAnimation, setShowCancelamentoAnimation] = useState(false);
+  const [dadosCancelamentoAnimacao, setDadosCancelamentoAnimacao] = useState(null);
 
   // Filtrar compras
   const comprasFiltradas = comprasPorSetor.filter(compra => {
@@ -154,10 +164,34 @@ const ComprasTab = ({
   };
 
   const confirmarExclusao = () => {
-    if (compraParaExcluir && typeof removerCompra === 'function') {
-      removerCompra(compraParaExcluir.id);
+    if (compraParaExcluir) {
+      // Preparar dados para a animação de cancelamento
+      const valorTotal = (compraParaExcluir.quantidade * compraParaExcluir.valorUnitario) + (compraParaExcluir.valorFrete || 0);
+      
+      setDadosCancelamentoAnimacao({
+        item: compraParaExcluir.descricao,
+        quantidade: compraParaExcluir.quantidade,
+        valor: valorTotal,
+        fornecedor: compraParaExcluir.fornecedor || 'Fornecedor não especificado',
+        compraId: compraParaExcluir.id
+      });
+      
+      // Fechar modal de confirmação e mostrar animação
+      setModalConfirmacao(false);
+      setShowCancelamentoAnimation(true);
     }
-    setModalConfirmacao(false);
+  };
+
+  // Função chamada quando a animação de cancelamento termina
+  const finalizarCancelamento = () => {
+    if (dadosCancelamentoAnimacao && typeof removerCompra === 'function') {
+      // Remover compra do Firebase
+      removerCompra(dadosCancelamentoAnimacao.compraId);
+    }
+    
+    // Limpar estados
+    setShowCancelamentoAnimation(false);
+    setDadosCancelamentoAnimacao(null);
     setCompraParaExcluir(null);
   };
 
@@ -178,28 +212,69 @@ const ComprasTab = ({
       ...novaCompra,
       quantidade: parseInt(novaCompra.quantidade),
       valorUnitario: parseFloat(novaCompra.valorUnitario),
+      valorFrete: novaCompra.valorFrete ? parseFloat(novaCompra.valorFrete) : 0,
       status: novaCompra.status || STATUS_COMPRAS.SOLICITADO
     };
 
     if (compraEditando) {
+      // Se está editando, apenas atualiza sem animação
       atualizarCompra(compraEditando.id, compraFormatada);
+      setModalAberto(false);
+      setCompraEditando(null);
+      setNovaCompra({
+        descricao: '',
+        quantidade: 1,
+        valorUnitario: '',
+        valorFrete: '',
+        fornecedor: '',
+        prioridade: PRIORIDADES.MEDIA,
+        solicitante: '',
+        observacoes: '',
+        link: '',
+        status: STATUS_COMPRAS.SOLICITADO
+      });
     } else {
-      adicionarCompra(compraFormatada);
+      // Se é uma nova compra, mostra a animação
+      const valorTotal = (compraFormatada.quantidade * compraFormatada.valorUnitario) + compraFormatada.valorFrete;
+      
+      setDadosCompraAnimacao({
+        item: compraFormatada.descricao,
+        quantidade: compraFormatada.quantidade,
+        valor: valorTotal,
+        fornecedor: compraFormatada.fornecedor || 'Fornecedor não especificado',
+        compraCompleta: compraFormatada
+      });
+      
+      // Fecha o modal e mostra a animação
+      setModalAberto(false);
+      setShowCompraAnimation(true);
     }
+  };
 
-    setModalAberto(false);
-    setCompraEditando(null);
-    setNovaCompra({
-      descricao: '',
-      quantidade: 1,
-      valorUnitario: '',
-      fornecedor: '',
-      prioridade: PRIORIDADES.MEDIA,
-      solicitante: '',
-      observacoes: '',
-      link: '',
-      status: STATUS_COMPRAS.SOLICITADO
-    });
+  // Função chamada quando a animação de compra termina
+  const finalizarCompra = () => {
+    if (dadosCompraAnimacao) {
+      // Adicionar compra ao Firebase
+      adicionarCompra(dadosCompraAnimacao.compraCompleta);
+      
+      // Limpar formulário
+      setNovaCompra({
+        descricao: '',
+        quantidade: 1,
+        valorUnitario: '',
+        valorFrete: '',
+        fornecedor: '',
+        prioridade: PRIORIDADES.MEDIA,
+        solicitante: '',
+        observacoes: '',
+        link: '',
+        status: STATUS_COMPRAS.SOLICITADO
+      });
+    }
+    
+    // Limpar estados da animação
+    setShowCompraAnimation(false);
+    setDadosCompraAnimacao(null);
   };
 
   const atualizarStatus = async (compraId, novoStatus) => {
@@ -586,6 +661,32 @@ const ComprasTab = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Animação de Compra */}
+      {showCompraAnimation && dadosCompraAnimacao && (
+        <CompraAnimation
+          compra={{
+            item: dadosCompraAnimacao.item,
+            quantidade: dadosCompraAnimacao.quantidade,
+            valor: dadosCompraAnimacao.valor,
+            fornecedor: dadosCompraAnimacao.fornecedor
+          }}
+          onComplete={finalizarCompra}
+        />
+      )}
+
+      {/* Animação de Cancelamento de Compra */}
+      {showCancelamentoAnimation && dadosCancelamentoAnimacao && (
+        <CancelamentoCompraAnimation
+          compra={{
+            item: dadosCancelamentoAnimacao.item,
+            quantidade: dadosCancelamentoAnimacao.quantidade,
+            valor: dadosCancelamentoAnimacao.valor,
+            fornecedor: dadosCancelamentoAnimacao.fornecedor
+          }}
+          onComplete={finalizarCancelamento}
+        />
       )}
     </div>
   );

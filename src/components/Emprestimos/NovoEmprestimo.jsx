@@ -5,11 +5,14 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import FerramentaSelector from './FerramentaSelector';
+import EmprestimoAnimation from './EmprestimoAnimation';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
   const [funcionarios, setFuncionarios] = useState([]);
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState('');
   const [showHelp, setShowHelp] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [emprestimoParaAnimar, setEmprestimoParaAnimar] = useState(null);
 
   // Carregar funcionários
   useEffect(() => {
@@ -100,6 +103,21 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
       }
     }
 
+    // Prepara os dados da animação
+    setEmprestimoParaAnimar({
+      ferramentas: novoEmprestimo.ferramentas,
+      funcionarioNome: novoEmprestimo.colaborador,
+      funcionarioFoto: funcionarioSelecionado.photoURL || null
+    });
+
+    // Mostra a animação
+    setShowAnimation(true);
+  };
+
+  // Finaliza o empréstimo após a animação
+  const finalizarEmprestimo = () => {
+    const funcionarioSelecionado = funcionarios.find(f => f.nome === novoEmprestimo.colaborador);
+    
     const novo = {
       ...novoEmprestimo,
       status: 'emprestado',
@@ -114,8 +132,12 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
         quantidade: f.quantidade
       }))
     };
+    
     const emprestimoAdicionado = adicionarEmprestimo(novo, atualizarDisponibilidade);
+    
     if (emprestimoAdicionado) {
+      setShowAnimation(false);
+      setEmprestimoParaAnimar(null);
       setNovoEmprestimo({
         colaborador: '',
         ferramentas: []
@@ -130,49 +152,82 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
   const ferramentasDisponiveis = inventario.filter(item => item.disponivel > 0);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <>
+      {/* Animação de Empréstimo */}
+      {showAnimation && emprestimoParaAnimar && (
+        <EmprestimoAnimation
+          ferramentas={emprestimoParaAnimar.ferramentas}
+          funcionarioNome={emprestimoParaAnimar.funcionarioNome}
+          funcionarioFoto={emprestimoParaAnimar.funcionarioFoto}
+          onComplete={finalizarEmprestimo}
+        />
+      )}
+
+      <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/80 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+        {/* Cabeçalho do Formulário */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Plus className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+            Novo Empréstimo
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Preencha os dados para registrar um novo empréstimo</p>
+        </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              <User className="w-4 h-4" />
-              Funcionário
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Funcionário Responsável
             </label>
-            <select
-              value={novoEmprestimo.colaborador}
-              onChange={(e) => {
-                const valor = e.target.value;
-                setNovoEmprestimo({...novoEmprestimo, colaborador: valor});
-                setFuncionarioSelecionado(valor);
-              }}
-              className="h-[36px] w-full bg-white dark:bg-gray-800 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] transition-colors appearance-none px-4"
-              required
-            >
-              <option value="" className="dark:bg-gray-800">Selecione o funcionário</option>
-              {[...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome)).map((funcionario) => (
-                <option key={funcionario.id} value={funcionario.nome} className="dark:bg-gray-800">
-                  {funcionario.nome}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={novoEmprestimo.colaborador}
+                onChange={(e) => {
+                  const valor = e.target.value;
+                  setNovoEmprestimo({...novoEmprestimo, colaborador: valor});
+                  setFuncionarioSelecionado(valor);
+                }}
+                className="h-12 w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none px-4 pr-10 font-medium shadow-sm"
+                required
+              >
+                <option value="" className="dark:bg-gray-800">Selecione um funcionário...</option>
+                {[...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome)).map((funcionario) => (
+                  <option key={funcionario.id} value={funcionario.nome} className="dark:bg-gray-800">
+                    {funcionario.nome}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              <Wrench className="w-4 h-4" />
-              Ferramenta
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <Wrench className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Selecionar Ferramenta
             </label>
-            <FerramentaSelector 
-              ferramentasDisponiveis={ferramentasDisponiveis}
-              onAdicionarFerramenta={adicionarFerramenta}
-            />
-            <div className="mt-2 flex justify-end">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700/50 rounded-xl p-4">
+              <FerramentaSelector 
+                ferramentasDisponiveis={ferramentasDisponiveis}
+                onAdicionarFerramenta={adicionarFerramenta}
+              />
+              <div className="mt-3 flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                <HelpCircle className="w-4 h-4" />
+                <span>Selecione ferramentas disponíveis no inventário</span>
+              </div>
+            </div>
+            <div className="flex justify-end">
               <button
                 onClick={() => setShowHelp(true)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-all"
               >
                 <HelpCircle className="w-4 h-4" />
-                Ajuda
+                Como funciona?
               </button>
             </div>
           </div>
@@ -232,42 +287,59 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
         )}
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <h3 className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              <Backpack className="w-4 h-4" />
-              Ferramentas Selecionadas
-            </h3>
-            <div className="border border-gray-200 dark:border-gray-300 dark:border-gray-600 rounded-lg p-4 min-h-[200px] max-h-[calc(50vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800 dark:bg-gray-800">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <Backpack className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                Ferramentas Selecionadas
+              </h3>
+              {novoEmprestimo.ferramentas.length > 0 && (
+                <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold px-3 py-1 rounded-full">
+                  {novoEmprestimo.ferramentas.length} {novoEmprestimo.ferramentas.length === 1 ? 'item' : 'itens'}
+                </span>
+              )}
+            </div>
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 min-h-[200px] max-h-[calc(50vh-4rem)] overflow-y-auto bg-white dark:bg-gray-800/50 backdrop-blur-sm">
               {novoEmprestimo.ferramentas.length === 0 ? (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-gray-400 dark:text-gray-500 text-sm">Nenhuma ferramenta selecionada</p>
+                <div className="h-full flex flex-col items-center justify-center py-12">
+                  <Backpack className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
+                  <p className="text-gray-400 dark:text-gray-500 text-sm font-medium">Nenhuma ferramenta selecionada</p>
+                  <p className="text-gray-300 dark:text-gray-600 text-xs mt-1">Selecione ferramentas acima para iniciar</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {novoEmprestimo.ferramentas.map((ferramenta, index) => (
                     <div 
                       key={index} 
-                      className="flex flex-col p-3 rounded-lg border border-gray-100 dark:border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors min-h-[160px] relative"
+                      className="flex flex-col p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/80 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200"
                     >
                       <div className="flex flex-col h-full">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 break-words mb-auto" title={ferramenta.nome}>
-                          {ferramenta.nome}
-                        </span>
-                        <div className="flex items-center gap-2 mt-3">
-                          <select
-                            value={ferramenta.quantidade}
-                            onChange={(e) => atualizarQuantidade(ferramenta.nome, e.target.value)}
-                            className="h-[36px] w-24 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent px-2 transition-colors ml-auto"
-                          >
-                            {[...Array(ferramenta.disponivel)].map((_, i) => (
-                              <option key={i + 1} value={i + 1}>
-                                {i + 1} un.
-                              </option>
-                            ))}
-                          </select>
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 break-words flex-1" title={ferramenta.nome}>
+                            {ferramenta.nome}
+                          </span>
+                          <span className="text-xs bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-2 py-1 rounded-lg font-medium whitespace-nowrap">
+                            {ferramenta.disponivel} disp.
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-auto">
+                          <div className="flex-1">
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block font-medium">Quantidade:</label>
+                            <select
+                              value={ferramenta.quantidade}
+                              onChange={(e) => atualizarQuantidade(ferramenta.nome, e.target.value)}
+                              className="h-10 w-full bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 transition-all font-semibold"
+                            >
+                              {[...Array(ferramenta.disponivel)].map((_, i) => (
+                                <option key={i + 1} value={i + 1}>
+                                  {i + 1} {i + 1 === 1 ? 'unidade' : 'unidades'}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                           <button
                             onClick={() => removerFerramenta(ferramenta.nome)}
-                            className="h-[36px] w-[36px] flex items-center justify-center text-red-500 hover:text-gray-700 dark:hover:text-white dark:text-red-400 dark:hover:text-white rounded-lg border border-red-200 dark:border-red-900/50 hover:bg-red-500 dark:hover:bg-red-500/80 transition-all"
+                            className="h-10 w-10 flex items-center justify-center text-red-600 hover:text-white dark:text-red-400 dark:hover:text-white rounded-lg border-2 border-red-200 dark:border-red-900/50 hover:bg-red-500 dark:hover:bg-red-500 hover:border-red-500 transition-all mt-5"
                             title="Remover ferramenta"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -284,14 +356,15 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
           <button
             onClick={handleSubmit}
             disabled={!novoEmprestimo.colaborador || novoEmprestimo.ferramentas.length === 0}
-            className="h-[36px] w-full flex items-center justify-center gap-2 bg-[#1D9BF0] hover:bg-[#1A8CD8] disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-gray-900 dark:text-white font-medium rounded-lg transition-colors"
+            className="h-14 w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:from-gray-300 disabled:to-gray-300 dark:disabled:from-gray-700 dark:disabled:to-gray-700 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl disabled:shadow-none text-base"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
             Registrar Empréstimo
           </button>
         </div>
       </div>
     </div>
+    </>
   );
 }
 

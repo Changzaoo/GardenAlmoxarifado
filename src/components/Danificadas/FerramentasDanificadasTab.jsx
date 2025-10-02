@@ -5,6 +5,7 @@ import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import { toast } from 'react-toastify';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 import { PermissionChecker } from '../../constants/permissoes';
+import FerramentaDanificadaAnimation from '../Inventario/FerramentaDanificadaAnimation';
 
 const { classes, colors } = twitterThemeConfig;
 
@@ -52,6 +53,10 @@ const FerramentasDanificadasTab = ({
   const [editingFerramenta, setEditingFerramenta] = useState(null);
   const [deleteModalAberto, setDeleteModalAberto] = useState(false);
   const [deletingFerramentaId, setDeletingFerramentaId] = useState(null);
+  
+  // Estados para animação
+  const [showDanificadaAnimation, setShowDanificadaAnimation] = useState(false);
+  const [dadosDanificadaAnimacao, setDadosDanificadaAnimacao] = useState(null);
 
   const openEditModal = (ferramenta) => {
     setEditingFerramenta(ferramenta);
@@ -108,52 +113,87 @@ const FerramentasDanificadasTab = ({
       return;
     }
 
+    // Preparar dados para animação
+    const dadosAnimacao = {
+      nome: novaFerramenta.nomeItem,
+      descricao: novaFerramenta.descricaoProblema,
+      categoria: novaFerramenta.categoria,
+    };
+
+    // Guardar dados completos para salvar depois da animação
     const dadosCompletos = {
       ...novaFerramenta,
       valorReparo: novaFerramenta.valorReparo ? parseFloat(novaFerramenta.valorReparo) : 0
     };
 
-    const sucesso = await adicionarFerramentaDanificada(dadosCompletos);
-    
-    if (sucesso) {
-      setNovaFerramenta({
-        nomeItem: '',
-        categoria: '',
-        descricaoProblema: '',
-        responsavel: '',
-        localUltimaVez: '',
-        dataDanificacao: new Date().toISOString().split('T')[0],
-        valorReparo: '',
-        statusReparo: 'aguardando_reparo',
-        observacoes: '',
-        prioridade: 'media'
-      });
-      setModalAberto(false);
-      toast.success('Ferramenta danificada registrada com sucesso!', {
+    setDadosDanificadaAnimacao(dadosCompletos);
+    setModalAberto(false); // Fechar modal antes da animação
+    setShowDanificadaAnimation(true); // Mostrar animação
+  };
+
+  // Função para finalizar o registro após a animação
+  const finalizarRegistroDanificada = async () => {
+    try {
+      const sucesso = await adicionarFerramentaDanificada(dadosDanificadaAnimacao);
+      
+      if (sucesso) {
+        setNovaFerramenta({
+          nomeItem: '',
+          categoria: '',
+          descricaoProblema: '',
+          responsavel: '',
+          localUltimaVez: '',
+          dataDanificacao: new Date().toISOString().split('T')[0],
+          valorReparo: '',
+          statusReparo: 'aguardando_reparo',
+          observacoes: '',
+          prioridade: 'media'
+        });
+        setShowDanificadaAnimation(false);
+        setDadosDanificadaAnimacao(null);
+        toast.success('Ferramenta danificada registrada com sucesso!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          style: {
+            background: '#192734',
+            color: '#ffffff',
+            borderRadius: '1rem',
+            border: '1px solid #38444D'
+          }
+        });
+      } else {
+        setShowDanificadaAnimation(false);
+        setDadosDanificadaAnimacao(null);
+        toast.error('Erro ao registrar ferramenta danificada. Tente novamente.', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          style: {
+            background: '#192734',
+            color: '#ffffff',
+            borderRadius: '1rem',
+            border: '1px solid #38444D'
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao finalizar registro:', error);
+      setShowDanificadaAnimation(false);
+      setDadosDanificadaAnimacao(null);
+      toast.error('Erro ao registrar ferramenta danificada.', {
         position: "top-right",
         autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        style: {
-          background: '#192734',
-          color: '#ffffff',
-          borderRadius: '1rem',
-          border: '1px solid #38444D'
-        }
-      });
-    } else {
-      toast.error('Erro ao registrar ferramenta danificada. Tente novamente.', {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
         theme: "dark",
         style: {
           background: '#192734',
@@ -957,6 +997,18 @@ const FerramentasDanificadasTab = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Animação de Ferramenta Danificada */}
+      {showDanificadaAnimation && dadosDanificadaAnimacao && (
+        <FerramentaDanificadaAnimation
+          item={{
+            nome: dadosDanificadaAnimacao.nomeItem,
+            descricao: dadosDanificadaAnimacao.descricaoProblema,
+            categoria: dadosDanificadaAnimacao.categoria,
+          }}
+          onComplete={finalizarRegistroDanificada}
+        />
       )}
     </div>
   );

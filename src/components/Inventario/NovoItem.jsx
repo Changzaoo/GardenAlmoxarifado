@@ -3,6 +3,7 @@ import { Plus, Building2, Briefcase } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../firebaseConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import AdicionarItemAnimation from './AdicionarItemAnimation';
 
 const NovoItem = ({ adicionarItem }) => {
   const { usuario } = useAuth();
@@ -20,6 +21,10 @@ const NovoItem = ({ adicionarItem }) => {
   const [setorSelecionado, setSetorSelecionado] = useState('');
   const [loadingEmpresas, setLoadingEmpresas] = useState(false);
   const [loadingSetores, setLoadingSetores] = useState(false);
+  
+  // Estados para controlar a animação
+  const [showAdicionarAnimation, setShowAdicionarAnimation] = useState(false);
+  const [dadosAnimacao, setDadosAnimacao] = useState(null);
 
   // Carregar empresas quando o componente monta (apenas para admin)
   useEffect(() => {
@@ -117,11 +122,38 @@ const NovoItem = ({ adicionarItem }) => {
       criadoPor: itemComEmpresaSetor.criadoPor
     });
 
-    const sucesso = adicionarItem(itemComEmpresaSetor);
-    
-    if (sucesso) {
-      setNovoItem({ nome: '', quantidade: '', categoria: '' });
+    // Preparar dados para a animação
+    setDadosAnimacao({
+      item: {
+        nome: itemComEmpresaSetor.nome,
+        quantidade: parseInt(itemComEmpresaSetor.quantidade),
+        categoria: itemComEmpresaSetor.categoria
+      },
+      empresa: itemComEmpresaSetor.empresa,
+      setor: itemComEmpresaSetor.setor,
+      destino: 'almoxarifado', // Sempre vai para o almoxarifado do setor
+      itemCompleto: itemComEmpresaSetor
+    });
+
+    // Mostrar animação
+    setShowAdicionarAnimation(true);
+  };
+
+  // Função chamada quando a animação termina
+  const finalizarAdicaoItem = () => {
+    if (dadosAnimacao) {
+      // Adicionar item ao Firebase
+      const sucesso = adicionarItem(dadosAnimacao.itemCompleto);
+      
+      if (sucesso) {
+        // Limpar formulário
+        setNovoItem({ nome: '', quantidade: '', categoria: '' });
+      }
     }
+
+    // Limpar estados da animação
+    setShowAdicionarAnimation(false);
+    setDadosAnimacao(null);
   };
 
   return (
@@ -251,6 +283,17 @@ const NovoItem = ({ adicionarItem }) => {
           Adicionar Item
         </button>
       </div>
+
+      {/* Animação de Adicionar Item */}
+      {showAdicionarAnimation && dadosAnimacao && (
+        <AdicionarItemAnimation
+          item={dadosAnimacao.item}
+          empresa={dadosAnimacao.empresa}
+          setor={dadosAnimacao.setor}
+          destino={dadosAnimacao.destino}
+          onComplete={finalizarAdicaoItem}
+        />
+      )}
     </div>
   );
 };
