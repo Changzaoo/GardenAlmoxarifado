@@ -1145,6 +1145,11 @@
   resolved "https://registry.npmjs.org/@capacitor/local-notifications/-/local-notifications-7.0.3.tgz"
   integrity sha512-zVHZk5AYRiBwBDynaD7caPUROozgvwOG0L2SPFw1HBTWCscJvo0fsaE67NWW252jzel3PH0XogglJUYFx/jtHA==
 
+"@capacitor/push-notifications@^7.0.3":
+  version "7.0.3"
+  resolved "https://registry.npmjs.org/@capacitor/push-notifications/-/push-notifications-7.0.3.tgz"
+  integrity sha512-4qt5dRVBkHzq202NEoj3JC+S+zQCrZ1FJh7sjkICy/i1iEos+VaoB3bie8eWDQ2LTARktB4+k2xkdpu8pcVo/g==
+
 "@craco/craco@^7.1.0":
   version "7.1.0"
   resolved "https://registry.npmjs.org/@craco/craco/-/craco-7.1.0.tgz"

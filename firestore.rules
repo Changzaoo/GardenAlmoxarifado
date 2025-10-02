@@ -109,5 +109,62 @@ service cloud.firestore {
                    request.resource.data.keys().hasAll(['tipo', 'data', 'descricao', 'usuario']);
       allow update, delete: if false; // Histórico não deve ser modificado
     }
+
+    // ==================== SISTEMA DE MENSAGENS ====================
+    
+    // Regras para conversas
+    match /conversas/{conversaId} {
+      // Permitir leitura se o usuário é participante
+      allow read: if isAuthenticated() && 
+                     request.auth.uid in resource.data.participantes;
+      
+      // Permitir criação de novas conversas
+      allow create: if isAuthenticated() && 
+                       request.auth.uid in request.resource.data.participantes;
+      
+      // Permitir atualização se o usuário é participante
+      allow update: if isAuthenticated() && 
+                       request.auth.uid in resource.data.participantes;
+      
+      // Permitir exclusão apenas para grupos (admin do grupo)
+      allow delete: if isAuthenticated() && 
+                       resource.data.tipo == 'grupo' &&
+                       resource.data.admin == request.auth.uid;
+      
+      // Regras para mensagens dentro de conversas
+      match /mensagens/{mensagemId} {
+        // Permitir leitura se o usuário é participante da conversa
+        allow read: if isAuthenticated() && 
+                       request.auth.uid in get(/databases/$(database)/documents/conversas/$(conversaId)).data.participantes;
+        
+        // Permitir criação se o usuário é participante
+        allow create: if isAuthenticated() && 
+                         request.auth.uid in get(/databases/$(database)/documents/conversas/$(conversaId)).data.participantes &&
+                         request.resource.data.remetenteId == request.auth.uid;
+        
+        // Permitir atualização apenas do próprio usuário
+        allow update: if isAuthenticated() && 
+                         resource.data.remetenteId == request.auth.uid;
+        
+        // Permitir exclusão apenas do próprio usuário
+        allow delete: if isAuthenticated() && 
+                         resource.data.remetenteId == request.auth.uid;
+      }
+    }
+    
+    // Regras para usuários (necessário para buscar info de outros usuários)
+    match /usuarios/{userId} {
+      // Qualquer usuário autenticado pode ler outros usuários (para mensagens)
+      allow read: if isAuthenticated();
+      
+      // Apenas o próprio usuário ou admin pode atualizar
+      allow update: if isAuthenticated() && 
+                       (request.auth.uid == userId || isAdmin());
+      
+      // Permitir atualização do campo fcmTokens para notificações push
+      allow update: if isAuthenticated() && 
+                       request.auth.uid == userId &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcmTokens', 'status', 'ultimaVez']);
+    }
   }
 }

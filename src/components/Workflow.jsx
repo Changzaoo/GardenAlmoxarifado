@@ -2,7 +2,6 @@ import React, { useState, useEffect, createContext, useContext, useCallback } fr
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs, getDoc, query, where } from 'firebase/firestore';
 import { useDevToolsProtection } from '../hooks/useDevToolsProtection';
 import { ToastProvider } from './ToastProvider';
-import VerificacaoMensalTab from './Inventario/VerificacaoMensalTab';
 import LegalTab from './Legal/LegalTab';
 import SupportTab from './Support/SupportTab';
 import { Shield } from 'lucide-react';
@@ -22,14 +21,11 @@ import { inventarioInicial } from '../data/inventarioInicial';
 import EmprestimosTab from './Emprestimos/EmprestimosTab';
 import FuncionariosTab from './Funcionarios/FuncionariosTab';
 import UsuariosTab from './usuarios/UsuariosTab';
-import FerramentasDanificadasTab from './Danificadas/FerramentasDanificadasTab';
-import FerramentasPerdidasTab from './Perdidas/FerramentasPerdidasTab';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
-import WorkflowChat from './Chat/WorkflowChat';
-import ChatNotificationBadge from './Chat/ChatNotificationBadge';
 import { MessageNotificationProvider } from './Chat/MessageNotificationContext';
 import { NotificationProvider, useNotification } from './NotificationProvider';
-import ComprasTab from './Compras/ComprasTab';
+import MensagensMain from './Mensagens/MensagensMain';
+import { useMensagens } from '../hooks/useMensagens';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
 import TarefasTab from './Tarefas/TarefasTab';
 import { AuthContext, useAuth } from '../hooks/useAuth';
@@ -1012,6 +1008,7 @@ const AlmoxarifadoSistema = () => {
   const isMobile = useIsMobile();
   const { funcionarios: funcionariosData } = useFuncionarios();
   const { unreadCount: notificationUnreadCount } = useNotification();
+  const { totalNaoLidas: mensagensNaoLidas } = useMensagens();
   const funcionarioInfo = funcionariosData.find(f => f.id === usuario.id);
   
   // Estados locais
@@ -1019,7 +1016,6 @@ const AlmoxarifadoSistema = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuRecolhido, setMenuRecolhido] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -1219,26 +1215,167 @@ const AlmoxarifadoSistema = () => {
     }
   };
 
+  // Função de diagnóstico para verificar inconsistências no inventário
+  const diagnosticarInventario = async () => {
+    try {
+      console.log('🔍 Iniciando diagnóstico completo do inventário...');
+      
+      // Recarrega dados do Firestore
+      const [inventarioSnapshot, emprestimosSnapshot] = await Promise.all([
+        getDocs(collection(db, 'inventario')),
+        getDocs(query(collection(db, 'emprestimos'), where('status', '==', 'emprestado')))
+      ]);
+      
+      const itensInventario = inventarioSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      const emprestimosAtivos = emprestimosSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      console.log(`📦 Total de itens no inventário: ${itensInventario.length}`);
+      console.log(`📋 Total de empréstimos ativos: ${emprestimosAtivos.length}`);
+      
+      // Analisa cada item
+      const resultados = [];
+      
+      for (const item of itensInventario) {
+        const nomeNormalizado = item.nome.trim().toLowerCase();
+        
+        // Conta quantos estão realmente em uso
+        let quantidadeEmUsoReal = 0;
+        const emprestimosDoItem = [];
+        
+        emprestimosAtivos.forEach(emp => {
+          if (emp.ferramentas && Array.isArray(emp.ferramentas)) {
+            emp.ferramentas.forEach(f => {
+              const nome = typeof f === 'string' ? f : f.nome;
+              if (nome.trim().toLowerCase() === nomeNormalizado) {
+                const qtd = typeof f === 'string' ? 1 : (f.quantidade || 1);
+                quantidadeEmUsoReal += qtd;
+                emprestimosDoItem.push({
+                  emprestimoId: emp.id,
+                  colaborador: emp.colaborador,
+                  quantidade: qtd
+                });
+              }
+            });
+          }
+        });
+        
+        const disponivelEsperado = item.quantidade - quantidadeEmUsoReal;
+        const emUsoRegistrado = item.emUso || 0;
+        const disponivelRegistrado = item.disponivel || 0;
+        
+        const inconsistente = 
+          emUsoRegistrado !== quantidadeEmUsoReal || 
+          disponivelRegistrado !== disponivelEsperado;
+        
+        if (inconsistente) {
+          resultados.push({
+            nome: item.nome,
+            quantidade: item.quantidade,
+            estado: {
+              registrado: {
+                disponivel: disponivelRegistrado,
+                emUso: emUsoRegistrado
+              },
+              esperado: {
+                disponivel: disponivelEsperado,
+                emUso: quantidadeEmUsoReal
+              },
+              diferenca: {
+                disponivel: disponivelEsperado - disponivelRegistrado,
+                emUso: quantidadeEmUsoReal - emUsoRegistrado
+              }
+            },
+            emprestimos: emprestimosDoItem
+          });
+        }
+      }
+      
+      if (resultados.length > 0) {
+        console.log(`⚠️ Encontradas ${resultados.length} inconsistências:`);
+        console.table(resultados.map(r => ({
+          Item: r.nome,
+          'Disp. Registrado': r.estado.registrado.disponivel,
+          'Disp. Esperado': r.estado.esperado.disponivel,
+          'Em Uso Registrado': r.estado.registrado.emUso,
+          'Em Uso Esperado': r.estado.esperado.emUso,
+          'Empréstimos': r.emprestimos.length
+        })));
+        
+        return {
+          temInconsistencias: true,
+          inconsistencias: resultados
+        };
+      } else {
+        console.log('✅ Nenhuma inconsistência encontrada! Inventário está correto.');
+        return {
+          temInconsistencias: false,
+          mensagem: 'Inventário está consistente'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Erro no diagnóstico:', error);
+      return {
+        erro: error.message
+      };
+    }
+  };
+
   // Função para corrigir estado específico de um item
   const corrigirEstadoItem = async (itemNome) => {
     try {
+      console.log(`🔧 Iniciando correção de estado para: ${itemNome}`);
+      
       // Normaliza o nome do item
       const nomeNormalizado = itemNome.trim().toLowerCase();
       
+      // Recarrega o inventário do Firestore para ter dados atualizados
+      const inventarioSnapshot = await getDocs(collection(db, 'inventario'));
+      const itensInventario = inventarioSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
       // Encontra o item no inventário
-      const itemInventario = inventario.find(item => 
+      const itemInventario = itensInventario.find(item => 
         item.nome.trim().toLowerCase() === nomeNormalizado
       );
       
       if (!itemInventario) {
-        console.log('Item não encontrado no inventário:', itemNome);
-        return;
+        console.log('❌ Item não encontrado no inventário:', itemNome);
+        return {
+          sucesso: false,
+          erro: 'Item não encontrado'
+        };
       }
       
-      // Calcula quantos estão em uso nos empréstimos ativos
-      const emprestimosAtivos = emprestimos.filter(emp => emp.status === 'emprestado');
-      console.log(`Verificando ${emprestimosAtivos.length} empréstimos ativos para ${itemNome}`);
+      console.log('📦 Item encontrado:', {
+        nome: itemInventario.nome,
+        quantidadeTotal: itemInventario.quantidade,
+        disponivelAtual: itemInventario.disponivel || 0,
+        emUsoAtual: itemInventario.emUso || 0
+      });
       
+      // Recarrega empréstimos do Firestore
+      const emprestimosQuery = query(
+        collection(db, 'emprestimos'),
+        where('status', '==', 'emprestado')
+      );
+      const emprestimosSnapshot = await getDocs(emprestimosQuery);
+      const emprestimosAtivos = emprestimosSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      console.log(`🔍 Verificando ${emprestimosAtivos.length} empréstimos ativos`);
+      
+      // Calcula quantos estão em uso nos empréstimos ativos
       let quantidadeEmUso = 0;
       const detalhesEmprestimos = [];
       
@@ -1265,29 +1402,56 @@ const AlmoxarifadoSistema = () => {
         }
       });
       
-      console.log('Detalhes dos empréstimos encontrados:', detalhesEmprestimos);
+      console.log('📋 Empréstimos ativos encontrados:', detalhesEmprestimos);
+      console.log(`📊 Total em uso calculado: ${quantidadeEmUso}`);
+      
+      // Calcula o disponível correto
+      const disponivelCorreto = Math.max(0, itemInventario.quantidade - quantidadeEmUso);
       
       // Atualiza o item no Firestore
       const atualizacao = {
         emUso: quantidadeEmUso,
-        disponivel: itemInventario.quantidade - quantidadeEmUso
+        disponivel: disponivelCorreto,
+        ultimaCorrecao: new Date().toISOString()
       };
       
-      console.log(`Atualizando estado de "${itemNome}":`, {
-        ...atualizacao,
+      console.log(`✅ Corrigindo estado de "${itemNome}":`, {
+        antes: {
+          disponivel: itemInventario.disponivel || 0,
+          emUso: itemInventario.emUso || 0
+        },
+        depois: {
+          disponivel: disponivelCorreto,
+          emUso: quantidadeEmUso
+        },
         quantidade: itemInventario.quantidade,
-        detalhesEmprestimos
+        emprestimosAtivos: detalhesEmprestimos.length
       });
       
       await updateDoc(doc(db, 'inventario', itemInventario.id), atualizacao);
       
+      // Verifica se a correção foi aplicada
+      const itemVerificacao = await getDoc(doc(db, 'inventario', itemInventario.id));
+      const dadosVerificacao = itemVerificacao.data();
+      
+      console.log('✔️ Verificação pós-correção:', {
+        nome: dadosVerificacao.nome,
+        disponivel: dadosVerificacao.disponivel,
+        emUso: dadosVerificacao.emUso
+      });
+      
       return {
         sucesso: true,
         detalhes: detalhesEmprestimos,
-        estado: atualizacao
+        estado: atualizacao,
+        correcaoAplicada: {
+          disponivelAntes: itemInventario.disponivel || 0,
+          disponivelDepois: disponivelCorreto,
+          diferenca: disponivelCorreto - (itemInventario.disponivel || 0)
+        }
       };
     } catch (error) {
-      console.error('Erro ao corrigir estado do item:', error);
+      console.error('❌ Erro ao corrigir estado do item:', error);
       return {
         sucesso: false,
         erro: error.message
@@ -1525,9 +1689,10 @@ const AlmoxarifadoSistema = () => {
   // Função para atualizar a disponibilidade das ferramentas
   const atualizarDisponibilidadeFerramentas = async (ferramentas, operacao) => {
     try {
-      console.log('Atualizando disponibilidade:', {
+      console.log('🔄 Atualizando disponibilidade:', {
         ferramentas,
-        operacao
+        operacao,
+        timestamp: new Date().toISOString()
       });
 
       for (const ferramenta of ferramentas) {
@@ -1537,42 +1702,76 @@ const AlmoxarifadoSistema = () => {
         
         // Normaliza o nome para busca
         const nomeNormalizado = nome.trim().toLowerCase();
-        console.log(`Processando ferramenta: "${nome}" (${quantidade})`);
+        console.log(`📦 Processando ferramenta: "${nome}" (${quantidade} unidades)`);
         
         // Busca o item no inventário
-        const itemInventario = inventario.find(item => item.nome.trim().toLowerCase() === nomeNormalizado);
+        const querySnapshot = await getDocs(collection(db, 'inventario'));
+        const itensInventario = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        const itemInventario = itensInventario.find(item => 
+          item.nome.trim().toLowerCase() === nomeNormalizado
+        );
         
         if (itemInventario) {
-          console.log('Estado atual:', {
+          console.log('📊 Estado atual:', {
             nome: itemInventario.nome,
             quantidade: itemInventario.quantidade,
-            disponivel: itemInventario.disponivel,
+            disponivel: itemInventario.disponivel || 0,
             emUso: itemInventario.emUso || 0
           });
 
-          // Calcula novos valores considerando os limites
-          const novaDisponibilidade = operacao === 'devolver'
-            ? Math.min(itemInventario.quantidade, (itemInventario.disponivel || 0) + quantidade)
-            : Math.max(0, (itemInventario.disponivel || 0) - quantidade);
+          // CORREÇÃO: Calcula valores corretamente
+          let novaDisponibilidade, novoEmUso;
           
-          const novoEmUso = operacao === 'devolver'
-            ? Math.max(0, (itemInventario.emUso || 0) - quantidade)
-            : Math.min(itemInventario.quantidade, (itemInventario.emUso || 0) + quantidade);
+          if (operacao === 'devolver') {
+            // Ao devolver: aumenta disponível e diminui em uso
+            novoEmUso = Math.max(0, (itemInventario.emUso || 0) - quantidade);
+            novaDisponibilidade = Math.min(
+              itemInventario.quantidade, 
+              itemInventario.quantidade - novoEmUso
+            );
+          } else {
+            // Ao emprestar: diminui disponível e aumenta em uso
+            novoEmUso = Math.min(
+              itemInventario.quantidade,
+              (itemInventario.emUso || 0) + quantidade
+            );
+            novaDisponibilidade = Math.max(
+              0,
+              itemInventario.quantidade - novoEmUso
+            );
+          }
 
           const atualizacao = {
             disponivel: novaDisponibilidade,
-            emUso: novoEmUso
+            emUso: novoEmUso,
+            ultimaAtualizacao: new Date().toISOString()
           };
 
-          console.log('Atualizando para:', atualizacao);
+          console.log('✅ Atualizando para:', atualizacao);
+          console.log(`📈 Diferença: ${operacao === 'devolver' ? '+' : '-'}${quantidade} | Disponível: ${itemInventario.disponivel || 0} → ${novaDisponibilidade} | Em Uso: ${itemInventario.emUso || 0} → ${novoEmUso}`);
           
           await updateDoc(doc(db, 'inventario', itemInventario.id), atualizacao);
+          
+          // Verifica se a atualização foi bem-sucedida
+          const itemAtualizado = await getDoc(doc(db, 'inventario', itemInventario.id));
+          const dadosAtualizados = itemAtualizado.data();
+          console.log('✔️ Verificação pós-atualização:', {
+            nome: dadosAtualizados.nome,
+            disponivel: dadosAtualizados.disponivel,
+            emUso: dadosAtualizados.emUso
+          });
         } else {
-          console.warn(`Item não encontrado no inventário: ${nome}`);
+          console.warn(`⚠️ Item não encontrado no inventário: ${nome}`);
         }
       }
+      
+      console.log('✅ Atualização de disponibilidade concluída com sucesso');
     } catch (error) {
-      console.error('Erro ao atualizar disponibilidade:', error);
+      console.error('❌ Erro ao atualizar disponibilidade:', error);
       throw error;
     }
   };
@@ -1910,6 +2109,12 @@ const AlmoxarifadoSistema = () => {
       icone: Bell,
       permissao: () => true // Visível para todos os níveis
     },
+    {
+      id: 'mensagens',
+      nome: 'Mensagens',
+      icone: MessageCircle,
+      permissao: () => true // Visível para todos os níveis
+    },
     { 
       id: 'tarefas', 
       nome: 'Tarefas', 
@@ -1946,37 +2151,53 @@ const AlmoxarifadoSistema = () => {
       icone: Briefcase,
       permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas Admin
     },
-    { 
-      id: 'compras', 
-      nome: 'Compras', 
-      icone: ShoppingCart,
-      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
-    },
-    { 
-      id: 'verificacao-mensal', 
-      nome: 'Verificação Mensal', 
-      icone: Calendar,
-      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
-    },
-    
-    { 
-      id: 'danificadas', 
-      nome: ' Danificadas', 
-      icone: AlertTriangle,
-      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
-    },
-    { 
-      id: 'perdidas', 
-      nome: ' Perdidas', 
-      icone: AlertCircle,
-      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
-    },
     
   ].filter(aba => aba.permissao());  // Permissão para aba de usuários (apenas nível 4)
   const podeVerUsuarios = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
   
   // Permissão para aba legal (todos podem ver, nível 1 apenas visualiza)
   const podeEditarLegal = usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO;
+
+  // Expõe funções de diagnóstico no console para facilitar testes
+  useEffect(() => {
+    window.workflowDebug = {
+      diagnosticarInventario,
+      corrigirEstadoItem,
+      corrigirTodoInventario: async () => {
+        const diagnostico = await diagnosticarInventario();
+        if (diagnostico.temInconsistencias) {
+          console.log('🔧 Corrigindo inconsistências automaticamente...');
+          const resultados = [];
+          
+          for (const item of diagnostico.inconsistencias) {
+            console.log(`⚙️ Corrigindo ${item.nome}...`);
+            const resultado = await corrigirEstadoItem(item.nome);
+            resultados.push({
+              item: item.nome,
+              sucesso: resultado.sucesso,
+              correcao: resultado.correcaoAplicada
+            });
+          }
+          
+          console.log('✅ Correção completa!');
+          console.table(resultados);
+          return resultados;
+        } else {
+          console.log('✅ Nenhuma correção necessária');
+          return [];
+        }
+      }
+    };
+    
+    console.log('🛠️ Funções de debug disponíveis no console:');
+    console.log('  - window.workflowDebug.diagnosticarInventario()');
+    console.log('  - window.workflowDebug.corrigirEstadoItem("nome do item")');
+    console.log('  - window.workflowDebug.corrigirTodoInventario()');
+    
+    return () => {
+      delete window.workflowDebug;
+    };
+  }, []);
 
   return (
     <FuncionariosProvider>
@@ -2103,6 +2324,11 @@ const AlmoxarifadoSistema = () => {
                         {aba.id === 'notificacoes' && notificationUnreadCount > 0 && (
                           <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                             {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                          </span>
+                        )}
+                        {aba.id === 'mensagens' && mensagensNaoLidas > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                            {mensagensNaoLidas > 99 ? '99+' : mensagensNaoLidas}
                           </span>
                         )}
                       </div>
@@ -2258,6 +2484,11 @@ const AlmoxarifadoSistema = () => {
                       {aba.id === 'notificacoes' && notificationUnreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                           {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
+                        </span>
+                      )}
+                      {aba.id === 'mensagens' && mensagensNaoLidas > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                          {mensagensNaoLidas > 99 ? '99+' : mensagensNaoLidas}
                         </span>
                       )}
                     </div>
@@ -2528,8 +2759,6 @@ const AlmoxarifadoSistema = () => {
             {abaAtiva === 'dashboard' && <Dashboard stats={stats} />}
             
             {abaAtiva === 'meu-perfil' && <ProfileTab />}
-            
-            {abaAtiva === 'verificacao-mensal' && <VerificacaoMensalTab />}
 
             {abaAtiva === 'meu-inventario' && (
               <MeuInventarioTab
@@ -2547,6 +2776,22 @@ const AlmoxarifadoSistema = () => {
                 reimportarInventario={reimportarInventario}
                 corrigirInventario={corrigirInventario}
                 obterDetalhesEmprestimos={obterDetalhesEmprestimos}
+                // Props de Compras
+                compras={compras}
+                funcionarios={funcionarios}
+                adicionarCompra={adicionarCompra}
+                removerCompra={removerCompra}
+                atualizarCompra={atualizarCompra}
+                // Props de Danificadas
+                ferramentasDanificadas={ferramentasDanificadas}
+                adicionarFerramentaDanificada={adicionarFerramentaDanificada}
+                atualizarFerramentaDanificada={atualizarFerramentaDanificada}
+                removerFerramentaDanificada={removerFerramentaDanificada}
+                // Props de Perdidas
+                ferramentasPerdidas={ferramentasPerdidas}
+                adicionarFerramentaPerdida={adicionarFerramentaPerdida}
+                atualizarFerramentaPerdida={atualizarFerramentaPerdida}
+                removerFerramentaPerdida={removerFerramentaPerdida}
               />
             )}
             
@@ -2599,56 +2844,16 @@ const AlmoxarifadoSistema = () => {
               )
             )}
 
-            {abaAtiva === 'compras' && (
-              PermissionChecker.canView(usuario?.nivel) ? (
-                <ComprasTab
-                  compras={compras}
-                  inventario={inventario}
-                  funcionarios={funcionarios}
-                  adicionarCompra={adicionarCompra}
-                  removerCompra={removerCompra}
-                  atualizarCompra={atualizarCompra}
-                  readonly={!PermissionChecker.canManagePurchases(usuario?.nivel)}
-                />
-              ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar as compras." />
-              )
-            )}
-            
-            {abaAtiva === 'danificadas' && (
-              PermissionChecker.canView(usuario?.nivel) ? (
-                <FerramentasDanificadasTab
-                  ferramentasDanificadas={ferramentasDanificadas}
-                  inventario={inventario}
-                  adicionarFerramentaDanificada={adicionarFerramentaDanificada}
-                  removerFerramentaDanificada={removerFerramentaDanificada}
-                  atualizarFerramentaDanificada={atualizarFerramentaDanificada}
-                />
-              ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar as ferramentas danificadas." />
-              )
-            )}
-            
-            {abaAtiva === 'perdidas' && (
-              PermissionChecker.canView(usuario?.nivel) ? (
-                <FerramentasPerdidasTab
-                  ferramentasPerdidas={ferramentasPerdidas}
-                  inventario={inventario}
-                  adicionarFerramentaPerdida={adicionarFerramentaPerdida}
-                  removerFerramentaPerdida={removerFerramentaPerdida}
-                  atualizarFerramentaPerdida={atualizarFerramentaPerdida}
-                />
-              ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar as ferramentas perdidas." />
-              )
-            )}
-
             {abaAtiva === 'ranking' && (
               <RankingPontos />
             )}
 
             {abaAtiva === 'notificacoes' && (
               <NotificationsPage onNavigate={setAbaAtiva} />
+            )}
+
+            {abaAtiva === 'mensagens' && (
+              <MensagensMain />
             )}
 
             {abaAtiva === 'historico-emprestimos' && (
@@ -2697,19 +2902,6 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
       </main>
-
-      {/* Botão de chat flutuante acima do menu inferior para mobile */}
-      {isMobile && !menuOpen && (
-        <button
-          onClick={() => {
-            setChatOpen(!chatOpen);
-          }}
-          className="fixed bottom-20 right-4 z-40 w-14 h-14 bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1A8CD8] rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
-        >
-          <MessageCircle className="w-6 h-6 text-gray-900 dark:text-white" />
-          <ChatNotificationBadge />
-        </button>
-      )}
 
       {/* Menu inferior para mobile */}
       {isMobile && !menuOpen && (
@@ -2808,12 +3000,6 @@ const AlmoxarifadoSistema = () => {
           </div>
         </nav>
       )}
-
-      <WorkflowChat 
-        currentUser={usuario} 
-        externalOpen={chatOpen}
-        onToggle={setChatOpen}
-      />
     </div>
     </FuncionariosProvider>
   );

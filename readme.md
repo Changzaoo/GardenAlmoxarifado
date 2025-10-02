@@ -1,6 +1,6 @@
-# Almoxarifado do Jardim
+# 🌱 Zendaya Jardinagem - Sistema de Gestão de Inventário
 
-Sistema de controle e gestão de ferramentas e equipamentos de jardim com funcionalidades completas de empréstimo, devolução e inventário.
+Sistema de controle e gestão de inventário para jardinagem com funcionalidades completas de empréstimo, devolução e controle de plantas, mudas, fertilizantes, vasos e equipamentos de jardinagem.
 
 ## Características
 
@@ -21,12 +21,18 @@ Sistema de controle e gestão de ferramentas e equipamentos de jardim com funcio
 - Histórico completo de empréstimos
 - Sistema de devolução com marcação temporal
 
-### 📦 Controle de Inventário
-- Cadastro de novos itens por categoria
+### 📦 Controle de Inventário de Jardinagem
+- Gestão de **Plantas & Mudas** (rosas, lavandas, suculentas, orquídeas, etc.)
+- Controle de **Sementes** (girassol, flores silvestres, hortaliças)
+- Gerenciamento de **Fertilizantes & Adubos** (NPK, composto orgânico, húmus)
+- Organização de **Terra & Substratos** (terra vegetal, substratos especiais)
+- Controle de **Vasos & Recipientes** (vasos de barro, plástico, cachepôs)
+- Ferramentas e Equipamentos de Jardinagem
+- Insumos diversos (arames, etiquetas, telas de sombreamento)
+- EPIs especializados (botas, luvas, aventais, chapéus)
 - Visualização em cards com indicadores visuais
 - Barras de progresso para disponibilidade
 - Alertas visuais para itens em baixo estoque
-- Resumo estatístico por categoria
 
 ### 🔍 Sistema de Busca
 - Busca em tempo real por colaborador ou ferramenta
