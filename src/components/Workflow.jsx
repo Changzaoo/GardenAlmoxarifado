@@ -34,6 +34,8 @@ import AnalyticsProvider from './Analytics/AnalyticsProvider';
 import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
+import PontoPage from '../pages/Ponto/PontoPage';
+import EscalaPage from '../pages/Escala/EscalaPage';
 import { notifyNewLoan } from '../utils/notificationHelpers';
 import CadastroEmpresas from './Empresas/CadastroEmpresas';
 import CadastroSetores from './Setores/CadastroSetores';
@@ -2122,6 +2124,18 @@ const AlmoxarifadoSistema = () => {
       permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Apenas nível 2 (Supervisor) ou superior
     },
     { 
+      id: 'ponto', 
+      nome: 'Ponto', 
+      icone: Calendar,
+      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Supervisor ou superior
+    },
+    { 
+      id: 'escala', 
+      nome: 'Escala', 
+      icone: Calendar,
+      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Supervisor ou superior
+    },
+    { 
       id: 'inventario', 
       nome: 'Inventário', 
       icone: Package,
@@ -2893,6 +2907,22 @@ const AlmoxarifadoSistema = () => {
                 />
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar as tarefas." />
+              )
+            )}
+
+            {abaAtiva === 'ponto' && (
+              usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR ? (
+                <PontoPage usuarioAtual={usuario} />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para visualizar o controle de ponto." />
+              )
+            )}
+
+            {abaAtiva === 'escala' && (
+              usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR ? (
+                <EscalaPage usuarioAtual={usuario} />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para visualizar a escala de trabalho." />
               )
             )}
 

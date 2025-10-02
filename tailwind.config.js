@@ -28,6 +28,10 @@ module.exports = {
           red: '#F4212E',
           yellow: '#FAA626',
         },
+        gray: {
+          750: '#2D3748',
+          850: '#1A202C',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
