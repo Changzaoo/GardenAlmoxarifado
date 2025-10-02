@@ -39,6 +39,10 @@ import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
 import { notifyNewLoan } from '../utils/notificationHelpers';
+import CadastroEmpresas from './Empresas/CadastroEmpresas';
+import CadastroSetores from './Setores/CadastroSetores';
+import { encryptPassword, verifyPassword } from '../utils/crypto';
+import LoadingScreen from './common/LoadingScreen';
 // Icons
 import { 
   Package,
@@ -71,7 +75,9 @@ import {
   Upload,
   LogOut,
   MessageCircle,
-  Bell
+  Bell,
+  Building2,
+  Briefcase
 } from 'lucide-react';
 
 // Função para bloquear teclas de atalho e menu de contexto
@@ -600,30 +606,87 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, senha, lembrarLogin = false) => {
     try {
-      const usuarioEncontrado = usuarios.find(u => 
-        u.email === email && u.senha === senha && u.ativo
-      );
+      const usuarioEncontrado = usuarios.find(u => u.email === email && u.ativo);
 
-      if (usuarioEncontrado) {
-        const usuarioAtualizado = {
-          ...usuarioEncontrado,
-          ultimoLogin: new Date().toISOString()
-        };
-        // Atualizar no Firebase
-        try {
-          await updateDoc(doc(db, 'usuarios', usuarioEncontrado.id), {
-            ultimoLogin: usuarioAtualizado.ultimoLogin
-          });
-        } catch (firebaseError) {
-          console.warn('Erro ao atualizar último login no Firebase:', firebaseError);
-        }
-  // Sempre salvar dados de login para persistência em localhost
-  salvarDadosLogin(usuarioAtualizado, true);
-        setUsuario(usuarioAtualizado);
-        return { success: true };
+      if (!usuarioEncontrado) {
+        return { success: false, message: 'Email ou senha incorretos' };
       }
 
-      return { success: false, message: 'Email ou senha incorretos' };
+      // Verificar senha com criptografia SHA-512
+      let senhaValida = false;
+      
+      if (usuarioEncontrado.senhaHash && usuarioEncontrado.senhaSalt) {
+        // Senha criptografada (SHA-512)
+        senhaValida = verifyPassword(
+          senha, 
+          usuarioEncontrado.senhaHash, 
+          usuarioEncontrado.senhaSalt,
+          usuarioEncontrado.senhaVersion || 2
+        );
+      } else if (usuarioEncontrado.senha) {
+        // Senha em texto plano (sistema legado) - comparação direta
+        senhaValida = usuarioEncontrado.senha === senha;
+        
+        // Se válida, migrar para SHA-512
+        if (senhaValida) {
+          const { hash, salt, version, algorithm } = encryptPassword(senha);
+          try {
+            await updateDoc(doc(db, 'usuarios', usuarioEncontrado.id), {
+              senhaHash: hash,
+              senhaSalt: salt,
+              senhaVersion: version,
+              senhaAlgorithm: algorithm,
+              senha: null // Remove senha em texto plano
+            });
+            console.log('✅ Senha migrada para SHA-512 com sucesso');
+          } catch (error) {
+            console.warn('⚠️ Erro ao migrar senha:', error);
+          }
+        }
+      }
+
+      if (!senhaValida) {
+        return { success: false, message: 'Email ou senha incorretos' };
+      }
+
+      // Verificar se o usuário tem setor e empresa definidos
+      // EXCEÇÃO: Administradores (nivel 4) não precisam ter setor, empresa ou cargo
+      const isAdmin = usuarioEncontrado.nivel === NIVEIS_PERMISSAO.ADMIN;
+      
+      if (!isAdmin) {
+        if (!usuarioEncontrado.setorId || !usuarioEncontrado.setorId.trim()) {
+          return { 
+            success: false, 
+            message: 'Usuário sem setor atribuído. Entre em contato com o administrador.' 
+          };
+        }
+
+        if (!usuarioEncontrado.empresaId || !usuarioEncontrado.empresaId.trim()) {
+          return { 
+            success: false, 
+            message: 'Usuário sem empresa atribuída. Entre em contato com o administrador.' 
+          };
+        }
+      }
+
+      const usuarioAtualizado = {
+        ...usuarioEncontrado,
+        ultimoLogin: new Date().toISOString()
+      };
+      
+      // Atualizar no Firebase
+      try {
+        await updateDoc(doc(db, 'usuarios', usuarioEncontrado.id), {
+          ultimoLogin: usuarioAtualizado.ultimoLogin
+        });
+      } catch (firebaseError) {
+        console.warn('Erro ao atualizar último login no Firebase:', firebaseError);
+      }
+      
+      // Sempre salvar dados de login para persistência em localhost
+      salvarDadosLogin(usuarioAtualizado, true);
+      setUsuario(usuarioAtualizado);
+      return { success: true };
     } catch (error) {
       console.error('Erro no login:', error);
       return { success: false, message: 'Erro interno do sistema' };
@@ -642,17 +705,29 @@ const AuthProvider = ({ children }) => {
         return { success: false, message: 'Sem permissão para criar usuário deste nível' };
       }
 
+      // Criptografar senha com SHA-512
+      const { hash, salt, version, algorithm } = encryptPassword(dadosUsuario.senha);
+
       const novoUsuario = {
         ...dadosUsuario,
+        senhaHash: hash,
+        senhaSalt: salt,
+        senhaVersion: version,
+        senhaAlgorithm: algorithm,
+        senha: null, // Não armazena senha em texto plano
         ativo: true,
         dataCriacao: new Date().toISOString(),
         ultimoLogin: null
       };
 
+      // Remove senha do objeto antes de salvar
+      delete novoUsuario.senha;
+
       // Tentar salvar no Firebase
       const docRef = await addDoc(collection(db, 'usuarios'), novoUsuario);
       const usuarioComId = { id: docRef.id, ...novoUsuario };
       
+      console.log('✅ Usuário criado com senha SHA-512');
       return { success: true, usuario: usuarioComId };
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
@@ -666,6 +741,24 @@ const AuthProvider = ({ children }) => {
       const usuarioAlvo = usuarios.find(u => u.id === id);
       if (!PermissionChecker.canEditUser(usuario.nivel, usuario.id, id, usuarioAlvo?.nivel)) {
         return { success: false, message: 'Sem permissão para editar este usuário' };
+      }
+
+      // Se a senha foi alterada, criptografar com SHA-512
+      if (dadosAtualizados.senha) {
+        const { hash, salt, version, algorithm } = encryptPassword(dadosAtualizados.senha);
+        
+        dadosAtualizados = {
+          ...dadosAtualizados,
+          senhaHash: hash,
+          senhaSalt: salt,
+          senhaVersion: version,
+          senhaAlgorithm: algorithm,
+          senha: null // Remove senha em texto plano
+        };
+        
+        // Remove senha do objeto
+        delete dadosAtualizados.senha;
+        console.log('✅ Senha do usuário atualizada para SHA-512');
       }
 
       await updateDoc(doc(db, 'usuarios', id), dadosAtualizados);
@@ -895,28 +988,6 @@ const Dashboard = ({ stats, firebaseStatus }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Dashboard content will be added here */}
-      </div>
-    </div>
-  );
-};
-
-// Componente de Loading
-const LoadingScreen = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[#ebf8ff] to-[#e6f7ff] dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-      <div className="text-center">
-        <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
-          <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain animate-pulse" />
-        </div>
-
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          <p className="text-gray-600 dark:text-gray-300">Iniciando WorkFlow...</p>
-        </div>
-        <div className="w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-          <div className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
-        </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Carregando sistema...</p>
       </div>
     </div>
   );
@@ -1864,6 +1935,18 @@ const AlmoxarifadoSistema = () => {
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
     { 
+      id: 'empresas', 
+      nome: 'Empresas', 
+      icone: Building2,
+      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas Admin
+    },
+    { 
+      id: 'setores', 
+      nome: 'Setores', 
+      icone: Briefcase,
+      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas Admin
+    },
+    { 
       id: 'compras', 
       nome: 'Compras', 
       icone: ShoppingCart,
@@ -2500,6 +2583,22 @@ const AlmoxarifadoSistema = () => {
               )
             )}
 
+            {abaAtiva === 'empresas' && (
+              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
+                <CadastroEmpresas />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para gerenciar empresas." />
+              )
+            )}
+
+            {abaAtiva === 'setores' && (
+              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
+                <CadastroSetores />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para gerenciar setores." />
+              )
+            )}
+
             {abaAtiva === 'compras' && (
               PermissionChecker.canView(usuario?.nivel) ? (
                 <ComprasTab
@@ -2549,7 +2648,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'notificacoes' && (
-              <NotificationsPage />
+              <NotificationsPage onNavigate={setAbaAtiva} />
             )}
 
             {abaAtiva === 'historico-emprestimos' && (
@@ -2584,7 +2683,9 @@ const AlmoxarifadoSistema = () => {
 
             {abaAtiva === 'tarefas' && (
               PermissionChecker.canView(usuario?.nivel) ? (
-                <TarefasTab />
+                <TarefasTab 
+                  showOnlyUserTasks={usuario?.nivel === 1}
+                />
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar as tarefas." />
               )

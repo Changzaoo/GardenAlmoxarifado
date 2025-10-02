@@ -63,5 +63,99 @@ export const PermissionChecker = {
   // Verifica se o usuário pode realizar operações administrativas
   canPerformAdminActions: (nivel) => {
     return nivel === NIVEIS_PERMISSAO.ADMIN;
+  },
+
+  // ==================== PERMISSÕES POR SETOR ====================
+  
+  /**
+   * Verifica se o usuário pode ver todos os dados ou apenas do seu setor
+   * Admin: Vê TUDO
+   * Gerente/Supervisor: Vê apenas do seu setor
+   * Funcionário: Vê apenas do seu setor
+   */
+  canViewAllSectors: (nivel) => {
+    return nivel === NIVEIS_PERMISSAO.ADMIN;
+  },
+
+  /**
+   * Verifica se um item pertence ao setor do usuário
+   */
+  itemBelongsToUserSector: (itemSetorId, userSetorId) => {
+    if (!itemSetorId || !userSetorId) return false;
+    return itemSetorId === userSetorId;
+  },
+
+  /**
+   * Filtra uma lista de itens por setor do usuário
+   * Se for Admin, retorna tudo
+   * Se for Gerente/Supervisor/Funcionário, retorna apenas do seu setor
+   */
+  filterBySector: (items, usuario) => {
+    // Admin vê tudo
+    if (usuario.nivel === NIVEIS_PERMISSAO.ADMIN) {
+      return items;
+    }
+
+    // Outros veem apenas do seu setor
+    if (!usuario.setorId) {
+      console.warn('Usuário sem setorId definido:', usuario);
+      return [];
+    }
+
+    return items.filter(item => {
+      // Se o item tem setorId, comparar
+      if (item.setorId) {
+        return item.setorId === usuario.setorId;
+      }
+      
+      // Se o item é um funcionário com setorId
+      if (item.funcionarioSetorId) {
+        return item.funcionarioSetorId === usuario.setorId;
+      }
+
+      // Se o item tem relação com funcionário, verificar o setor do funcionário
+      if (item.funcionarioId && item.funcionario) {
+        return item.funcionario.setorId === usuario.setorId;
+      }
+
+      // Por padrão, não mostrar itens sem setor definido
+      return false;
+    });
+  },
+
+  /**
+   * Verifica se o usuário pode gerenciar um item específico
+   * Admin: Pode gerenciar tudo
+   * Gerente/Supervisor: Pode gerenciar apenas itens do seu setor
+   * Funcionário: Não pode gerenciar
+   */
+  canManageItem: (nivel, itemSetorId, userSetorId) => {
+    // Admin pode gerenciar tudo
+    if (nivel === NIVEIS_PERMISSAO.ADMIN) return true;
+
+    // Funcionário não pode gerenciar
+    if (nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
+
+    // Gerente/Supervisor podem gerenciar apenas do seu setor
+    if (nivel >= NIVEIS_PERMISSAO.SUPERVISOR) {
+      return itemSetorId === userSetorId;
+    }
+
+    return false;
+  },
+
+  /**
+   * Verifica se um usuário pode criar itens em um determinado setor
+   */
+  canCreateInSector: (nivel, targetSetorId, userSetorId) => {
+    // Admin pode criar em qualquer setor
+    if (nivel === NIVEIS_PERMISSAO.ADMIN) return true;
+
+    // Gerente/Supervisor podem criar apenas no seu setor
+    if (nivel >= NIVEIS_PERMISSAO.SUPERVISOR) {
+      return targetSetorId === userSetorId;
+    }
+
+    return false;
   }
 };

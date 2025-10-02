@@ -6,16 +6,19 @@ import { X, ListChecks } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import SeletorTarefaPredefinida from './SeletorTarefaPredefinida';
 import { notifyNewTask } from '../../utils/notificationHelpers';
+import { useFuncionarios } from '../Funcionarios/FuncionariosProvider';
 
 const CriarTarefa = ({ onClose }) => {
   const { usuario } = useAuth();
   const { showToast } = useToast();
+  const { funcionarios } = useFuncionarios();
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
     prioridade: '',
-    funcionariosIds: []
+    funcionariosIds: [] // Agora armazenará IDs reais dos funcionários
   });
+  const [funcionariosSelecionados, setFuncionariosSelecionados] = useState([]); // Objetos completos para exibição
   const [loading, setLoading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
 
@@ -42,10 +45,10 @@ const CriarTarefa = ({ onClose }) => {
         titulo: formData.titulo,
         descricao: formData.descricao,
         prioridade: formData.prioridade,
-        funcionariosIds: formData.funcionariosIds,
-        funcionarios: formData.funcionariosIds.map(nome => ({
-          id: nome,
-          nome: nome
+        funcionariosIds: formData.funcionariosIds, // Agora contém IDs reais
+        funcionarios: funcionariosSelecionados.map(func => ({
+          id: func.id,
+          nome: func.nome || func.username || func.email || 'Sem nome'
         })),
         status: 'pendente',
         dataCriacao: new Date().toISOString(),
@@ -59,7 +62,12 @@ const CriarTarefa = ({ onClose }) => {
       
       // Criar notificação para cada funcionário atribuído
       try {
+        console.log('Criando notificações para funcionários:', formData.funcionariosIds);
         for (const funcionarioId of formData.funcionariosIds) {
+          const funcionario = funcionariosSelecionados.find(f => f.id === funcionarioId);
+          const nomeFuncionario = funcionario ? (funcionario.nome || funcionario.username || funcionario.email) : 'Funcionário';
+          
+          console.log(`Enviando notificação para: ${nomeFuncionario} (ID: ${funcionarioId})`);
           await notifyNewTask(
             funcionarioId,
             formData.titulo,
@@ -67,6 +75,7 @@ const CriarTarefa = ({ onClose }) => {
             { id: docRef.id, ...tarefaData }
           );
         }
+        console.log('Todas as notificações foram criadas com sucesso');
       } catch (notificationError) {
         console.error('Erro ao criar notificações da tarefa:', notificationError);
         // Não bloqueia a criação da tarefa mesmo se a notificação falhar
@@ -161,11 +170,16 @@ const CriarTarefa = ({ onClose }) => {
                   id="funcionarios"
                   value=""
                   onChange={(e) => {
-                    if (e.target.value && !formData.funcionariosIds.includes(e.target.value)) {
-                      setFormData({
-                        ...formData,
-                        funcionariosIds: [...formData.funcionariosIds, e.target.value]
-                      });
+                    const funcionarioId = e.target.value;
+                    if (funcionarioId && !formData.funcionariosIds.includes(funcionarioId)) {
+                      const funcionario = funcionarios.find(f => f.id === funcionarioId);
+                      if (funcionario) {
+                        setFormData({
+                          ...formData,
+                          funcionariosIds: [...formData.funcionariosIds, funcionarioId]
+                        });
+                        setFuncionariosSelecionados([...funcionariosSelecionados, funcionario]);
+                      }
                     }
                     e.target.value = ""; // Reset select após selecionar
                   }}
@@ -173,33 +187,35 @@ const CriarTarefa = ({ onClose }) => {
                   required={formData.funcionariosIds.length === 0}
                 >
                   <option value="" className="bg-white dark:bg-gray-800">Selecione os funcionários</option>
-                  {["Adriano", "Alex", "Anderson", "Bryan", "Carlos", "Claudio", "David",
-                    "Ezequiel", "Fabian", "Israel", "João", "Jonathan", "Lucas", "Luan",
-                    "Marcelo", "Marcos Paulo", "Moisés", "Nilton", "Ramon", "Robson", "Ruan",
-                    "Vinicius"].filter(nome => !formData.funcionariosIds.includes(nome))
-                    .map(nome => (
-                      <option key={nome} value={nome} className="bg-white dark:bg-gray-800 p-2">{nome}</option>
+                  {funcionarios
+                    .filter(func => !formData.funcionariosIds.includes(func.id))
+                    .sort((a, b) => (a.nome || a.username || '').localeCompare(b.nome || b.username || ''))
+                    .map(func => (
+                      <option key={func.id} value={func.id} className="bg-white dark:bg-gray-800 p-2">
+                        {func.nome || func.username || func.email || 'Sem nome'}
+                      </option>
                     ))
                   }
                 </select>
               </div>
 
               {/* Lista de funcionários selecionados */}
-              {formData.funcionariosIds.length > 0 && (
+              {funcionariosSelecionados.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {formData.funcionariosIds.map((nome) => (
+                  {funcionariosSelecionados.map((func) => (
                     <div
-                      key={nome}
+                      key={func.id}
                       className="inline-flex items-center gap-1 px-3 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-gray-900 dark:text-white text-sm"
                     >
-                      {nome}
+                      {func.nome || func.username || func.email || 'Sem nome'}
                       <button
                         type="button"
                         onClick={() => {
                           setFormData({
                             ...formData,
-                            funcionariosIds: formData.funcionariosIds.filter(n => n !== nome)
+                            funcionariosIds: formData.funcionariosIds.filter(id => id !== func.id)
                           });
+                          setFuncionariosSelecionados(funcionariosSelecionados.filter(f => f.id !== func.id));
                         }}
                         className="ml-1 p-1 hover:text-red-500 rounded-full transition-colors"
                       >

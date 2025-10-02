@@ -31,26 +31,22 @@ const LoginForm = ({
         {/* Login Form */}
         <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
           <Input
-            label="Usuário"
-            icon={User}
             type="text"
             value={loginData.username}
             onChange={(e) => setLoginData({...loginData, username: e.target.value})}
-            placeholder="Digite seu usuário"
+            placeholder="👤 Digite seu usuário"
           />
 
           <Input
-            label="Senha"
-            icon={Lock}
             type={showPassword ? 'text' : 'password'}
             value={loginData.password}
             onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-            placeholder="Digite sua senha"
+            placeholder="🔒 Digite sua senha"
             rightElement={
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${colors.textSecondary} hover:${colors.text} transition-colors`}
+                className={`${colors.textSecondary} hover:${colors.text} transition-colors`}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>

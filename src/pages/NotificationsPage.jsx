@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNotification } from '../components/NotificationProvider';
+import { useAuth } from '../hooks/useAuth';
+import { db } from '../firebaseConfig';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { 
   Bell, 
   CheckCheck, 
@@ -10,7 +13,10 @@ import {
   Volume2,
   VolumeX,
   Filter,
-  X
+  X,
+  AlertTriangle,
+  Clock,
+  ChevronRight
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -28,7 +34,8 @@ const NotificationIcon = ({ tipo }) => {
   }
 };
 
-const NotificationsPage = () => {
+const NotificationsPage = ({ onNavigate }) => {
+  const { usuario } = useAuth();
   const { 
     notifications, 
     unreadCount, 
@@ -40,6 +47,60 @@ const NotificationsPage = () => {
   
   const [filter, setFilter] = useState('todas'); // 'todas', 'nao-lidas', 'tarefa', 'emprestimo'
   const [showFilters, setShowFilters] = useState(false);
+  const [tarefas, setTarefas] = useState([]);
+
+  // Buscar tarefas atribuídas ao funcionário
+  useEffect(() => {
+    if (!usuario?.id) {
+      console.log('NotificationsPage: Usuário não autenticado');
+      return;
+    }
+
+    const buscaPor = usuario.nome || usuario.id;
+    console.log('NotificationsPage: Buscando tarefas para usuário:', {
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      buscandoPor: buscaPor
+    });
+
+    const tarefasRef = collection(db, 'tarefas');
+    
+    // Buscar tarefas por NOME (tarefas antigas) e por ID (tarefas novas)
+    // Vamos buscar por nome primeiro, que é como as tarefas antigas foram salvas
+    const q = query(
+      tarefasRef,
+      where('funcionariosIds', 'array-contains', buscaPor)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('NotificationsPage: Snapshot recebido, docs:', snapshot.docs.length);
+      console.log('NotificationsPage: Buscando com critério:', buscaPor);
+      
+      const tarefasData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Tarefa encontrada:', { id: doc.id, ...data });
+        return {
+          id: doc.id,
+          ...data
+        };
+      });
+      
+      // Ordenar por data de criação no cliente
+      tarefasData.sort((a, b) => {
+        const dateA = a.dataCriacao ? new Date(a.dataCriacao).getTime() : 0;
+        const dateB = b.dataCriacao ? new Date(b.dataCriacao).getTime() : 0;
+        return dateB - dateA; // Mais recentes primeiro
+      });
+      
+      console.log('NotificationsPage: Tarefas ordenadas:', tarefasData.length);
+      setTarefas(tarefasData);
+    }, (error) => {
+      console.error('NotificationsPage: Erro ao carregar tarefas:', error);
+    });
+
+    return () => unsubscribe();
+  }, [usuario]);
 
   const getTimeAgo = (timestamp) => {
     if (!timestamp) return '';
@@ -62,6 +123,22 @@ const NotificationsPage = () => {
   const handleNotificationClick = (notif) => {
     if (!notif.lida) {
       markAsRead(notif.id);
+    }
+    
+    // Navegar para a página apropriada baseado no tipo
+    if (onNavigate) {
+      if (notif.tipo === 'tarefa') {
+        onNavigate('tarefas');
+      } else if (notif.tipo === 'emprestimo') {
+        onNavigate('emprestimos');
+      }
+    }
+  };
+
+  const handleTarefaClick = (tarefa) => {
+    // Navegar para a página de tarefas quando clicar em uma tarefa
+    if (onNavigate) {
+      onNavigate('tarefas');
     }
   };
 
@@ -159,72 +236,185 @@ const NotificationsPage = () => {
           )}
         </div>
 
+        {/* Debug Info */}
+        {usuario && (
+          <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 text-sm">
+            <p className="text-yellow-800 dark:text-yellow-300">
+              <strong>Debug:</strong> Usuário: {usuario.nome || usuario.email} (ID: {usuario.id}) | Buscando por: {usuario.nome || usuario.id} | Tarefas encontradas: {tarefas.length}
+            </p>
+          </div>
+        )}
+
+        {/* Mensagem quando não há tarefas */}
+        {(filter === 'todas' || filter === 'tarefa') && tarefas.length === 0 && (
+          <div className="mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 text-center">
+            <ClipboardList className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-600 dark:text-gray-400">
+              Nenhuma tarefa atribuída a você ainda
+            </p>
+          </div>
+        )}
+
+        {/* Tarefas Atribuídas */}
+        {(filter === 'todas' || filter === 'tarefa') && tarefas.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-3 px-2 flex items-center gap-2">
+              <ClipboardList className="w-5 h-5" />
+              Suas Tarefas ({tarefas.length})
+            </h2>
+            <div className="space-y-3">
+              {tarefas.map((tarefa) => (
+                <div
+                  key={tarefa.id}
+                  onClick={() => handleTarefaClick(tarefa)}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow hover:shadow-lg transition-all cursor-pointer border-l-4 border-blue-500 hover:scale-[1.01] group"
+                  title="Clique para ir para Tarefas"
+                >
+                  <div className="p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Ícone da Tarefa */}
+                      <div className="flex-shrink-0 p-3 rounded-full bg-blue-100 dark:bg-blue-900">
+                        <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+                      </div>
+
+                      {/* Conteúdo da Tarefa */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div>
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">
+                              {tarefa.titulo}
+                            </h3>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                tarefa.prioridade === 'alta' 
+                                  ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                                  : tarefa.prioridade === 'media'
+                                  ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
+                                  : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                              }`}>
+                                {tarefa.prioridade === 'alta' ? '🔴 Alta' : tarefa.prioridade === 'media' ? '🟡 Média' : '🟢 Baixa'}
+                              </span>
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                tarefa.status === 'concluida'
+                                  ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                                  : tarefa.status === 'em_andamento'
+                                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                              }`}>
+                                {tarefa.status === 'concluida' ? '✅ Concluída' : tarefa.status === 'em_andamento' ? '🔄 Em Andamento' : '⏳ Pendente'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap">
+                          {tarefa.descricao}
+                        </p>
+
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>Criada {getTimeAgo(tarefa.dataCriacao)}</span>
+                            </div>
+                            {tarefa.criadoPor && (
+                              <div className="flex items-center gap-1">
+                                <span>por</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                  {tarefa.criadoPor.nome || 'Administrador'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Lista de Notificações */}
         <div className="space-y-3">
-          {filteredNotifications.length === 0 ? (
+          {filteredNotifications.length === 0 && tarefas.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
               <Bell className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
               <p className="text-gray-500 dark:text-gray-400">
                 {filter === 'todas' 
-                  ? 'Nenhuma notificação ainda' 
+                  ? 'Nenhuma notificação ou tarefa ainda' 
                   : `Nenhuma notificação ${filter === 'nao-lidas' ? 'não lida' : `do tipo "${filter}"`}`
                 }
               </p>
             </div>
-          ) : (
-            filteredNotifications.map((notif) => (
-              <div
-                key={notif.id}
-                onClick={() => handleNotificationClick(notif)}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-all cursor-pointer overflow-hidden ${
-                  !notif.lida ? 'border-l-4 border-blue-500' : ''
-                }`}
-              >
-                <div className="p-4">
-                  <div className="flex items-start gap-4">
-                    {/* Ícone */}
-                    <div className={`flex-shrink-0 p-3 rounded-full ${
-                      !notif.lida 
-                        ? 'bg-blue-100 dark:bg-blue-900' 
-                        : 'bg-gray-100 dark:bg-gray-700'
-                    }`}>
-                      <NotificationIcon tipo={notif.tipo} />
-                    </div>
+          ) : filteredNotifications.length > 0 ? (
+            <>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-3 px-2 flex items-center gap-2">
+                <Bell className="w-5 h-5" />
+                Notificações ({filteredNotifications.length})
+              </h2>
+              {filteredNotifications.map((notif) => (
+                <div
+                  key={notif.id}
+                  onClick={() => handleNotificationClick(notif)}
+                  className={`bg-white dark:bg-gray-800 rounded-xl shadow hover:shadow-lg transition-all cursor-pointer overflow-hidden hover:scale-[1.01] group ${
+                    !notif.lida ? 'border-l-4 border-blue-500' : ''
+                  }`}
+                  title={notif.tipo === 'tarefa' ? 'Clique para ir para Tarefas' : notif.tipo === 'emprestimo' ? 'Clique para ir para Empréstimos' : ''}
+                >
+                  <div className="p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Ícone */}
+                      <div className={`flex-shrink-0 p-3 rounded-full ${
+                        !notif.lida 
+                          ? 'bg-blue-100 dark:bg-blue-900' 
+                          : 'bg-gray-100 dark:bg-gray-700'
+                      }`}>
+                        <NotificationIcon tipo={notif.tipo} />
+                      </div>
 
-                    {/* Conteúdo */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className={`font-semibold ${
-                            !notif.lida 
-                              ? 'text-gray-900 dark:text-white' 
-                              : 'text-gray-600 dark:text-gray-400'
-                          }`}>
-                            {notif.titulo}
-                          </h3>
-                          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-                            {getTipoLabel(notif.tipo)}
-                          </span>
+                      {/* Conteúdo */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className={`font-semibold ${
+                              !notif.lida 
+                                ? 'text-gray-900 dark:text-white' 
+                                : 'text-gray-600 dark:text-gray-400'
+                            }`}>
+                              {notif.titulo}
+                            </h3>
+                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                              {getTipoLabel(notif.tipo)}
+                            </span>
+                          </div>
+                          
+                          {!notif.lida && (
+                            <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                          )}
                         </div>
                         
-                        {!notif.lida && (
-                          <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
-                        )}
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          {notif.mensagem}
+                        </p>
+                        
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-500 dark:text-gray-500">
+                            {getTimeAgo(notif.timestamp)}
+                          </p>
+                          {(notif.tipo === 'tarefa' || notif.tipo === 'emprestimo') && (
+                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                          )}
+                        </div>
                       </div>
-                      
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        {notif.mensagem}
-                      </p>
-                      
-                      <p className="text-xs text-gray-500 dark:text-gray-500">
-                        {getTimeAgo(notif.timestamp)}
-                      </p>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))}
+            </>
+          ) : null}
         </div>
 
         {/* Info sobre notificações */}

@@ -224,9 +224,32 @@ const TarefasTab = ({
              checkName(tarefa.responsavel, userFilter) ||
              tarefa.funcionariosIds?.some(id => checkName(id, userFilter));
     }
-    return checkName(tarefa.funcionario, usuario?.nome) || 
-           checkName(tarefa.responsavel, usuario?.nome) ||
-           tarefa.funcionariosIds?.some(id => checkName(id, usuario?.nome));
+    
+    // Verificar por NOME (tarefas antigas) e por ID (tarefas novas)
+    const usuarioNome = usuario?.nome;
+    const usuarioId = usuario?.id;
+    
+    console.log('TarefasTab: Verificando tarefa', {
+      tarefaTitulo: tarefa.titulo,
+      funcionariosIds: tarefa.funcionariosIds,
+      usuarioNome,
+      usuarioId
+    });
+    
+    // Verifica se o usuário está no array funcionariosIds (por nome OU por ID)
+    const estaNosIds = tarefa.funcionariosIds?.some(id => {
+      const matchNome = checkName(id, usuarioNome);
+      const matchId = id === usuarioId;
+      console.log('TarefasTab: Comparando', { id, usuarioNome, usuarioId, matchNome, matchId });
+      return matchNome || matchId;
+    });
+    
+    const resultado = checkName(tarefa.funcionario, usuarioNome) || 
+                     checkName(tarefa.responsavel, usuarioNome) ||
+                     estaNosIds;
+    
+    console.log('TarefasTab: Resultado final:', resultado);
+    return resultado;
   };
 
   const getStatusInfo = (tarefa) => {

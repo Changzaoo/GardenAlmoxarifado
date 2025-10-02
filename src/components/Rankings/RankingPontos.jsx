@@ -355,31 +355,46 @@ const RankingPontos = () => {
 
   const carregarDados = async () => {
     try {
-      const funcionariosRef = collection(db, 'usuarios');
+      console.log('RankingPontos: Iniciando carregamento de dados...');
+      
+      // CORREÇÃO: Buscar de 'funcionarios' E 'usuarios' para compatibilidade
+      const funcionariosRef = collection(db, 'funcionarios');
+      const usuariosRef = collection(db, 'usuarios');
       const emprestimosRef = collection(db, 'emprestimos');
       const tarefasRef = collection(db, 'tarefas');
       const avaliacoesRef = collection(db, 'avaliacoes');
 
       // Buscar todos os dados necessários
-      const [funcionariosSnap, emprestimosSnap, tarefasSnap, avaliacoesSnap] = await Promise.all([
+      const [funcionariosSnap, usuariosSnap, emprestimosSnap, tarefasSnap, avaliacoesSnap] = await Promise.all([
         getDocs(funcionariosRef),
+        getDocs(usuariosRef),
         getDocs(emprestimosRef),
         getDocs(tarefasRef),
         getDocs(avaliacoesRef)
       ]);
+      
+      console.log('RankingPontos: Dados carregados:', {
+        funcionarios: funcionariosSnap.size,
+        usuarios: usuariosSnap.size,
+        emprestimos: emprestimosSnap.size,
+        tarefas: tarefasSnap.size,
+        avaliacoes: avaliacoesSnap.size
+      });
 
-      // Processar funcionários
+      // Processar funcionários - BUSCAR DE AMBAS AS COLEÇÕES
       const dadosFuncionarios = {};
+      const nomesParaIds = {}; // Mapear nomes para IDs
+      
+      // Processar funcionarios collection
       funcionariosSnap.forEach(doc => {
         const funcionario = doc.data();
-        // Verificar todas as possíveis variações de terceirizado no campo
         const isTerceirizado = isFuncionarioTerceirizado(funcionario);
 
-        // Só incluir se NÃO for terceirizado
         if (!isTerceirizado) {
+          const nome = funcionario.nome || funcionario.username || funcionario.email;
           dadosFuncionarios[doc.id] = {
             id: doc.id,
-            nome: funcionario.nome,
+            nome: nome,
             photoURL: funcionario.photoURL,
             terceirizado: false,
             tercerizado: false,
@@ -388,8 +403,42 @@ const RankingPontos = () => {
             avaliacao: 0,
             avaliacoes: []
           };
+          if (nome) {
+            nomesParaIds[nome.toLowerCase()] = doc.id;
+          }
         }
       });
+      
+      // Processar usuarios collection (pode ter dados adicionais)
+      usuariosSnap.forEach(doc => {
+        const usuario = doc.data();
+        const isTerceirizado = isFuncionarioTerceirizado(usuario);
+
+        if (!isTerceirizado) {
+          const nome = usuario.nome || usuario.username || usuario.email;
+          
+          // Se já existe, atualizar; senão, adicionar
+          if (!dadosFuncionarios[doc.id]) {
+            dadosFuncionarios[doc.id] = {
+              id: doc.id,
+              nome: nome,
+              photoURL: usuario.photoURL,
+              terceirizado: false,
+              tercerizado: false,
+              ferramentasDevolvidas: 0,
+              tarefasConcluidas: 0,
+              avaliacao: 0,
+              avaliacoes: []
+            };
+          }
+          if (nome) {
+            nomesParaIds[nome.toLowerCase()] = doc.id;
+          }
+        }
+      });
+      
+      console.log('RankingPontos: Funcionários processados:', Object.keys(dadosFuncionarios).length);
+      console.log('RankingPontos: Mapeamento nomes:', nomesParaIds);
 
       // Contar ferramentas devolvidas apenas para não terceirizados
       emprestimosSnap.forEach(doc => {
@@ -401,25 +450,65 @@ const RankingPontos = () => {
         }
       });
 
-      // Contar tarefas concluídas
+      // Contar tarefas concluídas - CORRIGIDO para buscar por nome E ID
       tarefasSnap.forEach(doc => {
         const tarefa = doc.data();
-        if (tarefa.status === 'concluida' && tarefa.responsavelId) {
-          if (dadosFuncionarios[tarefa.responsavelId]) {
+        if (tarefa.status === 'concluida' || tarefa.status === 'Concluída') {
+          // Tentar encontrar o funcionário por ID primeiro
+          let encontrou = false;
+          
+          // Verificar por funcionariosIds (array)
+          if (tarefa.funcionariosIds && Array.isArray(tarefa.funcionariosIds)) {
+            tarefa.funcionariosIds.forEach(id => {
+              // Pode ser ID ou nome
+              if (dadosFuncionarios[id]) {
+                dadosFuncionarios[id].tarefasConcluidas++;
+                encontrou = true;
+              } else {
+                // Tentar encontrar por nome
+                const idPorNome = nomesParaIds[id.toLowerCase()];
+                if (idPorNome && dadosFuncionarios[idPorNome]) {
+                  dadosFuncionarios[idPorNome].tarefasConcluidas++;
+                  encontrou = true;
+                }
+              }
+            });
+          }
+          
+          // Fallback: tentar por responsavelId
+          if (!encontrou && tarefa.responsavelId && dadosFuncionarios[tarefa.responsavelId]) {
             dadosFuncionarios[tarefa.responsavelId].tarefasConcluidas++;
           }
         }
       });
 
-      // Calcular média das avaliações
+      // Calcular média das avaliações - CORRIGIDO para buscar por ID E nome
       avaliacoesSnap.forEach(doc => {
         const avaliacao = doc.data();
-        if (avaliacao.funcionarioId && avaliacao.estrelas) {
-          if (dadosFuncionarios[avaliacao.funcionarioId]) {
-            dadosFuncionarios[avaliacao.funcionarioId].avaliacoes.push(avaliacao.estrelas);
+        if (avaliacao.estrelas) {
+          let funcionarioEncontrado = null;
+          
+          // 1. Tentar por funcionarioId direto
+          if (avaliacao.funcionarioId && dadosFuncionarios[avaliacao.funcionarioId]) {
+            funcionarioEncontrado = dadosFuncionarios[avaliacao.funcionarioId];
+          }
+          
+          // 2. Tentar por nome do funcionário
+          if (!funcionarioEncontrado && avaliacao.funcionarioNome) {
+            const idPorNome = nomesParaIds[avaliacao.funcionarioNome.toLowerCase()];
+            if (idPorNome && dadosFuncionarios[idPorNome]) {
+              funcionarioEncontrado = dadosFuncionarios[idPorNome];
+            }
+          }
+          
+          // 3. Adicionar avaliação se encontrou o funcionário
+          if (funcionarioEncontrado) {
+            funcionarioEncontrado.avaliacoes.push(avaliacao.estrelas);
           }
         }
       });
+      
+      console.log('RankingPontos: Avaliações processadas');
 
       // Calcular média das avaliações
       Object.values(dadosFuncionarios).forEach(funcionario => {
@@ -447,36 +536,69 @@ const RankingPontos = () => {
             }
           });
 
-          // Coletar tarefas com datas apenas para não terceirizados
+          // Coletar tarefas com datas - CORRIGIDO para buscar por nome E ID
           tarefasSnap.forEach(doc => {
             const tarefa = doc.data();
-            // Verifica se é uma tarefa válida e se o funcionário não é terceirizado
-            if (tarefa.status?.toLowerCase() === 'concluida' && 
-                ((tarefa.responsavelId && dadosFuncionarios[tarefa.responsavelId] === funcionario) || 
-                 (tarefa.funcionarioId && dadosFuncionarios[tarefa.funcionarioId] === funcionario) || 
-                 (tarefa.responsavel === funcionario.nome && !funcionario.terceirizado))) {
-              const dataRef = tarefa.dataConclusao || tarefa.dataAtualizacao || tarefa.dataFinalizacao || doc.updateTime || doc.createTime;
-              tarefas.push({
-                dataConclusao: typeof dataRef === 'string' ? new Date(dataRef) : dataRef,
-                dataRetirada: typeof dataRef === 'string' ? new Date(dataRef) : dataRef,
-                prioridade: (tarefa.prioridade || 'normal').toLowerCase().trim(),
-                tempoEstimado: parseFloat(tarefa.tempoEstimado) || 1,
-                titulo: tarefa.titulo || 'Sem título',
-                descricao: tarefa.descricao || '',
-                status: (tarefa.status || '').toLowerCase()
-              });
+            const statusLower = (tarefa.status || '').toLowerCase();
+            
+            if (statusLower === 'concluida' || statusLower === 'concluída') {
+              let pertenceAoFuncionario = false;
+              
+              // Verificar por funcionariosIds (array) - pode conter nomes OU IDs
+              if (tarefa.funcionariosIds && Array.isArray(tarefa.funcionariosIds)) {
+                pertenceAoFuncionario = tarefa.funcionariosIds.some(id => {
+                  // Verificar por ID direto
+                  if (id === funcionario.id) return true;
+                  // Verificar por nome
+                  if (id.toLowerCase() === funcionario.nome.toLowerCase()) return true;
+                  return false;
+                });
+              }
+              
+              // Fallback: verificar outros campos
+              if (!pertenceAoFuncionario) {
+                pertenceAoFuncionario = 
+                  tarefa.responsavelId === funcionario.id ||
+                  tarefa.funcionarioId === funcionario.id ||
+                  (tarefa.responsavel && tarefa.responsavel.toLowerCase() === funcionario.nome.toLowerCase());
+              }
+              
+              if (pertenceAoFuncionario) {
+                const dataRef = tarefa.dataConclusao || tarefa.dataAtualizacao || tarefa.dataFinalizacao || doc.updateTime || doc.createTime;
+                tarefas.push({
+                  dataConclusao: typeof dataRef === 'string' ? new Date(dataRef) : dataRef,
+                  dataRetirada: typeof dataRef === 'string' ? new Date(dataRef) : dataRef,
+                  prioridade: (tarefa.prioridade || 'normal').toLowerCase().trim(),
+                  tempoEstimado: parseFloat(tarefa.tempoEstimado) || 1,
+                  titulo: tarefa.titulo || 'Sem título',
+                  descricao: tarefa.descricao || '',
+                  status: statusLower
+                });
+              }
             }
           });
 
-          // Coletar avaliações com datas
+          // Coletar avaliações com datas - CORRIGIDO para buscar por ID E nome
           avaliacoesSnap.forEach(doc => {
             const avaliacao = doc.data();
-            // Verificar todas as formas possíveis de identificar o funcionário
-            const matchFuncionario = 
+            let matchFuncionario = false;
+            
+            // 1. Verificar por IDs diretos
+            matchFuncionario = 
               avaliacao.funcionarioId === funcionario.id || 
               avaliacao.idFuncionario === funcionario.id ||
-              (avaliacao.funcionario && avaliacao.funcionario.id === funcionario.id) ||
-              (avaliacao.funcionario === funcionario.nome);
+              (avaliacao.funcionario && avaliacao.funcionario.id === funcionario.id);
+            
+            // 2. Verificar por nome
+            if (!matchFuncionario) {
+              if (avaliacao.funcionarioNome && avaliacao.funcionarioNome.toLowerCase() === funcionario.nome.toLowerCase()) {
+                matchFuncionario = true;
+              } else if (avaliacao.funcionario === funcionario.nome) {
+                matchFuncionario = true;
+              } else if (typeof avaliacao.funcionario === 'object' && avaliacao.funcionario.nome === funcionario.nome) {
+                matchFuncionario = true;
+              }
+            }
 
             if (matchFuncionario && avaliacao.estrelas) {
               // Garantir que temos uma data válida

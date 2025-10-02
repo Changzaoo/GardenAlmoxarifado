@@ -9,7 +9,9 @@ import {
   Calendar,
   Trophy,
   MessageSquarePlus,
-  Users
+  Users,
+  Building2,
+  Briefcase
 } from 'lucide-react';
 import { FuncionariosProvider, useFuncionarios } from '../Funcionarios/FuncionariosProvider';
 import MeuInventarioTab from '../Inventario/MeuInventarioTab';
@@ -420,13 +422,32 @@ const ProfileTab = () => {
       {/* Profile Info */}
       <div className="mt-16 px-4">
         <div className="flex items-start">
-          <div>
+          <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               {usuario.nome}
             </h2>
             <div className="flex items-center gap-2 mt-1 text-gray-500 dark:text-gray-400">
               <span className="text-sm">{cargoFuncionario || 'Funcionário'}</span>
             </div>
+            
+            {/* Empresa e Setor */}
+            {(usuario.empresaNome || usuario.setorNome) && (
+              <div className="mt-2 space-y-1">
+                {usuario.empresaNome && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Building2 className="w-4 h-4" />
+                    <span>{usuario.empresaNome}</span>
+                  </div>
+                )}
+                {usuario.setorNome && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Briefcase className="w-4 h-4" />
+                    <span>{usuario.setorNome}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <div className="flex items-center gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
               <Calendar className="w-4 h-4" />
               <span>

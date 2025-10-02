@@ -227,57 +227,81 @@ const UsuariosTab = () => {
 
   const niveisDisponiveis = getNiveisDisponiveis();
 
-  // Filtrar usuários visíveis
-  const usuariosVisiveis = usuarios.filter(usuario => {
-    // Primeiro aplicar filtro de permissões
-    const temPermissao = usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN ? true :
-      usuarioLogado.nivel === NIVEIS_PERMISSAO.GERENTE ? 
-        (usuario.nivel < NIVEIS_PERMISSAO.GERENTE || usuario.id === usuarioLogado.id) :
-        usuario.id === usuarioLogado.id;
+  // Filtrar usuários visíveis e ordenar alfabeticamente
+  const usuariosVisiveis = usuarios
+    .filter(usuario => {
+      // Primeiro aplicar filtro de permissões
+      const temPermissao = usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN ? true :
+        usuarioLogado.nivel === NIVEIS_PERMISSAO.GERENTE ? 
+          (usuario.nivel < NIVEIS_PERMISSAO.GERENTE || usuario.id === usuarioLogado.id) :
+          usuario.id === usuarioLogado.id;
 
-    // Depois aplicar filtro de busca
-    const termoBusca = searchTerm.toLowerCase();
-    const matchBusca = !searchTerm || 
-      usuario.nome.toLowerCase().includes(termoBusca) ||
-      usuario.email.toLowerCase().includes(termoBusca);
+      // Depois aplicar filtro de busca
+      const termoBusca = searchTerm.toLowerCase();
+      const matchBusca = !searchTerm || 
+        usuario.nome.toLowerCase().includes(termoBusca) ||
+        usuario.email.toLowerCase().includes(termoBusca) ||
+        (usuario.empresaNome && usuario.empresaNome.toLowerCase().includes(termoBusca)) ||
+        (usuario.setorNome && usuario.setorNome.toLowerCase().includes(termoBusca)) ||
+        (usuario.cargo && usuario.cargo.toLowerCase().includes(termoBusca));
 
-    return temPermissao && matchBusca;
-  });
+      return temPermissao && matchBusca;
+    })
+    .sort((a, b) => a.nome.localeCompare(b.nome)); // Ordenação alfabética
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-6`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500 bg-opacity-10 dark:bg-[#1D9BF0] dark:bg-opacity-10 rounded-lg flex items-center justify-center">
-              <UserCog className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
+      <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6`}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 dark:from-[#1D9BF0] dark:to-purple-500 rounded-xl flex items-center justify-center shadow-md">
+                <UserCog className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className={`text-xl font-bold ${colors.text}`}>Gerenciamento de Usuários</h2>
+                <p className={`text-sm ${colors.textSecondary}`}>Usuários com acesso ao sistema - Segurança SHA-512</p>
+              </div>
             </div>
-            <div>
-              <p className={colors.textSecondary}>Gerencie os usuários do sistema de acordo com suas permissões</p>
-            </div>
+            
+            {niveisDisponiveis.length > 0 && (
+              <button
+                onClick={abrirModalCriar}
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-[#1D9BF0] dark:to-[#1A8CD8] dark:hover:from-[#1A8CD8] dark:hover:to-[#1D9BF0] text-white px-6 py-2.5 rounded-full transition-all shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="font-medium">Novo Usuário</span>
+              </button>
+            )}
           </div>
           
-          {/* Campo de busca */}
-          <div className="flex-1 mx-4">
+          {/* Campo de busca aprimorado */}
+          <div className="relative">
             <input
               type="text"
-              placeholder="Buscar por nome ou email..."
+              placeholder="🔍 Buscar por nome, email, empresa, setor ou função..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+              className={`w-full px-5 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent transition-all shadow-sm`}
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
-          {niveisDisponiveis.length > 0 && (
-            <button
-              onClick={abrirModalCriar}
-              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 dark:bg-[#1D9BF0] dark:hover:bg-[#1A8CD8] text-white px-4 py-2 rounded-full transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Novo Usuário
-            </button>
-          )}
+          {/* Badge de informações de segurança */}
+          <div className="flex items-center gap-2 text-xs bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg px-3 py-2">
+            <Shield className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <span className="text-green-700 dark:text-green-300 font-medium">
+              Senhas criptografadas com SHA-512 | {usuariosVisiveis.length} usuário{usuariosVisiveis.length !== 1 ? 's' : ''} cadastrado{usuariosVisiveis.length !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
 
         {/* Mensagens */}
@@ -295,100 +319,165 @@ const UsuariosTab = () => {
       </div>
 
       {/* Lista de Usuários */}
-      <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm overflow-hidden`}>
+      <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden`}>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y dark:divide-[#2F3336]">
-            <thead className="bg-black bg-opacity-5 dark:bg-[#2F3336]">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750">
               <tr>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
-                  Usuário
+                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+                  👤 Usuário
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
-                  Nível de Acesso
+                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+                  🏢 Empresa / Setor
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
-                  Status
+                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+                  💼 Função
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
-                  Último Login
+                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+                  🔐 Nível de Acesso
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${colors.textSecondary} uppercase tracking-wider`}>
-                  Ações
+                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+                  ⚡ Status
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+                  🕐 Último Login
+                </th>
+                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
+                  ⚙️ Ações
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y dark:divide-[#2F3336]">
-              {usuariosVisiveis.map((usuario) => (
-                <tr key={usuario.id} className={`hover:bg-black hover:bg-opacity-5 dark:hover:bg-[#2F3336]`}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="h-8 w-8 bg-blue-500 bg-opacity-10 dark:bg-[#1D9BF0] dark:bg-opacity-10 rounded-full flex items-center justify-center">
-                          <User className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0]" />
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+              {usuariosVisiveis.map((usuario, index) => (
+                <tr key={usuario.id} className={`transition-all hover:bg-blue-50 dark:hover:bg-gray-700/50 ${index % 2 === 0 ? 'bg-gray-50/30 dark:bg-gray-800/50' : ''}`}>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-shrink-0">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-white shadow-md ${
+                          usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-br from-red-500 to-red-600' :
+                          usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
+                          usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-br from-green-500 to-green-600' :
+                          'bg-gradient-to-br from-yellow-500 to-yellow-600'
+                        }`}>
+                          {usuario.nome.charAt(0).toUpperCase()}
                         </div>
+                        {usuario.senhaVersion === 2 && (
+                          <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
+                            <Shield className="w-3 h-3 text-white" />
+                          </div>
+                        )}
                       </div>
-                      <div className="ml-3">
-                        <div className={`text-sm font-medium ${colors.text}`}>
-                          {usuario.nome}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className={`text-sm font-semibold ${colors.text} truncate`}>
+                            {usuario.nome}
+                          </p>
                           {usuario.id === usuarioLogado.id && (
-                            <span className="ml-2 text-xs text-blue-500 dark:text-[#1D9BF0] font-medium">(Você)</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                              Você
+                            </span>
                           )}
                         </div>
-                        <div className={`text-sm ${colors.textSecondary}`}>{usuario.email}</div>
+                        <p className={`text-sm ${colors.textSecondary} truncate`}>{usuario.email}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <Shield className="w-4 h-4 text-blue-500 dark:text-[#1D9BF0] mr-2" />
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-red-500 bg-opacity-10 text-red-500 dark:bg-[#F4212E] dark:bg-opacity-10 dark:text-[#F4212E]' :
-                        usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-blue-500 bg-opacity-10 text-blue-500 dark:bg-[#1D9BF0] dark:bg-opacity-10 dark:text-[#1D9BF0]' :
-                        usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-green-500 bg-opacity-10 text-green-500 dark:bg-[#00BA7C] dark:bg-opacity-10 dark:text-[#00BA7C]' :
-                        'bg-yellow-500 bg-opacity-10 text-yellow-600 dark:bg-[#FFD700] dark:bg-opacity-10 dark:text-[#FFD700]'
+                  <td className="px-6 py-4">
+                    <div className="space-y-1">
+                      <div className={`text-sm font-medium ${colors.text}`}>
+                        {usuario.empresaNome || <span className="text-gray-400 dark:text-gray-500 italic text-xs">Não atribuída</span>}
+                      </div>
+                      <div className={`text-xs ${colors.textSecondary} flex items-center gap-1`}>
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-[#1D9BF0]"></div>
+                        {usuario.setorNome || <span className="text-gray-400 dark:text-gray-500 italic">Não atribuído</span>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className={`text-sm font-medium ${colors.text}`}>
+                      {usuario.cargo || <span className="text-gray-400 dark:text-gray-500 italic text-xs">Não definida</span>}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
+                        usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' :
+                        usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
+                        usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' :
+                        'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white'
                       }`}>
+                        <Shield className="w-3.5 h-3.5" />
                         {NIVEIS_LABELS[usuario.nivel]}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      usuario.ativo ? 'bg-[#00BA7C] bg-opacity-10 text-[#00BA7C]' : 'bg-[#F4212E] bg-opacity-10 text-[#F4212E]'
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
+                      usuario.ativo 
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' 
+                        : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
                     }`}>
-                      {usuario.ativo ? 'Ativo' : 'Inativo'}
+                      {usuario.ativo ? '✓ Ativo' : '✗ Inativo'}
                     </span>
                   </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${colors.textSecondary}`}>
-                    {usuario.ultimoLogin ? 
-                      new Date(usuario.ultimoLogin).toLocaleString('pt-BR') : 
-                      'Nunca'
-                    }
+                  <td className={`px-6 py-4 text-sm ${colors.textSecondary}`}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {usuario.ultimoLogin ? 
+                          new Date(usuario.ultimoLogin).toLocaleDateString('pt-BR') : 
+                          'Nunca acessou'
+                        }
+                      </span>
+                      {usuario.ultimoLogin && (
+                        <span className="text-xs">
+                          {new Date(usuario.ultimoLogin).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="px-6 py-4">
                     <div className="flex gap-2">
                       {PermissionChecker.canEditUser(usuarioLogado.nivel, usuarioLogado.id, usuario.id, usuario.nivel) && (
                         <button
                           onClick={() => abrirModalEditar(usuario)}
-                          className="p-2 hover:bg-[#1D9BF0] hover:bg-opacity-10 rounded-full transition-colors"
+                          className="p-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 rounded-lg transition-all transform hover:scale-110"
                           title="Editar usuário"
                         >
-                          <Edit className="w-4 h-4 text-[#1D9BF0]" />
+                          <Edit className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         </button>
                       )}
                       {usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN &&
                         usuario.email !== 'admin' && usuario.id !== usuarioLogado.id && (
                         <button
                           onClick={() => confirmarRemocao(usuario)}
-                          className="p-2 hover:bg-[#F4212E] hover:bg-opacity-10 rounded-full transition-colors"
+                          className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 rounded-lg transition-all transform hover:scale-110"
                           title="Remover usuário"
                         >
-                          <Trash2 className="w-4 h-4 text-[#F4212E]" />
+                          <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                         </button>
                       )}
                     </div>
                   </td>
                 </tr>
               ))}
+              
+              {usuariosVisiveis.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                        <User className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                      </div>
+                      <div>
+                        <p className={`text-lg font-medium ${colors.text}`}>Nenhum usuário encontrado</p>
+                        <p className={`text-sm ${colors.textSecondary} mt-1`}>
+                          {searchTerm ? 'Tente ajustar os termos de busca' : 'Adicione usuários para começar'}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

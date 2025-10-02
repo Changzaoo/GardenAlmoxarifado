@@ -28,28 +28,38 @@ const generateEncryptionKey = (customSalt = '') => {
 };
 
 // Função para encriptar dados
-// Função para encriptar uma senha usando um salt único
+// Função para encriptar uma senha usando SHA-512 com salt
 export const encryptPassword = (password) => {
   const salt = generateSecureSalt(); // Gera um novo salt único
-  const key = generateEncryptionKey(salt);
-  const encrypted = CryptoJS.AES.encrypt(password, key).toString();
+  
+  // Usa SHA-512 para hash seguro da senha + salt
+  const hash = CryptoJS.SHA512(password + salt + APP_SECRET).toString();
   
   return {
-    hash: encrypted,
+    hash: hash,
     salt: salt,
-    version: 1 // Versão do esquema de encriptação
+    version: 2, // Versão 2 usa SHA-512
+    algorithm: 'SHA-512'
   };
 };
 
 // Função para validar uma senha contra um hash existente
-export const verifyPassword = (password, hash, salt, version = 1) => {
-  if (!hash || !salt) return false;
+export const verifyPassword = (password, storedHash, salt, version = 2) => {
+  if (!storedHash || !salt) return false;
   
-  const key = generateEncryptionKey(salt);
   try {
-    const decrypted = CryptoJS.AES.decrypt(hash, key).toString(CryptoJS.enc.Utf8);
-    return decrypted === password;
+    if (version === 2) {
+      // Versão 2: SHA-512
+      const computedHash = CryptoJS.SHA512(password + salt + APP_SECRET).toString();
+      return computedHash === storedHash;
+    } else {
+      // Versão 1: AES (compatibilidade retroativa)
+      const key = generateEncryptionKey(salt);
+      const decrypted = CryptoJS.AES.decrypt(storedHash, key).toString(CryptoJS.enc.Utf8);
+      return decrypted === password;
+    }
   } catch (error) {
+    console.error('Erro ao verificar senha:', error);
     return false;
   }
 };

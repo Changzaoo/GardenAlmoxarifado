@@ -63,6 +63,21 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Senha incorreta');
     }
 
+    // Verificar se o usuário tem setor e empresa definidos
+    // EXCEÇÃO: Administradores (nivel 4) não precisam ter setor, empresa ou cargo
+    const NIVEL_ADMIN = 4;
+    const isAdmin = usuarioEncontrado.nivel === NIVEL_ADMIN;
+    
+    if (!isAdmin) {
+      if (!usuarioEncontrado.setorId || !usuarioEncontrado.setorId.trim()) {
+        throw new Error('Usuário sem setor atribuído. Entre em contato com o administrador.');
+      }
+
+      if (!usuarioEncontrado.empresaId || !usuarioEncontrado.empresaId.trim()) {
+        throw new Error('Usuário sem empresa atribuída. Entre em contato com o administrador.');
+      }
+    }
+
     setUsuario(usuarioEncontrado);
     return usuarioEncontrado;
   };
