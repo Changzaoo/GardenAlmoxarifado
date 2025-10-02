@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, CheckCircle, AlertCircle, ClipboardList, Calendar as CalendarIcon, Trash2, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar, CheckCircle, AlertCircle, ClipboardList, Calendar as CalendarIcon, Trash2, X, Shield } from 'lucide-react';
 import { db } from '../../firebaseConfig';
 import { collection, query, where, getDocs, addDoc, doc, deleteDoc, orderBy } from 'firebase/firestore';
 import HistoricoVerificacoes from './HistoricoVerificacoes';
@@ -8,6 +8,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ToastProvider';
 import FullscreenPrompt from '../FullscreenPrompt';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { useSectorPermissions } from '../../hooks/useSectorPermissions';
+import { PermissionChecker } from '../../constants/permissoes';
 
 const VerificacaoMensalTab = () => {
   // ... states and hooks ...
@@ -28,7 +30,7 @@ const VerificacaoMensalTab = () => {
           </div>
 
           <div className="space-y-4">
-            {inventario.map((item) => (
+            {inventarioPorSetor.map((item) => (
               <div
                 key={item.id}
                 className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
@@ -98,6 +100,28 @@ const VerificacaoMensalTab = () => {
   const [modalAberto, setModalAberto] = useState(false);
   const { usuario } = useAuth();
   const { showToast } = useToast();
+
+  // Hook de permissões por setor
+  const { canViewAllSectors } = useSectorPermissions();
+  const isAdmin = canViewAllSectors;
+
+  // Filtrar inventário por setor (se não for admin)
+  const inventarioPorSetor = useMemo(() => {
+    if (isAdmin) {
+      return inventario; // Admin vê todo o inventário
+    }
+    
+    return PermissionChecker.filterBySector(inventario, usuario);
+  }, [inventario, usuario, isAdmin]);
+
+  // Filtrar verificações por setor (se não for admin)
+  const verificacoesPorSetor = useMemo(() => {
+    if (isAdmin) {
+      return verificacoes;
+    }
+    
+    return PermissionChecker.filterBySector(verificacoes, usuario);
+  }, [verificacoes, usuario, isAdmin]);
 
   useEffect(() => {
     carregarInventario();
@@ -271,6 +295,16 @@ const VerificacaoMensalTab = () => {
 
   return (
     <div className="space-y-6">
+      {/* Badge informativo para não-admins */}
+      {!isAdmin && usuario?.setor && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <strong>Visualização por setor:</strong> Você está vendo apenas as verificações do setor <strong>{usuario.setor}</strong>.
+          </p>
+        </div>
+      )}
+
       {itemParaRemover && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
@@ -335,7 +369,7 @@ const VerificacaoMensalTab = () => {
             </div>
 
             <div className="space-y-4">
-              {inventario.map((item) => (
+              {inventarioPorSetor.map((item) => (
                 <div
                   key={item.id}
                   className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"

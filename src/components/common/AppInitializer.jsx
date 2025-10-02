@@ -125,8 +125,8 @@ const AppInitializer = ({ children }) => {
         const currentProgress = progress;
         const targetProgress = stage.progress;
         const progressDiff = targetProgress - currentProgress;
-        const steps = 20; // 20 micro-passos para suavidade
-        const stepDuration = 100; // 100ms por passo
+        const steps = 10; // 10 micro-passos para suavidade (reduzido de 20)
+        const stepDuration = 30; // 30ms por passo (reduzido de 100ms)
         const progressStep = progressDiff / steps;
         
         for (let step = 0; step < steps; step++) {
@@ -141,8 +141,8 @@ const AppInitializer = ({ children }) => {
         setProgress(targetProgress);
       }
 
-      // Hold em 100% por 500ms antes de mostrar app
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Hold em 100% por 200ms antes de mostrar app (reduzido de 500ms)
+      await new Promise(resolve => setTimeout(resolve, 200));
       setSystemReady(true);
       
       // Aguardar fade out
@@ -157,67 +157,67 @@ const AppInitializer = ({ children }) => {
   // Funções de inicialização (operações reais)
   
   const checkSecurityProtocols = async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Verificar HTTPS, CSP, etc.
   };
 
   const initializeEncryption = async () => {
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Inicializar SHA-512, etc.
   };
 
   const testFirestoreConnection = async () => {
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 100));
     // Ping Firestore
   };
 
   const loadInitialData = async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Carregar dados críticos
   };
 
   const loadUserPreferences = async () => {
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Carregar do localStorage
   };
 
   const loadSystemSettings = async () => {
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Carregar configurações
   };
 
   const preloadCriticalComponents = async () => {
-    await new Promise(resolve => setTimeout(resolve, 350));
+    await new Promise(resolve => setTimeout(resolve, 100));
     // Lazy load de componentes
   };
 
   const warmupCache = async () => {
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Pré-carregar recursos
   };
 
   const verifyAuthState = async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 100));
     // Verificar Firebase Auth
   };
 
   const checkPermissions = async () => {
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Verificar permissões do usuário
   };
 
   const loadTheme = async () => {
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Aplicar tema (dark/light)
   };
 
   const prepareUI = async () => {
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Preparar componentes UI
   };
 
   const finalizeInitialization = async () => {
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise(resolve => setTimeout(resolve, 50));
     // Últimos ajustes
   };
 

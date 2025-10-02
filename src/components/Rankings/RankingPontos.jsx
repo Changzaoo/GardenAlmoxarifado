@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import { Trophy, Star, CheckCircle, ToolCase, Medal, ChevronDown, Calendar, X, CircleDollarSign, Award, HelpCircle } from 'lucide-react';
+import { Trophy, Star, CheckCircle, ToolCase, Medal, ChevronDown, Calendar, X, CircleDollarSign, Award, HelpCircle, Shield } from 'lucide-react';
+import { useSectorPermissions } from '../../hooks/useSectorPermissions';
+import { PermissionChecker } from '../../constants/permissoes';
+import { useAuth } from '../../hooks/useAuth';
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -45,6 +48,7 @@ const getSemanasDoMes = (ano, mes) => {
 };
 
 const RankingPontos = () => {
+  const { usuario } = useAuth();
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [periodoAtual, setPeriodoAtual] = useState('semana');
@@ -54,6 +58,10 @@ const RankingPontos = () => {
   const [showAnoSelector, setShowAnoSelector] = useState(false);
   const [showSemanaSelector, setShowSemanaSelector] = useState(false);
   const [showPontosExplicacao, setShowPontosExplicacao] = useState(false);
+
+  // Hook de permissões por setor
+  const { canViewAllSectors } = useSectorPermissions();
+  const isAdmin = canViewAllSectors;
   
   // Calcular as semanas do mês atual
   const semanasDoMes = getSemanasDoMes(anoSelected, mesSelected);
@@ -658,6 +666,16 @@ const RankingPontos = () => {
     }
   };
 
+  // Filtrar rankings por setor (se não for admin)
+  const rankingsPorSetor = useMemo(() => {
+    if (isAdmin) {
+      return rankings; // Admin vê todos os rankings
+    }
+    
+    // Filtrar funcionários onde o setorId corresponde ao setor do usuário
+    return PermissionChecker.filterBySector(rankings, usuario);
+  }, [rankings, usuario, isAdmin]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -667,7 +685,18 @@ const RankingPontos = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div className="space-y-4">
+      {/* Badge informativo para não-admins */}
+      {!isAdmin && usuario?.setor && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <strong>Visualização por setor:</strong> Você está vendo apenas o ranking do setor <strong>{usuario.setor}</strong>.
+          </p>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       {showDetails && selectedFuncionario && (
         <DetalhesPontos
           funcionario={selectedFuncionario}
@@ -816,7 +845,7 @@ const RankingPontos = () => {
                 <h3 className="text-lg font-semibold text-white">Total de Pontos</h3>
               </div>
               <div className="bg-white/10 rounded-lg px-3 py-1 text-sm">
-                {filtrarPorPeriodo(rankings)
+                {filtrarPorPeriodo(rankingsPorSetor)
                   .filter(func => !isFuncionarioTerceirizado(func) && func.pontuacao.total > 0)
                   .length} funcionários
               </div>
@@ -826,7 +855,7 @@ const RankingPontos = () => {
               <div className="flex-1">
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold">
-                    {filtrarPorPeriodo(rankings)
+                    {filtrarPorPeriodo(rankingsPorSetor)
                       .filter(func => !isFuncionarioTerceirizado(func) && func.pontuacao.total > 0)
                       .reduce((total, func) => total + func.pontuacao.total, 0)}
                   </span>
@@ -907,11 +936,11 @@ const RankingPontos = () => {
                   <div className="flex items-center gap-1 relative group">
                     <ToolCase className="w-4 h-4 text-blue-200" />
                     <span>
-                      {filtrarPorPeriodo(rankings)
+                      {filtrarPorPeriodo(rankingsPorSetor)
                         .filter(func => !isFuncionarioTerceirizado(func))
                         .reduce((total, func) => total + func.pontuacao.detalhes.ferramentas, 0)} pts
                     </span>
-                    {filtrarPorPeriodo(rankings).some(func => 
+                    {filtrarPorPeriodo(rankingsPorSetor).some(func => 
                       func.emprestimos.some(emp => emp.bonusRetirada || emp.bonusDevolucao)
                     ) && (
                       <>
@@ -925,7 +954,7 @@ const RankingPontos = () => {
                   <div className="flex items-center gap-1">
                     <CheckCircle className="w-4 h-4 text-blue-200" />
                     <span>
-                      {filtrarPorPeriodo(rankings)
+                      {filtrarPorPeriodo(rankingsPorSetor)
                         .filter(func => !isFuncionarioTerceirizado(func))
                         .reduce((total, func) => total + func.pontuacao.detalhes.tarefas, 0)} pts
                     </span>
@@ -933,7 +962,7 @@ const RankingPontos = () => {
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-blue-200" />
                     <span>
-                      {filtrarPorPeriodo(rankings)
+                      {filtrarPorPeriodo(rankingsPorSetor)
                         .filter(func => !isFuncionarioTerceirizado(func))
                         .reduce((total, func) => total + func.pontuacao.detalhes.avaliacao, 0)} pts
                     </span>
@@ -948,7 +977,7 @@ const RankingPontos = () => {
       </div>
 
       <div className="space-y-4">
-        {filtrarPorPeriodo(rankings)
+        {filtrarPorPeriodo(rankingsPorSetor)
           .filter(funcionario => {
             // Verificar todas as possíveis variações de terceirizado
             const isTerceirizado = isFuncionarioTerceirizado(funcionario);
@@ -1020,8 +1049,7 @@ const RankingPontos = () => {
           </div>
         ))}
       </div>
-
-
+      </div>
     </div>
   );
 };

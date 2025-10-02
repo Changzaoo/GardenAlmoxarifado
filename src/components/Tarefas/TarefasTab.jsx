@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { 
   Plus, Star, PauseCircle, PlayCircle, CheckCircle, Clock, CircleDotDashed, 
-  Pause, Loader, Trash2, Calendar, User, AlertCircle, Search 
+  Pause, Loader, Trash2, Calendar, User, AlertCircle, Search, Shield 
 } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import CriarTarefa from './CriarTarefa';
@@ -12,6 +12,8 @@ import DetalheTarefa from './DetalheTarefa';
 import AvaliacaoTarefaModal from './AvaliacaoTarefaModal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { formatarDataHora } from '../../utils/dateUtils';
+import { useSectorPermissions } from '../../hooks/useSectorPermissions';
+import { PermissionChecker } from '../../constants/permissoes';
 
 const NIVEIS_PERMISSAO = {
   FUNCIONARIO: 1,
@@ -315,7 +317,21 @@ const TarefasTab = ({
     }
   };
 
-  const tarefasFiltradas = tarefas
+  // Hook de permissões por setor
+  const { canViewAllSectors } = useSectorPermissions();
+  const isAdmin = canViewAllSectors;
+
+  // Filtrar tarefas por setor (se não for admin)
+  const tarefasPorSetor = useMemo(() => {
+    if (isAdmin) {
+      return tarefas; // Admin vê todas as tarefas
+    }
+    
+    // Filtrar tarefas onde o setorId corresponde ao setor do usuário
+    return PermissionChecker.filterBySector(tarefas, usuario);
+  }, [tarefas, usuario, isAdmin]);
+
+  const tarefasFiltradas = tarefasPorSetor
     .filter(tarefa => {
       // Filtro de usuário
       if (showOnlyUserTasks && !isUserAssigned(tarefa)) return false;
@@ -362,6 +378,16 @@ const TarefasTab = ({
 
   return (
     <div className="space-y-6">
+      {/* Badge informativo para não-admins */}
+      {!isAdmin && usuario?.setor && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <strong>Visualização por setor:</strong> Você está vendo apenas as tarefas do setor <strong>{usuario.setor}</strong>.
+          </p>
+        </div>
+      )}
+
       {/* Barra de Filtros */}
       <div className="bg-white dark:bg-[#1E2732] rounded-lg shadow-md border border-gray-200 dark:border-gray-600 p-4">
         <div className="flex flex-wrap gap-4">

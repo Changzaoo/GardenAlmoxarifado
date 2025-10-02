@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Search, Plus, Calendar, User, MapPin, DollarSign, FileText, AlertCircle } from 'lucide-react';
+import { Search, Plus, Calendar, User, MapPin, DollarSign, FileText, AlertCircle, Shield } from 'lucide-react';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import { toast } from 'react-toastify';
+import { useSectorPermissions } from '../../hooks/useSectorPermissions';
+import { PermissionChecker } from '../../constants/permissoes';
 
 const { classes, colors } = twitterThemeConfig;
 
@@ -16,6 +18,20 @@ const FerramentasDanificadasTab = ({
 }) => {
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
+  
+  // Hook de permissões por setor
+  const { canViewAllSectors } = useSectorPermissions();
+  const isAdmin = canViewAllSectors;
+
+  // Filtrar ferramentas danificadas por setor (se não for admin)
+  const ferramentasDanificadasPorSetor = useMemo(() => {
+    if (isAdmin) {
+      return ferramentasDanificadas;
+    }
+    
+    return PermissionChecker.filterBySector(ferramentasDanificadas, usuario);
+  }, [ferramentasDanificadas, usuario, isAdmin]);
+
   const [novaFerramenta, setNovaFerramenta] = useState({
     nomeItem: '',
     categoria: '',
@@ -57,7 +73,7 @@ const FerramentasDanificadasTab = ({
     setDeleteModalAberto(false);
   };
 
-  const ferramentasFiltradas = ferramentasDanificadas.filter(item => {
+  const ferramentasFiltradas = ferramentasDanificadasPorSetor.filter(item => {
     const matchFiltro = 
       (item.nomeItem || '').toLowerCase().includes(filtro.toLowerCase()) ||
       (item.descricaoProblema || '').toLowerCase().includes(filtro.toLowerCase()) ||
@@ -220,6 +236,16 @@ const FerramentasDanificadasTab = ({
 
   return (
     <div className="space-y-6">
+      {/* Badge informativo para não-admins */}
+      {!isAdmin && usuario?.setor && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <strong>Visualização por setor:</strong> Você está vendo apenas as ferramentas danificadas do setor <strong>{usuario.setor}</strong>.
+          </p>
+        </div>
+      )}
+
       {/* Header com botão */}
       <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-6`}>
         <div className="flex items-center justify-end mb-6">

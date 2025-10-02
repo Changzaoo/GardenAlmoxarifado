@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, X, Save, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Search, X, Save, Trash2, Shield } from 'lucide-react';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import CompraCard from './CompraCard';
+import { useAuth } from '../../hooks/useAuth';
+import { useSectorPermissions } from '../../hooks/useSectorPermissions';
+import { PermissionChecker } from '../../constants/permissoes';
 
 const STATUS_COMPRAS = {
   SOLICITADO: 'solicitado',
@@ -66,6 +69,16 @@ const ComprasTab = ({
   readonly = false 
 }) => {
   const { colors, classes } = twitterThemeConfig;
+  const { usuario } = useAuth();
+  const { canViewAllSectors } = useSectorPermissions();
+  const isAdmin = canViewAllSectors;
+
+  // Filtrar compras por setor
+  const comprasPorSetor = useMemo(() => {
+    if (isAdmin) return compras;
+    return PermissionChecker.filterBySector(compras, usuario);
+  }, [compras, usuario, isAdmin]);
+
   const [filtro, setFiltro] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('todos');
   const [prioridadeFiltro, setPrioridadeFiltro] = useState('todas');
@@ -89,7 +102,7 @@ const ComprasTab = ({
   const [detalhesCompra, setDetalhesCompra] = useState(null);
 
   // Filtrar compras
-  const comprasFiltradas = compras.filter(compra => {
+  const comprasFiltradas = comprasPorSetor.filter(compra => {
     const matchFiltro = filtro === '' || 
       compra.descricao?.toLowerCase().includes(filtro.toLowerCase()) ||
       compra.fornecedor?.toLowerCase().includes(filtro.toLowerCase()) ||
@@ -198,6 +211,16 @@ const ComprasTab = ({
 
   return (
     <div className="space-y-4">
+      {/* Badge de visualização por setor */}
+      {!isAdmin && usuario?.setor && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <strong>Visualização por setor:</strong> Você está vendo apenas as compras do setor <strong>{usuario.setor}</strong>.
+          </p>
+        </div>
+      )}
+
       {/* Cabeçalho e Botão Nova Compra */}
       <div className="flex justify-between items-center">
         <h2 className={`text-xl font-semibold ${colors.text}`}>Compras</h2>

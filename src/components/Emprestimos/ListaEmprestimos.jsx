@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit, Package2, CircleUser } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit, Package2, CircleUser, Shield } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
+import { NIVEIS_PERMISSAO, PermissionChecker } from '../../constants/permissoes';
 import { doc, updateDoc, collection, getDocs, addDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { formatarDataHora } from '../../utils/formatters';
 import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
 import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
+import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 
 // Enum for sorting options
 const SORT_OPTIONS = {
@@ -156,7 +157,21 @@ const ListaEmprestimos = ({
     }
   };
 
-  const emprestimosFiltrados = emprestimos
+  // Hook de permissões por setor
+  const { canViewAllSectors } = useSectorPermissions();
+  const isAdmin = canViewAllSectors;
+
+  // Filtrar empréstimos por setor (se não for admin)
+  const emprestimosPorSetor = useMemo(() => {
+    if (isAdmin) {
+      return emprestimos; // Admin vê todos os empréstimos
+    }
+    
+    // Filtrar empréstimos onde o setorId corresponde ao setor do usuário
+    return PermissionChecker.filterBySector(emprestimos, usuario);
+  }, [emprestimos, usuario, isAdmin]);
+
+  const emprestimosFiltrados = emprestimosPorSetor
     .filter(filtrarEmprestimo)
     .sort((a, b) => {
       const dataA = a?.dataEmprestimo ? new Date(a.dataEmprestimo) : new Date();
@@ -567,8 +582,19 @@ const ListaEmprestimos = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex justify-between items-center mb-4">
+    <div className="space-y-4">
+      {/* Badge informativo para não-admins */}
+      {!isAdmin && usuario?.setor && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <strong>Visualização por setor:</strong> Você está vendo apenas os empréstimos do setor <strong>{usuario.setor}</strong>.
+          </p>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex justify-between items-center mb-4">
         <div className="flex gap-4 items-center flex-wrap">
           <div className="relative w-64">
             <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -974,7 +1000,7 @@ const ListaEmprestimos = ({
           onConfirm={handleConfirmDevolucao}
         />
       )}
-
+      </div>
     </div>
   );
 };

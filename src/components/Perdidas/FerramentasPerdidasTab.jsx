@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Search, Plus, Calendar, User, MapPin, DollarSign, FileText, AlertCircle } from 'lucide-react';
+import { Search, Plus, Calendar, User, MapPin, DollarSign, FileText, AlertCircle, Shield } from 'lucide-react';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import { toast } from 'react-toastify';
+import { useSectorPermissions } from '../../hooks/useSectorPermissions';
+import { PermissionChecker } from '../../constants/permissoes';
 
 const { classes, colors } = twitterThemeConfig;
 
@@ -16,6 +18,20 @@ const FerramentasPerdidasTab = ({
 }) => {
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
+  
+  // Hook de permissões por setor
+  const { canViewAllSectors } = useSectorPermissions();
+  const isAdmin = canViewAllSectors;
+
+  // Filtrar ferramentas perdidas por setor (se não for admin)
+  const ferramentasPerdidasPorSetor = useMemo(() => {
+    if (isAdmin) {
+      return ferramentasPerdidas;
+    }
+    
+    return PermissionChecker.filterBySector(ferramentasPerdidas, usuario);
+  }, [ferramentasPerdidas, usuario, isAdmin]);
+
   const [novaFerramenta, setNovaFerramenta] = useState({
     nomeItem: '',
     categoria: '',
@@ -57,7 +73,7 @@ const FerramentasPerdidasTab = ({
     setDeleteModalAberto(false);
   };
 
-  const ferramentasFiltradas = ferramentasPerdidas.filter(item => {
+  const ferramentasFiltradas = ferramentasPerdidasPorSetor.filter(item => {
     const matchFiltro = 
       item.nomeItem.toLowerCase().includes(filtro.toLowerCase()) ||
       item.descricaoPerda.toLowerCase().includes(filtro.toLowerCase()) ||
@@ -196,6 +212,16 @@ const FerramentasPerdidasTab = ({
 
   return (
     <div className="space-y-6">
+      {/* Badge de visualização por setor */}
+      {!isAdmin && usuario?.setor && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            <strong>Visualização por setor:</strong> Você está vendo apenas as ferramentas perdidas do setor <strong>{usuario.setor}</strong>.
+          </p>
+        </div>
+      )}
+
       {/* Header com botão */}
       <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-6`}>
         <div className="flex items-center justify-between mb-6">
