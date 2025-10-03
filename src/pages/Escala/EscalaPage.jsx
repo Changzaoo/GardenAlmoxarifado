@@ -1169,7 +1169,7 @@ const EscalaPage = ({ usuarioAtual }) => {
           <div className="flex flex-col gap-2">
             <button
               onClick={() => setModalConfiguracoes(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               title="Gerenciar funcionários e configurar horários de escala"
             >
               <Settings className="w-5 h-5" />
@@ -1789,11 +1789,11 @@ const EscalaPage = ({ usuarioAtual }) => {
                         return (
                           <td
                             key={dia}
-                            className={`px-1 py-1 border-r border-gray-200 dark:border-gray-700 ${
+                            className={`px-2 py-2 border-r border-gray-200 dark:border-gray-700 ${
                               ehFimDeSemana ? 'bg-gray-100 dark:bg-gray-750' : ''
                             }`}
                           >
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-2">
                               <select
                                 value={tipo}
                                 onChange={(e) => marcarEscala(func.id, dia, e.target.value)}
@@ -1806,41 +1806,41 @@ const EscalaPage = ({ usuarioAtual }) => {
                                 ))}
                               </select>
                               
-                              <div className="flex gap-0.5 justify-center">
+                              <div className="flex gap-1.5 justify-center">
                                 <button
                                   onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === true ? null : true, e)}
-                                  className={`flex-1 px-1 py-0.5 rounded text-xs font-bold transition-all ${
+                                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${
                                     presencaStatus === true
-                                      ? 'bg-green-600 text-white scale-105'
-                                      : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-800'
+                                      ? 'bg-gradient-to-br from-green-500 to-green-600 text-white scale-105 shadow-green-500/50'
+                                      : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-green-50 hover:to-green-100 dark:hover:from-green-900 dark:hover:to-green-800'
                                   }`}
                                   title="Presente"
                                   >
-                                    <Check className="w-3 h-3 mx-auto" />
+                                    <Check className="w-5 h-5 mx-auto" />
                                   </button>
                                   <button
                                     onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === false ? null : false, e)}
-                                    className={`flex-1 px-1 py-0.5 rounded text-xs font-bold transition-all ${
+                                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${
                                       presencaStatus === false
-                                        ? 'bg-red-600 text-white scale-105'
-                                        : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-800'
+                                        ? 'bg-gradient-to-br from-red-500 to-red-600 text-white scale-105 shadow-red-500/50'
+                                        : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-red-50 hover:to-red-100 dark:hover:from-red-900 dark:hover:to-red-800'
                                     }`}
                                     title="Falta"
                                   >
-                                    <X className="w-3 h-3 mx-auto" />
+                                    <X className="w-5 h-5 mx-auto" />
                                 </button>
                               </div>
                               
                               <button
                                 onClick={() => abrirModalAnotacao(func.id, dia)}
-                                className={`w-full px-1 py-0.5 rounded text-xs transition-colors ${
+                                className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${
                                   temAnotacao
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                    : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-800'
+                                    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/50 hover:from-blue-600 hover:to-blue-700'
+                                    : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900 dark:hover:to-blue-800'
                                 }`}
                                 title={temAnotacao ? 'Ver anotação' : 'Adicionar anotação'}
                               >
-                                <MessageSquare className="w-3 h-3 mx-auto" />
+                                <MessageSquare className="w-5 h-5 mx-auto" />
                               </button>
                             </div>
                           </td>
@@ -1973,7 +1973,7 @@ const EscalaPage = ({ usuarioAtual }) => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <Settings className="w-6 h-6 text-purple-500" />
+                <Settings className="w-6 h-6 text-blue-500" />
                 Gerenciar Funcionários e Horários
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
@@ -1986,7 +1986,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                   onClick={() => setAbaGerenciar('horarios')}
                   className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all shadow-md ${
                     abaGerenciar === 'horarios'
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/50'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-blue-500/50'
                       : 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-700'
                   }`}
                 >
@@ -2020,7 +2020,7 @@ const EscalaPage = ({ usuarioAtual }) => {
               {abaGerenciar === 'horarios' && (
                 <div className="space-y-6">
                   {/* Info Box */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-xl p-4 shadow-lg">
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-2 border-blue-300 dark:border-blue-600 rounded-xl p-4 shadow-lg">
                     <p className="text-sm text-blue-900 dark:text-blue-200 leading-relaxed">
                       <strong className="flex items-center gap-2 mb-2">
                         <span className="text-blue-600 dark:text-blue-400">ℹ️</span> Atribuição de Horários
@@ -2040,7 +2040,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                   {/* Lista de Funcionários com Seleção de Horário */}
                   <div className="space-y-3">
                     <h4 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                      <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg px-3 py-1 text-sm">
+                      <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg px-3 py-1 text-sm">
                         👥 Atribuir Horários aos Funcionários
                       </span>
                     </h4>
