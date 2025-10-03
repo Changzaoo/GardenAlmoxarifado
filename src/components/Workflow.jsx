@@ -38,6 +38,7 @@ import EscalaPage from '../pages/Escala/EscalaPage';
 import { notifyNewLoan } from '../utils/notificationHelpers';
 import CadastroEmpresas from './Empresas/CadastroEmpresas';
 import CadastroSetores from './Setores/CadastroSetores';
+import GerenciamentoUnificado from './EmpresasSetores/GerenciamentoUnificado';
 import { encryptPassword, verifyPassword } from '../utils/crypto';
 import LoadingScreen from './common/LoadingScreen';
 // Icons
@@ -1106,6 +1107,138 @@ const PermissionDenied = ({ message = "Você não tem permissão para realizar e
   );
 };
 
+// Componente de tela de erro
+const ErrorScreen = ({ error, resetError }) => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-red-900 dark:to-orange-900 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 md:p-12 text-center">
+        {/* Logo WorkFlow com efeito de erro */}
+        <div className="mb-6 flex justify-center">
+          <div className="relative w-32 h-32">
+            {/* Glow vermelho pulsante */}
+            <div className="absolute inset-0 bg-red-500 rounded-full blur-3xl opacity-40 animate-pulse"></div>
+            
+            {/* Container do logo com borda vermelha */}
+            <div className="relative w-full h-full rounded-full bg-gradient-to-br from-red-500 to-orange-500 p-1 shadow-2xl">
+              <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 p-3 flex items-center justify-center">
+                <img 
+                  src="/logo.png" 
+                  alt="WorkFlow Error" 
+                  className="w-full h-full object-contain opacity-90 saturate-0"
+                  style={{
+                    filter: 'brightness(0.4) sepia(1) hue-rotate(-50deg) saturate(6)',
+                    animation: 'shake 0.5s ease-in-out infinite'
+                  }}
+                />
+              </div>
+            </div>
+            
+            {/* Ícone de alerta sobreposto */}
+            <div className="absolute -bottom-2 -right-2 bg-red-600 rounded-full p-2 shadow-lg border-4 border-white dark:border-gray-800">
+              <AlertCircle className="w-6 h-6 text-white" strokeWidth={3} />
+            </div>
+          </div>
+        </div>
+
+        {/* Título */}
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          Ops! Algo deu errado
+        </h1>
+
+        {/* Descrição */}
+        <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
+          O sistema não carregou como deveria. Não se preocupe, isso pode acontecer.
+        </p>
+
+        {/* Detalhes do erro (apenas em desenvolvimento) */}
+        {process.env.NODE_ENV === 'development' && error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl text-left">
+            <p className="text-sm font-mono text-red-800 dark:text-red-300 break-all">
+              {error.toString()}
+            </p>
+          </div>
+        )}
+
+        {/* Sugestões */}
+        <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            Tente uma destas soluções:
+          </h3>
+          <ul className="text-left space-y-2 text-gray-700 dark:text-gray-300">
+            <li className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <span>Recarregue a página (F5)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <span>Limpe o cache do navegador</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <span>Verifique sua conexão com a internet</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <span>Entre em contato com o suporte se o problema persistir</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Botões de ação */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-8 py-3.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-lg shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
+          >
+            Recarregar Página
+          </button>
+          
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+            className="px-8 py-3.5 rounded-full bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold text-lg border-2 border-gray-300 dark:border-gray-600 shadow-md transition-all duration-300 hover:scale-105 active:scale-95"
+          >
+            Limpar Cache
+          </button>
+        </div>
+
+        {/* Rodapé */}
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            WorkFlow System • Versão 2.0
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Error Boundary Class Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorScreen error={this.state.error} resetError={() => this.setState({ hasError: false, error: null })} />;
+    }
+
+    return this.props.children;
+  }
+}
+
 // Componente principal do sistema
 const AlmoxarifadoSistema = () => {
   const { usuario, logout, firebaseStatus } = useAuth();
@@ -1222,34 +1355,6 @@ const AlmoxarifadoSistema = () => {
       salvarEstadoApp();
     }
   }, [abaAtiva, usuario?.id, salvarEstadoApp]);
-
-  // Carregar estado ao montar componente
-  useEffect(() => {
-    if (usuario?.id && !permissaoAlterada) {
-      // Só restaura estado se NÃO houver mudança de permissão pendente
-      const estadoSalvo = carregarEstadoApp();
-      if (estadoSalvo && estadoSalvo.abaAtiva) {
-        console.log('🔄 Restaurando última página:', estadoSalvo.abaAtiva);
-        setAbaAtiva(estadoSalvo.abaAtiva);
-        
-        // Restaurar posição de scroll
-        setTimeout(() => {
-          if (estadoSalvo.scrollPosition) {
-            window.scrollTo(0, estadoSalvo.scrollPosition);
-          }
-        }, 100);
-      }
-    }
-  }, [usuario?.id, carregarEstadoApp, permissaoAlterada]);
-
-  // Define a aba inicial baseada no nível do usuário
-  useEffect(() => {
-    if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
-      setAbaAtiva('meu-perfil');
-    } else {
-      setAbaAtiva('dashboard');
-    }
-  }, [usuario?.nivel]);
 
   // Detectar mudanças de nível de permissão em tempo real
   useEffect(() => {
@@ -2423,16 +2528,18 @@ const AlmoxarifadoSistema = () => {
       permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
     },
     { 
-      id: 'empresas', 
-      nome: 'Empresas', 
+      id: 'empresas-setores', 
+      nome: 'Empresas & Setores', 
       icone: Building2,
-      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas Admin
-    },
-    { 
-      id: 'setores', 
-      nome: 'Setores', 
-      icone: Briefcase,
-      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas Admin
+      permissao: () => {
+        // Admin vê tudo, Gerente/Supervisor/Encarregado vê só do seu setor
+        const isAdmin = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
+        const isGerente = usuario?.nivel === NIVEIS_PERMISSAO.GERENTE || 
+                         usuario?.cargo?.toLowerCase().includes('gerente') ||
+                         usuario?.cargo?.toLowerCase().includes('supervisor') ||
+                         usuario?.cargo?.toLowerCase().includes('encarregado');
+        return isAdmin || isGerente;
+      }
     },
     
   ].filter(aba => aba.permissao());  
@@ -2443,9 +2550,56 @@ const AlmoxarifadoSistema = () => {
   // Permissão para aba legal (todos podem ver, nível 1 apenas visualiza)
   const podeEditarLegal = usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO;
 
+  // Obter aba favorita (item central) com verificação de permissões
+  const getAbaFavorita = () => {
+    if (!abas || abas.length === 0) return null;
+    
+    const favorita = abas.find(aba => aba.id === itemFavorito) || abas.find(aba => aba.id === 'emprestimos');
+    
+    // Verificar se usuário tem permissão para a aba favorita
+    if (favorita && favorita.permissao && typeof favorita.permissao === 'function') {
+      if (!favorita.permissao()) {
+        // Se não tem permissão, retornar a primeira aba com permissão
+        return abas.find(aba => {
+          if (aba.permissao && typeof aba.permissao === 'function') {
+            return aba.permissao();
+          }
+          return true;
+        });
+      }
+    }
+    
+    return favorita;
+  };
+
+  // Carregar estado ao montar componente - DEPOIS da definição de abas e getAbaFavorita
+  useEffect(() => {
+    if (!usuario?.id || permissaoAlterada) return;
+    
+    // Só restaura estado se NÃO houver mudança de permissão pendente
+    const estadoSalvo = carregarEstadoApp();
+    if (estadoSalvo && estadoSalvo.abaAtiva) {
+      console.log('🔄 Restaurando última página:', estadoSalvo.abaAtiva);
+      setAbaAtiva(estadoSalvo.abaAtiva);
+      
+      // Restaurar posição de scroll
+      setTimeout(() => {
+        if (estadoSalvo.scrollPosition) {
+          window.scrollTo(0, estadoSalvo.scrollPosition);
+        }
+      }, 100);
+    } else {
+      // Se não houver estado salvo, usar página favorita como inicial
+      const abaFavorita = getAbaFavorita();
+      const paginaInicial = abaFavorita ? abaFavorita.id : 'meu-perfil';
+      console.log('⭐ Iniciando com página inicial:', paginaInicial);
+      setAbaAtiva(paginaInicial);
+    }
+  }, [usuario?.id, carregarEstadoApp, permissaoAlterada, itemFavorito]);
+
   // Carregar configuração do menu personalizado do Firebase
   useEffect(() => {
-    if (!usuario?.id || !abas.length) return;
+    if (!usuario?.id || abas.length === 0) return;
     
     // Previne recarregar se já tem configuração
     if (menuPersonalizado !== null) return;
@@ -2571,7 +2725,7 @@ const AlmoxarifadoSistema = () => {
     return menuPersonalizado
       .sort((a, b) => a.ordem - b.ordem)
       .map(config => abasMap.get(config.id))
-      .filter(aba => aba !== undefined);
+      .filter(aba => aba !== undefined && aba.icone !== undefined); // Garantir que aba e icone existem
   };
 
   // Obter abas visíveis no menu inferior
@@ -2603,26 +2757,6 @@ const AlmoxarifadoSistema = () => {
       
       return config?.visivel && aba.id !== itemFavorito; // item favorito tem posição fixa no centro
     });
-  };
-
-  // Obter aba favorita (item central)
-  const getAbaFavorita = () => {
-    const favorita = abas.find(aba => aba.id === itemFavorito) || abas.find(aba => aba.id === 'emprestimos');
-    
-    // Verificar se usuário tem permissão para a aba favorita
-    if (favorita && favorita.permissao && typeof favorita.permissao === 'function') {
-      if (!favorita.permissao()) {
-        // Se não tem permissão, retornar a primeira aba com permissão
-        return abas.find(aba => {
-          if (aba.permissao && typeof aba.permissao === 'function') {
-            return aba.permissao();
-          }
-          return true;
-        });
-      }
-    }
-    
-    return favorita;
   };
 
   // Debug: Monitorar mudanças no menuPersonalizado e itemFavorito
@@ -2831,6 +2965,7 @@ const AlmoxarifadoSistema = () => {
             <div className="flex-1 p-3">
               <div className="grid grid-cols-4 gap-3">
                 {getAbasOrdenadas().map((aba) => {
+                  if (!aba || !aba.icone) return null; // Proteção contra abas sem ícone
                   const Icone = aba.icone;
                   return (
                     <button
@@ -2984,6 +3119,7 @@ const AlmoxarifadoSistema = () => {
             <div className="flex-1 overflow-y-auto py-2 px-2">
               <div className="space-y-1">
                 {abas.filter(aba => aba.permissao()).map((aba) => {
+                if (!aba || !aba.icone) return null; // Proteção contra abas sem ícone
                 const Icone = aba.icone;
                 return (
                   <button
@@ -3356,20 +3492,8 @@ const AlmoxarifadoSistema = () => {
               )
             )}
 
-            {abaAtiva === 'empresas' && (
-              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
-                <CadastroEmpresas />
-              ) : (
-                <PermissionDenied message="Você não tem permissão para gerenciar empresas." />
-              )
-            )}
-
-            {abaAtiva === 'setores' && (
-              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
-                <CadastroSetores />
-              ) : (
-                <PermissionDenied message="Você não tem permissão para gerenciar setores." />
-              )
+            {abaAtiva === 'empresas-setores' && (
+              <GerenciamentoUnificado usuarioAtual={usuario} />
             )}
 
             {abaAtiva === 'ranking' && (
@@ -3445,6 +3569,7 @@ const AlmoxarifadoSistema = () => {
           <div className="flex justify-around items-center">
             {/* Itens personalizáveis do menu inferior */}
             {getAbasMenuInferior().slice(0, 2).map((aba) => {
+              if (!aba || !aba.icone) return null; // Proteção contra abas sem ícone
               const Icone = aba.icone;
               return (
                 <button
@@ -3474,6 +3599,7 @@ const AlmoxarifadoSistema = () => {
             {/* Ícone favorito no centro com fundo azul circular - 20% para cima com efeitos minimalistas */}
             {(() => {
               const abaFavorita = getAbaFavorita();
+              if (!abaFavorita || !abaFavorita.icone) return null; // Proteção contra aba sem ícone
               const IconeFavorito = abaFavorita.icone;
               return (
                 <button
@@ -3503,6 +3629,7 @@ const AlmoxarifadoSistema = () => {
 
             {/* Próximos 1 ícone à direita */}
             {getAbasMenuInferior().slice(2, 3).map((aba) => {
+              if (!aba || !aba.icone) return null; // Proteção contra abas sem ícone
               const Icone = aba.icone;
               return (
                 <button
@@ -3890,20 +4017,22 @@ const Seed = () => {
   useSecurityBlock();
   
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <FuncionariosProvider>
-          <NotificationProvider>
-            <MessageNotificationProvider>
-              <AnalyticsProvider>
-                <App />
-                <PWAUpdateAvailable />
-              </AnalyticsProvider>
-            </MessageNotificationProvider>
-          </NotificationProvider>
-        </FuncionariosProvider>
-      </ToastProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <FuncionariosProvider>
+            <NotificationProvider>
+              <MessageNotificationProvider>
+                <AnalyticsProvider>
+                  <App />
+                  <PWAUpdateAvailable />
+                </AnalyticsProvider>
+              </MessageNotificationProvider>
+            </NotificationProvider>
+          </FuncionariosProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 

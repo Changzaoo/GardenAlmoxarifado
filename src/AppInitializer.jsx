@@ -111,14 +111,8 @@ const AppInitializer = ({ children }) => {
         }
       }
 
-      // Aguardar um momento com 100% visível
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Sistema pronto para uso
+      // Sistema pronto - transição imediata ao atingir 100%
       setSystemReady(true);
-      
-      // Fade out do loading
-      await new Promise(resolve => setTimeout(resolve, 300));
       setLoadingComplete(true);
     };
 

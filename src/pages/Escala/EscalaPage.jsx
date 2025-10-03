@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Info, Filter, Check, X, Eye, EyeOff, StickyNote, MessageSquare, Settings, Building2 } from 'lucide-react';
-import { collection, doc, setDoc, onSnapshot, deleteDoc, getDocs } from 'firebase/firestore';
+import { Calendar, ChevronLeft, ChevronRight, Info, Filter, Check, X, Eye, EyeOff, StickyNote, MessageSquare, Settings, Building2, Star, Phone, Clock, Trash2 } from 'lucide-react';
+import { collection, doc, setDoc, onSnapshot, deleteDoc, getDocs, addDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
+import { toast } from 'react-toastify';
 
 const EscalaPage = ({ usuarioAtual }) => {
   const [dataAtual, setDataAtual] = useState(new Date());
@@ -24,6 +25,18 @@ const EscalaPage = ({ usuarioAtual }) => {
   const [modalGerenciarFuncionarios, setModalGerenciarFuncionarios] = useState(false);
   const [modalConfiguracoes, setModalConfiguracoes] = useState(false);
   const [configuracoesEscala, setConfiguracoesEscala] = useState({});
+  const [funcionarioAtualIndex, setFuncionarioAtualIndex] = useState(0);
+  const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [dataCalendarioSelecionada, setDataCalendarioSelecionada] = useState(new Date());
+  const [modalResumo, setModalResumo] = useState({ aberto: false, tipo: null, dados: [] });
+  const [animacaoAtiva, setAnimacaoAtiva] = useState(null); // { tipo: 'presente'|'ausente'|'folga', origem: {x, y}, destino: {x, y} }
+  const [avaliacaoExpandida, setAvaliacaoExpandida] = useState(null);
+  const [novaAvaliacao, setNovaAvaliacao] = useState({ estrelas: 0, comentario: '' });
+  const [hoverEstrelas, setHoverEstrelas] = useState(0);
+  const [modalFiltros, setModalFiltros] = useState(false);
+  const [abaGerenciar, setAbaGerenciar] = useState('horarios'); // 'horarios' ou 'funcionarios'
+  const [horariosPersonalizados, setHorariosPersonalizados] = useState({});
+  const [novoHorario, setNovoHorario] = useState({ nome: '', descricao: '', setor: '' });
 
   // Tipos de escala com cores
   const TIPOS_ESCALA = {
@@ -95,6 +108,190 @@ const EscalaPage = ({ usuarioAtual }) => {
     { id: 'anual', label: 'Anual', dias: 365 }
   ];
 
+  // Feriados nacionais e municipais de Búzios
+  const FERIADOS_BUZIOS = {
+    2025: [
+      '01-01', // Ano Novo
+      '03-04', // Carnaval
+      '04-18', // Sexta-feira Santa
+      '04-21', // Tiradentes
+      '05-01', // Dia do Trabalho
+      '06-19', // Corpus Christi
+      '09-07', // Independência do Brasil
+      '10-12', // Nossa Senhora Aparecida
+      '10-15', // Dia do Professor (municipal)
+      '11-02', // Finados
+      '11-15', // Proclamação da República
+      '11-20', // Dia da Consciência Negra
+      '12-25'  // Natal
+    ],
+    2026: [
+      '01-01', // Ano Novo
+      '02-17', // Carnaval
+      '04-03', // Sexta-feira Santa
+      '04-21', // Tiradentes
+      '05-01', // Dia do Trabalho
+      '06-04', // Corpus Christi
+      '09-07', // Independência do Brasil
+      '10-12', // Nossa Senhora Aparecida
+      '10-15', // Dia do Professor (municipal)
+      '11-02', // Finados
+      '11-15', // Proclamação da República
+      '11-20', // Dia da Consciência Negra
+      '12-25'  // Natal
+    ]
+  };
+
+  // Verificar se é feriado
+  const ehFeriado = (ano, mes, dia) => {
+    const feriadosAno = FERIADOS_BUZIOS[ano] || [];
+    const dataFormatada = `${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+    return feriadosAno.includes(dataFormatada);
+  };
+
+  // Funções para WhatsApp
+  const formatarTelefone = (telefone) => {
+    if (!telefone) return '';
+    const cleaned = telefone.replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{2})(\d{4,5})(\d{4})$/);
+    if (match) {
+      return `(${match[1]}) ${match[2]}-${match[3]}`;
+    }
+    return telefone;
+  };
+
+  const getWhatsAppLink = (telefone) => {
+    if (!telefone) return '#';
+    const numero = telefone.replace(/\D/g, '');
+    return `https://wa.me/55${numero}`;
+  };
+
+  // Contar feriados no mês atual
+  const contarFeriadosNoMes = () => {
+    const ano = mesAtual.getFullYear();
+    const mes = mesAtual.getMonth() + 1;
+    let count = 0;
+    
+    diasDoMes.forEach(({ dia }) => {
+      if (ehFeriado(ano, mes, dia)) {
+        count++;
+      }
+    });
+    
+    return count;
+  };
+
+  // Calcular intervalo da semana
+  const calcularIntervaloSemana = () => {
+    const diaAtual = mesAtual.getDate();
+    const numeroSemana = Math.ceil(diaAtual / 7);
+    
+    // Calcular primeiro e último dia da semana
+    const primeiroDiaSemana = (numeroSemana - 1) * 7 + 1;
+    const ultimoDiaSemana = Math.min(numeroSemana * 7, new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0).getDate());
+    
+    // Criar datas para formatação
+    const dataInicio = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), primeiroDiaSemana);
+    const dataFim = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), ultimoDiaSemana);
+    
+    return {
+      numeroSemana,
+      primeiroDia: primeiroDiaSemana,
+      ultimoDia: ultimoDiaSemana,
+      textoIntervalo: `${primeiroDiaSemana} a ${ultimoDiaSemana} de ${mesAtual.toLocaleDateString('pt-BR', { month: 'long' })}`
+    };
+  };
+
+  // Obter detalhes dos feriados no mês
+  const obterDetalhesFeriados = () => {
+    const ano = mesAtual.getFullYear();
+    const mes = mesAtual.getMonth() + 1;
+    const feriados = [];
+    
+    const nomesFeriados = {
+      '01-01': 'Ano Novo',
+      '03-04': 'Carnaval',
+      '04-18': 'Sexta-feira Santa',
+      '04-21': 'Tiradentes',
+      '05-01': 'Dia do Trabalho',
+      '06-19': 'Corpus Christi',
+      '09-07': 'Independência do Brasil',
+      '10-12': 'Nossa Senhora Aparecida',
+      '10-15': 'Dia do Professor (Municipal Búzios)',
+      '11-02': 'Finados',
+      '11-15': 'Proclamação da República',
+      '11-20': 'Dia da Consciência Negra',
+      '12-25': 'Natal',
+      '02-17': 'Carnaval (2026)',
+      '04-03': 'Sexta-feira Santa (2026)',
+      '06-04': 'Corpus Christi (2026)'
+    };
+    
+    diasDoMes.forEach(({ dia }) => {
+      if (ehFeriado(ano, mes, dia)) {
+        const dataFormatada = `${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+        const dataCompleta = new Date(ano, mes - 1, dia);
+        const diaSemana = dataCompleta.toLocaleDateString('pt-BR', { weekday: 'long' });
+        
+        feriados.push({
+          dia,
+          nome: nomesFeriados[dataFormatada] || 'Feriado',
+          diaSemana: diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1),
+          data: `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${ano}`
+        });
+      }
+    });
+    
+    return feriados;
+  };
+
+  // Obter dias úteis detalhados
+  const obterDiasUteis = () => {
+    return diasDoMes
+      .filter(d => !d.ehFimDeSemana)
+      .map(({ dia, diaSemana }) => ({
+        dia,
+        diaSemana,
+        data: `${String(dia).padStart(2, '0')}/${String(mesAtual.getMonth() + 1).padStart(2, '0')}/${mesAtual.getFullYear()}`
+      }));
+  };
+
+  // Obter fins de semana detalhados
+  const obterFinsDeSemana = () => {
+    return diasDoMes
+      .filter(d => d.ehFimDeSemana)
+      .map(({ dia, diaSemana }) => ({
+        dia,
+        diaSemana,
+        data: `${String(dia).padStart(2, '0')}/${String(mesAtual.getMonth() + 1).padStart(2, '0')}/${mesAtual.getFullYear()}`
+      }));
+  };
+
+  // Abrir modal de resumo
+  const abrirModalResumo = (tipo) => {
+    let dados = [];
+    let titulo = '';
+    
+    switch(tipo) {
+      case 'feriados':
+        dados = obterDetalhesFeriados();
+        titulo = 'Feriados do Mês';
+        break;
+      case 'uteis':
+        dados = obterDiasUteis();
+        titulo = 'Dias Úteis do Mês';
+        break;
+      case 'finsdesemana':
+        dados = obterFinsDeSemana();
+        titulo = 'Fins de Semana do Mês';
+        break;
+      default:
+        return;
+    }
+    
+    setModalResumo({ aberto: true, tipo, dados, titulo });
+  };
+
   // Carregar empresas
   useEffect(() => {
     const carregarEmpresas = async () => {
@@ -110,6 +307,31 @@ const EscalaPage = ({ usuarioAtual }) => {
       }
     };
     carregarEmpresas();
+  }, []);
+
+  // Carregar horários personalizados do Firebase
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'horarios_personalizados'),
+      (snapshot) => {
+        const horariosData = {};
+        snapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.ativo !== false) {
+            horariosData[doc.id] = {
+              id: doc.id,
+              ...data
+            };
+          }
+        });
+        setHorariosPersonalizados(horariosData);
+      },
+      (error) => {
+        console.error('Erro ao carregar horários personalizados:', error);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   // Carregar funcionários
@@ -240,6 +462,17 @@ const EscalaPage = ({ usuarioAtual }) => {
     return () => unsubscribe();
   }, [mesAtual]);
 
+  // Função para ocultar/mostrar funcionário
+  const toggleOcultarFuncionario = (funcId) => {
+    setFuncionariosOcultos(prev => {
+      if (prev.includes(funcId)) {
+        return prev.filter(id => id !== funcId);
+      } else {
+        return [...prev, funcId];
+      }
+    });
+  };
+
   // Verificar permissão
   const temPermissao = useMemo(() => {
     if (!usuarioAtual) return false;
@@ -262,6 +495,13 @@ const EscalaPage = ({ usuarioAtual }) => {
     
     // Remover funcionários ocultos
     filtrados = filtrados.filter(f => !funcionariosOcultos.includes(f.id));
+    
+    // Ordenar alfabeticamente por nome
+    filtrados.sort((a, b) => {
+      const nomeA = (a.nome || '').toLowerCase();
+      const nomeB = (b.nome || '').toLowerCase();
+      return nomeA.localeCompare(nomeB, 'pt-BR');
+    });
     
     return filtrados;
   }, [funcionarios, empresaSelecionada, setorSelecionado, funcionariosOcultos]);
@@ -347,10 +587,62 @@ const EscalaPage = ({ usuarioAtual }) => {
   };
 
   // Marcar escala
-  const marcarEscala = async (funcionarioId, dia, tipo) => {
+  const marcarEscala = async (funcionarioId, dia, tipo, eventoClick) => {
     if (!temPermissao) {
-      alert('Você não tem permissão para editar a escala.');
+      toast.warning('Você não tem permissão para editar a escala.', {
+        position: 'top-right',
+        autoClose: 3000
+      });
       return;
+    }
+
+    // Ativar animação de partículas para FOLGA
+    if (tipo === 'FOLGA' && eventoClick) {
+      const botaoRect = eventoClick.currentTarget.getBoundingClientRect();
+      const origemX = botaoRect.left + botaoRect.width / 2;
+      const origemY = botaoRect.top + botaoRect.height / 2;
+
+      // Primeiro: animar até o badge de escala
+      const escalaCard = document.querySelector(`[data-funcionario-dia="${funcionarioId}-${dia}"]`);
+      let destinoX = window.innerWidth / 2;
+      let destinoY = 100;
+      
+      if (escalaCard) {
+        const escalaRect = escalaCard.getBoundingClientRect();
+        destinoX = escalaRect.left + escalaRect.width / 2;
+        destinoY = escalaRect.top + escalaRect.height / 2;
+      }
+
+      setAnimacaoAtiva({
+        tipo: 'folga',
+        origem: { x: origemX, y: origemY },
+        destino: { x: destinoX, y: destinoY }
+      });
+
+      // Após animação para escala, animar para estatística de folgas
+      setTimeout(() => {
+        const statElement = document.querySelector(`[data-stat-folga="${funcionarioId}"]`);
+        
+        if (statElement && escalaCard) {
+          const escalaRect = escalaCard.getBoundingClientRect();
+          const statRect = statElement.getBoundingClientRect();
+          
+          setAnimacaoAtiva({
+            tipo: 'folga',
+            origem: { 
+              x: escalaRect.left + escalaRect.width / 2, 
+              y: escalaRect.top + escalaRect.height / 2 
+            },
+            destino: { 
+              x: statRect.left + statRect.width / 2, 
+              y: statRect.top + statRect.height / 2 
+            }
+          });
+        }
+      }, 600);
+
+      // Limpar animação após completar tudo
+      setTimeout(() => setAnimacaoAtiva(null), 2000);
     }
 
     try {
@@ -369,15 +661,72 @@ const EscalaPage = ({ usuarioAtual }) => {
       await setDoc(doc(db, 'escalas', mesAno, 'registros', docId), escalaData);
     } catch (error) {
       console.error('Erro ao marcar escala:', error);
-      alert('Erro ao salvar escala. Tente novamente.');
+      toast.error('Erro ao salvar escala. Tente novamente.', {
+        position: 'top-right',
+        autoClose: 4000
+      });
     }
   };
 
   // Marcar presença
-  const marcarPresenca = async (funcionarioId, dia, presente) => {
+  const marcarPresenca = async (funcionarioId, dia, presente, eventoClick) => {
     if (!temPermissao) {
-      alert('Você não tem permissão para marcar presença.');
+      toast.warning('Você não tem permissão para marcar presença.', {
+        position: 'top-right',
+        autoClose: 3000
+      });
       return;
+    }
+
+    // Ativar animação de partículas
+    if (presente !== null && eventoClick) {
+      const botaoRect = eventoClick.currentTarget.getBoundingClientRect();
+      const origemX = botaoRect.left + botaoRect.width / 2;
+      const origemY = botaoRect.top + botaoRect.height / 2;
+
+      // Primeiro: animar até o badge de escala
+      const escalaCard = document.querySelector(`[data-funcionario-dia="${funcionarioId}-${dia}"]`);
+      let destinoX = window.innerWidth / 2;
+      let destinoY = 100;
+      
+      if (escalaCard) {
+        const escalaRect = escalaCard.getBoundingClientRect();
+        destinoX = escalaRect.left + escalaRect.width / 2;
+        destinoY = escalaRect.top + escalaRect.height / 2;
+      }
+
+      setAnimacaoAtiva({
+        tipo: presente ? 'presente' : 'ausente',
+        origem: { x: origemX, y: origemY },
+        destino: { x: destinoX, y: destinoY }
+      });
+
+      // Após animação para escala, animar para estatística
+      setTimeout(() => {
+        const statElement = presente 
+          ? document.querySelector(`[data-stat-trabalho="${funcionarioId}"]`)
+          : document.querySelector(`[data-stat-ausente="${funcionarioId}"]`);
+        
+        if (statElement && escalaCard) {
+          const escalaRect = escalaCard.getBoundingClientRect();
+          const statRect = statElement.getBoundingClientRect();
+          
+          setAnimacaoAtiva({
+            tipo: presente ? 'presente' : 'ausente',
+            origem: { 
+              x: escalaRect.left + escalaRect.width / 2, 
+              y: escalaRect.top + escalaRect.height / 2 
+            },
+            destino: { 
+              x: statRect.left + statRect.width / 2, 
+              y: statRect.top + statRect.height / 2 
+            }
+          });
+        }
+      }, 600);
+
+      // Limpar animação após completar tudo
+      setTimeout(() => setAnimacaoAtiva(null), 2000);
     }
 
     try {
@@ -400,7 +749,10 @@ const EscalaPage = ({ usuarioAtual }) => {
       }
     } catch (error) {
       console.error('Erro ao marcar presença:', error);
-      alert('Erro ao salvar presença. Tente novamente.');
+      toast.error('Erro ao salvar presença. Tente novamente.', {
+        position: 'top-right',
+        autoClose: 4000
+      });
     }
   };
 
@@ -413,10 +765,85 @@ const EscalaPage = ({ usuarioAtual }) => {
     return presenca?.presente;
   };
 
+  // Salvar avaliação do funcionário
+  const salvarAvaliacao = async (funcionarioId, funcionarioNome) => {
+    if (!temPermissao) {
+      toast.warning('Você não tem permissão para avaliar funcionários.', {
+        position: 'top-right',
+        autoClose: 3000
+      });
+      return;
+    }
+
+    if (novaAvaliacao.estrelas === 0) {
+      toast.warning('Por favor, selecione uma avaliação em estrelas', {
+        position: 'top-right',
+        autoClose: 3000
+      });
+      return;
+    }
+
+    try {
+      const avaliacoesRef = collection(db, 'avaliacoes');
+      const dataAtual = new Date();
+      
+      const avaliacaoData = {
+        funcionarioId: String(funcionarioId),
+        funcionarioNome: funcionarioNome,
+        supervisorId: usuarioAtual?.uid || '',
+        supervisorNome: usuarioAtual?.nome || usuarioAtual?.email || 'Sistema',
+        data: dataAtual.toISOString().split('T')[0],
+        hora: `${String(dataAtual.getHours()).padStart(2, '0')}:${String(dataAtual.getMinutes()).padStart(2, '0')}`,
+        estrelas: Number(novaAvaliacao.estrelas),
+        comentario: novaAvaliacao.comentario.trim(),
+        status: 'ativa',
+        tipo: 'avaliacao_supervisor',
+        tipoAvaliacao: novaAvaliacao.estrelas >= 4 ? 'positiva' : novaAvaliacao.estrelas <= 2 ? 'negativa' : 'neutra',
+        anonima: false,
+        dataCriacao: serverTimestamp()
+      };
+
+      await addDoc(avaliacoesRef, avaliacaoData);
+
+      // Atualizar pontos do funcionário (estrelas × 2)
+      const funcionarioRef = doc(db, 'funcionarios', funcionarioId);
+      const funcionarioSnap = await getDoc(funcionarioRef);
+      
+      if (funcionarioSnap.exists()) {
+        const funcionarioData = funcionarioSnap.data();
+        const pontosAtuais = funcionarioData.pontos || 0;
+        const novosPontos = pontosAtuais + (novaAvaliacao.estrelas * 2);
+        
+        await updateDoc(funcionarioRef, {
+          pontos: novosPontos
+        });
+      }
+
+      toast.success('Avaliação salva com sucesso! +' + (novaAvaliacao.estrelas * 2) + ' pontos', {
+        position: 'top-right',
+        autoClose: 3000
+      });
+
+      // Resetar formulário
+      setNovaAvaliacao({ estrelas: 0, comentario: '' });
+      setAvaliacaoExpandida(null);
+      setHoverEstrelas(0);
+    } catch (error) {
+      console.error('Erro ao salvar avaliação:', error);
+      toast.error('Erro ao salvar avaliação. Tente novamente.', {
+        position: 'top-right',
+        autoClose: 3000
+      });
+    }
+  };
+
   // Salvar anotação de funcionário
   const salvarAnotacaoFuncionario = async (funcionarioId, dia, anotacao) => {
     if (!temPermissao) {
-      alert('Você não tem permissão para adicionar anotações.');
+      toast.warning('Você não tem permissão para adicionar anotações.', {
+        position: 'top-right',
+        autoClose: 3000
+      });
       return;
     }
 
@@ -439,14 +866,20 @@ const EscalaPage = ({ usuarioAtual }) => {
       setModalAnotacao({ aberto: false, tipo: null, funcionarioId: null, dia: null, anotacao: '' });
     } catch (error) {
       console.error('Erro ao salvar anotação:', error);
-      alert('Erro ao salvar anotação. Tente novamente.');
+      toast.error('Erro ao salvar anotação. Tente novamente.', {
+        position: 'top-right',
+        autoClose: 4000
+      });
     }
   };
 
   // Salvar anotação do dia
   const salvarAnotacaoDia = async (dia, anotacao) => {
     if (!temPermissao) {
-      alert('Você não tem permissão para adicionar anotações.');
+      toast.warning('Você não tem permissão para adicionar anotações.', {
+        position: 'top-right',
+        autoClose: 3000
+      });
       return;
     }
 
@@ -467,7 +900,10 @@ const EscalaPage = ({ usuarioAtual }) => {
       setModalAnotacaoDia({ aberto: false, dia: null, anotacao: '' });
     } catch (error) {
       console.error('Erro ao salvar anotação do dia:', error);
-      alert('Erro ao salvar anotação. Tente novamente.');
+      toast.error('Erro ao salvar anotação. Tente novamente.', {
+        position: 'top-right',
+        autoClose: 4000
+      });
     }
   };
 
@@ -528,10 +964,20 @@ const EscalaPage = ({ usuarioAtual }) => {
         atualizadoPor: usuarioAtual?.email || 'Sistema',
         atualizadoEm: new Date()
       });
-      alert('Configuração salva com sucesso!');
+      toast.success('Configuração salva com sucesso!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
     } catch (error) {
       console.error('Erro ao salvar configuração:', error);
-      alert('Erro ao salvar configuração. Tente novamente.');
+      toast.error('Erro ao salvar configuração. Tente novamente.', {
+        position: 'top-right',
+        autoClose: 4000
+      });
     }
   };
 
@@ -558,8 +1004,17 @@ const EscalaPage = ({ usuarioAtual }) => {
     let atestados = 0;
     let presencas = 0;
     let faltas = 0;
+    let feriados = 0;
+
+    const ano = mesAtual.getFullYear();
+    const mes = mesAtual.getMonth() + 1;
 
     diasDoMes.forEach(({ dia }) => {
+      // Verificar se é feriado
+      if (ehFeriado(ano, mes, dia)) {
+        feriados++;
+      }
+
       const tipo = obterTipoEscala(funcionarioId, dia);
       if (tipo === 'M' || tipo === 'M1' || tipo === 'M4') diasTrabalhados++;
       else if (tipo === 'FOLGA' || tipo === 'FOLGA_EXTRA') folgas++;
@@ -571,7 +1026,7 @@ const EscalaPage = ({ usuarioAtual }) => {
       else if (presencaStatus === false) faltas++;
     });
 
-    return { diasTrabalhados, folgas, ferias, atestados, presencas, faltas };
+    return { diasTrabalhados, folgas, ferias, atestados, presencas, faltas, feriados };
   };
 
   if (loading) {
@@ -621,202 +1076,636 @@ const EscalaPage = ({ usuarioAtual }) => {
             </p>
           </div>
 
-          {/* Navegação de Período */}
-          <div className="flex items-center gap-4">
+          {/* Seletor de Data com Calendário */}
+          <div className="flex items-center justify-center">
             <button
-              onClick={() => navegarMes(-1)}
-              className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              title={modoVisualizacao === 'diario' ? 'Dia anterior' : modoVisualizacao === 'semanal' ? 'Semana anterior' : 'Mês anterior'}
+              onClick={() => setMostrarCalendario(true)}
+              className="px-6 py-3 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors shadow-lg"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+              <div className="text-center min-w-[200px]">
+                <div className="text-2xl font-bold">
+                  {modoVisualizacao === 'diario' 
+                    ? mesAtual.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })
+                    : modoVisualizacao === 'semanal'
+                    ? `Semana ${calcularIntervaloSemana().numeroSemana}`
+                    : mesAtual.toLocaleDateString('pt-BR', { month: 'long' })
+                  }
+                </div>
+                <div className="text-sm text-gray-300">
+                  {modoVisualizacao === 'semanal' 
+                    ? calcularIntervaloSemana().textoIntervalo
+                    : mesAtual.getFullYear()
+                  }
+                </div>
+              </div>
             </button>
-            
-            <div className="text-center min-w-[200px]">
-              <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                {modoVisualizacao === 'diario' 
-                  ? mesAtual.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })
-                  : modoVisualizacao === 'semanal'
-                  ? `Semana ${Math.ceil(mesAtual.getDate() / 7)}`
-                  : mesAtual.toLocaleDateString('pt-BR', { month: 'long' })
-                }
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                {mesAtual.getFullYear()}
-              </div>
-            </div>
+          </div>
+        </div>
 
+        {/* Resumo do Mês */}
+        <div className="mt-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-750 rounded-lg p-3 shadow-md">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <button
-              onClick={() => navegarMes(1)}
-              className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              title={modoVisualizacao === 'diario' ? 'Próximo dia' : modoVisualizacao === 'semanal' ? 'Próxima semana' : 'Próximo mês'}
+              onClick={() => setModalResumo({ aberto: true, tipo: 'diasmes', dados: diasDoMes, titulo: 'Dias no Mês' })}
+              className="bg-white dark:bg-gray-700 rounded-lg p-2 text-center hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
             >
-              <ChevronRight className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                Dias no Mês
+              </div>
+              <div className="text-lg font-bold text-gray-800 dark:text-white">
+                {diasDoMes.length}
+              </div>
+            </button>
+            <button
+              onClick={() => abrirModalResumo('uteis')}
+              className="bg-white dark:bg-gray-700 rounded-lg p-2 text-center hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+            >
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                Dias Úteis
+              </div>
+              <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                {diasDoMes.filter(d => !d.ehFimDeSemana).length}
+              </div>
+            </button>
+            <button
+              onClick={() => abrirModalResumo('finsdesemana')}
+              className="bg-white dark:bg-gray-700 rounded-lg p-2 text-center hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+            >
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                Fins de Semana
+              </div>
+              <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {diasDoMes.filter(d => d.ehFimDeSemana).length}
+              </div>
+            </button>
+            <button
+              onClick={() => abrirModalResumo('feriados')}
+              className="bg-white dark:bg-gray-700 rounded-lg p-2 text-center hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+            >
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                Feriados
+              </div>
+              <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                {contarFeriadosNoMes()}
+              </div>
             </button>
           </div>
         </div>
 
         {/* Filtros e Controles */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Filtro de Visualização */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Filtro de Visualização - Dropdown Único */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Modo de Visualização
             </label>
-            <div className="flex gap-2">
+            <select
+              value={modoVisualizacao}
+              onChange={(e) => setModoVisualizacao(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="diario">📅 Diário</option>
+              <option value="semanal">📆 Semanal</option>
+              <option value="mensal">🗓️ Mensal</option>
+            </select>
+          </div>
+
+          {/* Botão de Filtros - Apenas para Administrador */}
+          {usuarioAtual?.nivel === 4 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Filtros Avançados
+              </label>
               <button
-                onClick={() => setModoVisualizacao('diario')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  modoVisualizacao === 'diario'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                onClick={() => setModalFiltros(true)}
+                className={`w-full px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                  empresaSelecionada !== 'todas' || setorSelecionado !== 'todos'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 ring-2 ring-blue-300'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                 }`}
               >
-                Diário
-              </button>
-              <button
-                onClick={() => setModoVisualizacao('semanal')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  modoVisualizacao === 'semanal'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                Semanal
-              </button>
-              <button
-                onClick={() => setModoVisualizacao('mensal')}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  modoVisualizacao === 'mensal'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                Mensal
+                <Filter className="w-5 h-5" />
+                <span>Filtrar Empresa/Setor</span>
+                {(empresaSelecionada !== 'todas' || setorSelecionado !== 'todos') && (
+                  <span className="bg-white text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                    ✓
+                  </span>
+                )}
               </button>
             </div>
-            <button
-              onClick={() => setMesAtual(new Date())}
-              className="w-full mt-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              title="Voltar para hoje"
-            >
-              Hoje
-            </button>
-          </div>
+          )}
 
-          {/* Filtro de Empresa */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Filtrar por Empresa
-            </label>
-            <select
-              value={empresaSelecionada}
-              onChange={(e) => {
-                setEmpresaSelecionada(e.target.value);
-                setSetorSelecionado('todos');
-              }}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600"
-            >
-              <option value="todas">Todas as Empresas</option>
-              {empresas.map(empresa => (
-                <option key={empresa.id} value={empresa.id}>{empresa.nome}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Filtro de Setor */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Filtrar por Setor
-            </label>
-            <select
-              value={setorSelecionado}
-              onChange={(e) => setSetorSelecionado(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600"
-            >
-              <option value="todos">Todos os Setores</option>
-              {setoresFiltrados.map(setor => (
-                <option key={setor} value={setor}>{setor}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Botões de Ação */}
+          {/* Botão Unificado - Gerenciar */}
           <div className="flex flex-col gap-2">
             <button
-              onClick={() => setModalGerenciarFuncionarios(true)}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                funcionariosOcultos.length > 0
-                  ? 'bg-orange-600 text-white hover:bg-orange-700'
-                  : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500'
-              }`}
-              title="Gerenciar funcionários visíveis"
+              onClick={() => setModalConfiguracoes(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              title="Gerenciar funcionários e configurar horários de escala"
             >
-              <Filter className="w-5 h-5" />
-              <span className="text-sm">Funcionários</span>
-              {funcionariosOcultos.length > 0 && (
-                <span className="bg-white text-orange-600 px-2 py-0.5 rounded-full text-xs font-bold">
-                  {funcionariosOcultos.length}
-                </span>
-              )}
+              <Settings className="w-5 h-5" />
+              <span className="text-sm">Gerenciar Funcionários e Horários</span>
             </button>
 
-            <div className="flex gap-2">
+            {funcionariosOcultos.length > 0 && (
               <button
-                onClick={() => setModalConfiguracoes(true)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                title="Configurar escalas padrão"
+                onClick={() => setFuncionariosOcultos([])}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                title="Mostrar todos os funcionários"
               >
-                <Settings className="w-5 h-5" />
+                <Eye className="w-5 h-5" />
+                <span className="text-sm">Mostrar Todos ({funcionariosOcultos.length})</span>
               </button>
-              
-              <button
-                onClick={() => setMostrarLegenda(!mostrarLegenda)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                title={mostrarLegenda ? 'Ocultar legenda' : 'Mostrar legenda'}
-              >
-                <Info className="w-5 h-5" />
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Legenda */}
-      {mostrarLegenda && (
+      {/* Visualização em Carrossel (Modo Diário Mobile) */}
+      {modoVisualizacao === 'diario' && window.innerWidth < 768 && funcionariosFiltrados.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-            Legenda de Escalas
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(TIPOS_ESCALA).map(([key, tipo]) => (
-              key !== 'VAZIO' && (
-                <div key={key} className="flex items-start gap-3">
-                  <div className={`px-3 py-1 rounded ${tipo.cor} ${tipo.corTexto} font-bold text-sm min-w-[80px] text-center`}>
-                    {tipo.label}
+          {/* Navegação do Carrossel */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setFuncionarioAtualIndex(prev => Math.max(0, prev - 1))}
+              disabled={funcionarioAtualIndex === 0}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            
+            <div className="text-center flex-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {funcionarioAtualIndex + 1} de {funcionariosFiltrados.length}
+              </p>
+            </div>
+
+            <button
+              onClick={() => setFuncionarioAtualIndex(prev => Math.min(funcionariosFiltrados.length - 1, prev + 1))}
+              disabled={funcionarioAtualIndex === funcionariosFiltrados.length - 1}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Card do Funcionário */}
+          {(() => {
+            const func = funcionariosFiltrados[funcionarioAtualIndex];
+            if (!func) return null;
+            
+            const dia = mesAtual.getDate();
+            const tipo = obterTipoEscala(func.id, dia);
+            const config = TIPOS_ESCALA[tipo] || TIPOS_ESCALA.VAZIO;
+            const presencaStatus = obterPresenca(func.id, dia);
+            const stats = calcularEstatisticas(func.id);
+
+            return (
+              <div className="space-y-2">
+                {/* Info do Funcionário com Foto - COMPACTO */}
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg p-2 border border-green-200 dark:border-green-700">
+                  <div className="flex items-center gap-2">
+                    {/* Foto de Perfil - MENOR */}
+                    <div className="flex-shrink-0">
+                      {func.photoURL ? (
+                        <img
+                          src={func.photoURL}
+                          alt={func.nome}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center border-2 border-white dark:border-gray-700 shadow">
+                          <span className="text-lg font-bold text-white">
+                            {func.nome?.charAt(0)?.toUpperCase() || '?'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Coluna Central - Nome e Badges - COMPACTO */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold text-gray-800 dark:text-white truncate">
+                        {func.nome}
+                      </h3>
+                      
+                      {/* Badges de cargo e setor - MENORES */}
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        <span className="px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-medium">
+                          {func.cargo || 'N/A'}
+                        </span>
+                        {func.setor && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-purple-500 text-white text-[10px] font-medium">
+                            {func.setor}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Coluna Direita - Escala e Horário - COMPACTO */}
+                    <div className="flex-shrink-0 text-right">
+                      <div 
+                        data-funcionario-dia={`${func.id}-${dia}`}
+                        className={`px-2 py-1 rounded text-[10px] font-bold mb-0.5 ${config.cor} ${config.corTexto}`}
+                      >
+                        {config.label}
+                      </div>
+                      <div className="text-[9px] text-gray-600 dark:text-gray-400 font-medium">
+                        {tipo === 'M' && '07:20-16:20'}
+                        {tipo === 'M1' && '07:00-15:20'}
+                        {tipo === 'M4' && '06:00-15:40'}
+                        {(tipo === 'FOLGA' || tipo === 'FOLGA_EXTRA') && 'Folga'}
+                        {tipo === 'FERIAS' && 'Férias'}
+                        {tipo === 'ATESTADO' && 'Atestado'}
+                        {tipo === 'VAZIO' && '-'}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {tipo.descricao}
-                    </p>
+                  
+                  {/* Estatísticas compactas - MAIS COMPACTO */}
+                  <div className="grid grid-cols-3 gap-1 text-[10px] mt-2 pt-2 border-t border-green-200 dark:border-green-700">
+                    <div 
+                      data-stat-trabalho={`${func.id}`}
+                      className="flex items-center gap-0.5 text-green-600 dark:text-green-400"
+                    >
+                      <span className="font-semibold">{stats.diasTrabalhados}</span>
+                      <span className="truncate">Trabalho</span>
+                    </div>
+                    <div 
+                      data-stat-folga={`${func.id}`}
+                      className="flex items-center gap-0.5 text-yellow-600 dark:text-yellow-400"
+                    >
+                      <span className="font-semibold">{stats.folgas}</span>
+                      <span className="truncate">Folgas</span>
+                    </div>
+                    <div className="flex items-center gap-0.5 text-orange-600 dark:text-orange-400">
+                      <span className="font-semibold">{stats.feriados}</span>
+                      <span className="truncate">Feriados</span>
+                    </div>
+                    <div className="flex items-center gap-0.5 text-green-600 dark:text-green-400">
+                      <span className="font-semibold">{stats.presencas}</span>
+                      <span className="truncate">✓ Pres.</span>
+                    </div>
+                    <div className="flex items-center gap-0.5 text-red-600 dark:text-red-400">
+                      <span className="font-semibold">{stats.faltas}</span>
+                      <span className="truncate">✗ Faltas</span>
+                    </div>
+                    <div className="flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
+                      <span className="font-semibold">{stats.ferias}</span>
+                      <span className="truncate">Férias</span>
+                    </div>
                   </div>
                 </div>
-              )
-            ))}
+
+                {/* Anotação do Funcionário - COMPACTO */}
+                <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-2">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Anotação
+                  </label>
+                  <button
+                    onClick={() => abrirModalAnotacao(func.id, dia)}
+                    className={`w-full px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${
+                      obterAnotacaoFuncionario(func.id, dia)
+                        ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                        : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                    }`}
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    {obterAnotacaoFuncionario(func.id, dia) ? 'Ver/Editar' : 'Adicionar'}
+                  </button>
+                </div>
+
+                {/* WhatsApp - Contato Rápido - COMPACTO */}
+                {func.telefone && (
+                  <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-2">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Contato
+                    </label>
+                    <a
+                      href={getWhatsAppLink(func.telefone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-2 transition-all group"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                        <Phone className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">WhatsApp</p>
+                        <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                          {formatarTelefone(func.telefone)}
+                        </p>
+                      </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 flex-shrink-0">
+                        <path fill="#25D366" d="M256.064,0h-0.128C114.784,0,0,114.816,0,256c0,56,18.048,107.904,48.736,150.048l-31.904,95.104  l98.4-31.456C155.712,496.512,204,512,256.064,512C397.216,512,512,397.152,512,256S397.216,0,256.064,0z"/>
+                        <path fill="#FFFFFF" d="M405.024,361.504c-6.176,17.44-30.688,31.904-50.24,36.128c-13.376,2.848-30.848,5.12-89.664-19.264  c-75.232-31.168-123.68-107.616-127.456-112.576c-3.616-4.96-30.4-40.48-30.4-77.216s18.656-54.624,26.176-62.304  c6.176-6.304,16.384-9.184,26.176-9.184c3.168,0,6.016,0.16,8.576,0.288c7.52,0.32,11.296,0.768,16.256,12.64  c6.176,14.88,21.216,51.616,23.008,55.392c1.824,3.776,3.648,8.896,1.088,13.856c-2.4,5.12-4.512,7.392-8.288,11.744  c-3.776,4.352-7.36,7.68-11.136,12.352c-3.456,4.064-7.36,8.416-3.008,15.936c4.352,7.36,19.392,31.904,41.536,51.616  c28.576,25.44,51.744,33.568,60.032,37.024c6.176,2.56,13.536,1.952,18.048-2.848c5.728-6.176,12.8-16.416,20-26.496  c5.12-7.232,11.584-8.128,18.368-5.568c6.912,2.4,43.488,20.48,51.008,24.224c7.52,3.776,12.48,5.568,14.304,8.736  C411.2,329.152,411.2,344.032,405.024,361.504z"/>
+                      </svg>
+                    </a>
+                  </div>
+                )}
+
+                {/* Avaliação do Funcionário - COMPACTO */}
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-2 border border-blue-200 dark:border-blue-700">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-blue-500" />
+                      Avaliar
+                    </label>
+                    <button
+                      onClick={() => setAvaliacaoExpandida(avaliacaoExpandida === func.id ? null : func.id)}
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 transition-colors text-xs"
+                    >
+                      {avaliacaoExpandida === func.id ? '▲' : '▼'}
+                    </button>
+                  </div>
+
+                  {avaliacaoExpandida === func.id && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top duration-300">
+                      {/* Sistema de Estrelas - COMPACTO */}
+                      <div>
+                        <label className="block text-[10px] font-medium text-blue-700 dark:text-blue-300 mb-1">
+                          Avaliação (1-5 estrelas)
+                        </label>
+                        <div className="flex gap-1 justify-center bg-white dark:bg-gray-800 rounded-lg p-2">
+                          {[1, 2, 3, 4, 5].map((estrela) => (
+                            <button
+                              key={estrela}
+                              type="button"
+                              onClick={() => setNovaAvaliacao({ ...novaAvaliacao, estrelas: estrela })}
+                              onMouseEnter={() => setHoverEstrelas(estrela)}
+                              onMouseLeave={() => setHoverEstrelas(0)}
+                              className="transition-all transform hover:scale-110 focus:outline-none focus:scale-110"
+                            >
+                              <Star
+                                className={`w-6 h-6 transition-all ${
+                                  estrela <= (hoverEstrelas || novaAvaliacao.estrelas)
+                                    ? 'fill-yellow-400 text-yellow-400 drop-shadow-lg'
+                                    : 'text-gray-300 dark:text-gray-600'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        {novaAvaliacao.estrelas > 0 && (
+                          <p className="text-[10px] text-center mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                            +{novaAvaliacao.estrelas * 2} pts • {
+                              novaAvaliacao.estrelas === 5 ? '⭐ Excelente!' :
+                              novaAvaliacao.estrelas === 4 ? '😊 Muito Bom!' :
+                              novaAvaliacao.estrelas === 3 ? '👍 Bom' :
+                              novaAvaliacao.estrelas === 2 ? '😐 Regular' :
+                              '😔 Melhorar'
+                            }
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Campo de Comentário - COMPACTO */}
+                      <div>
+                        <label className="block text-[10px] font-medium text-blue-700 dark:text-blue-300 mb-1">
+                          Comentário (opcional)
+                        </label>
+                        <textarea
+                          value={novaAvaliacao.comentario}
+                          onChange={(e) => setNovaAvaliacao({ ...novaAvaliacao, comentario: e.target.value })}
+                          placeholder="Observações..."
+                          className="w-full px-2 py-1.5 bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-1 focus:ring-blue-500 focus:border-transparent resize-none transition-all"
+                          rows="2"
+                        />
+                      </div>
+
+                      {/* Botão Salvar - COMPACTO */}
+                      <button
+                        onClick={() => salvarAvaliacao(func.id, func.nome)}
+                        disabled={novaAvaliacao.estrelas === 0}
+                        className={`w-full py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                          novaAvaliacao.estrelas === 0
+                            ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                        }`}
+                      >
+                        <Star className="w-4 h-4" />
+                        Enviar
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Presença e Folga - COMPACTO */}
+                <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-2">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Presença e Folga
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === true ? null : true, e)}
+                      className={`py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 relative overflow-hidden ${
+                        presencaStatus === true
+                          ? 'bg-green-600 text-white scale-105 ring-2 ring-green-300'
+                          : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-800'
+                      }`}
+                    >
+                      <Check className="w-4 h-4" />
+                      <span className="text-[10px]">Presente</span>
+                    </button>
+                    <button
+                      onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === false ? null : false, e)}
+                      className={`py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 relative overflow-hidden ${
+                        presencaStatus === false
+                          ? 'bg-red-600 text-white scale-105 ring-2 ring-red-300'
+                          : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-800'
+                      }`}
+                    >
+                      <X className="w-4 h-4" />
+                      <span className="text-[10px]">Ausente</span>
+                    </button>
+                    <button
+                      onClick={(e) => marcarEscala(func.id, dia, tipo === 'FOLGA' ? 'VAZIO' : 'FOLGA', e)}
+                      className={`py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 relative overflow-hidden ${
+                        tipo === 'FOLGA'
+                          ? 'bg-yellow-500 text-white scale-105 ring-2 ring-yellow-300'
+                          : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-yellow-100 dark:hover:bg-yellow-800'
+                      }`}
+                    >
+                      <span className="text-lg">📅</span>
+                      <span className="text-[10px]">Folga</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Modal de Calendário */}
+      {mostrarCalendario && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white">
+                Selecionar Data
+              </h3>
+              <button
+                onClick={() => setMostrarCalendario(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Navegação de Mês e Ano */}
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => {
+                  const novaData = new Date(dataCalendarioSelecionada);
+                  novaData.setMonth(novaData.getMonth() - 1);
+                  setDataCalendarioSelecionada(novaData);
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              
+              <div className="flex items-center gap-3">
+                <select
+                  value={dataCalendarioSelecionada.getMonth()}
+                  onChange={(e) => {
+                    const novaData = new Date(dataCalendarioSelecionada);
+                    novaData.setMonth(parseInt(e.target.value));
+                    setDataCalendarioSelecionada(novaData);
+                  }}
+                  className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white font-medium focus:ring-2 focus:ring-blue-500"
+                >
+                  {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map((mes, idx) => (
+                    <option key={idx} value={idx}>{mes}</option>
+                  ))}
+                </select>
+                
+                <select
+                  value={dataCalendarioSelecionada.getFullYear()}
+                  onChange={(e) => {
+                    const novaData = new Date(dataCalendarioSelecionada);
+                    novaData.setFullYear(parseInt(e.target.value));
+                    setDataCalendarioSelecionada(novaData);
+                  }}
+                  className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white font-medium focus:ring-2 focus:ring-blue-500"
+                >
+                  {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 2 + i).map(ano => (
+                    <option key={ano} value={ano}>{ano}</option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={() => {
+                  const novaData = new Date(dataCalendarioSelecionada);
+                  novaData.setMonth(novaData.getMonth() + 1);
+                  setDataCalendarioSelecionada(novaData);
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Grade do Calendário */}
+            <div className="mb-6">
+              {/* Dias da Semana */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(dia => (
+                  <div key={dia} className="text-center text-sm font-bold text-gray-600 dark:text-gray-400 py-2">
+                    {dia}
+                  </div>
+                ))}
+              </div>
+
+              {/* Dias do Mês */}
+              <div className="grid grid-cols-7 gap-1">
+                {(() => {
+                  const primeiroDia = new Date(dataCalendarioSelecionada.getFullYear(), dataCalendarioSelecionada.getMonth(), 1);
+                  const ultimoDia = new Date(dataCalendarioSelecionada.getFullYear(), dataCalendarioSelecionada.getMonth() + 1, 0);
+                  const diasVaziosInicio = primeiroDia.getDay();
+                  const diasNoMes = ultimoDia.getDate();
+                  const hoje = new Date();
+                  const dataAtualFormatada = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+
+                  const dias = [];
+
+                  // Dias vazios no início
+                  for (let i = 0; i < diasVaziosInicio; i++) {
+                    dias.push(<div key={`vazio-${i}`} className="aspect-square" />);
+                  }
+
+                  // Dias do mês
+                  for (let dia = 1; dia <= diasNoMes; dia++) {
+                    const dataLoop = new Date(dataCalendarioSelecionada.getFullYear(), dataCalendarioSelecionada.getMonth(), dia);
+                    const dataLoopFormatada = `${dataLoop.getFullYear()}-${String(dataLoop.getMonth() + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                    const ehHoje = dataLoopFormatada === dataAtualFormatada;
+                    const ehSelecionado = dataLoop.getDate() === mesAtual.getDate() && 
+                                         dataLoop.getMonth() === mesAtual.getMonth() && 
+                                         dataLoop.getFullYear() === mesAtual.getFullYear();
+                    const ehFimDeSemana = dataLoop.getDay() === 0 || dataLoop.getDay() === 6;
+
+                    dias.push(
+                      <button
+                        key={dia}
+                        onClick={() => {
+                          const novaData = new Date(dataCalendarioSelecionada.getFullYear(), dataCalendarioSelecionada.getMonth(), dia);
+                          setMesAtual(novaData);
+                          setDataAtual(novaData);
+                          setMostrarCalendario(false);
+                        }}
+                        className={`aspect-square flex items-center justify-center rounded-lg font-semibold transition-all ${
+                          ehSelecionado
+                            ? 'bg-blue-600 text-white ring-4 ring-blue-300 scale-110'
+                            : ehHoje
+                            ? 'bg-green-500 text-white hover:bg-green-600'
+                            : ehFimDeSemana
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        {dia}
+                      </button>
+                    );
+                  }
+
+                  return dias;
+                })()}
+              </div>
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const hoje = new Date();
+                  setDataCalendarioSelecionada(hoje);
+                  setMesAtual(hoje);
+                  setDataAtual(hoje);
+                  setMostrarCalendario(false);
+                }}
+                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                Ir para Hoje
+              </button>
+              <button
+                onClick={() => setMostrarCalendario(false)}
+                className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Tabela de Escala */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden ${modoVisualizacao === 'diario' && window.innerWidth < 768 ? 'hidden' : ''}`}>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-green-600 dark:bg-green-700 text-white">
-                <th className="sticky left-0 z-20 bg-green-600 dark:bg-green-700 px-4 py-3 text-left font-semibold border-r border-green-500 dark:border-green-600">
-                  Cargo
-                </th>
-                <th className="sticky left-[100px] z-20 bg-green-600 dark:bg-green-700 px-4 py-3 text-left font-semibold border-r border-green-500 dark:border-green-600 min-w-[200px]">
+                <th className="sticky left-0 z-20 bg-green-600 dark:bg-green-700 px-2 py-3 text-left font-semibold border-r border-green-500 dark:border-green-600 w-[180px] max-w-[180px]">
                   Colaborador
                 </th>
                 {diasDoMes.map(({ dia, diaSemana, ehFimDeSemana }) => {
@@ -829,8 +1718,8 @@ const EscalaPage = ({ usuarioAtual }) => {
                       }`}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <div>{diaSemana}</div>
-                        <div className="text-lg">{dia}</div>
+                        <div className="md:text-xs text-sm">{diaSemana}</div>
+                        <div className="md:text-lg text-2xl font-bold">{dia}</div>
                         <button
                           onClick={() => abrirModalAnotacaoDia(dia)}
                           className={`p-1 rounded transition-colors ${
@@ -840,7 +1729,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                           }`}
                           title={temAnotacao ? 'Ver anotação do dia' : 'Adicionar anotação do dia'}
                         >
-                          <StickyNote className="w-3 h-3" />
+                          <StickyNote className="md:w-3 md:h-3 w-6 h-6" />
                         </button>
                       </div>
                     </th>
@@ -868,19 +1757,58 @@ const EscalaPage = ({ usuarioAtual }) => {
                         index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-750' : 'bg-white dark:bg-gray-800'
                       } hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
                     >
-                      <td className="sticky left-0 z-10 px-4 py-3 border-r border-gray-200 dark:border-gray-700 bg-inherit">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {func.cargo || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="sticky left-[100px] z-10 px-4 py-3 border-r border-gray-200 dark:border-gray-700 bg-inherit">
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-gray-800 dark:text-white">
-                            {func.nome}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {func.setor}
-                          </span>
+                      <td className="sticky left-0 z-10 px-2 py-2 border-r-2 border-gray-300 dark:border-gray-600 bg-inherit w-[180px] max-w-[180px]">
+                        <div className="flex items-center gap-2">
+                          {/* Foto de Perfil */}
+                          <div className="flex-shrink-0">
+                            {func.photoURL ? (
+                              <img
+                                src={func.photoURL}
+                                alt={func.nome}
+                                className="w-10 h-10 rounded-full object-cover border-2 border-green-400 dark:border-green-500 shadow-sm"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center border-2 border-green-400 dark:border-green-500 shadow-sm">
+                                <span className="text-sm font-bold text-white">
+                                  {func.nome?.charAt(0)?.toUpperCase() || '?'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Informações do Funcionário */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <span className="font-bold text-gray-800 dark:text-white text-sm truncate block max-w-[120px]" title={func.nome}>
+                                {func.nome}
+                              </span>
+                              <button
+                                onClick={() => toggleOcultarFuncionario(func.id)}
+                                className={`flex-shrink-0 w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                                  funcionariosOcultos.includes(func.id)
+                                    ? 'bg-gray-400 border-gray-500'
+                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-green-500 dark:hover:border-green-400'
+                                }`}
+                                title={funcionariosOcultos.includes(func.id) ? 'Mostrar funcionário' : 'Ocultar funcionário'}
+                              >
+                                {funcionariosOcultos.includes(func.id) ? (
+                                  <EyeOff className="w-2.5 h-2.5 text-white" />
+                                ) : (
+                                  <Eye className="w-2.5 h-2.5 text-gray-400 dark:text-gray-500" />
+                                )}
+                              </button>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm inline-block max-w-fit truncate" title={func.cargo}>
+                                {func.cargo || 'N/A'}
+                              </span>
+                              {func.setor && (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700 inline-block max-w-fit truncate" title={func.setor}>
+                                  {func.setor}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       {diasDoMes.map(({ dia, ehFimDeSemana }) => {
@@ -986,47 +1914,6 @@ const EscalaPage = ({ usuarioAtual }) => {
         </div>
       </div>
 
-      {/* Resumo Geral */}
-      <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-          Resumo do Mês
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-4">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Total de Funcionários
-            </div>
-            <div className="text-3xl font-bold text-gray-800 dark:text-white">
-              {funcionariosFiltrados.length}
-            </div>
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-4">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Dias no Mês
-            </div>
-            <div className="text-3xl font-bold text-gray-800 dark:text-white">
-              {diasDoMes.length}
-            </div>
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-4">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Dias Úteis
-            </div>
-            <div className="text-3xl font-bold text-gray-800 dark:text-white">
-              {diasDoMes.filter(d => !d.ehFimDeSemana).length}
-            </div>
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-4">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Fins de Semana
-            </div>
-            <div className="text-3xl font-bold text-gray-800 dark:text-white">
-              {diasDoMes.filter(d => d.ehFimDeSemana).length}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Modal de Gerenciar Funcionários */}
       {modalGerenciarFuncionarios && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1110,66 +1997,443 @@ const EscalaPage = ({ usuarioAtual }) => {
         </div>
       )}
 
-      {/* Modal de Configurações de Escala */}
+      {/* Modal de Configurações Unificado */}
       {modalConfiguracoes && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <Settings className="w-6 h-6" />
-                Configurar Escalas Padrão
+                <Settings className="w-6 h-6 text-purple-500" />
+                Gerenciar Funcionários e Horários
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                Defina a escala padrão (M, M1, M4) para cada funcionário. Esta será aplicada automaticamente quando não houver marcação específica.
+                Configure horários de trabalho e gerencie a visibilidade dos funcionários
               </p>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-3">
-                {funcionariosFiltrados.map(func => (
-                  <div
-                    key={func.id}
-                    className="flex items-center justify-between p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-750"
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-gray-800 dark:text-white">
-                        {func.nome}
-                      </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {func.cargo} • {func.setor}
-                      </span>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      {['M', 'M1', 'M4', 'VAZIO'].map(tipo => {
-                        const config = TIPOS_ESCALA[tipo];
-                        const isAtivo = configuracoesEscala[func.id]?.tipoEscala === tipo;
-                        return (
-                          <button
-                            key={tipo}
-                            onClick={() => salvarConfiguracaoEscala(func.id, tipo)}
-                            className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
-                              isAtivo
-                                ? `${config.cor} ${config.corTexto} ring-2 ring-offset-2 ring-green-500`
-                                : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
-                            }`}
-                          >
-                            {config.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+
+              {/* Abas */}
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => setAbaGerenciar('horarios')}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all shadow-md ${
+                    abaGerenciar === 'horarios'
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/50'
+                      : 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-700'
+                  }`}
+                >
+                  ⏰ Configurar Horários
+                </button>
+                {(() => {
+                  const cargoLower = (usuarioAtual?.cargo || '').toLowerCase();
+                  const podeGerenciar = usuarioAtual?.nivel === 4 || 
+                                       usuarioAtual?.nivel === 3 || 
+                                       cargoLower.includes('supervisor') || 
+                                       cargoLower.includes('encarregado') || 
+                                       cargoLower.includes('gerente');
+                  return podeGerenciar && (
+                    <button
+                      onClick={() => setAbaGerenciar('criar-horarios')}
+                      className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all shadow-md ${
+                        abaGerenciar === 'criar-horarios'
+                          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-blue-500/50'
+                          : 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-700'
+                      }`}
+                    >
+                      ➕ Criar Horários
+                    </button>
+                  );
+                })()}
               </div>
             </div>
             
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Aba de Horários */}
+              {abaGerenciar === 'horarios' && (
+                <div className="space-y-6">
+                  {/* Info Box */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-xl p-4 shadow-lg">
+                    <p className="text-sm text-blue-900 dark:text-blue-200 leading-relaxed">
+                      <strong className="flex items-center gap-2 mb-2">
+                        <span className="text-blue-600 dark:text-blue-400">ℹ️</span> Atribuição de Horários
+                      </strong>
+                      Defina os horários de trabalho para cada funcionário. Use os horários padrão 
+                      <span className="font-bold bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded mx-1">M</span>,
+                      <span className="font-bold bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded mx-1">M1</span>,
+                      <span className="font-bold bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded mx-1">M4</span>
+                      ou os horários personalizados criados para cada setor.
+                      <br/>
+                      <span className="text-xs italic mt-2 block text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-800/30 p-2 rounded">
+                        💡 Para criar novos horários personalizados, clique na aba <strong>"➕ Criar Horários"</strong>
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* Lista de Funcionários com Seleção de Horário */}
+                  <div className="space-y-3">
+                    <h4 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                      <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg px-3 py-1 text-sm">
+                        👥 Atribuir Horários aos Funcionários
+                      </span>
+                    </h4>
+                    {funcionariosFiltrados.map(func => (
+                      <div
+                        key={func.id}
+                        className="flex items-center justify-between p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 shadow-md hover:shadow-lg transition-all"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900 dark:text-white">
+                            {func.nome}
+                          </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                            {func.cargo} • {func.setor}
+                          </span>
+                        </div>
+                        
+                        <div className="flex gap-2 flex-wrap">
+                          {/* Horários Padrão */}
+                          {['M', 'M1', 'M4', 'VAZIO'].map(tipo => {
+                            const config = TIPOS_ESCALA[tipo];
+                            const isAtivo = configuracoesEscala[func.id]?.tipoEscala === tipo;
+                            return (
+                              <button
+                                key={tipo}
+                                onClick={() => salvarConfiguracaoEscala(func.id, tipo)}
+                                className={`px-4 py-2 rounded-lg font-bold text-xs transition-all transform hover:scale-105 active:scale-95 shadow-md ${
+                                  isAtivo
+                                    ? `${config.cor} ${config.corTexto} ring-4 ring-purple-400 dark:ring-purple-500 shadow-lg`
+                                    : 'bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-300 hover:from-gray-300 hover:to-gray-400 dark:hover:from-gray-500 dark:hover:to-gray-600'
+                                }`}
+                              >
+                                {config.label}
+                              </button>
+                            );
+                          })}
+                          
+                          {/* Horários Personalizados do Setor */}
+                          {Object.values(horariosPersonalizados)
+                            .filter(horario => horario.setorId === func.setorId || horario.setorNome === func.setor)
+                            .map(horario => {
+                              const isAtivo = configuracoesEscala[func.id]?.tipoEscala === horario.nome;
+                              return (
+                                <button
+                                  key={horario.id}
+                                  onClick={() => salvarConfiguracaoEscala(func.id, horario.nome)}
+                                  className={`px-4 py-2 rounded-lg font-bold text-xs transition-all transform hover:scale-105 active:scale-95 shadow-md ${
+                                    isAtivo
+                                      ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white ring-4 ring-purple-400 dark:ring-purple-500 shadow-lg'
+                                      : 'bg-gradient-to-br from-purple-200 to-indigo-200 dark:from-purple-700 dark:to-indigo-700 text-purple-800 dark:text-purple-200 hover:from-purple-300 hover:to-indigo-300 dark:hover:from-purple-600 dark:hover:to-indigo-600'
+                                  }`}
+                                  title={`${horario.nome}: ${horario.descricao}`}
+                                >
+                                  {horario.nome}
+                                </button>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Aba de Criar Horários */}
+              {abaGerenciar === 'criar-horarios' && (
+                <div className="space-y-6">
+                  {/* Info Box */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-300 dark:border-green-600 rounded-xl p-4 shadow-lg">
+                    <p className="text-sm text-green-900 dark:text-green-200 leading-relaxed">
+                      <strong className="flex items-center gap-2 mb-2">
+                        <span className="text-green-600 dark:text-green-400">✨</span> Criar Horários Personalizados
+                      </strong>
+                      Crie horários específicos para os funcionários do seu setor. Os horários criados aqui ficarão disponíveis apenas para funcionários do setor selecionado.
+                    </p>
+                  </div>
+
+                  {/* Formulário de Criação de Horário */}
+                  <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 dark:from-blue-900/30 dark:via-cyan-900/30 dark:to-blue-800/30 border-2 border-blue-300 dark:border-blue-600 rounded-xl p-6 shadow-xl">
+                    <h4 className="text-xl font-bold text-blue-900 dark:text-blue-200 mb-6 flex items-center gap-3">
+                      <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl shadow-lg">
+                        ➕
+                      </span>
+                      Novo Horário Personalizado
+                    </h4>
+                    
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div>
+                          <label className="block text-sm font-bold text-blue-900 dark:text-blue-200 mb-3 uppercase tracking-wide flex items-center gap-2">
+                            <span className="text-blue-600">📝</span> Nome do Horário *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ex: A, B, T1"
+                            value={novoHorario.nome}
+                            onChange={(e) => setNovoHorario({ ...novoHorario, nome: e.target.value.toUpperCase() })}
+                            className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-md text-lg font-bold"
+                            maxLength="3"
+                            required
+                          />
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                            Máximo 3 caracteres (ex: A, T1, N2)
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-bold text-blue-900 dark:text-blue-200 mb-3 uppercase tracking-wide flex items-center gap-2">
+                            <span className="text-blue-600">⏰</span> Período *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="08:00-17:00"
+                            value={novoHorario.descricao}
+                            onChange={(e) => setNovoHorario({ ...novoHorario, descricao: e.target.value })}
+                            className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-md text-lg"
+                            required
+                          />
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                            Formato: HH:MM-HH:MM
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-bold text-blue-900 dark:text-blue-200 mb-3 uppercase tracking-wide flex items-center gap-2">
+                            <span className="text-blue-600">🏢</span> Setor *
+                          </label>
+                          <select
+                            value={novoHorario.setor}
+                            onChange={(e) => setNovoHorario({ ...novoHorario, setor: e.target.value })}
+                            className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-md text-lg"
+                            required
+                          >
+                            <option value="">Selecione o setor...</option>
+                            {setores.map(setor => (
+                              <option key={setor} value={setor}>{setor}</option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                            Horário será exclusivo deste setor
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          if (!novoHorario.nome.trim() || !novoHorario.descricao.trim() || !novoHorario.setor) {
+                            toast.warning('Preencha todos os campos obrigatórios!');
+                            return;
+                          }
+
+                          try {
+                            // Salvar no Firebase
+                            const horariosRef = collection(db, 'horarios_personalizados');
+                            await addDoc(horariosRef, {
+                              nome: novoHorario.nome.trim().toUpperCase(),
+                              descricao: novoHorario.descricao.trim(),
+                              setorNome: novoHorario.setor,
+                              setorId: '', // Pode ser preenchido se tiver ID do setor
+                              empresaId: usuarioAtual?.empresaId || '',
+                              empresaNome: empresas.find(e => e.id === usuarioAtual?.empresaId)?.nome || '',
+                              criadoPor: usuarioAtual?.nome || usuarioAtual?.email || '',
+                              criadoPorId: usuarioAtual?.id || '',
+                              ativo: true,
+                              dataCriacao: serverTimestamp(),
+                              dataAtualizacao: serverTimestamp()
+                            });
+
+                            toast.success(`✅ Horário ${novoHorario.nome} criado com sucesso!`);
+                            setNovoHorario({ nome: '', descricao: '', setor: '' });
+                          } catch (error) {
+                            console.error('Erro ao criar horário:', error);
+                            toast.error('Erro ao criar horário. Tente novamente.');
+                          }
+                        }}
+                        className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 text-white rounded-xl hover:from-blue-700 hover:via-cyan-700 hover:to-blue-700 transition-all font-bold text-lg shadow-2xl hover:shadow-blue-500/50 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
+                      >
+                        <span className="text-2xl">➕</span>
+                        Criar Horário Personalizado
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lista de Horários Criados */}
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 border-gray-200 dark:border-gray-700">
+                    <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                      <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg px-4 py-2">
+                        📋 Horários Personalizados Criados
+                      </span>
+                    </h4>
+                    
+                    {Object.values(horariosPersonalizados).length > 0 ? (
+                      <div className="space-y-3">
+                        {Object.values(horariosPersonalizados)
+                          .filter(horario => 
+                            usuarioAtual?.nivel === 4 || 
+                            horario.setorNome === usuarioAtual?.setor ||
+                            horario.criadoPorId === usuarioAtual?.id
+                          )
+                          .map(horario => (
+                            <div
+                              key={horario.id}
+                              className="flex items-center justify-between p-5 rounded-xl border-2 border-purple-200 dark:border-purple-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 shadow-md hover:shadow-lg transition-all"
+                            >
+                              <div className="flex items-center gap-4">
+                                <span className="px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black rounded-xl text-2xl shadow-lg">
+                                  {horario.nome}
+                                </span>
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-gray-900 dark:text-white text-lg">
+                                    {horario.descricao}
+                                  </span>
+                                  <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                    <span>🏢 {horario.setorNome}</span>
+                                    {horario.criadoPor && <span>👤 {horario.criadoPor}</span>}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(`Deseja realmente excluir o horário ${horario.nome}?`)) {
+                                    try {
+                                      await deleteDoc(doc(db, 'horarios_personalizados', horario.id));
+                                      toast.success('Horário excluído com sucesso!');
+                                    } catch (error) {
+                                      console.error('Erro ao excluir horário:', error);
+                                      toast.error('Erro ao excluir horário');
+                                    }
+                                  }
+                                }}
+                                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all shadow-md transform hover:scale-105 active:scale-95"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <Clock className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">Nenhum horário personalizado criado ainda</p>
+                        <p className="text-sm mt-2">Use o formulário acima para criar seu primeiro horário</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
               <button
-                onClick={() => setModalConfiguracoes(false)}
-                className="w-full px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors font-medium"
+                onClick={() => {
+                  setModalConfiguracoes(false);
+                  setAbaGerenciar('horarios');
+                }}
+                className="w-full px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 dark:from-gray-500 dark:to-gray-600 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 dark:hover:from-gray-400 dark:hover:to-gray-500 transition-all font-bold shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                Fechar
+                ✓ Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Filtros - Empresa e Setor */}
+      {modalFiltros && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <Filter className="w-6 h-6 text-blue-500" />
+                Filtros Avançados
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Filtre os funcionários por empresa e setor
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* Filtro de Empresa */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  Empresa
+                </label>
+                <select
+                  value={empresaSelecionada}
+                  onChange={(e) => {
+                    setEmpresaSelecionada(e.target.value);
+                    setSetorSelecionado('todos');
+                  }}
+                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="todas">🏢 Todas as Empresas</option>
+                  {empresas.map(empresa => (
+                    <option key={empresa.id} value={empresa.id}>{empresa.nome}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filtro de Setor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Setor
+                </label>
+                <select
+                  value={setorSelecionado}
+                  onChange={(e) => setSetorSelecionado(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  disabled={empresaSelecionada === 'todas' && setoresFiltrados.length === 0}
+                >
+                  <option value="todos">🏗️ Todos os Setores</option>
+                  {setoresFiltrados.map(setor => (
+                    <option key={setor} value={setor}>{setor}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Resumo dos Filtros Ativos */}
+              {(empresaSelecionada !== 'todas' || setorSelecionado !== 'todos') && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                    ✓ Filtros Ativos:
+                  </p>
+                  <div className="space-y-1">
+                    {empresaSelecionada !== 'todas' && (
+                      <p className="text-xs text-blue-700 dark:text-blue-400">
+                        • Empresa: <span className="font-semibold">{empresas.find(e => e.id === empresaSelecionada)?.nome}</span>
+                      </p>
+                    )}
+                    {setorSelecionado !== 'todos' && (
+                      <p className="text-xs text-blue-700 dark:text-blue-400">
+                        • Setor: <span className="font-semibold">{setorSelecionado}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+              {/* Botão Limpar Filtros */}
+              {(empresaSelecionada !== 'todas' || setorSelecionado !== 'todos') && (
+                <button
+                  onClick={() => {
+                    setEmpresaSelecionada('todas');
+                    setSetorSelecionado('todos');
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Limpar
+                </button>
+              )}
+              
+              {/* Botão Aplicar */}
+              <button
+                onClick={() => setModalFiltros(false)}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                Aplicar
               </button>
             </div>
           </div>
@@ -1244,6 +2508,187 @@ const EscalaPage = ({ usuarioAtual }) => {
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Resumo de Dias */}
+      {modalResumo.aberto && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                  <Calendar className="w-6 h-6 text-green-600" />
+                  {modalResumo.titulo}
+                </h3>
+                <button
+                  onClick={() => setModalResumo({ aberto: false, tipo: null, dados: [], titulo: '' })}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                {mesAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              {modalResumo.tipo === 'feriados' && modalResumo.dados.length > 0 ? (
+                <div className="space-y-3">
+                  {modalResumo.dados.map((feriado, index) => (
+                    <div key={index} className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-l-4 border-orange-500 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-lg text-gray-800 dark:text-white">
+                            {feriado.nome}
+                          </h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {feriado.diaSemana}, {feriado.data}
+                          </p>
+                        </div>
+                        <div className="bg-orange-600 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg">
+                          {feriado.dia}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : modalResumo.tipo === 'uteis' && modalResumo.dados.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {modalResumo.dados.map((dia, index) => (
+                    <div key={index} className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {dia.dia}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {dia.diaSemana}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : modalResumo.tipo === 'finsdesemana' && modalResumo.dados.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {modalResumo.dados.map((dia, index) => (
+                    <div key={index} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 text-center">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {dia.dia}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {dia.diaSemana}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  Nenhum registro encontrado
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
+              <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-bold text-lg text-gray-800 dark:text-white">
+                  {modalResumo.dados.length}
+                </span>
+                {' '}
+                {modalResumo.tipo === 'feriados' ? 'feriado(s)' : modalResumo.tipo === 'uteis' ? 'dia(s) útil(eis)' : 'fim(ns) de semana'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Animação de Partículas Sofisticada */}
+      {animacaoAtiva && (
+        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+          {/* Partículas principais */}
+          {Array.from({ length: 25 }).map((_, i) => {
+            const angulo = (Math.PI * 2 * i) / 25;
+            const distanciaBase = 80;
+            const variacao = Math.random() * 40;
+            const destinoX = animacaoAtiva.destino.x + Math.cos(angulo) * (distanciaBase + variacao);
+            const destinoY = animacaoAtiva.destino.y + Math.sin(angulo) * (distanciaBase + variacao);
+            const delay = Math.random() * 150;
+            const duracao = 1 + Math.random() * 0.3;
+            
+            const configCores = {
+              presente: { bg: 'bg-green-500', glow: '#22c55e', sombra: '0 0 20px rgba(34, 197, 94, 0.8)' },
+              ausente: { bg: 'bg-red-500', glow: '#ef4444', sombra: '0 0 20px rgba(239, 68, 68, 0.8)' },
+              folga: { bg: 'bg-yellow-400', glow: '#facc15', sombra: '0 0 20px rgba(250, 204, 21, 0.8)' }
+            };
+            
+            const cor = configCores[animacaoAtiva.tipo];
+            const tamanho = 2 + Math.random() * 2;
+
+            return (
+              <div
+                key={`particle-${i}`}
+                className={`absolute ${cor.bg} rounded-full`}
+                style={{
+                  width: `${tamanho}px`,
+                  height: `${tamanho}px`,
+                  left: `${animacaoAtiva.origem.x}px`,
+                  top: `${animacaoAtiva.origem.y}px`,
+                  animation: `particle-flow-${i} ${duracao}s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+                  animationDelay: `${delay}ms`,
+                  boxShadow: cor.sombra,
+                  filter: 'blur(0.5px)'
+                }}
+              >
+                <style>{`
+                  @keyframes particle-flow-${i} {
+                    0% {
+                      transform: translate(0, 0) scale(1) rotate(0deg);
+                      opacity: 1;
+                    }
+                    30% {
+                      transform: translate(${(destinoX - animacaoAtiva.origem.x) * 0.3}px, ${(destinoY - animacaoAtiva.origem.y) * 0.3}px) scale(1.8) rotate(${120 * i}deg);
+                      opacity: 0.9;
+                    }
+                    60% {
+                      transform: translate(${(destinoX - animacaoAtiva.origem.x) * 0.7}px, ${(destinoY - animacaoAtiva.origem.y) * 0.7}px) scale(1.2) rotate(${240 * i}deg);
+                      opacity: 0.7;
+                    }
+                    100% {
+                      transform: translate(${destinoX - animacaoAtiva.origem.x}px, ${destinoY - animacaoAtiva.origem.y}px) scale(0) rotate(${360 * i}deg);
+                      opacity: 0;
+                    }
+                  }
+                `}</style>
+              </div>
+            );
+          })}
+          
+          {/* Onda de energia do botão */}
+          <div
+            className={`absolute rounded-full ${
+              animacaoAtiva.tipo === 'presente' ? 'bg-green-500/30' :
+              animacaoAtiva.tipo === 'ausente' ? 'bg-red-500/30' : 'bg-yellow-400/30'
+            }`}
+            style={{
+              left: `${animacaoAtiva.origem.x}px`,
+              top: `${animacaoAtiva.origem.y}px`,
+              width: '20px',
+              height: '20px',
+              transform: 'translate(-50%, -50%)',
+              animation: 'ripple-effect 0.8s ease-out forwards'
+            }}
+          >
+            <style>{`
+              @keyframes ripple-effect {
+                0% {
+                  transform: translate(-50%, -50%) scale(1);
+                  opacity: 0.8;
+                }
+                100% {
+                  transform: translate(-50%, -50%) scale(8);
+                  opacity: 0;
+                }
+              }
+            `}</style>
           </div>
         </div>
       )}
