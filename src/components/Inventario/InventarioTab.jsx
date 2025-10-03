@@ -78,7 +78,7 @@ const InventarioTab = ({
 
   // Calcular valores totais
   const valores = useMemo(() => {
-    const valorTotalInventario = inventarioFiltrado.reduce((total, item) => {
+    const valorTotalInventarioBruto = inventarioFiltrado.reduce((total, item) => {
       const valor = parseFloat(item.valorUnitario) || 0;
       const qtd = parseInt(item.quantidade) || 0;
       return total + (valor * qtd);
@@ -95,13 +95,17 @@ const InventarioTab = ({
       return total + valor;
     }, 0) || 0;
 
-    const valorTotalPerdidas = ferramentasPerdidas?.filter(p => p.statusBusca === 'buscando').reduce((total, ferr) => {
+    const valorTotalPerdidas = ferramentasPerdidas?.filter(p => p.statusBusca === 'buscando' || p.statusBusca === 'perdida_definitiva').reduce((total, ferr) => {
       const valor = parseFloat(ferr.valorUnitario) || 0;
       return total + valor;
     }, 0) || 0;
 
+    // Descontar perdidas e danificadas do inventário
+    const valorTotalInventario = valorTotalInventarioBruto - valorTotalDanificadas - valorTotalPerdidas;
+
     return {
       inventario: valorTotalInventario,
+      inventarioBruto: valorTotalInventarioBruto,
       compras: valorTotalCompras,
       danificadas: valorTotalDanificadas,
       perdidas: valorTotalPerdidas
@@ -200,9 +204,28 @@ const InventarioTab = ({
                   <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                     {valores.inventario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </p>
-                  <p className="text-xs text-blue-500 dark:text-blue-500 mt-1">
-                    Valor patrimonial
-                  </p>
+                  {(valores.danificadas > 0 || valores.perdidas > 0) && (
+                    <div className="text-xs text-blue-500 dark:text-blue-500 mt-1 space-y-0.5">
+                      <p className="text-gray-500 dark:text-gray-400">
+                        Valor bruto: {valores.inventarioBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </p>
+                      {valores.danificadas > 0 && (
+                        <p className="text-orange-600 dark:text-orange-400">
+                          - Danificadas: {valores.danificadas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                      )}
+                      {valores.perdidas > 0 && (
+                        <p className="text-red-600 dark:text-red-400">
+                          - Perdidas: {valores.perdidas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {!(valores.danificadas > 0 || valores.perdidas > 0) && (
+                    <p className="text-xs text-blue-500 dark:text-blue-500 mt-1">
+                      Valor patrimonial
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

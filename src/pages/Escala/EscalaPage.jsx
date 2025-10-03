@@ -30,7 +30,6 @@ const EscalaPage = ({ usuarioAtual }) => {
   const [dataCalendarioSelecionada, setDataCalendarioSelecionada] = useState(new Date());
   const [modalResumo, setModalResumo] = useState({ aberto: false, tipo: null, dados: [] });
   const [animacaoAtiva, setAnimacaoAtiva] = useState(null); // { tipo: 'presente'|'ausente'|'folga', origem: {x, y}, destino: {x, y} }
-  const [animacaoVerificacao, setAnimacaoVerificacao] = useState(null); // { funcionarioId, dia, tipo, funcionario, fase }
   const [avaliacaoExpandida, setAvaliacaoExpandida] = useState(null);
   const [novaAvaliacao, setNovaAvaliacao] = useState({ estrelas: 0, comentario: '' });
   const [hoverEstrelas, setHoverEstrelas] = useState(0);
@@ -38,6 +37,7 @@ const EscalaPage = ({ usuarioAtual }) => {
   const [abaGerenciar, setAbaGerenciar] = useState('horarios'); // 'horarios' ou 'funcionarios'
   const [horariosPersonalizados, setHorariosPersonalizados] = useState({});
   const [novoHorario, setNovoHorario] = useState({ nome: '', descricao: '', setor: '' });
+  const [particulas, setParticulas] = useState([]); // Array de partículas animadas
 
   // Tipos de escala com cores
   const TIPOS_ESCALA = {
@@ -597,38 +597,36 @@ const EscalaPage = ({ usuarioAtual }) => {
       return;
     }
 
-    // Ativar animação sofisticada para FOLGA
+    // Animação de partículas para FOLGA
     if (tipo === 'FOLGA' && eventoClick) {
       const funcionario = funcionarios.find(f => f.id === funcionarioId);
+      const buttonRect = eventoClick.currentTarget.getBoundingClientRect();
       
-      // Fase 1: Iniciar verificação de folga
-      setAnimacaoVerificacao({
-        funcionarioId,
-        dia,
-        tipo: 'folga',
-        funcionario,
-        fase: 'scanning'
-      });
-
-      // Fase 2: Análise
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'analyzing' } : null);
-      }, 1000);
-
-      // Fase 3: Verificação
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'verifying' } : null);
-      }, 2000);
-
-      // Fase 4: Confirmação
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'confirmed' } : null);
-      }, 3000);
-
-      // Fase 5: Finalização
-      setTimeout(() => {
-        setAnimacaoVerificacao(null);
-      }, 4000);
+      // Encontrar posição do card de estatísticas de folgas
+      const statElement = document.querySelector(`[data-stat-folga="${funcionarioId}"]`);
+      
+      if (statElement) {
+        const statRect = statElement.getBoundingClientRect();
+        
+        // Criar múltiplas partículas amarelas para folga
+        const novasParticulas = Array.from({ length: 8 }, (_, i) => ({
+          id: `${Date.now()}-${i}`,
+          startX: buttonRect.left + buttonRect.width / 2,
+          startY: buttonRect.top + buttonRect.height / 2,
+          endX: statRect.left + statRect.width / 2,
+          endY: statRect.top + statRect.height / 2,
+          color: '#eab308', // yellow-500
+          delay: i * 50,
+          tipo: 'folga'
+        }));
+        
+        setParticulas(prev => [...prev, ...novasParticulas]);
+        
+        // Remover partículas após animação
+        setTimeout(() => {
+          setParticulas(prev => prev.filter(p => !novasParticulas.find(np => np.id === p.id)));
+        }, 1000);
+      }
     }
 
     try {
@@ -645,6 +643,15 @@ const EscalaPage = ({ usuarioAtual }) => {
       };
 
       await setDoc(doc(db, 'escalas', mesAno, 'registros', docId), escalaData);
+      
+      // Se marcou folga, avançar para próximo funcionário após animação
+      if (tipo === 'FOLGA') {
+        setTimeout(() => {
+          if (funcionarioAtualIndex < funcionariosFiltrados.length - 1) {
+            setFuncionarioAtualIndex(funcionarioAtualIndex + 1);
+          }
+        }, 1000);
+      }
     } catch (error) {
       console.error('Erro ao marcar escala:', error);
       toast.error('Erro ao salvar escala. Tente novamente.', {
@@ -664,38 +671,39 @@ const EscalaPage = ({ usuarioAtual }) => {
       return;
     }
 
-    // Se está marcando presença (não desmarcando), ativar animação sofisticada
-    if (presente !== null) {
+    // Animação fluida de partículas
+    if (presente !== null && eventoClick) {
       const funcionario = funcionarios.find(f => f.id === funcionarioId);
+      const buttonRect = eventoClick.currentTarget.getBoundingClientRect();
       
-      // Fase 1: Iniciar verificação
-      setAnimacaoVerificacao({
-        funcionarioId,
-        dia,
-        tipo: presente ? 'presente' : 'ausente',
-        funcionario,
-        fase: 'scanning'
-      });
-
-      // Fase 2: Análise
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'analyzing' } : null);
-      }, 1000);
-
-      // Fase 3: Verificação
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'verifying' } : null);
-      }, 2000);
-
-      // Fase 4: Confirmação
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'confirmed' } : null);
-      }, 3000);
-
-      // Fase 5: Finalização
-      setTimeout(() => {
-        setAnimacaoVerificacao(null);
-      }, 4000);
+      // Encontrar posição do card de estatísticas
+      const statElement = presente 
+        ? document.querySelector(`[data-stat-trabalho="${funcionarioId}"]`)
+        : document.querySelector('.text-red-600.dark\\:text-red-400');
+      
+      if (statElement) {
+        const statRect = statElement.getBoundingClientRect();
+        
+        // Criar múltiplas partículas
+        const novasParticulas = Array.from({ length: 8 }, (_, i) => ({
+          id: `${Date.now()}-${i}`,
+          startX: buttonRect.left + buttonRect.width / 2,
+          startY: buttonRect.top + buttonRect.height / 2,
+          endX: statRect.left + statRect.width / 2,
+          endY: statRect.top + statRect.height / 2,
+          color: presente ? '#10b981' : '#ef4444', // green-500 ou red-500
+          delay: i * 50,
+          tipo: presente ? 'presente' : 'ausente'
+        }));
+        
+        setParticulas(prev => [...prev, ...novasParticulas]);
+        
+        // Remover partículas após animação
+        setTimeout(() => {
+          setParticulas(prev => prev.filter(p => !novasParticulas.find(np => np.id === p.id)));
+        }, 1000);
+      }
+      
     }
 
     try {
@@ -715,6 +723,13 @@ const EscalaPage = ({ usuarioAtual }) => {
           marcadoEm: new Date()
         };
         await setDoc(doc(db, 'presencas', mesAno, 'registros', docId), presencaData);
+        
+        // Avançar para próximo funcionário após animação (tanto presente quanto ausente)
+        setTimeout(() => {
+          if (funcionarioAtualIndex < funcionariosFiltrados.length - 1) {
+            setFuncionarioAtualIndex(funcionarioAtualIndex + 1);
+          }
+        }, 1000);
       }
     } catch (error) {
       console.error('Erro ao marcar presença:', error);
@@ -722,7 +737,6 @@ const EscalaPage = ({ usuarioAtual }) => {
         position: 'top-right',
         autoClose: 4000
       });
-      setAnimacaoVerificacao(null);
     }
   };
 
@@ -1193,6 +1207,13 @@ const EscalaPage = ({ usuarioAtual }) => {
       {/* Visualização em Carrossel (Modo Diário Mobile) */}
       {modoVisualizacao === 'diario' && window.innerWidth < 768 && funcionariosFiltrados.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+          {/* Dica de navegação automática */}
+          <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+            <p className="text-xs text-blue-700 dark:text-blue-300 text-center">
+              💡 Ao marcar <strong className="text-green-600 dark:text-green-400">Presente</strong>, <strong className="text-red-600 dark:text-red-400">Ausente</strong> ou <strong className="text-yellow-600 dark:text-yellow-400">Folga</strong>, avança automaticamente para o próximo funcionário
+            </p>
+          </div>
+          
           {/* Navegação do Carrossel */}
           <div className="flex items-center justify-between mb-4">
             <button
@@ -2663,8 +2684,8 @@ const EscalaPage = ({ usuarioAtual }) => {
         </div>
       )}
 
-      {/* Animação Sofisticada de Verificação */}
-      {animacaoVerificacao && (
+      {/* Animação de verificação removida - usando apenas partículas */}
+      {false && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <style>{`
             @keyframes scan-line {
@@ -3080,25 +3101,6 @@ const EscalaPage = ({ usuarioAtual }) => {
 
                 {/* Status da verificação */}
                 <div className="w-full space-y-3">
-                  {/* Barra de progresso - cor baseada no tipo */}
-                  <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-1000 ${
-                        animacaoVerificacao.tipo === 'presente'
-                          ? 'bg-gradient-to-r from-green-500 via-emerald-400 to-green-500'
-                          : animacaoVerificacao.tipo === 'ausente'
-                          ? 'bg-gradient-to-r from-red-500 via-orange-400 to-red-500'
-                          : 'bg-gradient-to-r from-yellow-400 via-amber-500 via-orange-400 to-pink-400'
-                      } ${
-                        animacaoVerificacao.fase === 'scanning' ? 'w-1/4' :
-                        animacaoVerificacao.fase === 'analyzing' ? 'w-1/2' :
-                        animacaoVerificacao.fase === 'verifying' ? 'w-3/4' :
-                        'w-full'
-                      }`}
-                      style={{ animation: 'data-flow 2s ease-in-out infinite' }}
-                    />
-                  </div>
-
                   {/* Texto do status - mensagens diferentes para presente/ausente/folga */}
                   <div className="text-center">
                     {animacaoVerificacao.fase === 'scanning' && (
@@ -3426,6 +3428,46 @@ const EscalaPage = ({ usuarioAtual }) => {
           </div>
         </div>
       )}
+
+      {/* Partículas animadas voando do botão para as estatísticas */}
+      {particulas.map((particula) => (
+        <div
+          key={particula.id}
+          className="fixed pointer-events-none z-[9999]"
+          style={{
+            left: `${particula.startX}px`,
+            top: `${particula.startY}px`,
+            animation: `fly-to-stat 800ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${particula.delay}ms forwards`,
+            '--end-x': `${particula.endX - particula.startX}px`,
+            '--end-y': `${particula.endY - particula.startY}px`
+          }}
+        >
+          <div 
+            className="w-3 h-3 rounded-full shadow-lg"
+            style={{
+              backgroundColor: particula.color,
+              boxShadow: `0 0 10px ${particula.color}, 0 0 20px ${particula.color}`
+            }}
+          />
+        </div>
+      ))}
+
+      <style jsx>{`
+        @keyframes fly-to-stat {
+          0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: translate(calc(var(--end-x) * 0.5), calc(var(--end-y) * 0.5)) scale(1.5);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translate(var(--end-x), var(--end-y)) scale(0.5);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 };
