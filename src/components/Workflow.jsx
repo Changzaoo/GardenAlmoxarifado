@@ -2901,8 +2901,13 @@ const AlmoxarifadoSistema = () => {
   const getAbasMenuInferior = () => {
     if (!menuPersonalizado) {
       // Configuração padrão se não houver personalização
+      // Para funcionários (nível 1), incluir 'meu-perfil' no menu inferior
+      const filtroAbasExcluidas = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO
+        ? (a => a.id !== 'ranking' && a.id !== itemFavorito) // Funcionário: mantém meu-perfil
+        : (a => a.id !== 'ranking' && a.id !== 'meu-perfil' && a.id !== itemFavorito); // Outros níveis: exclui meu-perfil
+      
       return abas
-        .filter(a => a.id !== 'ranking' && a.id !== 'meu-perfil' && a.id !== itemFavorito)
+        .filter(filtroAbasExcluidas)
         .filter(aba => {
           // Filtrar por permissão
           if (aba.permissao && typeof aba.permissao === 'function') {

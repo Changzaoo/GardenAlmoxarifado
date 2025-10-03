@@ -4,12 +4,13 @@ import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { 
   Plus, Star, PauseCircle, PlayCircle, CheckCircle, Clock, CircleDotDashed, 
-  Pause, Loader, Trash2, Calendar, User, AlertCircle, Search, Shield 
+  Pause, Loader, Trash2, Calendar, User, AlertCircle, Search, Shield, CalendarDays 
 } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import CriarTarefa from './CriarTarefa';
 import DetalheTarefa from './DetalheTarefa';
 import AvaliacaoTarefaModal from './AvaliacaoTarefaModal';
+import AtribuirTarefaSemanal from './AtribuirTarefaSemanal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { formatarDataHora } from '../../utils/dateUtils';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
@@ -33,6 +34,7 @@ const TarefasTab = ({
   const { showToast } = useToast();
   const [tarefas, setTarefas] = useState([]);
   const [showCriarTarefa, setShowCriarTarefa] = useState(false);
+  const [showAtribuirSemanal, setShowAtribuirSemanal] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState(defaultFiltros?.status || 'todas');
   const [filtroPeriodo, setFiltroPeriodo] = useState(defaultFiltros?.periodo || 'todos');
   const [filtroAvaliacao, setFiltroAvaliacao] = useState(defaultFiltros?.avaliacao || 'todas');
@@ -469,14 +471,22 @@ const TarefasTab = ({
               <option value="pendente">Pendente de avaliação</option>
             </select>
 
-            {/* Botão Nova Tarefa */}
+            {/* Botões de Ação */}
             {showAddButton && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
-              <button
-                onClick={() => setShowCriarTarefa(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Nova Tarefa
-              </button>
+              <>
+                <button
+                  onClick={() => setShowAtribuirSemanal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-700 dark:hover:to-purple-800 transition-all shadow-md hover:shadow-lg"
+                >
+                  <CalendarDays className="w-4 h-4" /> Tarefa Semanal
+                </button>
+                <button
+                  onClick={() => setShowCriarTarefa(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors shadow-md hover:shadow-lg"
+                >
+                  <Plus className="w-4 h-4" /> Nova Tarefa
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -496,28 +506,49 @@ const TarefasTab = ({
             }</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tarefasFiltradas.map(tarefa => {
               const statusInfo = getStatusInfo(tarefa);
+              const prioridadeColors = {
+                alta: 'from-red-500 to-pink-600',
+                média: 'from-yellow-500 to-orange-600',
+                baixa: 'from-green-500 to-teal-600'
+              };
+              const statusColors = {
+                pendente: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+                em_andamento: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
+                pausada: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300',
+                concluida: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+              };
+              
               return (
               <div
                 key={tarefa.id}
-                className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:border-[#1D9BF0] transition-colors cursor-pointer"
+                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200 dark:border-gray-700"
                 onClick={() => setTarefaSelecionada(tarefa)}
               >
-                <div>
+                {/* Barra de prioridade no topo */}
+                <div className={`h-2 bg-gradient-to-r ${prioridadeColors[tarefa.prioridade || 'baixa']}`} />
+                
+                <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-3">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {tarefa.titulo}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                        {statusInfo.icon}
-                        <span>{statusInfo.text}</span>
+                      
+                      {/* Badge de Status */}
+                      <div className="flex items-center gap-2 flex-wrap mb-3">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${statusColors[tarefa.status]}`}>
+                          {statusInfo.icon}
+                          {statusInfo.text}
+                        </span>
+                        
                         {!readOnly && tarefa.status === 'em_andamento' && (
-                          <span className="text-blue-500 dark:text-[#1D9BF0] font-medium ml-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 dark:bg-[#1D9BF0] text-white rounded-full text-xs font-semibold animate-pulse">
+                            <Clock className="w-3 h-3" />
                             {formatarTempo(temposDecorridos[tarefa.id])}
                           </span>
                         )}
@@ -527,120 +558,127 @@ const TarefasTab = ({
 
                   {tarefa.descricao && (
                     <div className="mb-4">
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
                         {tarefa.descricao}
                       </p>
                     </div>
                   )}
 
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex flex-wrap gap-2">
-                        {/* Primeiro tenta usar o array de funcionarios (objetos) */}
-                        {(tarefa.funcionarios && tarefa.funcionarios.length > 0) ? (
-                          tarefa.funcionarios.map((func, idx) => (
+                  {/* Funcionários Atribuídos */}
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        Atribuído para
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(tarefa.funcionarios && tarefa.funcionarios.length > 0) ? (
+                        tarefa.funcionarios.map((func, idx) => (
+                          <div 
+                            key={idx}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300 hover:shadow-md transition-shadow"
+                          >
+                            <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
+                            {func.nome || func.username || func.email || 'Sem nome'}
+                          </div>
+                        ))
+                      ) : (
+                        (tarefa.funcionariosIds || []).map((funcId, idx) => {
+                          const funcionarioEncontrado = funcionarios.find(f => f.id === funcId);
+                          const nomeFuncionario = funcionarioEncontrado 
+                            ? (funcionarioEncontrado.nome || funcionarioEncontrado.username || funcionarioEncontrado.email || 'Sem nome')
+                            : funcId;
+                          
+                          return (
                             <div 
                               key={idx}
-                              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm text-blue-700 dark:text-blue-300"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300 hover:shadow-md transition-shadow"
                             >
-                              <User className="w-3 h-3" />
-                              {func.nome || func.username || func.email || 'Sem nome'}
+                              <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
+                              {nomeFuncionario}
                             </div>
-                          ))
-                        ) : (
-                          /* Se não tem funcionarios (objetos), tenta buscar por funcionariosIds */
-                          (tarefa.funcionariosIds || []).map((funcId, idx) => {
-                            const funcionarioEncontrado = funcionarios.find(f => f.id === funcId);
-                            const nomeFuncionario = funcionarioEncontrado 
-                              ? (funcionarioEncontrado.nome || funcionarioEncontrado.username || funcionarioEncontrado.email || 'Sem nome')
-                              : funcId;
-                            
-                            return (
-                              <div 
-                                key={idx}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm text-blue-700 dark:text-blue-300"
-                              >
-                                <User className="w-3 h-3" />
-                                {nomeFuncionario}
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-
-                    {tarefa.prioridade && (
-                      <div className="flex items-center gap-2 mt-4">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">Prioridade:</span>
-                        <span className={`text-sm ${
-                          tarefa.prioridade === 'alta' ? 'text-red-500' :
-                          tarefa.prioridade === 'média' ? 'text-blue-500 dark:text-[#1D9BF0]' :
-                          'text-green-500'
-                        }`}>
-                          {tarefa.prioridade.charAt(0).toUpperCase() + tarefa.prioridade.slice(1)}
-                        </span>
-                      </div>
-                    )}
-
-                    {tarefa.status === 'concluida' && (
-                      <div className="space-y-2 mt-4">
-                        {tarefa.avaliacaoSupervisor && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Supervisor:</span>
-                            <div className="flex items-center">
-                              {[...Array(5)].map((_, index) => (
-                                <Star
-                                  key={index}
-                                  className={`w-3.5 h-3.5 ${
-                                    index < tarefa.avaliacaoSupervisor
-                                      ? 'text-yellow-400 fill-yellow-400'
-                                      : 'text-[#38444D]'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {tarefa.avaliacaoFuncionario && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Funcionário:</span>
-                            <div className="flex items-center">
-                              {[...Array(5)].map((_, index) => (
-                                <Star
-                                  key={index}
-                                  className={`w-3.5 h-3.5 ${
-                                    index < tarefa.avaliacaoFuncionario
-                                      ? 'text-yellow-400 fill-yellow-400'
-                                      : 'text-[#38444D]'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>Criada em {formatarDataHora(tarefa.dataCriacao)}</span>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
 
+                  {/* Badge de Prioridade */}
+                  {tarefa.prioridade && (
+                    <div className="flex items-center gap-2 mb-4">
+                      <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide ${
+                        tarefa.prioridade === 'alta' 
+                          ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' 
+                          : tarefa.prioridade === 'média' 
+                          ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300' 
+                          : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                      }`}>
+                        {tarefa.prioridade === 'alta' ? '🔥 Alta' : tarefa.prioridade === 'média' ? '⚡ Média' : '✓ Baixa'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Avaliações */}
+                  {tarefa.status === 'concluida' && (
+                    <div className="space-y-2 mb-4 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                      {tarefa.avaliacaoSupervisor && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">👔 Supervisor:</span>
+                          <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, index) => (
+                              <Star
+                                key={index}
+                                className={`w-4 h-4 transition-transform hover:scale-110 ${
+                                  index < tarefa.avaliacaoSupervisor
+                                    ? 'text-yellow-500 fill-yellow-500'
+                                    : 'text-gray-300 dark:text-gray-600'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {tarefa.avaliacaoFuncionario && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">👤 Funcionário:</span>
+                          <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, index) => (
+                              <Star
+                                key={index}
+                                className={`w-4 h-4 transition-transform hover:scale-110 ${
+                                  index < tarefa.avaliacaoFuncionario
+                                    ? 'text-yellow-500 fill-yellow-500'
+                                    : 'text-gray-300 dark:text-gray-600'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Data de Criação */}
+                  <div className="mb-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>{formatarDataHora(tarefa.dataCriacao)}</span>
+                  </div>
+
+                  {/* Ações */}
                   {!readOnly && (
-                    <div className="mt-4 flex justify-end gap-2">
+                    <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
                       {tarefa.status === 'pendente' && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleIniciarTarefa(tarefa.id);
                           }}
-                          className="px-3 py-1 text-sm bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
+                          className="flex-1 px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 dark:from-[#1D9BF0] dark:to-[#1a8cd8] text-white rounded-xl flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-200"
                         >
                           <PlayCircle className="w-4 h-4" />
-                          Iniciar
+                          Iniciar Tarefa
                         </button>
                       )}
 
@@ -651,7 +689,7 @@ const TarefasTab = ({
                               e.stopPropagation();
                               handlePausarTarefa(tarefa.id);
                             }}
-                            className="px-3 py-1 text-sm bg-[#F7BE38] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-[#f0b730] transition-colors"
+                            className="flex-1 px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-200"
                           >
                             <Pause className="w-4 h-4" />
                             Pausar
@@ -662,7 +700,7 @@ const TarefasTab = ({
                               setTarefaParaAvaliacao(tarefa);
                               handleConcluirTarefa();
                             }}
-                            className="px-3 py-1 text-sm bg-[#4CAF50] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-[#43a047] transition-colors"
+                            className="flex-1 px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-200"
                           >
                             <CheckCircle className="w-4 h-4" />
                             Concluir
@@ -676,7 +714,7 @@ const TarefasTab = ({
                             e.stopPropagation();
                             handleIniciarTarefa(tarefa.id);
                           }}
-                          className="px-3 py-1 text-sm bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
+                          className="flex-1 px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 dark:from-[#1D9BF0] dark:to-[#1a8cd8] text-white rounded-xl flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-200"
                         >
                           <PlayCircle className="w-4 h-4" />
                           Retomar
@@ -690,10 +728,10 @@ const TarefasTab = ({
                             setTarefaParaAvaliacao(tarefa);
                             setShowAvaliacaoModal(true);
                           }}
-                          className="px-3 py-1 text-sm bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full flex items-center gap-1 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
+                          className="flex-1 px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-xl flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-200"
                         >
                           <Star className="w-4 h-4" />
-                          Avaliar
+                          Avaliar Tarefa
                         </button>
                       )}
                     </div>
@@ -720,6 +758,13 @@ const TarefasTab = ({
       {showCriarTarefa && (
         <CriarTarefa
           onClose={() => setShowCriarTarefa(false)}
+          funcionarios={funcionarios}
+        />
+      )}
+
+      {showAtribuirSemanal && (
+        <AtribuirTarefaSemanal
+          onClose={() => setShowAtribuirSemanal(false)}
           funcionarios={funcionarios}
         />
       )}
