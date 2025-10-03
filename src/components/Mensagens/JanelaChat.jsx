@@ -117,8 +117,20 @@ const JanelaChat = ({
         >
           ←
         </button>
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
-          {(conversa.nome || nomeParticipante)?.charAt(0).toUpperCase() || '?'}
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold overflow-hidden">
+          {conversa.photoURL ? (
+            <img 
+              src={conversa.photoURL} 
+              alt={conversa.nome || nomeParticipante || 'Usuário'} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentElement.textContent = (conversa.nome || nomeParticipante)?.charAt(0).toUpperCase() || '?';
+              }}
+            />
+          ) : (
+            (conversa.nome || nomeParticipante)?.charAt(0).toUpperCase() || '?'
+          )}
         </div>
         <div className="flex-1">
           <h2 className="font-semibold text-gray-900 dark:text-gray-100">

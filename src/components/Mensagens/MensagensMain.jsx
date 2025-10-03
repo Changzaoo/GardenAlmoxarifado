@@ -3,9 +3,10 @@ import { MessageSquare } from 'lucide-react';
 import ListaConversas from './ListaConversas';
 import JanelaChat from './JanelaChat';
 import NovaConversa from './NovaConversa';
+import NotificationSettings from './NotificationSettings';
 import { useMensagens } from '../../hooks/useMensagens';
 import { useAuth } from '../../hooks/useAuth';
-import pushNotificationService from '../../services/pushNotificationService';
+import notificationManager from '../../services/notificationManager';
 
 /**
  * MensagensMain - Componente principal do sistema de mensagens
@@ -38,6 +39,7 @@ const MensagensMain = () => {
   } = hookMensagens;
   const [showChat, setShowChat] = useState(false);
   const [showNovaConversa, setShowNovaConversa] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
   // MONITOR: Rastrear mudancas nas conversas vindas do hook
   useEffect(() => {
@@ -49,16 +51,27 @@ const MensagensMain = () => {
     console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
   }, [conversas, loading]);
 
-  // Inicializar notificações push
+  // Inicializar sistema avançado de notificações
   useEffect(() => {
     if (usuario?.id) {
-      pushNotificationService.initialize(usuario.id).catch(err => {
-        console.error('Erro ao inicializar push notifications:', err);
-      });
+      notificationManager.initialize(usuario.id)
+        .then(result => {
+          console.log('✅ Sistema de notificações inicializado:', result);
+          if (result.permission === 'granted') {
+            console.log('🔔 Permissão de notificações concedida');
+          } else {
+            console.log('🔕 Permissão de notificações:', result.permission);
+          }
+        })
+        .catch(err => {
+          console.error('❌ Erro ao inicializar notificações:', err);
+        });
     }
 
     return () => {
-      pushNotificationService.cleanup();
+      if (notificationManager) {
+        notificationManager.cleanup();
+      }
     };
   }, [usuario?.id]);
 
@@ -100,6 +113,7 @@ const MensagensMain = () => {
           onSelectConversa={handleSelectConversa}
           conversaSelecionada={conversaAtiva}
           onNovaConversa={() => setShowNovaConversa(true)}
+          onOpenNotificationSettings={() => setShowNotificationSettings(true)}
           conversas={conversas}
           loading={loading}
           formatarTimestamp={formatarTimestamp}
@@ -114,6 +128,13 @@ const MensagensMain = () => {
         onCriarGrupo={handleCriarGrupo}
         usuarioAtual={usuario}
       />
+
+      {/* Modal Configurações de Notificações */}
+      {showNotificationSettings && (
+        <NotificationSettings
+          onClose={() => setShowNotificationSettings(false)}
+        />
+      )}
 
       {/* Janela de chat - Desktop sempre visível, Mobile condicional */}
       <div className={`

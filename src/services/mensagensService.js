@@ -163,7 +163,7 @@ class MensagensService {
     );
 
     return onSnapshot(q, 
-      (snapshot) => {
+      async (snapshot) => {
         console.log('📦 Snapshot recebido:', snapshot.size, 'conversas');
         
         if (snapshot.empty) {
@@ -172,13 +172,38 @@ class MensagensService {
           return;
         }
         
-        const conversas = snapshot.docs.map(doc => {
+        // Processar conversas e buscar nomes e fotos dos participantes
+        const conversasPromises = snapshot.docs.map(async (doc) => {
           const data = doc.data();
+          let nome = data.nome; // Para grupos já tem nome
+          let photoURL = data.imagemUrl || null; // Para grupos
+          
+          // Se for conversa privada, buscar nome e foto do outro participante
+          if (data.tipo === CONVERSATION_TYPE.PRIVADA) {
+            const outroParticipanteId = data.participantes.find(id => id !== userId);
+            if (outroParticipanteId) {
+              const outroUsuario = await this.getUserInfo(outroParticipanteId);
+              nome = outroUsuario?.nome || 'Usuário';
+              photoURL = outroUsuario?.photoURL || null;
+              console.log('👤 Participante buscado:', { 
+                nome, 
+                photoURL, 
+                id: outroParticipanteId,
+                usuarioCompleto: outroUsuario 
+              });
+              
+              if (!photoURL) {
+                console.warn('⚠️ Usuário sem photoURL:', outroParticipanteId);
+              }
+            }
+          }
           
           // Adicionar userId do usuário atual para facilitar acesso a participantesInfo
           return {
             id: doc.id,
             ...data,
+            nome, // ← Nome resolvido
+            photoURL, // ← Foto de perfil resolvida
             userId: userId, // ← Adiciona o ID do usuário atual
             // Adicionar info do usuário atual
             naoLidas: data.participantesInfo?.[userId]?.naoLidas || 0,
@@ -187,6 +212,8 @@ class MensagensService {
             fixado: data.participantesInfo?.[userId]?.fixado || false
           };
         });
+        
+        const conversas = await Promise.all(conversasPromises);
         
         console.log('📋 Conversas processadas:', conversas.length);
         console.log('🔍 Detalhes:', conversas);
@@ -510,7 +537,8 @@ class MensagensService {
 
           console.log('� Chave de descriptografia gerada');
 
-          const mensagens = snapshot.docs.map(doc => {
+          // Processar mensagens e buscar informações dos remetentes
+          const mensagensPromises = snapshot.docs.map(async (doc) => {
             const data = doc.data();
             
             // Descriptografar mensagem se necessário
@@ -525,13 +553,26 @@ class MensagensService {
               }
             }
 
+            // Buscar informações do remetente
+            let remetenteInfo = null;
+            if (data.remetenteId) {
+              try {
+                remetenteInfo = await this.getUserInfo(data.remetenteId);
+              } catch (error) {
+                console.error('Erro ao buscar info do remetente:', error);
+              }
+            }
+
             return {
               id: doc.id,
               ...data,
               texto: textoDescriptografado,
-              textoCriptografado: data.texto // Manter original criptografado
+              textoCriptografado: data.texto, // Manter original criptografado
+              remetente: remetenteInfo // Adicionar informações do remetente (nome, photoURL, etc)
             };
-          }).reverse(); // Inverter para mostrar mais antigas primeiro
+          });
+
+          const mensagens = (await Promise.all(mensagensPromises)).reverse(); // Inverter para mostrar mais antigas primeiro
           
           console.log('✅ Mensagens processadas:', mensagens.length);
           console.log('📝 Primeira mensagem:', mensagens[0]?.texto?.substring(0, 50));
@@ -978,19 +1019,53 @@ class MensagensService {
 
   /**
    * Busca informações de um usuário
+   * Prioriza a coleção funcionarios (que tem photoURL) antes de usuarios
    */
   async getUserInfo(userId) {
     try {
+      // Primeiro tentar buscar na coleção funcionarios (tem photoURL garantido)
+      const funcionariosRef = collection(db, 'funcionarios');
+      const qFunc = query(funcionariosRef, where('userId', '==', userId));
+      const funcionariosSnap = await getDocs(qFunc);
+      
+      if (!funcionariosSnap.empty) {
+        const funcionarioData = funcionariosSnap.docs[0].data();
+        console.log('✅ Funcionário encontrado com foto:', funcionarioData.photoURL);
+        return {
+          id: funcionariosSnap.docs[0].id,
+          ...funcionarioData
+        };
+      }
+      
+      // Se não encontrou por userId, tentar por email na coleção usuarios
       const userRef = doc(this.usuariosRef, userId);
       const userDoc = await getDoc(userRef);
       
       if (userDoc.exists()) {
+        const userData = userDoc.data();
+        
+        // Tentar buscar funcionário pelo email
+        const qFuncEmail = query(funcionariosRef, where('email', '==', userData.email));
+        const funcionariosSnapEmail = await getDocs(qFuncEmail);
+        
+        if (!funcionariosSnapEmail.empty) {
+          const funcionarioData = funcionariosSnapEmail.docs[0].data();
+          console.log('✅ Funcionário encontrado pelo email com foto:', funcionarioData.photoURL);
+          return {
+            id: funcionariosSnapEmail.docs[0].id,
+            ...funcionarioData
+          };
+        }
+        
+        // Se não encontrou funcionário, retornar dados do usuario
+        console.log('⚠️ Usuário encontrado mas sem funcionário vinculado');
         return {
           id: userDoc.id,
-          ...userDoc.data()
+          ...userData
         };
       }
       
+      console.warn('❌ Usuário não encontrado:', userId);
       return null;
     } catch (error) {
       console.error('Erro ao buscar informações do usuário:', error);

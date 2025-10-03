@@ -171,8 +171,20 @@ const BolhaMensagem = ({
     >
       {/* Avatar */}
       {showAvatar && !groupWithPrevious && (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-          {mensagem.remetente?.nome?.charAt(0).toUpperCase() || '?'}
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden">
+          {mensagem.remetente?.photoURL ? (
+            <img 
+              src={mensagem.remetente.photoURL} 
+              alt={mensagem.remetente?.nome || 'Usuário'} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentElement.textContent = mensagem.remetente?.nome?.charAt(0).toUpperCase() || '?';
+              }}
+            />
+          ) : (
+            mensagem.remetente?.nome?.charAt(0).toUpperCase() || '?'
+          )}
         </div>
       )}
       {!showAvatar && !groupWithPrevious && <div className="w-8" />}

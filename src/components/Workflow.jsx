@@ -35,6 +35,7 @@ import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
 import EscalaPage from '../pages/Escala/EscalaPage';
+import ErrorReportsPage from '../pages/ErrorReports/ErrorReportsPage';
 import { notifyNewLoan } from '../utils/notificationHelpers';
 import CadastroEmpresas from './Empresas/CadastroEmpresas';
 import CadastroSetores from './Setores/CadastroSetores';
@@ -78,6 +79,8 @@ import {
   Briefcase,
   GripVertical,
   Check,
+  CheckCircle,
+  RefreshCw,
   Save
 } from 'lucide-react';
 
@@ -1109,8 +1112,135 @@ const PermissionDenied = ({ message = "Você não tem permissão para realizar e
 
 // Componente de tela de erro
 const ErrorScreen = ({ error, resetError }) => {
+  const { usuario } = useAuth();
+  const [enviandoRelatorio, setEnviandoRelatorio] = useState(false);
+  const [relatorioEnviado, setRelatorioEnviado] = useState(false);
+  const [showDescricaoModal, setShowDescricaoModal] = useState(false);
+  const [descricao, setDescricao] = useState('');
+
+  // Função para detectar informações do navegador
+  const getBrowserInfo = () => {
+    const ua = navigator.userAgent;
+    let browserName = 'Desconhecido';
+    let browserVersion = 'Desconhecida';
+    let osName = 'Desconhecido';
+
+    // Detectar navegador
+    if (ua.indexOf('Firefox') > -1) {
+      browserName = 'Firefox';
+      browserVersion = ua.match(/Firefox\/([0-9.]+)/)?.[1] || '';
+    } else if (ua.indexOf('Chrome') > -1) {
+      browserName = 'Chrome';
+      browserVersion = ua.match(/Chrome\/([0-9.]+)/)?.[1] || '';
+    } else if (ua.indexOf('Safari') > -1) {
+      browserName = 'Safari';
+      browserVersion = ua.match(/Version\/([0-9.]+)/)?.[1] || '';
+    } else if (ua.indexOf('Edge') > -1 || ua.indexOf('Edg') > -1) {
+      browserName = 'Edge';
+      browserVersion = ua.match(/Edg\/([0-9.]+)/)?.[1] || '';
+    }
+
+    // Detectar SO
+    if (ua.indexOf('Windows') > -1) osName = 'Windows';
+    else if (ua.indexOf('Mac') > -1) osName = 'MacOS';
+    else if (ua.indexOf('Linux') > -1) osName = 'Linux';
+    else if (ua.indexOf('Android') > -1) osName = 'Android';
+    else if (ua.indexOf('iOS') > -1) osName = 'iOS';
+
+    return { name: browserName, version: browserVersion, os: osName };
+  };
+
+  // Função para enviar relatório de erro
+  const enviarRelatorioErro = async () => {
+    if (!usuario?.id) {
+      alert('Você precisa estar logado para enviar um relatório de erro.');
+      return;
+    }
+
+    setShowDescricaoModal(true);
+  };
+
+  const confirmarEnvioRelatorio = async () => {
+    setEnviandoRelatorio(true);
+    setShowDescricaoModal(false);
+
+    try {
+      const errorCode = `ERR-${Date.now().toString(36).toUpperCase()}`;
+      const browserInfo = getBrowserInfo();
+
+      const relatorio = {
+        errorCode,
+        errorMessage: error?.message || error?.toString() || 'Erro desconhecido',
+        errorStack: error?.stack || null,
+        timestamp: new Date().toISOString(),
+        url: window.location.href,
+        browserInfo,
+        usuarioId: usuario.id,
+        usuarioNome: usuario.nome || 'Usuário Desconhecido',
+        usuarioEmail: usuario.email || '',
+        descricao: descricao || 'Sem descrição adicional',
+        status: 'pendente',
+        criadoEm: new Date().toISOString()
+      };
+
+      await addDoc(collection(db, 'errorReports'), relatorio);
+      
+      setRelatorioEnviado(true);
+      setEnviandoRelatorio(false);
+      
+      // Copiar código de erro para clipboard
+      navigator.clipboard.writeText(errorCode).catch(() => {});
+      
+      setTimeout(() => {
+        setRelatorioEnviado(false);
+        setDescricao('');
+      }, 5000);
+    } catch (err) {
+      console.error('Erro ao enviar relatório:', err);
+      alert('Não foi possível enviar o relatório. Por favor, tente novamente.');
+      setEnviandoRelatorio(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-red-900 dark:to-orange-900 flex items-center justify-center p-4">
+      {/* Modal de descrição */}
+      {showDescricaoModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              Descrever o Problema
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Conte-nos o que você estava fazendo quando o erro ocorreu. Isso nos ajudará a resolver o problema mais rapidamente.
+            </p>
+            <textarea
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Ex: Eu estava tentando adicionar uma nova ferramenta ao inventário quando a tela travou..."
+              className="w-full h-32 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowDescricaoModal(false);
+                  setDescricao('');
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarEnvioRelatorio}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
+              >
+                Enviar Relatório
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 md:p-12 text-center">
         {/* Logo WorkFlow com efeito de erro */}
         <div className="mb-6 flex justify-center">
@@ -1202,6 +1332,39 @@ const ErrorScreen = ({ error, resetError }) => {
           >
             Limpar Cache
           </button>
+        </div>
+
+        {/* Botão para enviar relatório de erro */}
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          {relatorioEnviado ? (
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4">
+              <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-semibold">Relatório enviado com sucesso!</span>
+              </div>
+              <p className="text-sm text-green-600 dark:text-green-400">
+                Obrigado por nos ajudar a melhorar o sistema. Nossa equipe irá analisar o problema.
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={enviarRelatorioErro}
+              disabled={enviandoRelatorio}
+              className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {enviandoRelatorio ? (
+                <>
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  Enviando relatório...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-5 h-5" />
+                  Reportar este Erro
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Rodapé */}
@@ -2492,6 +2655,12 @@ const AlmoxarifadoSistema = () => {
       permissao: () => true // Visível para todos os níveis
     },
     {
+      id: 'relatorios-erro',
+      nome: 'Relatórios de Erros',
+      icone: AlertTriangle,
+      permissao: () => true // Visível para todos os níveis
+    },
+    {
       id: 'mensagens',
       nome: 'Mensagens',
       icone: MessageCircle,
@@ -3254,6 +3423,18 @@ const AlmoxarifadoSistema = () => {
               >
                 <Scale className="w-5 h-5" />
               </button>
+              
+              <button
+                onClick={() => setAbaAtiva('relatorios-erro')}
+                className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                  abaAtiva === 'relatorios-erro'
+                    ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                    : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
+                }`}
+                title="Relatórios de Erros"
+              >
+                <AlertTriangle className="w-5 h-5" />
+              </button>
             </div>
           </div>
         )}
@@ -3423,6 +3604,8 @@ const AlmoxarifadoSistema = () => {
             {abaAtiva === 'dashboard' && <Dashboard stats={stats} />}
             
             {abaAtiva === 'meu-perfil' && <ProfileTab />}
+
+            {abaAtiva === 'relatorios-erro' && <ErrorReportsPage />}
 
             {abaAtiva === 'meu-inventario' && (
               <MeuInventarioTab

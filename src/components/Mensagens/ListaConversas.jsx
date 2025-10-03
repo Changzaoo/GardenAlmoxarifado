@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Archive, Pin } from 'lucide-react';
+import { Search, Plus, Archive, Pin, Bell } from 'lucide-react';
 
 const ListaConversas = ({ 
   onSelectConversa, 
   conversaSelecionada, 
   onNovaConversa,
+  onOpenNotificationSettings,
   conversas = [],
   loading = false,
   formatarTimestamp = () => ''
@@ -71,13 +72,22 @@ const ListaConversas = ({
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             Mensagens
           </h1>
-          <button 
-            onClick={onNovaConversa}
-            className="p-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-all transform hover:scale-110 shadow-lg"
-            title="Nova conversa"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={onOpenNotificationSettings}
+              className="p-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-full transition-all transform hover:scale-110"
+              title="Configurações de notificações"
+            >
+              <Bell className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={onNovaConversa}
+              className="p-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-all transform hover:scale-110 shadow-lg"
+              title="Nova conversa"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Busca */}
@@ -143,8 +153,21 @@ const ListaConversas = ({
               >
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
-                    {conversa.nome?.charAt(0).toUpperCase() || '?'}
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg overflow-hidden">
+                    {conversa.photoURL ? (
+                      <img 
+                        src={conversa.photoURL} 
+                        alt={conversa.nome || 'Usuário'} 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Se a imagem falhar ao carregar, mostrar inicial
+                          e.target.style.display = 'none';
+                          e.target.parentElement.textContent = conversa.nome?.charAt(0).toUpperCase() || '?';
+                        }}
+                      />
+                    ) : (
+                      conversa.nome?.charAt(0).toUpperCase() || '?'
+                    )}
                   </div>
                   {naoLidas > 0 && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">

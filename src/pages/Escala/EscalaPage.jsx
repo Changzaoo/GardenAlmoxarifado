@@ -30,6 +30,7 @@ const EscalaPage = ({ usuarioAtual }) => {
   const [dataCalendarioSelecionada, setDataCalendarioSelecionada] = useState(new Date());
   const [modalResumo, setModalResumo] = useState({ aberto: false, tipo: null, dados: [] });
   const [animacaoAtiva, setAnimacaoAtiva] = useState(null); // { tipo: 'presente'|'ausente'|'folga', origem: {x, y}, destino: {x, y} }
+  const [animacaoVerificacao, setAnimacaoVerificacao] = useState(null); // { funcionarioId, dia, tipo, funcionario, fase }
   const [avaliacaoExpandida, setAvaliacaoExpandida] = useState(null);
   const [novaAvaliacao, setNovaAvaliacao] = useState({ estrelas: 0, comentario: '' });
   const [hoverEstrelas, setHoverEstrelas] = useState(0);
@@ -596,53 +597,38 @@ const EscalaPage = ({ usuarioAtual }) => {
       return;
     }
 
-    // Ativar animação de partículas para FOLGA
+    // Ativar animação sofisticada para FOLGA
     if (tipo === 'FOLGA' && eventoClick) {
-      const botaoRect = eventoClick.currentTarget.getBoundingClientRect();
-      const origemX = botaoRect.left + botaoRect.width / 2;
-      const origemY = botaoRect.top + botaoRect.height / 2;
-
-      // Primeiro: animar até o badge de escala
-      const escalaCard = document.querySelector(`[data-funcionario-dia="${funcionarioId}-${dia}"]`);
-      let destinoX = window.innerWidth / 2;
-      let destinoY = 100;
+      const funcionario = funcionarios.find(f => f.id === funcionarioId);
       
-      if (escalaCard) {
-        const escalaRect = escalaCard.getBoundingClientRect();
-        destinoX = escalaRect.left + escalaRect.width / 2;
-        destinoY = escalaRect.top + escalaRect.height / 2;
-      }
-
-      setAnimacaoAtiva({
+      // Fase 1: Iniciar verificação de folga
+      setAnimacaoVerificacao({
+        funcionarioId,
+        dia,
         tipo: 'folga',
-        origem: { x: origemX, y: origemY },
-        destino: { x: destinoX, y: destinoY }
+        funcionario,
+        fase: 'scanning'
       });
 
-      // Após animação para escala, animar para estatística de folgas
+      // Fase 2: Análise
       setTimeout(() => {
-        const statElement = document.querySelector(`[data-stat-folga="${funcionarioId}"]`);
-        
-        if (statElement && escalaCard) {
-          const escalaRect = escalaCard.getBoundingClientRect();
-          const statRect = statElement.getBoundingClientRect();
-          
-          setAnimacaoAtiva({
-            tipo: 'folga',
-            origem: { 
-              x: escalaRect.left + escalaRect.width / 2, 
-              y: escalaRect.top + escalaRect.height / 2 
-            },
-            destino: { 
-              x: statRect.left + statRect.width / 2, 
-              y: statRect.top + statRect.height / 2 
-            }
-          });
-        }
-      }, 600);
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'analyzing' } : null);
+      }, 1000);
 
-      // Limpar animação após completar tudo
-      setTimeout(() => setAnimacaoAtiva(null), 2000);
+      // Fase 3: Verificação
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'verifying' } : null);
+      }, 2000);
+
+      // Fase 4: Confirmação
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'confirmed' } : null);
+      }, 3000);
+
+      // Fase 5: Finalização
+      setTimeout(() => {
+        setAnimacaoVerificacao(null);
+      }, 4000);
     }
 
     try {
@@ -678,55 +664,38 @@ const EscalaPage = ({ usuarioAtual }) => {
       return;
     }
 
-    // Ativar animação de partículas
-    if (presente !== null && eventoClick) {
-      const botaoRect = eventoClick.currentTarget.getBoundingClientRect();
-      const origemX = botaoRect.left + botaoRect.width / 2;
-      const origemY = botaoRect.top + botaoRect.height / 2;
-
-      // Primeiro: animar até o badge de escala
-      const escalaCard = document.querySelector(`[data-funcionario-dia="${funcionarioId}-${dia}"]`);
-      let destinoX = window.innerWidth / 2;
-      let destinoY = 100;
+    // Se está marcando presença (não desmarcando), ativar animação sofisticada
+    if (presente !== null) {
+      const funcionario = funcionarios.find(f => f.id === funcionarioId);
       
-      if (escalaCard) {
-        const escalaRect = escalaCard.getBoundingClientRect();
-        destinoX = escalaRect.left + escalaRect.width / 2;
-        destinoY = escalaRect.top + escalaRect.height / 2;
-      }
-
-      setAnimacaoAtiva({
+      // Fase 1: Iniciar verificação
+      setAnimacaoVerificacao({
+        funcionarioId,
+        dia,
         tipo: presente ? 'presente' : 'ausente',
-        origem: { x: origemX, y: origemY },
-        destino: { x: destinoX, y: destinoY }
+        funcionario,
+        fase: 'scanning'
       });
 
-      // Após animação para escala, animar para estatística
+      // Fase 2: Análise
       setTimeout(() => {
-        const statElement = presente 
-          ? document.querySelector(`[data-stat-trabalho="${funcionarioId}"]`)
-          : document.querySelector(`[data-stat-ausente="${funcionarioId}"]`);
-        
-        if (statElement && escalaCard) {
-          const escalaRect = escalaCard.getBoundingClientRect();
-          const statRect = statElement.getBoundingClientRect();
-          
-          setAnimacaoAtiva({
-            tipo: presente ? 'presente' : 'ausente',
-            origem: { 
-              x: escalaRect.left + escalaRect.width / 2, 
-              y: escalaRect.top + escalaRect.height / 2 
-            },
-            destino: { 
-              x: statRect.left + statRect.width / 2, 
-              y: statRect.top + statRect.height / 2 
-            }
-          });
-        }
-      }, 600);
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'analyzing' } : null);
+      }, 1000);
 
-      // Limpar animação após completar tudo
-      setTimeout(() => setAnimacaoAtiva(null), 2000);
+      // Fase 3: Verificação
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'verifying' } : null);
+      }, 2000);
+
+      // Fase 4: Confirmação
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'confirmed' } : null);
+      }, 3000);
+
+      // Fase 5: Finalização
+      setTimeout(() => {
+        setAnimacaoVerificacao(null);
+      }, 4000);
     }
 
     try {
@@ -753,6 +722,7 @@ const EscalaPage = ({ usuarioAtual }) => {
         position: 'top-right',
         autoClose: 4000
       });
+      setAnimacaoVerificacao(null);
     }
   };
 
@@ -1838,7 +1808,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                               
                               <div className="flex gap-0.5 justify-center">
                                 <button
-                                  onClick={() => marcarPresenca(func.id, dia, presencaStatus === true ? null : true)}
+                                  onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === true ? null : true, e)}
                                   className={`flex-1 px-1 py-0.5 rounded text-xs font-bold transition-all ${
                                     presencaStatus === true
                                       ? 'bg-green-600 text-white scale-105'
@@ -1849,7 +1819,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                                     <Check className="w-3 h-3 mx-auto" />
                                   </button>
                                   <button
-                                    onClick={() => marcarPresenca(func.id, dia, presencaStatus === false ? null : false)}
+                                    onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === false ? null : false, e)}
                                     className={`flex-1 px-1 py-0.5 rounded text-xs font-bold transition-all ${
                                       presencaStatus === false
                                         ? 'bg-red-600 text-white scale-105'
@@ -2689,6 +2659,770 @@ const EscalaPage = ({ usuarioAtual }) => {
                 }
               }
             `}</style>
+          </div>
+        </div>
+      )}
+
+      {/* Animação Sofisticada de Verificação */}
+      {animacaoVerificacao && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <style>{`
+            @keyframes scan-line {
+              0%, 100% { transform: translateY(-100%); }
+              50% { transform: translateY(100%); }
+            }
+            @keyframes scan-line-warning {
+              0%, 100% { transform: translateY(-100%) scaleX(1.2); }
+              50% { transform: translateY(100%) scaleX(1.2); }
+            }
+            @keyframes pulse-glow-presente {
+              0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.5); }
+              50% { box-shadow: 0 0 40px rgba(34, 197, 94, 0.8), 0 0 60px rgba(34, 197, 94, 0.4); }
+            }
+            @keyframes pulse-glow-ausente {
+              0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+              50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.8), 0 0 60px rgba(239, 68, 68, 0.4); }
+            }
+            @keyframes pulse-glow-folga {
+              0%, 100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.5); }
+              50% { box-shadow: 0 0 40px rgba(251, 191, 36, 0.8), 0 0 60px rgba(251, 191, 36, 0.4); }
+            }
+            @keyframes sun-rays {
+              0% { transform: rotate(0deg) scale(1); opacity: 0.8; }
+              50% { transform: rotate(180deg) scale(1.1); opacity: 1; }
+              100% { transform: rotate(360deg) scale(1); opacity: 0.8; }
+            }
+            @keyframes confetti-fall {
+              0% { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+              10% { opacity: 1; }
+              90% { opacity: 1; }
+              100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
+            }
+            @keyframes beach-scan {
+              0% { top: 0%; }
+              50% { top: 50%; }
+              100% { top: 100%; }
+            }
+            @keyframes sun-draw {
+              0% { stroke-dashoffset: 300; opacity: 0; }
+              50% { opacity: 1; }
+              100% { stroke-dashoffset: 0; opacity: 1; }
+            }
+            @keyframes rotate-border {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            @keyframes rotate-border-reverse {
+              0% { transform: rotate(360deg); }
+              100% { transform: rotate(0deg); }
+            }
+            @keyframes data-flow {
+              0% { transform: translateX(-100%); opacity: 0; }
+              50% { opacity: 1; }
+              100% { transform: translateX(100%); opacity: 0; }
+            }
+            @keyframes check-draw {
+              0% { stroke-dashoffset: 100; }
+              100% { stroke-dashoffset: 0; }
+            }
+            @keyframes x-draw {
+              0% { stroke-dashoffset: 200; }
+              100% { stroke-dashoffset: 0; }
+            }
+            @keyframes hologram-flicker {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.8; }
+            }
+            @keyframes glitch-effect {
+              0%, 100% { transform: translate(0, 0); opacity: 1; }
+              20% { transform: translate(-2px, 2px); opacity: 0.8; }
+              40% { transform: translate(2px, -2px); opacity: 0.9; }
+              60% { transform: translate(-2px, -2px); opacity: 0.7; }
+              80% { transform: translate(2px, 2px); opacity: 0.85; }
+            }
+            @keyframes shake {
+              0%, 100% { transform: translateX(0); }
+              25% { transform: translateX(-5px) rotate(-2deg); }
+              75% { transform: translateX(5px) rotate(2deg); }
+            }
+            @keyframes warning-pulse {
+              0%, 100% { opacity: 1; transform: scale(1); }
+              50% { opacity: 0.6; transform: scale(1.1); }
+            }
+          `}</style>
+
+          <div className="relative">
+            {/* Container principal - cores dinâmicas baseadas no tipo */}
+            <div className={`relative rounded-2xl p-8 border-2 shadow-2xl overflow-hidden ${
+              animacaoVerificacao.tipo === 'presente'
+                ? 'bg-gradient-to-br from-gray-900 via-emerald-900/50 to-gray-900 border-green-500/50'
+                : animacaoVerificacao.tipo === 'ausente'
+                ? 'bg-gradient-to-br from-gray-900 via-red-900/50 to-gray-900 border-red-500/50'
+                : 'bg-gradient-to-br from-gray-900 via-amber-900/50 to-gray-900 border-yellow-500/50'
+            }`}>
+              {/* Borda animada rotativa - verde para presente, vermelho para ausente, dourada para folga */}
+              <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+                <div 
+                  className={`absolute inset-[-2px] opacity-50 ${
+                    animacaoVerificacao.tipo === 'presente'
+                      ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-500'
+                      : animacaoVerificacao.tipo === 'ausente'
+                      ? 'bg-gradient-to-r from-red-500 via-orange-500 to-red-500'
+                      : 'bg-gradient-to-r from-yellow-400 via-amber-500 via-orange-400 via-pink-400 to-yellow-400'
+                  }`}
+                  style={{ 
+                    animation: animacaoVerificacao.tipo === 'presente' 
+                      ? 'rotate-border 3s linear infinite' 
+                      : animacaoVerificacao.tipo === 'ausente'
+                      ? 'rotate-border-reverse 2s linear infinite'
+                      : 'rotate-border 4s linear infinite'
+                  }}
+                />
+              </div>
+
+              {/* Grade de fundo tech - cor baseada no tipo */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute inset-0" style={{
+                  backgroundImage: animacaoVerificacao.tipo === 'presente'
+                    ? 'linear-gradient(rgba(34, 197, 94, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.5) 1px, transparent 1px)'
+                    : animacaoVerificacao.tipo === 'ausente'
+                    ? 'linear-gradient(rgba(239, 68, 68, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(239, 68, 68, 0.5) 1px, transparent 1px)'
+                    : 'linear-gradient(rgba(251, 191, 36, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(251, 191, 36, 0.5) 1px, transparent 1px)',
+                  backgroundSize: '20px 20px'
+                }} />
+              </div>
+
+              {/* Efeito de alerta para ausente */}
+              {animacaoVerificacao.tipo === 'ausente' && animacaoVerificacao.fase === 'scanning' && (
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute top-4 right-4 flex items-center gap-2 animate-pulse">
+                    <div className="w-3 h-3 bg-red-500 rounded-full" style={{ animation: 'warning-pulse 1s ease-in-out infinite' }} />
+                    <span className="text-red-400 text-xs font-bold">ALERTA</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Efeito de celebração para folga - confetes caindo */}
+              {animacaoVerificacao.tipo === 'folga' && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  {[...Array(15)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-2 h-2 rounded-full"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: '-20px',
+                        backgroundColor: ['#fbbf24', '#fb923c', '#ec4899', '#06b6d4', '#a855f7'][i % 5],
+                        animation: `confetti-fall ${2 + Math.random() * 2}s linear ${Math.random() * 0.5}s infinite`
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <div className="relative z-10 flex flex-col items-center gap-6 min-w-[400px]">
+                {/* Foto do funcionário com scanner */}
+                <div className="relative">
+                  {/* Anel externo pulsante - cor baseada no tipo */}
+                  <div className={`absolute inset-[-20px] rounded-full border-4 animate-ping ${
+                    animacaoVerificacao.tipo === 'presente' 
+                      ? 'border-green-500/30' 
+                      : animacaoVerificacao.tipo === 'ausente'
+                      ? 'border-red-500/30'
+                      : 'border-yellow-500/30'
+                  }`} />
+                  <div 
+                    className={`absolute inset-[-10px] rounded-full border-2 ${
+                      animacaoVerificacao.tipo === 'presente' 
+                        ? 'border-emerald-400/50' 
+                        : animacaoVerificacao.tipo === 'ausente'
+                        ? 'border-orange-400/50'
+                        : 'border-amber-400/50'
+                    }`} 
+                    style={{ 
+                      animation: animacaoVerificacao.tipo === 'presente' 
+                        ? 'pulse-glow-presente 2s ease-in-out infinite' 
+                        : animacaoVerificacao.tipo === 'ausente'
+                        ? 'pulse-glow-ausente 2s ease-in-out infinite'
+                        : 'pulse-glow-folga 2s ease-in-out infinite'
+                    }} 
+                  />
+
+                  {/* Raios de sol para folga */}
+                  {animacaoVerificacao.tipo === 'folga' && (
+                    <div className="absolute inset-[-30px] pointer-events-none">
+                      <svg className="w-full h-full" viewBox="0 0 200 200" style={{ animation: 'sun-rays 5s linear infinite' }}>
+                        {[...Array(12)].map((_, i) => (
+                          <line
+                            key={i}
+                            x1="100"
+                            y1="100"
+                            x2="100"
+                            y2="20"
+                            stroke="url(#sunGradient)"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            opacity="0.6"
+                            transform={`rotate(${i * 30} 100 100)`}
+                          />
+                        ))}
+                        <defs>
+                          <linearGradient id="sunGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0" />
+                            <stop offset="100%" stopColor="#f59e0b" stopOpacity="1" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+                  )}
+                  
+                  {/* Container da foto */}
+                  <div 
+                    className={`relative w-32 h-32 rounded-full overflow-hidden border-4 shadow-2xl ${
+                      animacaoVerificacao.tipo === 'presente' 
+                        ? 'border-green-500' 
+                        : animacaoVerificacao.tipo === 'ausente'
+                        ? 'border-red-500'
+                        : 'border-yellow-400'
+                    }`}
+                    style={{ 
+                      animation: animacaoVerificacao.tipo === 'ausente' && animacaoVerificacao.fase === 'scanning' 
+                        ? 'shake 0.5s ease-in-out infinite' 
+                        : 'none'
+                    }}
+                  >
+                    {animacaoVerificacao.funcionario?.photoURL ? (
+                      <img 
+                        src={animacaoVerificacao.funcionario.photoURL} 
+                        alt={animacaoVerificacao.funcionario.nome}
+                        className="w-full h-full object-cover"
+                        style={{ 
+                          animation: animacaoVerificacao.tipo === 'ausente' && animacaoVerificacao.fase === 'analyzing'
+                            ? 'glitch-effect 0.3s ease-in-out infinite'
+                            : 'hologram-flicker 3s ease-in-out infinite'
+                        }}
+                      />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br flex items-center justify-center text-white text-4xl font-bold ${
+                        animacaoVerificacao.tipo === 'presente'
+                          ? 'from-green-600 to-emerald-600'
+                          : animacaoVerificacao.tipo === 'ausente'
+                          ? 'from-red-600 to-orange-600'
+                          : 'from-yellow-500 to-amber-600'
+                      }`}>
+                        {animacaoVerificacao.funcionario?.nome?.charAt(0) || '?'}
+                      </div>
+                    )}
+                    
+                    {/* Linha de scan - diferente para presente/ausente/folga */}
+                    {animacaoVerificacao.fase === 'scanning' && (
+                      <div className="absolute inset-0 overflow-hidden">
+                        {animacaoVerificacao.tipo === 'presente' ? (
+                          <div 
+                            className="absolute w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent"
+                            style={{ animation: 'scan-line 2s ease-in-out infinite' }}
+                          />
+                        ) : animacaoVerificacao.tipo === 'ausente' ? (
+                          <>
+                            <div 
+                              className="absolute w-full h-2 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-lg shadow-red-500/50"
+                              style={{ animation: 'scan-line-warning 1.5s ease-in-out infinite' }}
+                            />
+                            <div 
+                              className="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-orange-400 to-transparent"
+                              style={{ animation: 'scan-line-warning 1.5s ease-in-out infinite 0.3s' }}
+                            />
+                          </>
+                        ) : (
+                          <div 
+                            className="absolute w-full h-1.5 bg-gradient-to-r from-transparent via-yellow-300 to-transparent shadow-lg shadow-yellow-300/50"
+                            style={{ animation: 'beach-scan 2.5s ease-in-out infinite' }}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Grid de análise - cor baseada no tipo */}
+                    {animacaoVerificacao.fase === 'analyzing' && (
+                      <div className="absolute inset-0 opacity-30">
+                        <div className="absolute inset-0" style={{
+                          backgroundImage: animacaoVerificacao.tipo === 'presente'
+                            ? 'linear-gradient(rgba(34, 197, 94, 0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.8) 1px, transparent 1px)'
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'linear-gradient(rgba(239, 68, 68, 0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(239, 68, 68, 0.8) 1px, transparent 1px)'
+                            : 'linear-gradient(rgba(251, 191, 36, 0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(251, 191, 36, 0.8) 1px, transparent 1px)',
+                          backgroundSize: '10px 10px'
+                        }} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Partículas orbitando - cor e comportamento baseados no tipo */}
+                  {['analyzing', 'verifying'].includes(animacaoVerificacao.fase) && (
+                    <>
+                      {animacaoVerificacao.tipo === 'presente' ? (
+                        // Partículas suaves e ordenadas para presente
+                        [0, 1, 2, 3, 4].map((i) => (
+                          <div
+                            key={i}
+                            className="absolute w-2 h-2 bg-emerald-400 rounded-full shadow-lg shadow-emerald-400/50"
+                            style={{
+                              top: '50%',
+                              left: '50%',
+                              animation: `orbit-${i} ${2 + i * 0.5}s linear infinite`,
+                              transformOrigin: '0 0'
+                            }}
+                          >
+                            <style>{`
+                              @keyframes orbit-${i} {
+                                from {
+                                  transform: rotate(${i * 72}deg) translateX(80px) rotate(${-i * 72}deg);
+                                }
+                                to {
+                                  transform: rotate(${360 + i * 72}deg) translateX(80px) rotate(${-360 - i * 72}deg);
+                                }
+                              }
+                            `}</style>
+                          </div>
+                        ))
+                      ) : animacaoVerificacao.tipo === 'ausente' ? (
+                        // Partículas erráticas e caóticas para ausente
+                        [0, 1, 2, 3, 4, 5, 6].map((i) => (
+                          <div
+                            key={i}
+                            className={`absolute rounded-full shadow-lg ${
+                              i % 2 === 0 ? 'w-3 h-3 bg-red-500 shadow-red-500/50' : 'w-2 h-2 bg-orange-400 shadow-orange-400/50'
+                            }`}
+                            style={{
+                              top: '50%',
+                              left: '50%',
+                              animation: `orbit-warning-${i} ${1.5 + i * 0.3}s linear infinite`,
+                              transformOrigin: '0 0'
+                            }}
+                          >
+                            <style>{`
+                              @keyframes orbit-warning-${i} {
+                                from {
+                                  transform: rotate(${i * 51.4}deg) translateX(${70 + Math.random() * 20}px) rotate(${-i * 51.4}deg) scale(${0.8 + Math.random() * 0.4});
+                                }
+                                to {
+                                  transform: rotate(${360 + i * 51.4}deg) translateX(${70 + Math.random() * 20}px) rotate(${-360 - i * 51.4}deg) scale(${1 + Math.random() * 0.5});
+                                }
+                              }
+                            `}</style>
+                          </div>
+                        ))
+                      ) : (
+                        // Partículas coloridas e celebratórias para folga
+                        [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
+                          const colors = ['#fbbf24', '#fb923c', '#ec4899', '#06b6d4', '#a855f7'];
+                          return (
+                            <div
+                              key={i}
+                              className="absolute w-2 h-2 rounded-full shadow-lg"
+                              style={{
+                                backgroundColor: colors[i % colors.length],
+                                boxShadow: `0 0 10px ${colors[i % colors.length]}`,
+                                top: '50%',
+                                left: '50%',
+                                animation: `orbit-celebration-${i} ${2.5 + i * 0.3}s ease-in-out infinite`,
+                                transformOrigin: '0 0'
+                              }}
+                            >
+                              <style>{`
+                                @keyframes orbit-celebration-${i} {
+                                  from {
+                                    transform: rotate(${i * 40}deg) translateX(${75 + (i % 3) * 10}px) rotate(${-i * 40}deg);
+                                  }
+                                  to {
+                                    transform: rotate(${360 + i * 40}deg) translateX(${75 + (i % 3) * 10}px) rotate(${-360 - i * 40}deg);
+                                  }
+                                }
+                              `}</style>
+                            </div>
+                          );
+                        })
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Informações do funcionário */}
+                <div className="text-center space-y-2">
+                  <h3 className={`text-2xl font-bold tracking-wider ${
+                    animacaoVerificacao.tipo === 'presente' 
+                      ? 'text-white' 
+                      : animacaoVerificacao.tipo === 'ausente'
+                      ? 'text-red-100'
+                      : 'text-yellow-50'
+                  }`}>
+                    {animacaoVerificacao.funcionario?.nome || 'Funcionário'}
+                  </h3>
+                  <p className={`text-sm font-mono ${
+                    animacaoVerificacao.tipo === 'presente' 
+                      ? 'text-emerald-300' 
+                      : animacaoVerificacao.tipo === 'ausente'
+                      ? 'text-orange-300'
+                      : 'text-amber-300'
+                  }`}>
+                    ID: {animacaoVerificacao.funcionarioId}
+                  </p>
+                  <p className={`text-sm ${
+                    animacaoVerificacao.tipo === 'presente' 
+                      ? 'text-emerald-300' 
+                      : animacaoVerificacao.tipo === 'ausente'
+                      ? 'text-red-300'
+                      : 'text-yellow-300'
+                  }`}>
+                    {animacaoVerificacao.funcionario?.cargo || 'Cargo não definido'}
+                  </p>
+                </div>
+
+                {/* Status da verificação */}
+                <div className="w-full space-y-3">
+                  {/* Barra de progresso - cor baseada no tipo */}
+                  <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-1000 ${
+                        animacaoVerificacao.tipo === 'presente'
+                          ? 'bg-gradient-to-r from-green-500 via-emerald-400 to-green-500'
+                          : animacaoVerificacao.tipo === 'ausente'
+                          ? 'bg-gradient-to-r from-red-500 via-orange-400 to-red-500'
+                          : 'bg-gradient-to-r from-yellow-400 via-amber-500 via-orange-400 to-pink-400'
+                      } ${
+                        animacaoVerificacao.fase === 'scanning' ? 'w-1/4' :
+                        animacaoVerificacao.fase === 'analyzing' ? 'w-1/2' :
+                        animacaoVerificacao.fase === 'verifying' ? 'w-3/4' :
+                        'w-full'
+                      }`}
+                      style={{ animation: 'data-flow 2s ease-in-out infinite' }}
+                    />
+                  </div>
+
+                  {/* Texto do status - mensagens diferentes para presente/ausente/folga */}
+                  <div className="text-center">
+                    {animacaoVerificacao.fase === 'scanning' && (
+                      <div className="space-y-1">
+                        <p className={`text-lg font-mono animate-pulse ${
+                          animacaoVerificacao.tipo === 'presente' 
+                            ? 'text-emerald-400' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'text-red-400'
+                            : 'text-yellow-400'
+                        }`}>
+                          [ SCANNING ]
+                        </p>
+                        <p className={`text-sm ${
+                          animacaoVerificacao.tipo === 'presente' 
+                            ? 'text-green-300' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'text-orange-300'
+                            : 'text-amber-300'
+                        }`}>
+                          {animacaoVerificacao.tipo === 'presente' 
+                            ? 'Digitalizando biometria facial...'
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? '⚠️ Verificando ausência do funcionário...'
+                            : '🌴 Verificando folga programada...'
+                          }
+                        </p>
+                      </div>
+                    )}
+                    {animacaoVerificacao.fase === 'analyzing' && (
+                      <div className="space-y-1">
+                        <p className={`text-lg font-mono animate-pulse ${
+                          animacaoVerificacao.tipo === 'presente' 
+                            ? 'text-emerald-400' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'text-red-400'
+                            : 'text-yellow-400'
+                        }`}>
+                          [ ANALYZING ]
+                        </p>
+                        <p className={`text-sm ${
+                          animacaoVerificacao.tipo === 'presente' 
+                            ? 'text-green-300' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'text-orange-300'
+                            : 'text-amber-300'
+                        }`}>
+                          {animacaoVerificacao.tipo === 'presente'
+                            ? 'Processando dados do funcionário...'
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? '⚠️ Analisando motivo da ausência...'
+                            : '☀️ Processando dia de descanso...'
+                          }
+                        </p>
+                      </div>
+                    )}
+                    {animacaoVerificacao.fase === 'verifying' && (
+                      <div className="space-y-1">
+                        <p className={`text-lg font-mono animate-pulse ${
+                          animacaoVerificacao.tipo === 'presente' 
+                            ? 'text-emerald-400' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'text-red-400'
+                            : 'text-yellow-400'
+                        }`}>
+                          [ VERIFYING ]
+                        </p>
+                        <p className={`text-sm ${
+                          animacaoVerificacao.tipo === 'presente' 
+                            ? 'text-green-300' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'text-orange-300'
+                            : 'text-amber-300'
+                        }`}>
+                          {animacaoVerificacao.tipo === 'presente'
+                            ? 'Verificando credenciais...'
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? '⚠️ Registrando falta no sistema...'
+                            : '🏖️ Confirmando folga merecida...'
+                          }
+                        </p>
+                      </div>
+                    )}
+                    {animacaoVerificacao.fase === 'confirmed' && (
+                      <div className="space-y-3">
+                        {/* Símbolo animado - Check para presente, X para ausente, Sol para folga */}
+                        <div className="flex justify-center">
+                          <div className="relative w-20 h-20">
+                            <svg className="w-full h-full" viewBox="0 0 100 100">
+                              {/* Círculo de fundo */}
+                              <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                fill="none"
+                                stroke={
+                                  animacaoVerificacao.tipo === 'presente' 
+                                    ? '#10b981' 
+                                    : animacaoVerificacao.tipo === 'ausente'
+                                    ? '#ef4444'
+                                    : '#fbbf24'
+                                }
+                                strokeWidth="4"
+                                className="opacity-20"
+                              />
+                              {/* Círculo girando */}
+                              <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                fill="none"
+                                stroke={
+                                  animacaoVerificacao.tipo === 'presente' 
+                                    ? '#10b981' 
+                                    : animacaoVerificacao.tipo === 'ausente'
+                                    ? '#ef4444'
+                                    : '#fbbf24'
+                                }
+                                strokeWidth="4"
+                                strokeDasharray="283"
+                                strokeDashoffset="0"
+                                className="animate-spin"
+                                style={{ transformOrigin: 'center', animationDuration: '1s' }}
+                              />
+                              
+                              {/* Checkmark para presente */}
+                              {animacaoVerificacao.tipo === 'presente' && (
+                                <path
+                                  d="M30 50 L45 65 L70 35"
+                                  fill="none"
+                                  stroke="#10b981"
+                                  strokeWidth="6"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeDasharray="100"
+                                  strokeDashoffset="100"
+                                  style={{ animation: 'check-draw 0.5s ease-out 0.3s forwards' }}
+                                />
+                              )}
+                              
+                              {/* X para ausente */}
+                              {animacaoVerificacao.tipo === 'ausente' && (
+                                <>
+                                  <path
+                                    d="M35 35 L65 65"
+                                    fill="none"
+                                    stroke="#ef4444"
+                                    strokeWidth="6"
+                                    strokeLinecap="round"
+                                    strokeDasharray="100"
+                                    strokeDashoffset="100"
+                                    style={{ animation: 'x-draw 0.5s ease-out 0.3s forwards' }}
+                                  />
+                                  <path
+                                    d="M65 35 L35 65"
+                                    fill="none"
+                                    stroke="#ef4444"
+                                    strokeWidth="6"
+                                    strokeLinecap="round"
+                                    strokeDasharray="100"
+                                    strokeDashoffset="100"
+                                    style={{ animation: 'x-draw 0.5s ease-out 0.5s forwards' }}
+                                  />
+                                </>
+                              )}
+
+                              {/* Sol para folga */}
+                              {animacaoVerificacao.tipo === 'folga' && (
+                                <g>
+                                  {/* Centro do sol */}
+                                  <circle
+                                    cx="50"
+                                    cy="50"
+                                    r="18"
+                                    fill="#fbbf24"
+                                    stroke="#f59e0b"
+                                    strokeWidth="2"
+                                    strokeDasharray="150"
+                                    strokeDashoffset="150"
+                                    style={{ animation: 'sun-draw 0.8s ease-out 0.2s forwards' }}
+                                  />
+                                  {/* Raios do sol */}
+                                  {[...Array(8)].map((_, i) => (
+                                    <line
+                                      key={i}
+                                      x1="50"
+                                      y1="50"
+                                      x2="50"
+                                      y2="25"
+                                      stroke="#fbbf24"
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                      strokeDasharray="25"
+                                      strokeDashoffset="25"
+                                      transform={`rotate(${i * 45} 50 50)`}
+                                      style={{ 
+                                        animation: `sun-draw 0.5s ease-out ${0.3 + i * 0.05}s forwards`,
+                                        transformOrigin: '50px 50px'
+                                      }}
+                                    />
+                                  ))}
+                                </g>
+                              )}
+                            </svg>
+                          </div>
+                        </div>
+                        
+                        {/* Mensagem final diferente para cada tipo */}
+                        <p className={`text-xl font-bold tracking-wide ${
+                          animacaoVerificacao.tipo === 'presente' 
+                            ? 'text-green-400' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'text-red-400'
+                            : 'text-yellow-400'
+                        }`}>
+                          {animacaoVerificacao.tipo === 'presente' 
+                            ? '✓ PRESENÇA CONFIRMADA' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? '✗ FALTA REGISTRADA'
+                            : '🎉 FOLGA CONFIRMADA'
+                          }
+                        </p>
+                        
+                        {/* Submensagem contextual */}
+                        <p className={`text-sm ${
+                          animacaoVerificacao.tipo === 'presente' 
+                            ? 'text-green-300' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'text-orange-300'
+                            : 'text-amber-300'
+                        }`}>
+                          {animacaoVerificacao.tipo === 'presente' 
+                            ? 'Funcionário marcado como presente'
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? '⚠️ Ausência registrada no sistema'
+                            : '☀️ Aproveite seu dia de descanso!'
+                          }
+                        </p>
+                        
+                        <p className={`text-xs ${
+                          animacaoVerificacao.tipo === 'presente' 
+                            ? 'text-emerald-400' 
+                            : animacaoVerificacao.tipo === 'ausente'
+                            ? 'text-red-300'
+                            : 'text-yellow-300'
+                        }`}>
+                          {new Date().toLocaleString('pt-BR')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dados técnicos - cores baseadas no tipo */}
+                  <div className={`grid grid-cols-3 gap-2 pt-4 border-t ${
+                    animacaoVerificacao.tipo === 'presente' 
+                      ? 'border-green-500/30' 
+                      : animacaoVerificacao.tipo === 'ausente'
+                      ? 'border-red-500/30'
+                      : 'border-yellow-500/30'
+                  }`}>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-400">Dia</p>
+                      <p className={`text-sm font-mono ${
+                        animacaoVerificacao.tipo === 'presente' 
+                          ? 'text-emerald-400' 
+                          : animacaoVerificacao.tipo === 'ausente'
+                          ? 'text-orange-400'
+                          : 'text-amber-400'
+                      }`}>
+                        {animacaoVerificacao.dia}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-400">Status</p>
+                      <p className={`text-sm font-mono ${
+                        animacaoVerificacao.tipo === 'presente' 
+                          ? 'text-green-400' 
+                          : animacaoVerificacao.tipo === 'ausente'
+                          ? 'text-red-400'
+                          : 'text-yellow-400'
+                      }`}>
+                        {animacaoVerificacao.tipo === 'presente' 
+                          ? 'PRESENTE' 
+                          : animacaoVerificacao.tipo === 'ausente'
+                          ? 'AUSENTE'
+                          : 'FOLGA'
+                        }
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-400">Hora</p>
+                      <p className={`text-sm font-mono ${
+                        animacaoVerificacao.tipo === 'presente' 
+                          ? 'text-emerald-400' 
+                          : animacaoVerificacao.tipo === 'ausente'
+                          ? 'text-orange-400'
+                          : 'text-amber-400'
+                      }`}>
+                        {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Raios de luz emanando - cores baseadas no tipo */}
+            {animacaoVerificacao.fase === 'confirmed' && (
+              <>
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className={`absolute inset-0 ${
+                      animacaoVerificacao.tipo === 'presente' ? 'bg-green-500/10' : 'bg-red-500/10'
+                    }`}
+                    style={{
+                      animation: `pulse-glow 1s ease-out ${i * 0.2}s`,
+                      borderRadius: '50%',
+                      transform: `scale(${1 + i * 0.5})`
+                    }}
+                  />
+                ))}
+              </>
+            )}
           </div>
         </div>
       )}

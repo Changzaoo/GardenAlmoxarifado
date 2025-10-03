@@ -536,32 +536,36 @@ const TarefasTab = ({
                   <div className="space-y-4">
                     <div>
                       <div className="flex flex-wrap gap-2">
-                        {[...(tarefa.funcionariosIds || []), tarefa.funcionario]
-                          .filter(Boolean)
-                          .map((func, idx) => {
-                            // Se func é um ID (formato hash), buscar o nome do funcionário
-                            let nomeFuncionario = func;
-                            
-                            // Verificar se é um ID (contém letras e números misturados tipo hash)
-                            const pareceId = /^[a-zA-Z0-9]{10,}$/.test(func);
-                            
-                            if (pareceId && funcionarios && funcionarios.length > 0) {
-                              const funcionarioEncontrado = funcionarios.find(f => f.id === func);
-                              if (funcionarioEncontrado) {
-                                nomeFuncionario = funcionarioEncontrado.nome || funcionarioEncontrado.username || funcionarioEncontrado.email || func;
-                              }
-                            }
+                        {/* Primeiro tenta usar o array de funcionarios (objetos) */}
+                        {(tarefa.funcionarios && tarefa.funcionarios.length > 0) ? (
+                          tarefa.funcionarios.map((func, idx) => (
+                            <div 
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm text-blue-700 dark:text-blue-300"
+                            >
+                              <User className="w-3 h-3" />
+                              {func.nome || func.username || func.email || 'Sem nome'}
+                            </div>
+                          ))
+                        ) : (
+                          /* Se não tem funcionarios (objetos), tenta buscar por funcionariosIds */
+                          (tarefa.funcionariosIds || []).map((funcId, idx) => {
+                            const funcionarioEncontrado = funcionarios.find(f => f.id === funcId);
+                            const nomeFuncionario = funcionarioEncontrado 
+                              ? (funcionarioEncontrado.nome || funcionarioEncontrado.username || funcionarioEncontrado.email || 'Sem nome')
+                              : funcId;
                             
                             return (
                               <div 
                                 key={idx}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-sm text-gray-500 dark:text-gray-400"
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm text-blue-700 dark:text-blue-300"
                               >
                                 <User className="w-3 h-3" />
                                 {nomeFuncionario}
                               </div>
                             );
-                          })}
+                          })
+                        )}
                       </div>
                     </div>
 
