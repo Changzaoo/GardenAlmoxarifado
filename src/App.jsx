@@ -13,6 +13,7 @@ import { MessageNotificationProvider } from './components/Chat/MessageNotificati
 import LoginForm from './components/Auth/LoginForm';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import UserProfileModal from './components/Auth/UserProfileModal';
+import NotificationPermissionModal from './components/Notifications/NotificationPermissionModal';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Componentes das páginas
@@ -32,6 +33,7 @@ function App() {
                 <div className="App">
                 <RouteStateManager />
                 <ScrollPersistence />
+                <NotificationPermissionModal />
                 <ToastContainer 
                   position="top-right" 
                   autoClose={3000}

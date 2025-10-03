@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { X, ListChecks } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import SeletorTarefaPredefinida from './SeletorTarefaPredefinida';
-import { notifyNewTask } from '../../utils/notificationHelpers';
+import { notificarNovaTarefa } from '../../services/tarefaNotificationService';
 import { useFuncionarios } from '../Funcionarios/FuncionariosProvider';
 
 const CriarTarefa = ({ onClose }) => {
@@ -62,22 +62,22 @@ const CriarTarefa = ({ onClose }) => {
       
       // Criar notificação para cada funcionário atribuído
       try {
-        console.log('Criando notificações para funcionários:', formData.funcionariosIds);
+        console.log('🔔 Criando notificações para funcionários:', formData.funcionariosIds);
         for (const funcionarioId of formData.funcionariosIds) {
           const funcionario = funcionariosSelecionados.find(f => f.id === funcionarioId);
           const nomeFuncionario = funcionario ? (funcionario.nome || funcionario.username || funcionario.email) : 'Funcionário';
           
-          console.log(`Enviando notificação para: ${nomeFuncionario} (ID: ${funcionarioId})`);
-          await notifyNewTask(
+          console.log(`📬 Enviando notificação para: ${nomeFuncionario} (ID: ${funcionarioId})`);
+          await notificarNovaTarefa(
             funcionarioId,
             formData.titulo,
             formData.prioridade,
             { id: docRef.id, ...tarefaData }
           );
         }
-        console.log('Todas as notificações foram criadas com sucesso');
+        console.log('✅ Todas as notificações foram criadas com sucesso');
       } catch (notificationError) {
-        console.error('Erro ao criar notificações da tarefa:', notificationError);
+        console.error('❌ Erro ao criar notificações da tarefa:', notificationError);
         // Não bloqueia a criação da tarefa mesmo se a notificação falhar
       }
 

@@ -108,16 +108,19 @@ const JanelaChat = ({
   const outroParticipante = getOutroParticipante(conversa);
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2.5 sm:p-4 flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full">
         <button
           onClick={onBack}
-          className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+          className="lg:hidden p-1.5 sm:p-2 active:bg-gray-100 dark:active:bg-gray-700 sm:hover:bg-gray-100 dark:sm:hover:bg-gray-700 rounded-full transition-colors"
+          aria-label="Voltar"
         >
-          ←
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
         </button>
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold overflow-hidden">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm sm:text-base overflow-hidden flex-shrink-0">
           {conversa.photoURL ? (
             <img 
               src={conversa.photoURL} 
@@ -132,11 +135,11 @@ const JanelaChat = ({
             (conversa.nome || nomeParticipante)?.charAt(0).toUpperCase() || '?'
           )}
         </div>
-        <div className="flex-1">
-          <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
             {conversa.nome || nomeParticipante || 'Conversa'}
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
             {bloqueado ? '🚫 Bloqueado' : 'Online'}
           </p>
         </div>
@@ -146,7 +149,11 @@ const JanelaChat = ({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 space-y-1"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-1 w-full"
+        style={{ 
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch'
+        }}
       >
         {carregandoAntigas && (
           <div className="flex justify-center py-2">
@@ -211,20 +218,23 @@ const JanelaChat = ({
       {showScrollButton && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-24 right-8 p-3 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+          className="absolute bottom-20 sm:bottom-24 right-4 sm:right-8 p-2.5 sm:p-3 bg-blue-500 text-white rounded-full shadow-lg active:scale-95 sm:hover:bg-blue-600 transition-all z-10"
+          aria-label="Rolar para baixo"
         >
-          <ArrowDown className="w-5 h-5" />
+          <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       )}
 
       {/* Input */}
-      <InputMensagem
-        onEnviar={(texto) => enviarMensagem(conversa.id, texto)}
-        onEnviarArquivo={(file, tipo) => enviarArquivo(conversa.id, file, tipo)}
-        onDigitando={(isTyping) => atualizarDigitacao(conversa.id, isTyping)}
-        disabled={enviando}
-        bloqueado={bloqueado}
-      />
+      <div className="flex-shrink-0">
+        <InputMensagem
+          onEnviar={(texto) => enviarMensagem(conversa.id, texto)}
+          onEnviarArquivo={(file, tipo) => enviarArquivo(conversa.id, file, tipo)}
+          onDigitando={(isTyping) => atualizarDigitacao(conversa.id, isTyping)}
+          disabled={enviando}
+          bloqueado={bloqueado}
+        />
+      </div>
     </div>
   );
 };

@@ -207,8 +207,12 @@ class NotificationManager {
    * Envia mensagem para o service worker
    */
   sendMessageToSW(message) {
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage(message);
+    if ('serviceWorker' in navigator && navigator.serviceWorker && navigator.serviceWorker.controller) {
+      try {
+        navigator.serviceWorker.controller.postMessage(message);
+      } catch (error) {
+        console.warn('⚠️ Erro ao enviar mensagem para Service Worker:', error);
+      }
     }
   }
 
@@ -341,20 +345,24 @@ class NotificationManager {
    * Atualiza contador de badge
    */
   updateBadge(increment = 0) {
-    if ('setAppBadge' in navigator) {
-      // Obter contagem atual de não lidas
-      const currentCount = this.getCurrentUnreadCount();
-      const newCount = currentCount + increment;
-      
-      navigator.setAppBadge(newCount).catch(err => {
-        console.log('Badge API não suportada:', err);
-      });
+    try {
+      if ('setAppBadge' in navigator) {
+        // Obter contagem atual de não lidas
+        const currentCount = this.getCurrentUnreadCount();
+        const newCount = currentCount + increment;
+        
+        navigator.setAppBadge(newCount).catch(err => {
+          console.log('Badge API não suportada:', err);
+        });
 
-      // Atualizar SW também
-      this.sendMessageToSW({
-        type: 'UPDATE_BADGE',
-        count: newCount
-      });
+        // Atualizar SW também
+        this.sendMessageToSW({
+          type: 'UPDATE_BADGE',
+          count: newCount
+        });
+      }
+    } catch (error) {
+      console.warn('⚠️ Erro ao atualizar badge:', error);
     }
   }
 
@@ -362,11 +370,15 @@ class NotificationManager {
    * Limpa badge
    */
   clearBadge() {
-    if ('clearAppBadge' in navigator) {
-      navigator.clearAppBadge().catch(() => {});
+    try {
+      if ('clearAppBadge' in navigator) {
+        navigator.clearAppBadge().catch(() => {});
+      }
+      
+      this.sendMessageToSW({ type: 'CLEAR_BADGE' });
+    } catch (error) {
+      console.warn('⚠️ Erro ao limpar badge:', error);
     }
-    
-    this.sendMessageToSW({ type: 'CLEAR_BADGE' });
   }
 
   /**
@@ -433,14 +445,18 @@ class NotificationManager {
    * Salva preferências
    */
   savePreferences(newPreferences) {
-    this.preferences = { ...this.preferences, ...newPreferences };
-    localStorage.setItem('notification_preferences', JSON.stringify(this.preferences));
-    
-    // Atualizar SW
-    this.sendMessageToSW({
-      type: 'UPDATE_CONFIG',
-      preferences: this.preferences
-    });
+    try {
+      this.preferences = { ...this.preferences, ...newPreferences };
+      localStorage.setItem('notification_preferences', JSON.stringify(this.preferences));
+      
+      // Atualizar SW
+      this.sendMessageToSW({
+        type: 'UPDATE_CONFIG',
+        preferences: this.preferences
+      });
+    } catch (error) {
+      console.warn('⚠️ Erro ao salvar preferências:', error);
+    }
   }
 
   /**
@@ -530,20 +546,24 @@ class NotificationManager {
    */
   async loadPendingNotifications() {
     // Obter do service worker
-    if (navigator.serviceWorker.controller) {
-      const channel = new MessageChannel();
-      
-      channel.port1.onmessage = (event) => {
-        if (event.data.notifications) {
-          this.notificationQueue = event.data.notifications;
-          console.log('📬 Notificações pendentes carregadas:', this.notificationQueue.length);
-        }
-      };
+    if ('serviceWorker' in navigator && navigator.serviceWorker && navigator.serviceWorker.controller) {
+      try {
+        const channel = new MessageChannel();
+        
+        channel.port1.onmessage = (event) => {
+          if (event.data.notifications) {
+            this.notificationQueue = event.data.notifications;
+            console.log('📬 Notificações pendentes carregadas:', this.notificationQueue.length);
+          }
+        };
 
-      navigator.serviceWorker.controller.postMessage(
-        { type: 'GET_PENDING_NOTIFICATIONS' },
-        [channel.port2]
-      );
+        navigator.serviceWorker.controller.postMessage(
+          { type: 'GET_PENDING_NOTIFICATIONS' },
+          [channel.port2]
+        );
+      } catch (error) {
+        console.warn('⚠️ Erro ao carregar notificações pendentes:', error);
+      }
     }
   }
 
@@ -564,10 +584,14 @@ class NotificationManager {
    * Cleanup
    */
   cleanup() {
-    this.initialized = false;
-    this.currentUserId = null;
-    this.notificationQueue = [];
-    this.clearBadge();
+    try {
+      this.initialized = false;
+      this.currentUserId = null;
+      this.notificationQueue = [];
+      this.clearBadge();
+    } catch (error) {
+      console.warn('⚠️ Erro durante cleanup:', error);
+    }
   }
 }
 

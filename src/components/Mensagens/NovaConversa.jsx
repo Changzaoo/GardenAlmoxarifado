@@ -59,15 +59,49 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
       
       console.log('📊 Total de usuários encontrados:', snapshot.size);
       
+      // Buscar fotos dos funcionários (apenas ativos)
+      const funcionariosRef = collection(db, 'funcionarios');
+      const funcionariosSnap = await getDocs(funcionariosRef);
+      const funcionariosMap = new Map();
+      
+      funcionariosSnap.docs.forEach(doc => {
+        const data = doc.data();
+        // Ignorar funcionários demitidos
+        if (data.demitido) return;
+        if (data.userId) {
+          funcionariosMap.set(data.userId, {
+            photoURL: data.photoURL,
+            cargo: data.cargo,
+            setor: data.setor
+          });
+        }
+        // Também mapear por email como fallback
+        if (data.email) {
+          funcionariosMap.set(data.email, {
+            photoURL: data.photoURL,
+            cargo: data.cargo,
+            setor: data.setor
+          });
+        }
+      });
+      
       const listaUsuarios = snapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
+        .map(doc => {
+          const userData = doc.data();
+          const funcionarioData = funcionariosMap.get(doc.id) || funcionariosMap.get(userData.email);
+          
+          return {
+            id: doc.id,
+            ...userData,
+            photoURL: funcionarioData?.photoURL || userData.photoURL,
+            cargo: funcionarioData?.cargo || userData.cargo,
+            setor: funcionarioData?.setor || userData.setor
+          };
+        })
         .filter(u => u.id !== usuarioAtual.id); // Remover usuário atual
 
       console.log('✅ Usuários disponíveis (sem o atual):', listaUsuarios.length);
-      console.log('📋 Lista:', listaUsuarios.map(u => ({ id: u.id, nome: u.nome })));
+      console.log('📋 Lista:', listaUsuarios.map(u => ({ id: u.id, nome: u.nome, photoURL: u.photoURL })));
       
       setUsuarios(listaUsuarios);
       setUsuariosFiltrados(listaUsuarios);
@@ -281,10 +315,18 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
                         }`}
                       >
                         {/* Avatar */}
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden ${
                           selecionado ? 'bg-blue-500' : 'bg-gradient-to-br from-purple-500 to-pink-500'
                         }`}>
-                          {usuario.nome?.charAt(0).toUpperCase() || '?'}
+                          {usuario.photoURL ? (
+                            <img 
+                              src={usuario.photoURL} 
+                              alt={usuario.nome}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            usuario.nome?.charAt(0).toUpperCase() || '?'
+                          )}
                         </div>
 
                         {/* Info */}

@@ -101,10 +101,11 @@ const CadastroSetores = () => {
         new Map(todosFuncionarios.map(f => [f.id, f])).values()
       );
 
-      // Filtrar apenas funcionários que TÊM setor e empresa definidos
+      // Filtrar apenas funcionários que TÊM setor e empresa definidos E não estão demitidos
       const funcionariosComSetor = funcionariosUnicos.filter(
         func => func.setorId && func.setorId.trim() !== '' && 
-                func.empresaId && func.empresaId.trim() !== ''
+                func.empresaId && func.empresaId.trim() !== '' &&
+                !func.demitido
       );
 
       setTotalFuncionarios(funcionariosComSetor.length);

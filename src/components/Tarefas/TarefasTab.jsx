@@ -11,6 +11,8 @@ import CriarTarefa from './CriarTarefa';
 import DetalheTarefa from './DetalheTarefa';
 import AvaliacaoTarefaModal from './AvaliacaoTarefaModal';
 import AtribuirTarefaSemanal from './AtribuirTarefaSemanal';
+import ModelosTarefas from './ModelosTarefas';
+import CriarCronogramaSemanal from './CriarCronogramaSemanal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { formatarDataHora } from '../../utils/dateUtils';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
@@ -35,6 +37,8 @@ const TarefasTab = ({
   const [tarefas, setTarefas] = useState([]);
   const [showCriarTarefa, setShowCriarTarefa] = useState(false);
   const [showAtribuirSemanal, setShowAtribuirSemanal] = useState(false);
+  const [showModelosTarefas, setShowModelosTarefas] = useState(false);
+  const [showCriarCronograma, setShowCriarCronograma] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState(defaultFiltros?.status || 'todas');
   const [filtroPeriodo, setFiltroPeriodo] = useState(defaultFiltros?.periodo || 'todos');
   const [filtroAvaliacao, setFiltroAvaliacao] = useState(defaultFiltros?.avaliacao || 'todas');
@@ -483,15 +487,12 @@ const TarefasTab = ({
       )}
 
       {/* Barra de Filtros Modernizada */}
-      <div className="bg-gradient-to-br from-white via-gray-50 to-blue-50 dark:from-[#1E2732] dark:via-[#1A2332] dark:to-[#1E2742] rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700/50 p-6 relative overflow-hidden">
-        {/* Decoração de fundo */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-400/10 dark:from-blue-500/5 dark:to-purple-500/5 rounded-full blur-3xl -z-0" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-indigo-400/10 to-pink-400/10 dark:from-indigo-500/5 dark:to-pink-500/5 rounded-full blur-3xl -z-0" />
+      <div className="bg-white dark:bg-[#1E2732] rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700/50 p-6 relative overflow-hidden">
         
         <div className="relative z-10 space-y-4">
           {/* Busca com ícone externo */}
           <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl p-3 shadow-lg">
+            <div className="flex-shrink-0 bg-blue-500 dark:bg-blue-600 rounded-xl p-3 shadow-lg">
               <Search className="w-5 h-5 text-white" />
             </div>
             <input
@@ -507,7 +508,6 @@ const TarefasTab = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Status Filter Card */}
             <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 dark:from-green-500 dark:to-emerald-600 rounded-xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" />
               <select
                 value={filtroStatus}
                 onChange={(e) => setFiltroStatus(e.target.value)}
@@ -528,7 +528,6 @@ const TarefasTab = ({
 
             {/* Período Filter Card */}
             <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-500 dark:from-blue-500 dark:to-cyan-600 rounded-xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" />
               <select
                 value={filtroPeriodo}
                 onChange={(e) => setFiltroPeriodo(e.target.value)}
@@ -548,7 +547,6 @@ const TarefasTab = ({
 
             {/* Avaliação Filter Card */}
             <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 dark:from-yellow-500 dark:to-orange-600 rounded-xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" />
               <select
                 value={filtroAvaliacao}
                 onChange={(e) => setFiltroAvaliacao(e.target.value)}
@@ -573,15 +571,22 @@ const TarefasTab = ({
           {showAddButton && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
             <div className="flex flex-wrap gap-3 pt-2">
               <button
-                onClick={() => setShowAtribuirSemanal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600 text-white rounded-xl hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 dark:hover:from-indigo-700 dark:hover:via-purple-700 dark:hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/50 hover:scale-105 font-medium"
+                onClick={() => setShowModelosTarefas(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-green-500 dark:bg-green-600 text-white rounded-lg hover:bg-green-600 dark:hover:bg-green-700 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 font-medium text-sm"
               >
-                <CalendarDays className="w-5 h-5" />
-                <span>Tarefa Semanal</span>
+                <Star className="w-4 h-4" />
+                <span>Modelos</span>
+              </button>
+              <button
+                onClick={() => setShowCriarCronograma(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-purple-500 dark:bg-purple-600 text-white rounded-lg hover:bg-purple-600 dark:hover:bg-purple-700 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 font-medium text-sm"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Cronograma Semanal</span>
               </button>
               <button
                 onClick={() => setShowCriarTarefa(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 dark:from-blue-600 dark:to-cyan-600 text-white rounded-xl hover:from-blue-600 hover:to-cyan-600 dark:hover:from-blue-700 dark:hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/50 hover:scale-105 font-medium"
+                className="flex items-center gap-2 px-6 py-3 bg-blue-500 dark:bg-blue-600 text-white rounded-xl hover:bg-blue-600 dark:hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 font-medium"
               >
                 <Plus className="w-5 h-5" />
                 <span>Nova Tarefa</span>
@@ -609,9 +614,9 @@ const TarefasTab = ({
             {tarefasFiltradas.map(tarefa => {
               const statusInfo = getStatusInfo(tarefa);
               const prioridadeColors = {
-                alta: 'from-red-500 to-pink-600',
-                média: 'from-yellow-500 to-orange-600',
-                baixa: 'from-green-500 to-teal-600'
+                alta: 'bg-red-500',
+                média: 'bg-yellow-500',
+                baixa: 'bg-green-500'
               };
               const statusColors = {
                 pendente: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
@@ -632,16 +637,13 @@ const TarefasTab = ({
                 className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer border-2 border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500"
                 onClick={() => setTarefaSelecionada(tarefa)}
               >
-                {/* Gradiente decorativo de fundo */}
-                <div className={`absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity bg-gradient-to-br ${prioridadeColors[tarefa.prioridade || 'baixa']}`}></div>
-                
-                {/* Barra de prioridade no topo com brilho */}
-                <div className={`h-3 bg-gradient-to-r ${prioridadeColors[tarefa.prioridade || 'baixa']} shadow-lg`} />
+                {/* Barra de prioridade no topo */}
+                <div className={`h-3 ${prioridadeColors[tarefa.prioridade || 'baixa']} shadow-lg`} />
                 
                 <div className="relative p-6">
                   {/* Header com ícone */}
                   <div className="flex items-start gap-4 mb-4">
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${prioridadeColors[tarefa.prioridade || 'baixa']} shadow-lg flex-shrink-0 flex items-center justify-center`}>
+                    <div className="p-3 rounded-xl bg-gray-300 dark:bg-gray-800 shadow-lg flex-shrink-0 flex items-center justify-center">
                       {emoji ? (
                         <span className="text-3xl">{emoji}</span>
                       ) : (
@@ -661,7 +663,7 @@ const TarefasTab = ({
                         </span>
                         
                         {!readOnly && tarefa.status === 'em_andamento' && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full text-xs font-bold shadow-lg shadow-blue-500/50 animate-pulse">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 text-white rounded-full text-xs font-bold shadow-lg animate-pulse">
                             <Clock className="w-3.5 h-3.5" />
                             {formatarTempo(temposDecorridos[tarefa.id])}
                           </span>
@@ -929,6 +931,32 @@ const TarefasTab = ({
         <AtribuirTarefaSemanal
           onClose={() => setShowAtribuirSemanal(false)}
           funcionarios={funcionarios}
+        />
+      )}
+
+      {showModelosTarefas && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
+            <ModelosTarefas />
+            <div className="bg-gray-50 p-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowModelosTarefas(false)}
+                className="w-full px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCriarCronograma && (
+        <CriarCronogramaSemanal
+          onClose={() => setShowCriarCronograma(false)}
+          onCronogramaCriado={() => {
+            setShowCriarCronograma(false);
+            showToast('Cronograma criado e notificações enviadas!', 'success');
+          }}
         />
       )}
 

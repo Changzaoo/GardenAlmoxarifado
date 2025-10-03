@@ -111,8 +111,40 @@ export const useMensagens = () => {
               
               // Se não for do usuário atual e não estiver na conversa ativa
               if (novaMensagem.remetenteId !== usuario.id) {
-                // Forçar atualização do contador (o Firestore já atualizou, mas garantir)
+                // FORÇAR ATUALIZAÇÃO DA LISTA DE CONVERSAS
                 console.log('🔄 Forçando atualização da lista de conversas...');
+                
+                // Atualizar o estado das conversas para triggerar re-render
+                setConversas(prevConversas => {
+                  // Encontrar a conversa que recebeu a mensagem
+                  const conversaIndex = prevConversas.findIndex(c => c.id === conversa.id);
+                  if (conversaIndex === -1) return prevConversas;
+                  
+                  // Criar nova array com a conversa atualizada
+                  const novasConversas = [...prevConversas];
+                  const conversaAtualizada = {
+                    ...novasConversas[conversaIndex],
+                    ultimaMensagem: novaMensagem.textoOriginal || novaMensagem.texto,
+                    atualizadaEm: novaMensagem.timestamp,
+                    // Incrementar não lidas apenas se não estiver na conversa ativa
+                    naoLidas: conversaAtivaRef.current?.id === conversa.id 
+                      ? 0 
+                      : (novasConversas[conversaIndex].naoLidas || 0) + 1
+                  };
+                  
+                  // Remover do lugar atual e adicionar no topo
+                  novasConversas.splice(conversaIndex, 1);
+                  novasConversas.unshift(conversaAtualizada);
+                  
+                  console.log('✅ Lista de conversas atualizada! Nova ordem:', novasConversas.map(c => c.id));
+                  
+                  // Atualizar total de não lidas
+                  const total = novasConversas.reduce((acc, conv) => acc + (conv.naoLidas || 0), 0);
+                  setTotalNaoLidas(total);
+                  console.log('🔔 Total de não lidas atualizado para:', total);
+                  
+                  return novasConversas;
+                });
                 
                 // Tocar som se não estiver na conversa
                 if (conversaAtivaRef.current?.id !== conversa.id) {
@@ -170,6 +202,7 @@ export const useMensagens = () => {
       console.log('🔕 Usuário está na página de mensagens ativa, apenas toast');
       toast.info(`${remetente}: ${mensagem}`, {
         icon: '💬',
+        autoClose: 4000,
         onClick: () => {
           // Navegar para a conversa
           if (conversaId) {
@@ -180,12 +213,83 @@ export const useMensagens = () => {
       return;
     }
 
-    // Mostrar notificação do navegador
+    // NOTIFICAÇÃO NATIVA (funciona em desktop e mobile)
     if ('Notification' in window && Notification.permission === 'granted') {
-      const notification = new Notification(titulo || remetente, {
+      // Tentar usar Service Worker para notificação (melhor para mobile)
+      if ('serviceWorker' in navigator && navigator.serviceWorker) {
+        console.log('📱 Enviando notificação via Service Worker...');
+        
+        navigator.serviceWorker.ready.then((registration) => {
+          if (!registration || !registration.showNotification) {
+            console.warn('⚠️ Registration.showNotification não disponível');
+            showWebNotification(remetente, mensagem, conversaId);
+            return;
+          }
+          
+          registration.showNotification(remetente || titulo || 'Nova Mensagem', {
+            body: mensagem,
+            icon: '/logo192.png',
+            badge: '/logo192.png',
+            tag: `msg-${conversaId}`,
+            data: {
+              conversaId,
+              url: conversaId ? `/#/mensagens?conversa=${conversaId}` : '/#/mensagens',
+              timestamp: Date.now()
+            },
+            requireInteraction: false,
+            vibrate: [200, 100, 200],
+            actions: [
+              {
+                action: 'open',
+                title: '📖 Abrir'
+              }
+            ],
+            silent: false
+          }).then(() => {
+            console.log('✅ Notificação enviada via Service Worker');
+          }).catch(err => {
+            console.error('❌ Erro ao enviar notificação via SW:', err);
+            // Fallback para notificação web normal
+            showWebNotification(remetente, mensagem, conversaId);
+          });
+        }).catch(err => {
+          console.error('❌ Service Worker não disponível:', err);
+          // Fallback para notificação web normal
+          showWebNotification(remetente, mensagem, conversaId);
+        });
+      } else {
+        // Fallback: Notificação web normal (desktop)
+        showWebNotification(remetente, mensagem, conversaId);
+      }
+
+      // Tocar som
+      try {
+        const audio = new Audio('/sounds/notification.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(e => console.log('Som não disponível'));
+      } catch (e) {
+        // Ignorar erro de som
+      }
+    }
+
+    // Toast sempre (backup visual)
+    toast.info(`${remetente}: ${mensagem}`, {
+      icon: '💬',
+      autoClose: 5000,
+      onClick: () => {
+        if (conversaId) {
+          window.location.hash = `#/mensagens?conversa=${conversaId}`;
+        }
+      }
+    });
+
+    // Função helper para notificação web (fallback)
+    function showWebNotification(remetente, mensagem, conversaId) {
+      console.log('🌐 Mostrando notificação web (fallback)...');
+      const notification = new Notification(remetente || 'Nova Mensagem', {
         body: mensagem,
-        icon: '/logo.png',
-        badge: '/logo.png',
+        icon: '/logo192.png',
+        badge: '/logo192.png',
         tag: `msg-${conversaId}`,
         requireInteraction: false,
         vibrate: [200, 100, 200],
@@ -200,28 +304,9 @@ export const useMensagens = () => {
         notification.close();
       };
 
+      // Auto-fechar após 10 segundos
       setTimeout(() => notification.close(), 10000);
-
-      // Tocar som
-      try {
-        const audio = new Audio('/sounds/notification.mp3');
-        audio.volume = 0.5;
-        audio.play().catch(e => console.log('Som não disponível'));
-      } catch (e) {
-        // Ignorar erro de som
-      }
     }
-
-    // Toast sempre
-    toast.info(`${remetente}: ${mensagem}`, {
-      icon: '💬',
-      autoClose: 5000,
-      onClick: () => {
-        if (conversaId) {
-          window.location.hash = `#/mensagens?conversa=${conversaId}`;
-        }
-      }
-    });
 
   }, []);
 
@@ -430,8 +515,26 @@ export const useMensagens = () => {
     console.log('Chamando setConversaAtiva');
     setConversaAtiva(conversa);
     
-    // ZERAR CONTADOR DE NÃO LIDAS IMEDIATAMENTE (antes de carregar mensagens)
-    console.log('🔔 Zerando contador de não lidas imediatamente...');
+    // ATUALIZAR CONTADOR LOCALMENTE (UX instantâneo)
+    const naoLidasAntes = conversa.naoLidas || 0;
+    if (naoLidasAntes > 0) {
+      console.log('🔔 Atualizando contador local instantaneamente...');
+      setConversas(prevConversas => {
+        return prevConversas.map(c => {
+          if (c.id === conversa.id) {
+            return { ...c, naoLidas: 0 };
+          }
+          return c;
+        });
+      });
+      
+      // Atualizar total de não lidas
+      setTotalNaoLidas(prev => Math.max(0, prev - naoLidasAntes));
+      console.log('✅ Contador local atualizado! Decrementado:', naoLidasAntes);
+    }
+    
+    // ZERAR CONTADOR NO FIREBASE (em background)
+    console.log('🔔 Zerando contador no Firebase...');
     mensagensService.clearUnreadCount(conversa.id, usuario.id).catch(err => {
       console.error('Erro ao zerar contador:', err);
     });
@@ -537,12 +640,33 @@ export const useMensagens = () => {
     
     setEnviando(true);
     try {
-      await mensagensService.sendMessage(
+      const mensagemEnviada = await mensagensService.sendMessage(
         conversaId,
         usuario.id,
         texto,
         MESSAGE_TYPE.TEXTO
       );
+      
+      // ATUALIZAR LISTA DE CONVERSAS LOCALMENTE (UX instantâneo)
+      console.log('📤 Mensagem enviada! Atualizando lista de conversas...');
+      setConversas(prevConversas => {
+        const conversaIndex = prevConversas.findIndex(c => c.id === conversaId);
+        if (conversaIndex === -1) return prevConversas;
+        
+        const novasConversas = [...prevConversas];
+        const conversaAtualizada = {
+          ...novasConversas[conversaIndex],
+          ultimaMensagem: texto.substring(0, 50),
+          atualizadaEm: new Date(),
+        };
+        
+        // Mover para o topo
+        novasConversas.splice(conversaIndex, 1);
+        novasConversas.unshift(conversaAtualizada);
+        
+        console.log('✅ Lista atualizada após envio!');
+        return novasConversas;
+      });
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
       toast.error('Nao foi possivel enviar a mensagem');
@@ -565,6 +689,30 @@ export const useMensagens = () => {
         tipo,
         url
       );
+      
+      // ATUALIZAR LISTA DE CONVERSAS LOCALMENTE (UX instantâneo)
+      console.log('📤 Arquivo enviado! Atualizando lista de conversas...');
+      setConversas(prevConversas => {
+        const conversaIndex = prevConversas.findIndex(c => c.id === conversaId);
+        if (conversaIndex === -1) return prevConversas;
+        
+        const novasConversas = [...prevConversas];
+        const tipoEmoji = tipo === MESSAGE_TYPE.IMAGEM ? '🖼️' : 
+                         tipo === MESSAGE_TYPE.AUDIO ? '🎵' : 
+                         tipo === MESSAGE_TYPE.VIDEO ? '🎥' : '📎';
+        const conversaAtualizada = {
+          ...novasConversas[conversaIndex],
+          ultimaMensagem: `${tipoEmoji} ${tipo}`,
+          atualizadaEm: new Date(),
+        };
+        
+        // Mover para o topo
+        novasConversas.splice(conversaIndex, 1);
+        novasConversas.unshift(conversaAtualizada);
+        
+        console.log('✅ Lista atualizada após envio de arquivo!');
+        return novasConversas;
+      });
     } catch (error) {
       console.error('Erro ao enviar arquivo:', error);
       toast.error('Nao foi possivel enviar o arquivo');
@@ -624,6 +772,30 @@ export const useMensagens = () => {
       toast.error('Nao foi possivel editar a mensagem');
     }
   }, []);
+
+  /**
+   * Apaga conversa apenas para o usuário atual
+   * A conversa continua existindo para outros participantes
+   */
+  const apagarConversa = useCallback(async (conversaId) => {
+    try {
+      await mensagensService.deleteConversationForUser(conversaId, usuario.id);
+      
+      // Remove conversa do estado local
+      setConversas(prev => prev.filter(c => c.id !== conversaId));
+      
+      // Se a conversa apagada era a ativa, limpa seleção
+      if (conversaAtiva?.id === conversaId) {
+        setConversaAtiva(null);
+        setMensagens([]);
+      }
+      
+      toast.success('Conversa apagada');
+    } catch (error) {
+      console.error('Erro ao apagar conversa:', error);
+      toast.error('Não foi possível apagar a conversa');
+    }
+  }, [usuario?.id, conversaAtiva]);
 
   /**
    * Marca mensagens como lidas
@@ -790,6 +962,7 @@ export const useMensagens = () => {
     iniciarConversa,
     criarGrupo,
     atualizarConfiguracoesConversa,
+    apagarConversa,
     
     // Funcoes de mensagens
     enviarMensagem,

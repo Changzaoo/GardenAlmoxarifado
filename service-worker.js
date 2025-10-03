@@ -123,7 +123,7 @@ self.addEventListener('push', (event) => {
 
 // Clique na notificação
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notificação clicada:', event.action);
+  console.log('[SW] Notificação clicada:', event.action, event.notification.data);
   
   event.notification.close();
   
@@ -132,33 +132,60 @@ self.addEventListener('notificationclick', (event) => {
     badgeCount = Math.max(0, badgeCount - 1);
     if (self.registration.setAppBadge) {
       if (badgeCount === 0) {
-        self.registration.clearAppBadge();
+        self.registration.clearAppBadge().catch(err => console.log('[SW] Erro ao limpar badge:', err));
       } else {
-        self.registration.setAppBadge(badgeCount);
+        self.registration.setAppBadge(badgeCount).catch(err => console.log('[SW] Erro ao atualizar badge:', err));
       }
     }
   }
   
-  const urlToOpen = event.notification.data?.url || '/#/mensagens';
+  const conversaId = event.notification.data?.conversaId;
+  const urlToOpen = conversaId 
+    ? `${self.location.origin}/#/mensagens?conversa=${conversaId}`
+    : `${self.location.origin}/#/mensagens`;
+  
+  console.log('[SW] Abrindo URL:', urlToOpen);
   
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(windowClients => {
-        // Verificar se já existe uma janela aberta
+        console.log('[SW] Janelas abertas:', windowClients.length);
+        
+        // Verificar se já existe uma janela aberta com a app
         for (let client of windowClients) {
-          if (client.url.includes('mensagens') && 'focus' in client) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            console.log('[SW] Focando janela existente e navegando...');
+            
+            // Enviar mensagem para o cliente navegar
             client.postMessage({
               type: 'NOTIFICATION_CLICKED',
-              conversaId: event.notification.data?.conversaId
+              conversaId: conversaId,
+              action: 'navigate'
             });
-            return client.focus();
+            
+            // Focar janela
+            return client.focus().then(() => {
+              // Navegar para a conversa
+              return client.navigate(urlToOpen).catch(err => {
+                console.error('[SW] Erro ao navegar:', err);
+                // Se falhar, tentar via postMessage
+                client.postMessage({
+                  type: 'NAVIGATE_TO_CONVERSA',
+                  conversaId: conversaId
+                });
+              });
+            });
           }
         }
         
-        // Abrir nova janela
+        // Se não encontrou janela aberta, abrir nova
+        console.log('[SW] Abrindo nova janela...');
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }
+      })
+      .catch(err => {
+        console.error('[SW] Erro ao processar clique na notificação:', err);
       })
   );
 });

@@ -173,45 +173,52 @@ class MensagensService {
         }
         
         // Processar conversas e buscar nomes e fotos dos participantes
-        const conversasPromises = snapshot.docs.map(async (doc) => {
-          const data = doc.data();
-          let nome = data.nome; // Para grupos já tem nome
-          let photoURL = data.imagemUrl || null; // Para grupos
-          
-          // Se for conversa privada, buscar nome e foto do outro participante
-          if (data.tipo === CONVERSATION_TYPE.PRIVADA) {
-            const outroParticipanteId = data.participantes.find(id => id !== userId);
-            if (outroParticipanteId) {
-              const outroUsuario = await this.getUserInfo(outroParticipanteId);
-              nome = outroUsuario?.nome || 'Usuário';
-              photoURL = outroUsuario?.photoURL || null;
-              console.log('👤 Participante buscado:', { 
-                nome, 
-                photoURL, 
-                id: outroParticipanteId,
-                usuarioCompleto: outroUsuario 
-              });
-              
-              if (!photoURL) {
-                console.warn('⚠️ Usuário sem photoURL:', outroParticipanteId);
+        const conversasPromises = snapshot.docs
+          .filter(doc => {
+            // Filtrar conversas deletadas pelo usuário
+            const data = doc.data();
+            const deletedBy = data.deletedBy || [];
+            return !deletedBy.includes(userId);
+          })
+          .map(async (doc) => {
+            const data = doc.data();
+            let nome = data.nome; // Para grupos já tem nome
+            let photoURL = data.imagemUrl || null; // Para grupos
+            
+            // Se for conversa privada, buscar nome e foto do outro participante
+            if (data.tipo === CONVERSATION_TYPE.PRIVADA) {
+              const outroParticipanteId = data.participantes.find(id => id !== userId);
+              if (outroParticipanteId) {
+                const outroUsuario = await this.getUserInfo(outroParticipanteId);
+                nome = outroUsuario?.nome || 'Usuário';
+                photoURL = outroUsuario?.photoURL || null;
+                console.log('👤 Participante buscado:', { 
+                  nome, 
+                  photoURL, 
+                  id: outroParticipanteId,
+                  usuarioCompleto: outroUsuario 
+                });
+                
+                if (!photoURL) {
+                  console.warn('⚠️ Usuário sem photoURL:', outroParticipanteId);
+                }
               }
             }
-          }
-          
-          // Adicionar userId do usuário atual para facilitar acesso a participantesInfo
-          return {
-            id: doc.id,
-            ...data,
-            nome, // ← Nome resolvido
-            photoURL, // ← Foto de perfil resolvida
-            userId: userId, // ← Adiciona o ID do usuário atual
-            // Adicionar info do usuário atual
-            naoLidas: data.participantesInfo?.[userId]?.naoLidas || 0,
-            arquivado: data.participantesInfo?.[userId]?.arquivado || false,
-            silenciado: data.participantesInfo?.[userId]?.silenciado || false,
-            fixado: data.participantesInfo?.[userId]?.fixado || false
-          };
-        });
+            
+            // Adicionar userId do usuário atual para facilitar acesso a participantesInfo
+            return {
+              id: doc.id,
+              ...data,
+              nome, // ← Nome resolvido
+              photoURL, // ← Foto de perfil resolvida
+              userId: userId, // ← Adiciona o ID do usuário atual
+              // Adicionar info do usuário atual
+              naoLidas: data.participantesInfo?.[userId]?.naoLidas || 0,
+              arquivado: data.participantesInfo?.[userId]?.arquivado || false,
+              silenciado: data.participantesInfo?.[userId]?.silenciado || false,
+              fixado: data.participantesInfo?.[userId]?.fixado || false
+            };
+          });
         
         const conversas = await Promise.all(conversasPromises);
         
@@ -242,6 +249,36 @@ class MensagensService {
       await updateDoc(conversaRef, updates);
     } catch (error) {
       console.error('Erro ao atualizar configurações:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Apaga a conversa apenas para o usuário atual
+   * A conversa continua existindo para os outros participantes
+   */
+  async deleteConversationForUser(conversaId, userId) {
+    try {
+      const conversaRef = doc(this.conversasRef, conversaId);
+      
+      // Obtém a conversa atual
+      const conversaSnap = await getDoc(conversaRef);
+      if (!conversaSnap.exists()) {
+        throw new Error('Conversa não encontrada');
+      }
+
+      const conversaData = conversaSnap.data();
+      const deletedBy = conversaData.deletedBy || [];
+
+      // Adiciona o userId ao array deletedBy se ainda não estiver lá
+      if (!deletedBy.includes(userId)) {
+        deletedBy.push(userId);
+        await updateDoc(conversaRef, { deletedBy });
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao apagar conversa:', error);
       throw error;
     }
   }
@@ -1023,6 +1060,8 @@ class MensagensService {
    */
   async getUserInfo(userId) {
     try {
+      console.log('🔍 Buscando informações do usuário:', userId);
+      
       // Primeiro tentar buscar na coleção funcionarios (tem photoURL garantido)
       const funcionariosRef = collection(db, 'funcionarios');
       const qFunc = query(funcionariosRef, where('userId', '==', userId));
@@ -1030,12 +1069,18 @@ class MensagensService {
       
       if (!funcionariosSnap.empty) {
         const funcionarioData = funcionariosSnap.docs[0].data();
-        console.log('✅ Funcionário encontrado com foto:', funcionarioData.photoURL);
+        console.log('✅ Funcionário encontrado por userId:', {
+          nome: funcionarioData.nome,
+          photoURL: funcionarioData.photoURL,
+          userId: funcionarioData.userId
+        });
         return {
           id: funcionariosSnap.docs[0].id,
           ...funcionarioData
         };
       }
+      
+      console.log('⚠️ Funcionário não encontrado por userId, tentando por email...');
       
       // Se não encontrou por userId, tentar por email na coleção usuarios
       const userRef = doc(this.usuariosRef, userId);
@@ -1043,6 +1088,7 @@ class MensagensService {
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        console.log('📧 Usuário encontrado, email:', userData.email);
         
         // Tentar buscar funcionário pelo email
         const qFuncEmail = query(funcionariosRef, where('email', '==', userData.email));
@@ -1050,7 +1096,11 @@ class MensagensService {
         
         if (!funcionariosSnapEmail.empty) {
           const funcionarioData = funcionariosSnapEmail.docs[0].data();
-          console.log('✅ Funcionário encontrado pelo email com foto:', funcionarioData.photoURL);
+          console.log('✅ Funcionário encontrado por email:', {
+            nome: funcionarioData.nome,
+            photoURL: funcionarioData.photoURL,
+            email: funcionarioData.email
+          });
           return {
             id: funcionariosSnapEmail.docs[0].id,
             ...funcionarioData
@@ -1058,7 +1108,11 @@ class MensagensService {
         }
         
         // Se não encontrou funcionário, retornar dados do usuario
-        console.log('⚠️ Usuário encontrado mas sem funcionário vinculado');
+        console.log('⚠️ Usuário encontrado mas sem funcionário vinculado:', {
+          nome: userData.nome,
+          email: userData.email,
+          photoURL: userData.photoURL || 'NENHUMA'
+        });
         return {
           id: userDoc.id,
           ...userData
@@ -1068,7 +1122,8 @@ class MensagensService {
       console.warn('❌ Usuário não encontrado:', userId);
       return null;
     } catch (error) {
-      console.error('Erro ao buscar informações do usuário:', error);
+      console.error('❌ Erro ao buscar informações do usuário:', error);
+      console.error('Stack:', error.stack);
       return null;
     }
   }

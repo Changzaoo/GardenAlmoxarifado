@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import MeuInventarioTab from '../Inventario/MeuInventarioTab';
 import TarefasTab from '../Tarefas/TarefasTab';
+import CronogramaSemanalCard from '../Tarefas/CronogramaSemanalCard';
 import AvaliacaoPerfilModal from './AvaliacaoPerfilModal';
 import AvaliacoesList from './AvaliacoesList';
 import { collection, query, where, getDocs, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
@@ -48,7 +49,8 @@ const ProfileTab = () => {
   const { funcionarios } = useFuncionarios();
   const [dadosFuncionario, setDadosFuncionario] = useState(null);
   
-  // Buscar funcionarioInfo da lista carregada
+  // Buscar funcionarioInfo da lista carregada (MESMA FONTE que página de Tarefas)
+  // Garante que photoURL e cargo são exatamente os mesmos em todo o sistema
   const funcionarioInfo = funcionarios.find(f => {
     // Tenta match por email (mais confiável)
     if (f.email && usuario?.email && f.email === usuario.email) return true;
@@ -94,18 +96,24 @@ const ProfileTab = () => {
     return () => unsubscribe();
   }, [usuario?.email, funcionarioInfo]);
   
-  // Usar dadosFuncionario se disponível, senão funcionarioInfo
-  const dadosExibicao = dadosFuncionario || funcionarioInfo;
+  // PRIORIZAR funcionarioInfo (do contexto) para garantir sincronização
+  // Isso garante que cargo, foto e setor sejam os mesmos em todo o sistema
+  const dadosExibicao = funcionarioInfo || dadosFuncionario;
   
   // Debug do cargo e usuário
   useEffect(() => {
-    console.log('� USUÁRIO LOGADO (ProfileTab):', {
+    console.log('👤 USUÁRIO LOGADO (ProfileTab):', {
       id: usuario?.id,
       nome: usuario?.nome,
       email: usuario?.email,
-      dadosExibicao: dadosExibicao
+      funcionarioInfo: funcionarioInfo,
+      dadosFuncionario: dadosFuncionario,
+      dadosExibicao: dadosExibicao,
+      cargo_funcionarioInfo: funcionarioInfo?.cargo,
+      cargo_dadosFuncionario: dadosFuncionario?.cargo,
+      cargo_dadosExibicao: dadosExibicao?.cargo
     });
-  }, [dadosExibicao, funcionarios, usuario]);
+  }, [dadosExibicao, funcionarios, usuario, funcionarioInfo, dadosFuncionario]);
   
   const [activeTab, setActiveTab] = useState('inventario');
   const [emprestimos, setEmprestimos] = useState([]);
@@ -465,7 +473,7 @@ const ProfileTab = () => {
           }}></div>
         </div>
         
-        {/* Foto de Perfil */}
+        {/* Foto de Perfil - Sincronizada com página de Tarefas e Ranking */}
         <div className="absolute -bottom-16 left-8">
           <div className="relative group">
             <div className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-900 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center overflow-hidden shadow-2xl transform transition-transform duration-300 group-hover:scale-105">
@@ -494,6 +502,7 @@ const ProfileTab = () => {
                 {usuario.nome}
               </h2>
               
+              {/* Cargo e Setor - Sincronizados com página de Tarefas e Ranking */}
               <div className="flex items-center gap-2 mb-4">
                 <span className="px-3 py-1.5 rounded-full bg-blue-500 text-white text-sm font-semibold shadow-md">
                   {dadosExibicao?.cargo || 'N/A'}
@@ -752,19 +761,25 @@ const ProfileTab = () => {
           </div>
         )}
         {activeTab === 'tarefas' && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-            <TarefasTab 
-              funcionarios={funcionarios}
-              showOnlyUserTasks={true}
-              showAddButton={false}
-              readOnly={false}
-              userFilter={usuario?.nome}
-              defaultFiltros={{
-                status: 'todas',
-                periodo: 'todos',
-                avaliacao: 'todas'
-              }}
-            />
+          <div className="space-y-6">
+            {/* Cronograma Semanal */}
+            <CronogramaSemanalCard />
+
+            {/* Tarefas Individuais */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+              <TarefasTab 
+                funcionarios={funcionarios}
+                showOnlyUserTasks={true}
+                showAddButton={false}
+                readOnly={false}
+                userFilter={usuario?.nome}
+                defaultFiltros={{
+                  status: 'todas',
+                  periodo: 'todos',
+                  avaliacao: 'todas'
+                }}
+              />
+            </div>
           </div>
         )}     
       </div>

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Upload, X } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../../../firebaseConfig';
+import { db, storage } from '../../../firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useToast } from '../../ToastProvider';
 
 const formatarTelefone = (telefone) => {
@@ -15,6 +16,7 @@ const formatarTelefone = (telefone) => {
 
 const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
   const { showToast } = useToast();
+  const fileInputRef = useRef();
   const [dados, setDados] = useState({ 
     nome: '', 
     cargo: '', 
@@ -22,8 +24,11 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
     empresaId: '',
     empresaNome: '',
     setorId: '',
-    setorNome: ''
+    setorNome: '',
+    photoURL: ''
   });
+  const [fotoPreview, setFotoPreview] = useState(null);
+  const [fotoFile, setFotoFile] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [setores, setSetores] = useState([]);
   const [setoresDisponiveis, setSetoresDisponiveis] = useState([]);
@@ -89,7 +94,58 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleFotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validar tipo
+      if (!file.type.startsWith('image/')) {
+        showToast('Selecione apenas imagens', 'error');
+        return;
+      }
+      
+      // Validar tamanho (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Imagem deve ter no máximo 5MB', 'error');
+        return;
+      }
+      
+      setFotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removerFoto = () => {
+    setFotoFile(null);
+    setFotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadFoto = async () => {
+    if (!fotoFile) return null;
+    
+    try {
+      const timestamp = Date.now();
+      const nomeArquivo = `funcionarios/${timestamp}_${fotoFile.name}`;
+      const storageRef = ref(storage, nomeArquivo);
+      
+      await uploadBytes(storageRef, fotoFile);
+      const url = await getDownloadURL(storageRef);
+      
+      return url;
+    } catch (error) {
+      console.error('Erro ao fazer upload da foto:', error);
+      showToast('Erro ao fazer upload da foto', 'error');
+      return null;
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!dados.empresaId) {
@@ -102,7 +158,16 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
       return;
     }
     
-    onSubmit(dados);
+    // Fazer upload da foto se houver
+    let photoURL = '';
+    if (fotoFile) {
+      photoURL = await uploadFoto();
+      if (!photoURL) return; // Se falhou o upload, não continua
+    }
+    
+    onSubmit({ ...dados, photoURL });
+    
+    // Resetar form
     setDados({ 
       nome: '', 
       cargo: '', 
@@ -110,20 +175,45 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
       empresaId: '',
       empresaNome: '',
       setorId: '',
-      setorNome: ''
+      setorNome: '',
+      photoURL: ''
     });
+    removerFoto();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-2">
-      <input
-        type="text"
-        placeholder="Nome"
-        value={dados.nome}
-        onChange={e => setDados({ ...dados, nome: e.target.value })}
-        className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
-        required
-      />
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {/* Preview da Foto */}
+      {fotoPreview && (
+        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600">
+          <img 
+            src={fotoPreview} 
+            alt="Preview" 
+            className="w-16 h-16 rounded-lg object-cover"
+          />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">Foto selecionada</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{fotoFile?.name}</p>
+          </div>
+          <button
+            type="button"
+            onClick={removerFoto}
+            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-2">
+        <input
+          type="text"
+          placeholder="Nome"
+          value={dados.nome}
+          onChange={e => setDados({ ...dados, nome: e.target.value })}
+          className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
+          required
+        />
       
       <input
         type="text"
@@ -176,6 +266,24 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
         ))}
       </select>
       
+      {/* Botão Upload de Foto */}
+      <div className="relative">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFotoChange}
+          className="hidden"
+          id="foto-funcionario"
+        />
+        <label
+          htmlFor="foto-funcionario"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm cursor-pointer border border-gray-200 dark:border-gray-600"
+        >
+          <Upload className="w-3 h-3" /> Foto
+        </label>
+      </div>
+
       <button 
         type="submit" 
         className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors text-sm lg:col-span-2" 
@@ -183,6 +291,7 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
       >
         <Plus className="w-3 h-3" /> Adicionar Funcionário
       </button>
+      </div>
     </form>
   );
 };

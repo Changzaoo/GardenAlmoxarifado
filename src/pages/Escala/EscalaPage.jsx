@@ -335,7 +335,7 @@ const EscalaPage = ({ usuarioAtual }) => {
     return () => unsubscribe();
   }, []);
 
-  // Carregar funcionários
+  // Carregar funcionários (apenas ativos)
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, 'funcionarios'),
@@ -344,7 +344,9 @@ const EscalaPage = ({ usuarioAtual }) => {
           id: doc.id,
           ...doc.data()
         }));
-        setFuncionarios(funcsData);
+        // Filtrar apenas funcionários ativos (não demitidos)
+        const funcionariosAtivos = funcsData.filter(func => !func.demitido);
+        setFuncionarios(funcionariosAtivos);
 
         // Extrair setores únicos
         const setoresUnicos = [...new Set(funcsData.map(f => f.setor).filter(Boolean))];

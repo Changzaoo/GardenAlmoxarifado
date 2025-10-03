@@ -2398,7 +2398,9 @@ const AlmoxarifadoSistema = () => {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'funcionarios'), (snapshot) => {
       const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setFuncionarios(lista);
+      // Filtrar apenas funcionários ativos (não demitidos)
+      const funcionariosAtivos = lista.filter(func => !func.demitido);
+      setFuncionarios(funcionariosAtivos);
     }, (error) => {
       console.error('Erro no listener dos funcionários:', error);
     });
@@ -3220,7 +3222,7 @@ const AlmoxarifadoSistema = () => {
                           </span>
                         )}
                         {aba.id === 'mensagens' && mensagensNaoLidas > 0 && (
-                          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                             {mensagensNaoLidas > 99 ? '99+' : mensagensNaoLidas}
                           </span>
                         )}
@@ -3381,7 +3383,7 @@ const AlmoxarifadoSistema = () => {
                         </span>
                       )}
                       {aba.id === 'mensagens' && mensagensNaoLidas > 0 && (
-                        <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                        <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                           {mensagensNaoLidas > 99 ? '99+' : mensagensNaoLidas}
                         </span>
                       )}
@@ -3642,9 +3644,9 @@ const AlmoxarifadoSistema = () => {
 
 
 
-      <main className={`${isMobile ? 'pt-16 pb-20' : `${menuRecolhido ? 'pl-16' : 'pl-80'} transition-all duration-300 ease-in-out`} w-full min-h-screen bg-white dark:bg-black`}>
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="py-3">
+      <main className={`${isMobile ? 'pt-16 pb-20' : `${menuRecolhido ? 'pl-16' : 'pl-80'} transition-all duration-300 ease-in-out`} w-full min-h-screen ${abaAtiva === 'mensagens' ? '' : 'bg-white dark:bg-black'}`}>
+        <div className={abaAtiva === 'mensagens' ? (isMobile ? 'h-[calc(100vh-9rem)]' : 'h-[calc(100vh-4rem)]') : 'max-w-5xl mx-auto px-4'}>
+          <div className={abaAtiva === 'mensagens' ? 'h-full' : 'py-3'}>
 
             {abaAtiva === 'dashboard' && (
               usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (

@@ -76,9 +76,9 @@ const ModalFuncionariosSetor = ({ isOpen, onClose, setor }) => {
         new Map(todosFuncionarios.map(f => [f.id, f])).values()
       );
 
-      // Filtrar por setor E excluir usuários sem cargo
+      // Filtrar por setor E excluir usuários sem cargo E excluir demitidos
       const funcionariosDoSetor = funcionariosUnicos.filter(
-        func => func.setorId === setor.id && func.cargo && func.cargo.trim() !== ''
+        func => func.setorId === setor.id && func.cargo && func.cargo.trim() !== '' && !func.demitido
       );
 
       setFuncionarios(funcionariosDoSetor);

@@ -14,8 +14,10 @@ export const FuncionariosProvider = ({ children }) => {
         id: doc.id,
         ...doc.data()
       }));
-      console.log('Funcionários carregados do Firestore:', funcionariosData);
-      setFuncionarios(funcionariosData);
+      // Filtrar apenas funcionários ativos (não demitidos)
+      const funcionariosAtivos = funcionariosData.filter(func => !func.demitido);
+      console.log('Funcionários ativos carregados do Firestore:', funcionariosAtivos);
+      setFuncionarios(funcionariosAtivos);
     }, (error) => {
       console.error('Erro ao carregar funcionários:', error);
     });

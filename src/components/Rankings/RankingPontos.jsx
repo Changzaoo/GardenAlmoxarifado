@@ -5,6 +5,7 @@ import { Trophy, Star, CheckCircle, ToolCase, Medal, ChevronDown, Calendar, X, C
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 import { PermissionChecker } from '../../constants/permissoes';
 import { useAuth } from '../../hooks/useAuth';
+import { useFuncionarios } from '../Funcionarios/FuncionariosProvider';
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -49,6 +50,7 @@ const getSemanasDoMes = (ano, mes) => {
 
 const RankingPontos = () => {
   const { usuario } = useAuth();
+  const { funcionarios: funcionariosContext } = useFuncionarios(); // Usar o mesmo contexto da página de tarefas
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [periodoAtual, setPeriodoAtual] = useState('semana');
@@ -389,21 +391,32 @@ const RankingPontos = () => {
         avaliacoes: avaliacoesSnap.size
       });
 
-      // Processar funcionários - BUSCAR DE AMBAS AS COLEÇÕES
+      // Processar funcionários - USAR O MESMO CONTEXTO DA PÁGINA DE TAREFAS
       const dadosFuncionarios = {};
       const nomesParaIds = {}; // Mapear nomes para IDs
       
-      // Processar funcionarios collection
+      // Processar funcionarios collection (apenas ativos)
       funcionariosSnap.forEach(doc => {
         const funcionario = doc.data();
         const isTerceirizado = isFuncionarioTerceirizado(funcionario);
 
-        if (!isTerceirizado) {
+        if (!isTerceirizado && !funcionario.demitido) {
           const nome = funcionario.nome || funcionario.username || funcionario.email;
+          
+          // Buscar photoURL do contexto (mesma fonte que a página de tarefas)
+          const funcionarioCompleto = funcionariosContext.find(f => 
+            f.id === doc.id || 
+            f.email === funcionario.email || 
+            f.nome === nome
+          );
+          const photoURL = funcionarioCompleto?.photoURL || funcionario.photoURL || null;
+          
           dadosFuncionarios[doc.id] = {
             id: doc.id,
             nome: nome,
-            photoURL: funcionario.photoURL,
+            photoURL: photoURL,
+            cargo: funcionario.cargo || null,
+            setor: funcionario.setor || null,
             terceirizado: false,
             tercerizado: false,
             ferramentasDevolvidas: 0,
@@ -417,20 +430,30 @@ const RankingPontos = () => {
         }
       });
       
-      // Processar usuarios collection (pode ter dados adicionais)
+      // Processar usuarios collection (pode ter dados adicionais, apenas ativos)
       usuariosSnap.forEach(doc => {
         const usuario = doc.data();
         const isTerceirizado = isFuncionarioTerceirizado(usuario);
 
-        if (!isTerceirizado) {
+        if (!isTerceirizado && !usuario.demitido) {
           const nome = usuario.nome || usuario.username || usuario.email;
           
-          // Se já existe, atualizar; senão, adicionar
+          // Se já existe, atualizar dados; senão, adicionar
           if (!dadosFuncionarios[doc.id]) {
+            // Buscar photoURL do contexto (mesma fonte que a página de tarefas)
+            const funcionarioCompleto = funcionariosContext.find(f => 
+              f.id === doc.id || 
+              f.email === usuario.email || 
+              f.nome === nome
+            );
+            const photoURL = funcionarioCompleto?.photoURL || usuario.photoURL || null;
+            
             dadosFuncionarios[doc.id] = {
               id: doc.id,
               nome: nome,
-              photoURL: usuario.photoURL,
+              photoURL: photoURL,
+              cargo: usuario.cargo || null,
+              setor: usuario.setor || null,
               terceirizado: false,
               tercerizado: false,
               ferramentasDevolvidas: 0,
@@ -438,6 +461,25 @@ const RankingPontos = () => {
               avaliacao: 0,
               avaliacoes: []
             };
+          } else {
+            // Se já existe photoURL no contexto, priorizar ele
+            const funcionarioCompleto = funcionariosContext.find(f => 
+              f.id === doc.id || 
+              f.email === usuario.email || 
+              f.nome === nome
+            );
+            if (funcionarioCompleto?.photoURL && !dadosFuncionarios[doc.id].photoURL) {
+              dadosFuncionarios[doc.id].photoURL = funcionarioCompleto.photoURL;
+            } else if (usuario.photoURL && !dadosFuncionarios[doc.id].photoURL) {
+              dadosFuncionarios[doc.id].photoURL = usuario.photoURL;
+            }
+            // Atualizar cargo e setor se disponíveis
+            if (usuario.cargo && !dadosFuncionarios[doc.id].cargo) {
+              dadosFuncionarios[doc.id].cargo = usuario.cargo;
+            }
+            if (usuario.setor && !dadosFuncionarios[doc.id].setor) {
+              dadosFuncionarios[doc.id].setor = usuario.setor;
+            }
           }
           if (nome) {
             nomesParaIds[nome.toLowerCase()] = doc.id;
@@ -654,15 +696,29 @@ const RankingPontos = () => {
   const renderPosicaoIcon = (posicao) => {
     switch (posicao) {
       case 0:
-        return <Medal className="w-6 h-6 text-yellow-500" />;
+        return (
+          <div className="m-3 flex items-center justify-center w-14 h-14 rounded-full bg-yellow-400 shadow-lg border-3 border-yellow-300">
+            <Trophy className="w-7 h-7 text-white fill-white" />
+          </div>
+        );
       case 1:
-        return <Medal className="w-6 h-6 text-gray-400" />;
+        return (
+          <div className="m-3 flex items-center justify-center w-14 h-14 rounded-full bg-gray-400 dark:bg-gray-500 shadow-lg border-3 border-gray-300 dark:border-gray-400">
+            <Medal className="w-7 h-7 text-white" />
+          </div>
+        );
       case 2:
-        return <Medal className="w-6 h-6 text-amber-600" />;
+        return (
+          <div className="m-3 flex items-center justify-center w-14 h-14 rounded-full bg-orange-500 shadow-lg border-3 border-orange-400">
+            <Medal className="w-7 h-7 text-white" />
+          </div>
+        );
       default:
-        return <div className="w-6 h-6 flex items-center justify-center font-medium text-gray-500">
-          {posicao + 1}
-        </div>;
+        return (
+          <div className="m-3 flex items-center justify-center w-14 h-14 rounded-full bg-gray-200 dark:bg-gray-700 shadow-md border-2 border-gray-300 dark:border-gray-600">
+            <span className="text-xl font-bold text-gray-700 dark:text-gray-300">{posicao + 1}</span>
+          </div>
+        );
     }
   };
 
@@ -696,7 +752,7 @@ const RankingPontos = () => {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-2 border-gray-200 dark:border-gray-700">
       {showDetails && selectedFuncionario && (
         <DetalhesPontos
           funcionario={selectedFuncionario}
@@ -708,10 +764,14 @@ const RankingPontos = () => {
       )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="flex flex-col gap-2 w-full md:w-auto">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-yellow-500" />
-            Ranking de Pontos
-          </h2>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#1D9BF0] rounded-lg">
+              <Trophy className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Ranking de Pontos
+            </h2>
+          </div>
           
           <div className="flex flex-wrap gap-2">
             <div className="relative selector-container">
@@ -837,14 +897,14 @@ const RankingPontos = () => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-[#2C3E50] to-[#3498DB] text-gray-900 dark:text-white rounded-lg shadow-lg w-full md:w-auto overflow-hidden">
+        <div className="bg-[#1D9BF0] dark:bg-[#1A8CD8] text-white rounded-lg shadow-lg w-full md:w-auto overflow-hidden border-2 border-[#1A8CD8] dark:border-[#1779BE]">
           <div className="p-4 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Award className="w-6 h-6" strokeWidth={1.5} />
-                <h3 className="text-lg font-semibold text-white">Total de Pontos</h3>
+                <Award className="w-6 h-6 text-white" strokeWidth={2} />
+                <h3 className="text-lg font-bold text-white">Total de Pontos</h3>
               </div>
-              <div className="bg-white/10 rounded-lg px-3 py-1 text-sm">
+              <div className="bg-white/20 rounded-lg px-3 py-1 text-sm font-semibold backdrop-blur-sm">
                 {filtrarPorPeriodo(rankingsPorSetor)
                   .filter(func => !isFuncionarioTerceirizado(func) && func.pontuacao.total > 0)
                   .length} funcionários
@@ -854,15 +914,15 @@ const RankingPontos = () => {
             <div className="flex items-end gap-3 mt-1">
               <div className="flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold">
+                  <span className="text-4xl font-bold text-white">
                     {filtrarPorPeriodo(rankingsPorSetor)
                       .filter(func => !isFuncionarioTerceirizado(func) && func.pontuacao.total > 0)
                       .reduce((total, func) => total + func.pontuacao.total, 0)}
                   </span>
-                  <span className="text-blue-200">pontos</span>
+                  <span className="text-white/90 font-medium">pontos</span>
                   <div className="relative">
                     <HelpCircle
-                      className="w-5 h-5 text-blue-200 hover:text-blue-100 cursor-pointer ml-2"
+                      className="w-5 h-5 text-white/80 hover:text-white cursor-pointer ml-2"
                       onClick={() => setShowPontosExplicacao(prev => !prev)}
                     />
                     {showPontosExplicacao && (
@@ -932,10 +992,10 @@ const RankingPontos = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-4 mt-3 text-sm">
-                  <div className="flex items-center gap-1 relative group">
-                    <ToolCase className="w-4 h-4 text-blue-200" />
-                    <span>
+                <div className="flex gap-4 mt-3 text-sm font-medium">
+                  <div className="flex items-center gap-1.5 relative group bg-white/10 rounded-lg px-2 py-1 backdrop-blur-sm">
+                    <ToolCase className="w-4 h-4 text-white" />
+                    <span className="text-white">
                       {filtrarPorPeriodo(rankingsPorSetor)
                         .filter(func => !isFuncionarioTerceirizado(func))
                         .reduce((total, func) => total + func.pontuacao.detalhes.ferramentas, 0)} pts
@@ -944,24 +1004,24 @@ const RankingPontos = () => {
                       func.emprestimos.some(emp => emp.bonusRetirada || emp.bonusDevolucao)
                     ) && (
                       <>
-                        <span className="ml-1 text-yellow-400 text-xs">★</span>
-                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block bg-gray-800 text-xs text-gray-900 dark:text-white p-2 rounded whitespace-nowrap">
+                        <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />
+                        <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block bg-gray-800 text-xs text-white p-2 rounded whitespace-nowrap shadow-lg">
                           Inclui bônus de horário
                         </div>
                       </>
                     )}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4 text-blue-200" />
-                    <span>
+                  <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2 py-1 backdrop-blur-sm">
+                    <CheckCircle className="w-4 h-4 text-white" />
+                    <span className="text-white">
                       {filtrarPorPeriodo(rankingsPorSetor)
                         .filter(func => !isFuncionarioTerceirizado(func))
                         .reduce((total, func) => total + func.pontuacao.detalhes.tarefas, 0)} pts
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-blue-200" />
-                    <span>
+                  <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2 py-1 backdrop-blur-sm">
+                    <Star className="w-4 h-4 text-white" />
+                    <span className="text-white">
                       {filtrarPorPeriodo(rankingsPorSetor)
                         .filter(func => !isFuncionarioTerceirizado(func))
                         .reduce((total, func) => total + func.pontuacao.detalhes.avaliacao, 0)} pts
@@ -972,11 +1032,11 @@ const RankingPontos = () => {
             </div>
           </div>
           
-          <div className="h-1 w-full bg-gradient-to-r from-blue-200 to-blue-400"></div>
+          <div className="h-1 w-full bg-white/30"></div>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtrarPorPeriodo(rankingsPorSetor)
           .filter(funcionario => {
             // Verificar todas as possíveis variações de terceirizado
@@ -986,68 +1046,156 @@ const RankingPontos = () => {
             return !isTerceirizado && funcionario.pontuacao.total > 0;
           })
           .sort((a, b) => b.pontuacao.total - a.pontuacao.total)
-          .map((funcionario, index) => (
-          <div 
-            key={funcionario.id}
-            onClick={() => {
-              setSelectedFuncionario(funcionario);
-              setShowDetails(true);
-            }}
-            className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800/80 rounded-lg p-4 shadow border border-gray-100 dark:border-gray-700/50 hover:shadow-md transition-all cursor-pointer"
-          >
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12">
-                {renderPosicaoIcon(index)}
-              </div>
+          .map((funcionario, index) => {
+            const isPodium = index < 3;
+            const isFirst = index === 0;
+            
+            return (
+              <div 
+                key={funcionario.id}
+                onClick={() => {
+                  setSelectedFuncionario(funcionario);
+                  setShowDetails(true);
+                }}
+                className={`
+                  relative overflow-hidden rounded-2xl cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl
+                  ${isFirst 
+                    ? 'bg-[#1D9BF0] dark:bg-[#1A8CD8] border-4 border-yellow-400 shadow-xl' 
+                    : isPodium 
+                      ? 'bg-white dark:bg-gray-800 border-3 border-gray-300 dark:border-gray-600 shadow-lg'
+                      : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-md'
+                  }
+                `}
+              >
+                {/* Posição Badge - Canto Superior Esquerdo */}
+                <div className="absolute top-0 left-0 z-10">
+                  {renderPosicaoIcon(index)}
+                </div>
 
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  {funcionario.photoURL ? (
-                    <img 
-                      src={funcionario.photoURL} 
-                      alt={funcionario.nome}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      <span className="text-xl font-medium text-gray-600 dark:text-gray-300">
-                        {funcionario.nome.charAt(0)}
+                {/* Conteúdo do Card */}
+                <div className={`p-6 pt-16 ${isFirst ? 'text-white' : ''}`}>
+                  {/* Avatar e Nome */}
+                  <div className="flex flex-col items-center mb-4">
+                    {funcionario.photoURL ? (
+                      <img 
+                        src={funcionario.photoURL} 
+                        alt={funcionario.nome}
+                        className={`w-24 h-24 rounded-full object-cover shadow-lg mb-3 ${
+                          isFirst 
+                            ? 'border-4 border-yellow-400' 
+                            : 'border-4 border-[#1D9BF0]'
+                        }`}
+                      />
+                    ) : (
+                      <div className={`w-24 h-24 rounded-full flex items-center justify-center shadow-lg mb-3 ${
+                        isFirst 
+                          ? 'bg-yellow-400 border-4 border-yellow-300' 
+                          : 'bg-[#1D9BF0] border-4 border-[#1A8CD8]'
+                      }`}>
+                        <span className="text-4xl font-bold text-white">
+                          {funcionario.nome.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <h3 className={`text-xl font-bold text-center mb-2 ${
+                      isFirst ? 'text-white' : 'text-gray-900 dark:text-white'
+                    }`}>
+                      {funcionario.nome}
+                    </h3>
+                    
+                    {/* Pontuação Total */}
+                    <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+                      isFirst 
+                        ? 'bg-yellow-400' 
+                        : 'bg-[#1D9BF0]'
+                    } shadow-lg`}>
+                      <Trophy className="w-5 h-5 text-white" />
+                      <span className="text-2xl font-bold text-white">
+                        {funcionario.pontuacao.total}
+                      </span>
+                      <span className="text-sm font-semibold text-white">pts</span>
+                    </div>
+                  </div>
+
+                  {/* Detalhes dos Pontos */}
+                  <div className="space-y-2 mt-4">
+                    {/* Ferramentas */}
+                    <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${
+                      isFirst 
+                        ? 'bg-white/20 backdrop-blur-sm' 
+                        : 'bg-blue-50 dark:bg-blue-900/20'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <ToolCase className={`w-5 h-5 ${
+                          isFirst ? 'text-white' : 'text-blue-600 dark:text-blue-400'
+                        }`} />
+                        <span className={`text-sm font-medium ${
+                          isFirst ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          Ferramentas
+                        </span>
+                      </div>
+                      <span className={`text-lg font-bold ${
+                        isFirst ? 'text-white' : 'text-blue-600 dark:text-blue-400'
+                      }`}>
+                        {funcionario.pontuacao.detalhes.ferramentas}
                       </span>
                     </div>
-                  )}
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 dark:text-white">{funcionario.nome}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                      <CircleDollarSign className="w-4 h-4 text-yellow-500" />
-                      {funcionario.pontuacao.total} pontos
-                    </p>
+
+                    {/* Tarefas */}
+                    <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${
+                      isFirst 
+                        ? 'bg-white/20 backdrop-blur-sm' 
+                        : 'bg-green-50 dark:bg-green-900/20'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className={`w-5 h-5 ${
+                          isFirst ? 'text-white' : 'text-green-600 dark:text-green-400'
+                        }`} />
+                        <span className={`text-sm font-medium ${
+                          isFirst ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          Tarefas
+                        </span>
+                      </div>
+                      <span className={`text-lg font-bold ${
+                        isFirst ? 'text-white' : 'text-green-600 dark:text-green-400'
+                      }`}>
+                        {funcionario.pontuacao.detalhes.tarefas}
+                      </span>
+                    </div>
+
+                    {/* Avaliações */}
+                    <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${
+                      isFirst 
+                        ? 'bg-white/20 backdrop-blur-sm' 
+                        : 'bg-yellow-50 dark:bg-yellow-900/20'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <Star className={`w-5 h-5 ${
+                          isFirst ? 'text-white' : 'text-yellow-600 dark:text-yellow-400'
+                        }`} />
+                        <span className={`text-sm font-medium ${
+                          isFirst ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          Avaliações
+                        </span>
+                      </div>
+                      <span className={`text-lg font-bold ${
+                        isFirst ? 'text-white' : 'text-yellow-600 dark:text-yellow-400'
+                      }`}>
+                        {funcionario.pontuacao.detalhes.avaliacao}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 mt-3">
-                  <div className="flex items-center gap-2">
-                    <ToolCase className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      {funcionario.pontuacao.detalhes.ferramentas} pts
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      {funcionario.pontuacao.detalhes.tarefas} pts
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-300">
-                      {funcionario.pontuacao.detalhes.avaliacao} pts
-                    </span>
-                  </div>
-                </div>
+                {/* Efeito de brilho no hover */}
+                <div className="absolute inset-0 bg-white/0 hover:bg-white/5 transition-all pointer-events-none"></div>
               </div>
-            </div>
-          </div>
-        ))}
+            );
+          })}
       </div>
       </div>
     </div>
