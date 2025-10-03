@@ -1,15 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Package, ArrowDown, Sparkles, Check } from 'lucide-react';
+import { CheckCircle, Package, ArrowDown, Sparkles, Check, X, FileText, Download } from 'lucide-react';
+import { gerarExtratoPDF } from '../../utils/gerarExtratoPDF';
 
 const DevolucaoAnimation = ({ 
   emprestimo, 
   ferramentasDevolvidas,
   devolvidoPorTerceiros,
-  onComplete 
+  onComplete,
+  onClose 
 }) => {
   const [currentTool, setCurrentTool] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [gerandoPDF, setGerandoPDF] = useState(false);
+
+  const handleGerarExtrato = async () => {
+    setGerandoPDF(true);
+    try {
+      await gerarExtratoPDF(emprestimo);
+    } catch (error) {
+      console.error('Erro ao gerar extrato:', error);
+    } finally {
+      setGerandoPDF(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (onComplete) {
+      onComplete();
+    }
+  };
 
   useEffect(() => {
     if (!ferramentasDevolvidas || ferramentasDevolvidas.length === 0) return;
@@ -57,6 +79,15 @@ const DevolucaoAnimation = ({
             WebkitTransform: 'translateZ(0)'
           }}
         >
+          {/* Botão Fechar (X) */}
+          <button
+            onClick={handleClose}
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700 shadow-lg transition-all duration-200 hover:scale-110"
+            title="Fechar"
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
+          </button>
+
           {/* Fundo animado */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-emerald-500/10"
@@ -289,9 +320,43 @@ const DevolucaoAnimation = ({
                 </div>
               )}
 
-              <h4 className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">
-                {isComplete ? '✅ Ferramentas devolvidas:' : '📦 Devolvendo:'}
-              </h4>
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <h4 className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {isComplete ? '✅ Ferramentas devolvidas:' : '📦 Devolvendo:'}
+                </h4>
+                
+                {/* Botão Gerar Extrato PDF */}
+                {isComplete && (
+                  <motion.button
+                    onClick={handleGerarExtrato}
+                    disabled={gerandoPDF}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1D9BF0] hover:bg-[#1A8CD8] disabled:bg-gray-400 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg transition-all duration-200 hover:scale-105 disabled:cursor-not-allowed"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {gerandoPDF ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        >
+                          <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </motion.div>
+                        <span className="hidden sm:inline">Gerando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Extrato PDF</span>
+                        <span className="sm:hidden">PDF</span>
+                      </>
+                    )}
+                  </motion.button>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 max-h-32 sm:max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                 {ferramentasDevolvidas?.map((ferramenta, index) => (
                   <motion.div

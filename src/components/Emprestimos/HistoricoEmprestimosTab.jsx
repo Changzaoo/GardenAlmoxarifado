@@ -7,6 +7,7 @@ import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import { useAuth } from '../../hooks/useAuth';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
+import BotaoExtratoPDF from './BotaoExtratoPDF';
 
 const HistoricoEmprestimosTab = ({ 
   emprestimos = [], 
@@ -265,6 +266,12 @@ const HistoricoEmprestimosTab = ({
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  {/* Botão Extrato PDF - Sempre visível */}
+                  <BotaoExtratoPDF 
+                    emprestimo={emprestimo} 
+                    variant="icon" 
+                    size="sm"
+                  />
 
                   {emprestimo.status === 'emprestado' && temFerramentasEmprestadas(emprestimo) && (
                     <button

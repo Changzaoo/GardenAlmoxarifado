@@ -5,6 +5,7 @@ import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import TransferirFerramenta from '../Transferencias/TransferirFerramenta';
 import { FuncionariosContext } from '../Funcionarios/FuncionariosProvider';
 import { db } from '../../firebaseConfig';
+import BotaoExtratoPDF from '../Emprestimos/BotaoExtratoPDF';
 
 const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum empréstimo encontrado', readOnly = false }) => {
   const [transferindoEmprestimo, setTransferindoEmprestimo] = useState(null);
@@ -272,15 +273,24 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
                       </div>
                     </div>
                     
-                    {!readOnly && emprestimo.status !== 'devolvido' && (
-                      <button
-                        onClick={() => setTransferindoEmprestimo(emprestimo)}
-                        className="relative z-10 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
-                      >
-                        <ArrowRight className="w-4 h-4" />
-                        Transferir
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {/* Botão Extrato PDF - Sempre visível */}
+                      <BotaoExtratoPDF 
+                        emprestimo={emprestimo} 
+                        variant="button" 
+                        size="sm"
+                      />
+
+                      {!readOnly && emprestimo.status !== 'devolvido' && (
+                        <button
+                          onClick={() => setTransferindoEmprestimo(emprestimo)}
+                          className="relative z-10 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                          Transferir
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Datas e Informações */}
