@@ -344,6 +344,44 @@ const ComprasTab = ({
         </div>
       </div>
 
+      {/* Card de Valor Total de Compras */}
+      {(() => {
+        const comprasPendentes = comprasPorSetor.filter(c => c.status === 'solicitado' || c.status === 'aprovado' || c.status === 'pedido_enviado');
+        const valorTotal = comprasPendentes.reduce((total, compra) => {
+          const valor = (parseFloat(compra.valorUnitario) || 0) * (parseInt(compra.quantidade) || 0);
+          const frete = parseFloat(compra.valorFrete) || 0;
+          return total + valor + frete;
+        }, 0);
+        
+        return (
+          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 border-2 border-green-300 dark:border-green-600 rounded-xl px-6 py-4 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-green-500 dark:bg-green-600 p-3 rounded-xl shadow-md">
+                  <Plus className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                    Custo Total de Compras Pendentes
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    {comprasPendentes.length} compra(s) aguardando conclusão
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
+                <p className="text-xs text-green-500 dark:text-green-500 mt-1">
+                  Investimento futuro
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Filtros */}
       <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm p-4 space-y-4`}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

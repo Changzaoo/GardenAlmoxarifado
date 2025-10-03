@@ -76,6 +76,38 @@ const InventarioTab = ({
     };
   }, [inventarioFiltrado, compras, ferramentasDanificadas, ferramentasPerdidas]);
 
+  // Calcular valores totais
+  const valores = useMemo(() => {
+    const valorTotalInventario = inventarioFiltrado.reduce((total, item) => {
+      const valor = parseFloat(item.valorUnitario) || 0;
+      const qtd = parseInt(item.quantidade) || 0;
+      return total + (valor * qtd);
+    }, 0);
+
+    const valorTotalCompras = compras?.filter(c => c.status === 'solicitado' || c.status === 'aprovado').reduce((total, compra) => {
+      const valor = parseFloat(compra.valorUnitario) || 0;
+      const qtd = parseInt(compra.quantidade) || 0;
+      return total + (valor * qtd);
+    }, 0) || 0;
+
+    const valorTotalDanificadas = ferramentasDanificadas?.filter(f => f.statusReparo !== 'reparada' && f.statusReparo !== 'substituida').reduce((total, ferr) => {
+      const valor = parseFloat(ferr.valorUnitario) || 0;
+      return total + valor;
+    }, 0) || 0;
+
+    const valorTotalPerdidas = ferramentasPerdidas?.filter(p => p.statusBusca === 'buscando').reduce((total, ferr) => {
+      const valor = parseFloat(ferr.valorUnitario) || 0;
+      return total + valor;
+    }, 0) || 0;
+
+    return {
+      inventario: valorTotalInventario,
+      compras: valorTotalCompras,
+      danificadas: valorTotalDanificadas,
+      perdidas: valorTotalPerdidas
+    };
+  }, [inventarioFiltrado, compras, ferramentasDanificadas, ferramentasPerdidas]);
+
   const tabs = [
     {
       id: TABS.INVENTARIO,
@@ -147,6 +179,33 @@ const InventarioTab = ({
                 </div>
               </div>
             )}
+
+            {/* Card de Valor Total do Inventário */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-2 border-blue-300 dark:border-blue-600 rounded-xl px-6 py-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-500 dark:bg-blue-600 p-3 rounded-xl shadow-md">
+                    <Package className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      Valor Total do Inventário
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                      {inventarioFiltrado.length} itens em estoque
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                    {valores.inventario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
+                  <p className="text-xs text-blue-500 dark:text-blue-500 mt-1">
+                    Valor patrimonial
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {!isFuncionario && (
               <NovoItem

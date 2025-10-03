@@ -77,6 +77,23 @@ const ItemCard = ({ item, onRemover, onEditar, detalhesEmprestimos }) => {
               {item.disponivel} ({Math.round((item.disponivel / item.quantidade) * 100)}%)
             </span>
           </div>
+          {item.valorUnitario && parseFloat(item.valorUnitario) > 0 && (
+            <>
+              <div className="h-px bg-gray-200 dark:bg-gray-600 my-2"></div>
+              <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
+                <span>Valor Unitário</span>
+                <span className="font-medium text-blue-600 dark:text-blue-400">
+                  {parseFloat(item.valorUnitario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm font-semibold text-gray-800 dark:text-gray-200">
+                <span>Valor Total</span>
+                <span className="text-green-600 dark:text-green-400">
+                  {(parseFloat(item.valorUnitario) * parseInt(item.quantidade)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Barra de Progresso */}

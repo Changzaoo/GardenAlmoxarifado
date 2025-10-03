@@ -7,7 +7,7 @@ import ModalEditarItem from './ModalEditarItem';
 const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, obterDetalhesEmprestimos }) => {
   const [filtroInventario, setFiltroInventario] = useState('');
   const [itemParaEditar, setItemParaEditar] = useState(null);
-  const [ordenacao, setOrdenacao] = useState('nome-asc'); // nome-asc, nome-desc, qtd-asc, qtd-desc
+  const [ordenacao, setOrdenacao] = useState('nome-asc'); // nome-asc, nome-desc, qtd-asc, qtd-desc, valor-asc, valor-desc
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const { showToast } = useToast();
 
@@ -30,6 +30,14 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
         return a.quantidade - b.quantidade;
       case 'qtd-desc':
         return b.quantidade - a.quantidade;
+      case 'valor-asc':
+        const valorTotalA = (parseFloat(a.valorUnitario) || 0) * (parseInt(a.quantidade) || 0);
+        const valorTotalB = (parseFloat(b.valorUnitario) || 0) * (parseInt(b.quantidade) || 0);
+        return valorTotalA - valorTotalB;
+      case 'valor-desc':
+        const valorTotalA2 = (parseFloat(a.valorUnitario) || 0) * (parseInt(a.quantidade) || 0);
+        const valorTotalB2 = (parseFloat(b.valorUnitario) || 0) * (parseInt(b.quantidade) || 0);
+        return valorTotalB2 - valorTotalA2;
       default:
         return 0;
     }
@@ -59,7 +67,7 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
             <select
               value={filtroCategoria}
               onChange={(e) => setFiltroCategoria(e.target.value)}
-              className="border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0] dark:bg-white dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 text-gray-700 dark:text-gray-200 font-medium shadow-sm hover:border-blue-400 dark:hover:border-blue-500 hover:bg-white dark:hover:bg-gray-750 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer"
             >
               <option value="">Todas as categorias</option>
               <option value="Ferramentas">Ferramentas</option>
@@ -68,27 +76,34 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
               <option value="Outros">Outros</option>
             </select>
 
-            <div className="flex items-center gap-2 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg p-1 bg-white dark:bg-gray-800 dark:bg-white dark:bg-gray-700">
+            <div className="flex items-center gap-1 border border-gray-300 dark:border-gray-600 rounded-lg p-1 bg-gray-50 dark:bg-gray-800 shadow-sm">
               <button
                 onClick={() => setOrdenacao('nome-asc')}
-                className={`p-2 rounded-lg transition-colors ${ordenacao === 'nome-asc' ? 'bg-[#1D9BF0] text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`p-2 rounded-md transition-all duration-200 ${ordenacao === 'nome-asc' ? 'bg-blue-500 dark:bg-blue-600 text-white shadow-md scale-105' : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400'}`}
                 title="Ordenar por nome (A-Z)"
               >
                 <SortAsc className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setOrdenacao('nome-desc')}
-                className={`p-2 rounded-lg transition-colors ${ordenacao === 'nome-desc' ? 'bg-[#1D9BF0] text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`p-2 rounded-md transition-all duration-200 ${ordenacao === 'nome-desc' ? 'bg-blue-500 dark:bg-blue-600 text-white shadow-md scale-105' : 'text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400'}`}
                 title="Ordenar por nome (Z-A)"
               >
                 <SortDesc className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setOrdenacao(ordenacao === 'qtd-asc' ? 'qtd-desc' : 'qtd-asc')}
-                className={`p-2 rounded-lg transition-colors ${ordenacao.startsWith('qtd-') ? 'bg-[#1D9BF0] text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                className={`p-2 rounded-md transition-all duration-200 ${ordenacao.startsWith('qtd-') ? 'bg-purple-500 dark:bg-purple-600 text-white shadow-md scale-105' : 'text-gray-600 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400'}`}
                 title="Ordenar por quantidade"
               >
                 <Filter className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setOrdenacao(ordenacao === 'valor-desc' ? 'valor-asc' : 'valor-desc')}
+                className={`p-2 rounded-md transition-all duration-200 ${ordenacao.startsWith('valor-') ? 'bg-green-500 dark:bg-green-600 text-white shadow-md scale-105' : 'text-gray-600 dark:text-gray-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400'}`}
+                title="Ordenar por valor total"
+              >
+                💰
               </button>
             </div>
           </div>
