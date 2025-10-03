@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import OfflineLogo from '../common/OfflineLogo';
 import { Menu as MenuIcon, Home, Package, Users, Clock, AlertTriangle, Settings, LogOut } from 'lucide-react';
 
 const Sidebar = ({ onProfileClick }) => {
@@ -48,7 +49,7 @@ const Sidebar = ({ onProfileClick }) => {
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="p-4 flex items-center">
-          <img src="/logo.png" alt="Logo" className="w-10 h-10" />
+          <OfflineLogo src="/logo.png" alt="Logo" className="w-10 h-10" />
           <span className="ml-2 text-lg font-bold text-white">WorkFlow</span>
         </div>
 

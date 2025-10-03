@@ -36,10 +36,12 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "CI=false react-scripts build",
+    "build": "cross-env CI=false react-scripts build",
+    "build:win": "set CI=false && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "vercel-build": "npm run build",
+    "build:version": "node scripts/build-with-version.js",
+    "vercel-build": "npm run build:version",
     "lint": "eslint src --ext .js,.jsx",
     "lint:fix": "eslint src --ext .js,.jsx --fix"
   },
@@ -86,6 +88,7 @@
     "@typescript-eslint/eslint-plugin": "^8.41.0",
     "@typescript-eslint/parser": "^8.41.0",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^10.1.0",
     "css-loader": "^7.1.2",
     "postcss": "^8.5.6",
     "postcss-loader": "^8.1.1",

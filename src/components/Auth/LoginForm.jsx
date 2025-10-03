@@ -2,6 +2,7 @@ import React from 'react';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
+import OfflineLogo from '../common/OfflineLogo';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 
 const LoginForm = ({ 
@@ -20,12 +21,12 @@ const LoginForm = ({
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
-            <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
+            <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
           </div>
           <h1 className={`text-2xl font-bold ${colors.text}`}>
             WorkFlow
           </h1>
-          <p className={colors.textSecondary}>Sistema de Controle Seguro</p>
+          <p className={colors.textSecondary}>Sistema de Gestão Empresarial</p>
         </div>
 
         {/* Login Form */}

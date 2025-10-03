@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -6,29 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#16181C" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
-    <meta name="description" content="Zendaya Jardinagem - Sistema de gestão de inventário para jardinagem: plantas, mudas, fertilizantes, vasos e equipamentos" />
+    <meta name="description" content="Workflow - Sistema de gestão empresarial completo" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
     <link rel="manifest" href="/manifest.json?v=1.0">
 
     <!-- Preload de fontes para melhor performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <title>Zendaya Jardinagem - Sistema de Gestão</title>
+    <title>Workflow</title>
     
     <!-- Meta tags adicionais para SEO -->
-     
     <meta name="robots" content="noindex, nofollow" />
-    <meta name="author" content="Zendaya Jardinagem" />
-    <meta name="keywords" content="zendaya, jardinagem, plantas, mudas, fertilizantes, vasos, inventário, gestão" />
+    <meta name="author" content="Workflow" />
+    <meta name="keywords" content="workflow, gestão, inventário, empresarial, sistema" />
     
     <!-- PWA meta tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Almoxarifado" />
+    <meta name="apple-mobile-web-app-title" content="Workflow" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="application-name" content="Almoxarifado" />
+    <meta name="application-name" content="Workflow" />
     <meta name="msapplication-TileColor" content="#1DA1F2" />
     <meta name="msapplication-tap-highlight" content="no" />
     <meta name="theme-color" content="#1DA1F2" media="(prefers-color-scheme: light)" />
@@ -42,57 +41,13 @@
     <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-1242-2688.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
     
     <style>
-      /* Loading spinner inicial */
-      .initial-loading {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background-color: #fff;
-        font-family: 'Inter', sans-serif;
-      }
-      @media (prefers-color-scheme: dark) {
-        .initial-loading {
-          background-color: #16181C;
-          color: #fff;
-        }
-      }
-      .loading-spinner {
-        width: 40px;
-        height: 40px;
-        margin-bottom: 16px;
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #1DA1F2;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-        background: linear-gradient(135deg, #ebf5fb 0%, #e6f7ff 100%);
-      }
-      
-      .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid #e5e7eb;
-        border-top: 4px solid #1DA1F2;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-      
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      /* Ocultar o loading quando o React carregar */
-      #root:not(:empty) + .initial-loading {
-        display: none;
+      body {
+        margin: 0;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       }
     </style>
+    
   </head>
   
   <body>
@@ -106,16 +61,6 @@
     
     <!-- Container principal da aplicação React -->
     <div id="root"></div>
-    
-    <!-- Loading screen inicial -->
-    <div class="initial-loading">
-      <div>
-        <div class="loading-spinner"></div>
-        <p style="margin-top: 20px; color: #6b7280; font-family: 'Inter', sans-serif;">
-          Carregando Sistema Workflow...
-        </p>
-      </div>
-    </div>
     
     <!-- Service Worker registration -->
     <script>

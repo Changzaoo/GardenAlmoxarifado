@@ -1,4 +1,5 @@
 import React from 'react';
+import OfflineLogo from './OfflineLogo';
 
 const LoadingScreen = ({ 
   progress: externalProgress, 
@@ -13,7 +14,7 @@ const LoadingScreen = ({
       <div className="text-center p-8">
         {/* Logo com animação */}
         <div className="mx-auto w-32 h-32 flex items-center justify-center mb-8 relative">
-          <img 
+          <OfflineLogo 
             src="/logo.png" 
             alt="Logo WorkFlow" 
             className="w-full h-full object-contain"
@@ -32,12 +33,9 @@ const LoadingScreen = ({
         </div>
 
         {/* Nome do sistema */}
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-8">
           WorkFlow
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 mb-8">
-          {isComplete ? 'Sistema Pronto!' : 'Sistema de Controle Seguro'}
-        </p>
 
         {/* Barra de progresso */}
         <div className="w-96 max-w-full mx-auto mb-6">
@@ -94,11 +92,6 @@ const LoadingScreen = ({
             </span>
           </div>
         )}
-
-        {/* Informações adicionais */}
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-8">
-          {isComplete ? '🛡️ Sistema Protegido e Pronto' : 'Criptografia SHA-512 • Conexão Segura'}
-        </p>
       </div>
 
       <style jsx>{`

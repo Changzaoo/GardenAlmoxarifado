@@ -166,5 +166,20 @@ service cloud.firestore {
                        request.auth.uid == userId &&
                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcmTokens', 'status', 'ultimaVez']);
     }
+    
+    // Regras para Analytics de Acesso
+    match /analytics_acessos/{acessoId} {
+      // Qualquer usuário autenticado pode criar seu registro de acesso
+      allow create: if isAuthenticated() &&
+                       request.resource.data.keys().hasAll(['timestamp', 'usuario', 'systemInfo', 'version']);
+      
+      // Apenas Admin (nível 4) pode ler os registros
+      allow read: if isAuthenticated() && 
+                     exists(/databases/$(database)/documents/usuarios/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.nivel == 4;
+      
+      // Ninguém pode atualizar ou deletar registros (imutável)
+      allow update, delete: if false;
+    }
   }
 }

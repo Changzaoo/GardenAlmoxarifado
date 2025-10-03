@@ -112,6 +112,32 @@ const RankingPontos = () => {
 
 
   const filtrarPorPeriodo = (dados) => {
+    // Log uma única vez com informações do período
+    if (dados.length > 0 && (periodoAtual === 'mes' || periodoAtual === 'ano' || periodoAtual === 'semana')) {
+      let dataLimiteInicio, dataLimiteFim;
+      
+      if (periodoAtual === 'semana' && semanasDoMes && semanasDoMes[semanaSelected]) {
+        dataLimiteInicio = semanasDoMes[semanaSelected].inicio;
+        dataLimiteFim = semanasDoMes[semanaSelected].fim;
+      } else if (periodoAtual === 'mes') {
+        dataLimiteInicio = new Date(anoSelected, mesSelected, 1);
+        dataLimiteFim = new Date(anoSelected, mesSelected + 1, 0);
+      } else if (periodoAtual === 'ano') {
+        dataLimiteInicio = new Date(anoSelected, 0, 1);
+        dataLimiteFim = new Date(anoSelected, 11, 31, 23, 59, 59);
+      }
+      
+      if (dataLimiteInicio && dataLimiteFim) {
+        console.log('📅 PERÍODO SELECIONADO:', {
+          tipo: periodoAtual,
+          dataInicio: dataLimiteInicio.toLocaleString('pt-BR'),
+          dataFim: dataLimiteFim.toLocaleString('pt-BR'),
+          hoje: new Date().toLocaleString('pt-BR'),
+          totalFuncionarios: dados.length
+        });
+      }
+    }
+    
     return dados.map(funcionario => {
       let pontuacaoFiltrada = { ...funcionario.pontuacao };
       
@@ -137,15 +163,17 @@ const RankingPontos = () => {
         }
         
         // Filtrar empréstimos e tarefas pelo período
+        const emprestimosNoPeriodo = funcionario.emprestimos.filter(emp => {
+          const dataDevolucao = new Date(emp.dataDevolucao);
+          const noPeriodo = dataDevolucao >= dataLimiteInicio && dataDevolucao <= dataLimiteFim;
+          return noPeriodo;
+        });
+        
         pontuacaoFiltrada = {
           ...pontuacaoFiltrada,
           total: 0,
           detalhes: {
-            ferramentas: funcionario.emprestimos
-              .filter(emp => {
-                const dataDevolucao = new Date(emp.dataDevolucao);
-                return dataDevolucao >= dataLimiteInicio && dataDevolucao <= dataLimiteFim;
-              })
+            ferramentas: emprestimosNoPeriodo
               .reduce((total, emp) => {
                 const dataRetirada = new Date(emp.dataRetirada);
                 const dataDevolucao = new Date(emp.dataDevolucao);
@@ -169,7 +197,8 @@ const RankingPontos = () => {
             tarefas: (funcionario.tarefas || [])
               .filter(tarefa => {
                 const data = new Date(tarefa.dataConclusao);
-                return !isNaN(data) && data >= dataLimiteInicio && data <= dataLimiteFim;
+                const noPeriodo = !isNaN(data) && data >= dataLimiteInicio && data <= dataLimiteFim;
+                return noPeriodo;
               })
               .reduce((total, tarefa) => {
                 if (tarefa.status !== 'concluida') {
@@ -206,7 +235,8 @@ const RankingPontos = () => {
                 if (isNaN(data.getTime())) {
                   return false;
                 }
-                return data >= dataLimiteInicio && data <= dataLimiteFim;
+                const noPeriodo = data >= dataLimiteInicio && data <= dataLimiteFim;
+                return noPeriodo;
               })
               .reduce((acc, av) => {
                 const pontosEstrelas = {
@@ -245,8 +275,12 @@ const RankingPontos = () => {
   };
 
   useEffect(() => {
-    carregarDados();
-  }, []);
+    // Só carregar dados quando funcionariosContext estiver disponível
+    if (funcionariosContext && funcionariosContext.length > 0) {
+      console.log('🔄 Carregando dados do ranking com contexto atualizado...', funcionariosContext.length, 'funcionários');
+      carregarDados();
+    }
+  }, [funcionariosContext]); // Recarregar quando o contexto mudar
 
   // Função helper para verificar se um funcionário é terceirizado
   const isFuncionarioTerceirizado = (funcionario) => {
@@ -365,130 +399,234 @@ const RankingPontos = () => {
 
   const carregarDados = async () => {
     try {
-      console.log('RankingPontos: Iniciando carregamento de dados...');
+      console.log('🔄 RankingPontos: Iniciando carregamento de dados...');
       
-      // CORREÇÃO: Buscar de 'funcionarios' E 'usuarios' para compatibilidade
-      const funcionariosRef = collection(db, 'funcionarios');
-      const usuariosRef = collection(db, 'usuarios');
+      // Buscar empréstimos, tarefas, avaliações E usuarios
+      // Funcionários vêm do contexto (FuncionariosProvider) mas usuarios pode ter dados adicionais
       const emprestimosRef = collection(db, 'emprestimos');
       const tarefasRef = collection(db, 'tarefas');
       const avaliacoesRef = collection(db, 'avaliacoes');
+      const usuariosRef = collection(db, 'usuarios');
 
-      // Buscar todos os dados necessários
-      const [funcionariosSnap, usuariosSnap, emprestimosSnap, tarefasSnap, avaliacoesSnap] = await Promise.all([
-        getDocs(funcionariosRef),
-        getDocs(usuariosRef),
+      // Buscar dados necessários
+      const [emprestimosSnap, tarefasSnap, avaliacoesSnap, usuariosSnap] = await Promise.all([
         getDocs(emprestimosRef),
         getDocs(tarefasRef),
-        getDocs(avaliacoesRef)
+        getDocs(avaliacoesRef),
+        getDocs(usuariosRef)
       ]);
       
-      console.log('RankingPontos: Dados carregados:', {
-        funcionarios: funcionariosSnap.size,
+      console.log('📦 RankingPontos: Dados carregados:', {
+        funcionariosContext: funcionariosContext?.length || 0,
         usuarios: usuariosSnap.size,
         emprestimos: emprestimosSnap.size,
         tarefas: tarefasSnap.size,
         avaliacoes: avaliacoesSnap.size
       });
 
-      // Processar funcionários - USAR O MESMO CONTEXTO DA PÁGINA DE TAREFAS
+      // Processar funcionários - USAR APENAS O CONTEXTO (fonte única de verdade)
       const dadosFuncionarios = {};
       const nomesParaIds = {}; // Mapear nomes para IDs
+      const emailsProcessados = new Set(); // Evitar duplicatas por email
       
-      // Processar funcionarios collection (apenas ativos)
-      funcionariosSnap.forEach(doc => {
-        const funcionario = doc.data();
+      console.log('📊 Contexto de funcionários disponível:', funcionariosContext?.length || 0);
+      
+      // Contadores para debug
+      let totalProcessados = 0;
+      let puladosTerceirizados = 0;
+      let puladosDuplicados = 0;
+      
+      // USAR APENAS funcionariosContext como fonte única de verdade
+      // Nota: FuncionariosProvider já filtra demitidos, mas vamos garantir
+      funcionariosContext.forEach(funcionario => {
         const isTerceirizado = isFuncionarioTerceirizado(funcionario);
-
-        if (!isTerceirizado && !funcionario.demitido) {
-          const nome = funcionario.nome || funcionario.username || funcionario.email;
-          
-          // Buscar photoURL do contexto (mesma fonte que a página de tarefas)
-          const funcionarioCompleto = funcionariosContext.find(f => 
-            f.id === doc.id || 
-            f.email === funcionario.email || 
-            f.nome === nome
-          );
-          const photoURL = funcionarioCompleto?.photoURL || funcionario.photoURL || null;
-          
-          dadosFuncionarios[doc.id] = {
-            id: doc.id,
-            nome: nome,
-            photoURL: photoURL,
-            cargo: funcionario.cargo || null,
-            setor: funcionario.setor || null,
-            terceirizado: false,
-            tercerizado: false,
-            ferramentasDevolvidas: 0,
-            tarefasConcluidas: 0,
-            avaliacao: 0,
-            avaliacoes: []
-          };
-          if (nome) {
-            nomesParaIds[nome.toLowerCase()] = doc.id;
-          }
+        const email = funcionario.email?.toLowerCase();
+        
+        // IMPORTANTE: Não incluir funcionários demitidos
+        if (funcionario.demitido === true) {
+          console.log(`❌ Funcionário demitido não incluído no ranking: ${funcionario.nome}`);
+          return;
+        }
+        
+        // Debug: verificar por que está sendo pulado
+        if (isTerceirizado) {
+          puladosTerceirizados++;
+          return;
+        }
+        
+        if (email && emailsProcessados.has(email)) {
+          puladosDuplicados++;
+          return;
+        }
+        
+        const nome = funcionario.nome || funcionario.username || funcionario.email;
+        
+        totalProcessados++;
+        
+        dadosFuncionarios[funcionario.id] = {
+          id: funcionario.id,
+          nome: nome,
+          email: funcionario.email,
+          photoURL: funcionario.photoURL || null,
+          cargo: funcionario.cargo || null,
+          setor: funcionario.setor || null,
+          terceirizado: false,
+          tercerizado: false,
+          ferramentasDevolvidas: 0,
+          tarefasConcluidas: 0,
+          avaliacao: 0,
+          avaliacoes: []
+        };
+        
+        if (nome) {
+          nomesParaIds[nome.toLowerCase()] = funcionario.id;
+        }
+        if (email) {
+          emailsProcessados.add(email);
         }
       });
       
-      // Processar usuarios collection (pode ter dados adicionais, apenas ativos)
+      const comFotoContexto = Object.values(dadosFuncionarios).filter(f => f.photoURL).length;
+      
+      // Verificar se há nomes/emails duplicados no funcionariosContext
+      const nomesNoContexto = funcionariosContext.map(f => f.nome?.toLowerCase()).filter(Boolean);
+      const emailsNoContexto = funcionariosContext.map(f => f.email?.toLowerCase()).filter(Boolean);
+      const duplicatasContexto = [];
+      
+      const nomesSetContexto = new Set();
+      const emailsSetContexto = new Set();
+      
+      funcionariosContext.forEach(f => {
+        const nome = f.nome?.toLowerCase();
+        const email = f.email?.toLowerCase();
+        
+        if (nome && nomesSetContexto.has(nome)) {
+          duplicatasContexto.push(`Nome duplicado no CONTEXTO: ${f.nome} (ID: ${f.id})`);
+        }
+        if (email && emailsSetContexto.has(email)) {
+          duplicatasContexto.push(`Email duplicado no CONTEXTO: ${f.email} (ID: ${f.id})`);
+        }
+        
+        if (nome) nomesSetContexto.add(nome);
+        if (email) emailsSetContexto.add(email);
+      });
+      
+      if (duplicatasContexto.length > 0) {
+        console.error('❌ DUPLICATAS NO funcionariosContext:', duplicatasContexto);
+      }
+      
+      console.log('✅ Funcionários do contexto processados:', {
+        totalNoContexto: funcionariosContext.length,
+        totalProcessados,
+        puladosTerceirizados,
+        puladosDuplicados,
+        totalNoRanking: Object.keys(dadosFuncionarios).length,
+        comFoto: comFotoContexto,
+        semFoto: totalProcessados - comFotoContexto,
+        duplicatasNoContexto: duplicatasContexto.length
+      });
+      
+      // PROCESSAR usuários da collection 'usuarios' para:
+      // 1. Adicionar usuários que não estão no funcionariosContext
+      // 2. Atualizar photoURL de funcionários existentes se usuário tiver foto
+      let usuariosAdicionados = 0;
+      let fotosAtualizadas = 0;
+      let usuariosPuladosDuplicados = 0;
+      
       usuariosSnap.forEach(doc => {
-        const usuario = doc.data();
+        const usuario = { id: doc.id, ...doc.data() };
         const isTerceirizado = isFuncionarioTerceirizado(usuario);
-
-        if (!isTerceirizado && !usuario.demitido) {
-          const nome = usuario.nome || usuario.username || usuario.email;
-          
-          // Se já existe, atualizar dados; senão, adicionar
-          if (!dadosFuncionarios[doc.id]) {
-            // Buscar photoURL do contexto (mesma fonte que a página de tarefas)
-            const funcionarioCompleto = funcionariosContext.find(f => 
-              f.id === doc.id || 
-              f.email === usuario.email || 
-              f.nome === nome
-            );
-            const photoURL = funcionarioCompleto?.photoURL || usuario.photoURL || null;
-            
-            dadosFuncionarios[doc.id] = {
-              id: doc.id,
-              nome: nome,
-              photoURL: photoURL,
-              cargo: usuario.cargo || null,
-              setor: usuario.setor || null,
-              terceirizado: false,
-              tercerizado: false,
-              ferramentasDevolvidas: 0,
-              tarefasConcluidas: 0,
-              avaliacao: 0,
-              avaliacoes: []
-            };
-          } else {
-            // Se já existe photoURL no contexto, priorizar ele
-            const funcionarioCompleto = funcionariosContext.find(f => 
-              f.id === doc.id || 
-              f.email === usuario.email || 
-              f.nome === nome
-            );
-            if (funcionarioCompleto?.photoURL && !dadosFuncionarios[doc.id].photoURL) {
-              dadosFuncionarios[doc.id].photoURL = funcionarioCompleto.photoURL;
-            } else if (usuario.photoURL && !dadosFuncionarios[doc.id].photoURL) {
-              dadosFuncionarios[doc.id].photoURL = usuario.photoURL;
-            }
-            // Atualizar cargo e setor se disponíveis
-            if (usuario.cargo && !dadosFuncionarios[doc.id].cargo) {
-              dadosFuncionarios[doc.id].cargo = usuario.cargo;
-            }
-            if (usuario.setor && !dadosFuncionarios[doc.id].setor) {
-              dadosFuncionarios[doc.id].setor = usuario.setor;
+        const email = usuario.email?.toLowerCase();
+        const nome = usuario.nome || usuario.username || usuario.email;
+        const nomeNormalizado = nome?.toLowerCase();
+        
+        // IMPORTANTE: Não incluir terceirizados ou demitidos
+        if (isTerceirizado || usuario.demitido === true) {
+          if (usuario.demitido === true) {
+            console.log(`❌ Usuário demitido não incluído no ranking: ${nome}`);
+          }
+          return;
+        }
+        
+        // Se o funcionário JÁ existe por ID, atualizar apenas photoURL se usuário tiver foto
+        if (dadosFuncionarios[usuario.id]) {
+          if (usuario.photoURL && !dadosFuncionarios[usuario.id].photoURL) {
+            dadosFuncionarios[usuario.id].photoURL = usuario.photoURL;
+            fotosAtualizadas++;
+            console.log(`📸 Foto atualizada para: ${dadosFuncionarios[usuario.id].nome}`);
+          }
+          return; // Já foi processado, não adicionar novamente
+        }
+        
+        // IMPORTANTE: Verificar duplicata por EMAIL (mesmo com ID diferente)
+        if (email && emailsProcessados.has(email)) {
+          usuariosPuladosDuplicados++;
+          console.log(`⚠️ Usuário pulado (email duplicado): ${nome} (${email}) - ID: ${usuario.id}`);
+          // Atualizar foto se o funcionário existente não tiver
+          if (usuario.photoURL) {
+            const funcExistenteId = Object.values(dadosFuncionarios).find(f => f.email?.toLowerCase() === email)?.id;
+            if (funcExistenteId && !dadosFuncionarios[funcExistenteId].photoURL) {
+              dadosFuncionarios[funcExistenteId].photoURL = usuario.photoURL;
+              fotosAtualizadas++;
+              console.log(`📸 Foto atualizada via email duplicado para: ${dadosFuncionarios[funcExistenteId].nome}`);
             }
           }
-          if (nome) {
-            nomesParaIds[nome.toLowerCase()] = doc.id;
+          return;
+        }
+        
+        // IMPORTANTE: Verificar duplicata por NOME (mesmo com ID e email diferentes)
+        if (nomeNormalizado && nomesParaIds[nomeNormalizado]) {
+          usuariosPuladosDuplicados++;
+          console.log(`⚠️ Usuário pulado (nome duplicado): ${nome} - ID: ${usuario.id} vs ${nomesParaIds[nomeNormalizado]}`);
+          // Atualizar foto se o funcionário existente não tiver
+          if (usuario.photoURL) {
+            const funcExistenteId = nomesParaIds[nomeNormalizado];
+            if (funcExistenteId && !dadosFuncionarios[funcExistenteId].photoURL) {
+              dadosFuncionarios[funcExistenteId].photoURL = usuario.photoURL;
+              fotosAtualizadas++;
+              console.log(`📸 Foto atualizada via nome duplicado para: ${dadosFuncionarios[funcExistenteId].nome}`);
+            }
           }
+          return;
+        }
+        
+        usuariosAdicionados++;
+        
+        dadosFuncionarios[usuario.id] = {
+          id: usuario.id,
+          nome: nome,
+          email: usuario.email,
+          photoURL: usuario.photoURL || null,
+          cargo: usuario.cargo || null,
+          setor: usuario.setor || null,
+          terceirizado: false,
+          tercerizado: false,
+          ferramentasDevolvidas: 0,
+          tarefasConcluidas: 0,
+          avaliacao: 0,
+          avaliacoes: []
+        };
+        
+        if (nome) {
+          nomesParaIds[nome.toLowerCase()] = usuario.id;
+        }
+        if (email) {
+          emailsProcessados.add(email);
         }
       });
       
-      console.log('RankingPontos: Funcionários processados:', Object.keys(dadosFuncionarios).length);
-      console.log('RankingPontos: Mapeamento nomes:', nomesParaIds);
+      console.log('✅ Total final após processar usuários:', {
+        usuariosAdicionados,
+        usuariosPuladosDuplicados,
+        fotosAtualizadas,
+        totalNoRanking: Object.keys(dadosFuncionarios).length,
+        comFoto: Object.values(dadosFuncionarios).filter(f => f.photoURL).length,
+        semFoto: Object.values(dadosFuncionarios).filter(f => !f.photoURL).length,
+        primeiros5: Object.values(dadosFuncionarios).slice(0, 5).map(f => ({ 
+          nome: f.nome, 
+          temFoto: !!f.photoURL 
+        }))
+      });
 
       // Contar ferramentas devolvidas apenas para não terceirizados
       emprestimosSnap.forEach(doc => {
@@ -565,6 +703,38 @@ const RankingPontos = () => {
         if (funcionario.avaliacoes.length > 0) {
           funcionario.avaliacao = funcionario.avaliacoes.reduce((a, b) => a + b, 0) / funcionario.avaliacoes.length;
         }
+      });
+
+      // VERIFICAR DUPLICATAS EM dadosFuncionarios ANTES de criar rankingList
+      const nomesPrevios = new Set();
+      const emailsPrevios = new Set();
+      const duplicatasPrevias = [];
+      
+      Object.values(dadosFuncionarios).forEach(func => {
+        const nomeKey = func.nome?.toLowerCase();
+        const emailKey = func.email?.toLowerCase();
+        
+        if (nomeKey && nomesPrevios.has(nomeKey)) {
+          duplicatasPrevias.push(`⚠️ dadosFuncionarios tem nome duplicado: ${func.nome} (ID: ${func.id})`);
+        }
+        if (emailKey && emailsPrevios.has(emailKey)) {
+          duplicatasPrevias.push(`⚠️ dadosFuncionarios tem email duplicado: ${func.email} (ID: ${func.id})`);
+        }
+        
+        if (nomeKey) nomesPrevios.add(nomeKey);
+        if (emailKey) emailsPrevios.add(emailKey);
+      });
+      
+      if (duplicatasPrevias.length > 0) {
+        console.error('❌ DUPLICATAS EM dadosFuncionarios (ANTES de criar rankingList):', duplicatasPrevias);
+      }
+      
+      console.log('📦 Funcionários prontos para ranking:', {
+        total: Object.keys(dadosFuncionarios).length,
+        nomesUnicos: nomesPrevios.size,
+        emailsUnicos: emailsPrevios.size,
+        comFoto: Object.values(dadosFuncionarios).filter(f => f.photoURL).length,
+        duplicatasDetectadas: duplicatasPrevias.length
       });
 
       // Preparar dados com datas
@@ -685,10 +855,48 @@ const RankingPontos = () => {
           };
         });
 
+      // Verificar duplicatas por nome ou email
+      const nomesUnicos = new Set();
+      const emailsUnicos = new Set();
+      const duplicatas = [];
+      
+      rankingList.forEach(func => {
+        const nomeKey = func.nome?.toLowerCase();
+        const emailKey = func.email?.toLowerCase();
+        
+        if (nomeKey && nomesUnicos.has(nomeKey)) {
+          duplicatas.push(`Nome duplicado: ${func.nome} (${func.id})`);
+        }
+        if (emailKey && emailsUnicos.has(emailKey)) {
+          duplicatas.push(`Email duplicado: ${func.email} (${func.id})`);
+        }
+        
+        if (nomeKey) nomesUnicos.add(nomeKey);
+        if (emailKey) emailsUnicos.add(emailKey);
+      });
+      
+      if (duplicatas.length > 0) {
+        console.warn('⚠️ DUPLICATAS ENCONTRADAS:', duplicatas);
+      }
+
+      console.log('✅ Ranking processado com sucesso:', {
+        totalFuncionarios: rankingList.length,
+        funcionariosUnicos: nomesUnicos.size,
+        funcionariosComFoto: rankingList.filter(f => f.photoURL).length,
+        duplicatas: duplicatas.length,
+        primeiros3: rankingList.slice(0, 3).map(f => ({ 
+          id: f.id,
+          nome: f.nome, 
+          email: f.email,
+          pontos: f.pontuacao.total, 
+          foto: !!f.photoURL 
+        }))
+      });
+
       setRankings(rankingList);
       setLoading(false);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro ao carregar dados:', error);
       setLoading(false);
     }
   };
@@ -1037,16 +1245,76 @@ const RankingPontos = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtrarPorPeriodo(rankingsPorSetor)
-          .filter(funcionario => {
-            // Verificar todas as possíveis variações de terceirizado
-            const isTerceirizado = isFuncionarioTerceirizado(funcionario);
+        {(() => {
+          const rankingsFiltrados = filtrarPorPeriodo(rankingsPorSetor);
+          
+          // DEBUG: Logs detalhados de filtragem
+          console.log('🔍 DEBUG RENDERIZAÇÃO:', {
+            totalAntesFiltro: rankingsFiltrados.length,
+            periodo: periodoAtual,
+            mes: mesSelected,
+            ano: anoSelected,
+            semana: semanaSelected
+          });
+          
+          const comPontuacao = rankingsFiltrados.filter(f => f.pontuacao.total > 0);
+          const terceirizados = rankingsFiltrados.filter(f => isFuncionarioTerceirizado(f));
+          const terceirizadosComPontos = rankingsFiltrados.filter(f => isFuncionarioTerceirizado(f) && f.pontuacao.total > 0);
+          
+          // Mostrar TODOS os funcionários e suas pontuações (ordenados por pontos)
+          const todosComPontuacao = rankingsFiltrados
+            .map(f => ({
+              nome: f.nome,
+              pontos: f.pontuacao.total,
+              ferramentas: f.pontuacao.detalhes.ferramentas,
+              tarefas: f.pontuacao.detalhes.tarefas,
+              avaliacao: f.pontuacao.detalhes.avaliacao,
+              terceirizado: isFuncionarioTerceirizado(f),
+              demitido: f.demitido || false,
+              temAtividades: (f.emprestimos?.length || 0) + (f.tarefas?.length || 0) + (f.avaliacoes?.length || 0) > 0
+            }))
+            .sort((a, b) => b.pontos - a.pontos);
+          
+          console.log('🔍 ANÁLISE DE PONTUAÇÃO:', {
+            totalFuncionarios: rankingsFiltrados.length,
+            comPontuacaoMaiorQueZero: comPontuacao.length,
+            semPontuacao: rankingsFiltrados.length - comPontuacao.length,
+            terceirizados: terceirizados.length,
+            terceirizadosComPontos: terceirizadosComPontos.length
+          });
+          
+          console.table(todosComPontuacao.slice(0, 30)); // Primeiros 30 funcionários
+          
+          // Verificar funcionários que têm atividades mas pontuação = 0
+          const comAtividadesSemPontos = rankingsFiltrados.filter(f => {
+            const temAtividades = (f.emprestimos && f.emprestimos.length > 0) || 
+                                 (f.tarefas && f.tarefas.length > 0) || 
+                                 (f.avaliacoes && f.avaliacoes.length > 0);
+            return temAtividades && f.pontuacao.total === 0;
+          });
+          
+          if (comAtividadesSemPontos.length > 0) {
+            console.warn('⚠️ FUNCIONÁRIOS COM ATIVIDADES MAS SEM PONTOS:', comAtividadesSemPontos.map(f => ({
+              nome: f.nome,
+              emprestimos: f.emprestimos?.length || 0,
+              tarefas: f.tarefas?.length || 0,
+              avaliacoes: f.avaliacoes?.length || 0,
+              pontuacao: f.pontuacao
+            })));
+          }
+          
+          return rankingsFiltrados
+            .filter(funcionario => {
+              // Verificar todas as possíveis variações de terceirizado
+              const isTerceirizado = isFuncionarioTerceirizado(funcionario);
 
-            // Manter apenas funcionários não terceirizados com pontuação
-            return !isTerceirizado && funcionario.pontuacao.total > 0;
-          })
-          .sort((a, b) => b.pontuacao.total - a.pontuacao.total)
-          .map((funcionario, index) => {
+              // IMPORTANTE: Filtrar demitidos, terceirizados e sem pontuação
+              return !isTerceirizado && 
+                     !funcionario.demitido && 
+                     funcionario.pontuacao.total > 0;
+            })
+            .sort((a, b) => b.pontuacao.total - a.pontuacao.total)
+            .map((funcionario, index) => {
             const isPodium = index < 3;
             const isFirst = index === 0;
             
@@ -1195,7 +1463,8 @@ const RankingPontos = () => {
                 <div className="absolute inset-0 bg-white/0 hover:bg-white/5 transition-all pointer-events-none"></div>
               </div>
             );
-          })}
+          });
+        })()}
       </div>
       </div>
     </div>
@@ -1205,9 +1474,9 @@ const RankingPontos = () => {
 const DetalhesPontos = ({ funcionario, onClose }) => {
   const { emprestimos, tarefas, avaliacoes } = funcionario;
   const [sectionsOpen, setSectionsOpen] = useState({
-    emprestimos: true,
-    tarefas: true,
-    avaliacoes: true
+    emprestimos: false,
+    tarefas: false,
+    avaliacoes: false
   });
 
   const toggleSection = (section) => {
@@ -1224,215 +1493,327 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl shadow-xl max-h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-            Detalhes dos Pontos - {funcionario.nome}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          >
-            <X className="w-5 h-5" />
-          </button>
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl shadow-xl max-h-[85vh] flex flex-col">
+        {/* Header com gradiente */}
+        <div className="bg-gradient-to-r from-[#1D9BF0] to-[#1A8CD8] p-6 rounded-t-lg">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-xl font-bold text-white mb-1">
+                {funcionario.nome}
+              </h3>
+              <p className="text-blue-100 text-sm">Detalhes de Pontuação</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          {/* Cards de resumo */}
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <ToolCase className="w-4 h-4 text-white" />
+                <span className="text-xs text-blue-100">Ferramentas</span>
+              </div>
+              <p className="text-2xl font-bold text-white">{funcionario.pontuacao.detalhes.ferramentas}</p>
+              <p className="text-xs text-blue-100">pontos</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <CheckCircle className="w-4 h-4 text-white" />
+                <span className="text-xs text-blue-100">Tarefas</span>
+              </div>
+              <p className="text-2xl font-bold text-white">{funcionario.pontuacao.detalhes.tarefas}</p>
+              <p className="text-xs text-blue-100">pontos</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Star className="w-4 h-4 text-white" />
+                <span className="text-xs text-blue-100">Avaliações</span>
+              </div>
+              <p className="text-2xl font-bold text-white">{funcionario.pontuacao.detalhes.avaliacao}</p>
+              <p className="text-xs text-blue-100">pontos</p>
+            </div>
+          </div>
         </div>
 
         <div className="overflow-y-auto flex-1 p-4">
           <div className="space-y-4">
             {/* Empréstimos */}
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-700/50 rounded-lg border-2 border-gray-200 dark:border-gray-600">
               <div 
-                className="flex justify-between items-center mb-2 cursor-pointer"
+                className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/70 transition-colors rounded-t-lg"
                 onClick={() => toggleSection('emprestimos')}
               >
-                <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                  <ToolCase className="w-4 h-4 text-blue-500" />
-                  Empréstimos
-                  <ChevronDown className={`w-4 h-4 transform transition-transform ${sectionsOpen.emprestimos ? '' : '-rotate-90'}`} />
+                <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <ToolCase className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <div>Empréstimos</div>
+                    <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                      {emprestimos.reduce((total, emp) => total + emp.quantidade, 0)} ferramentas devolvidas
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 ml-2 transform transition-transform ${sectionsOpen.emprestimos ? '' : '-rotate-90'}`} />
                 </h4>
-                <div className="text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Total: </span>
-                  <span className="font-medium text-blue-500">{emprestimos.length * 20} pontos</span>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
+                  <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                    {funcionario.pontuacao.detalhes.ferramentas} pts
+                  </div>
                 </div>
               </div>
               {sectionsOpen.emprestimos && (
-                <>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-1">
-                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium">
-                      {emprestimos.reduce((total, emp) => total + emp.quantidade, 0)}
-                    </span>
-                    ferramentas devolvidas no total
-                  </p>
-                  <div className="space-y-1">
-                    {emprestimos.map((emp, index) => (
-                      <div key={index} className="border-b border-gray-100 dark:border-gray-600/20 last:border-0 pb-2 last:pb-0 mb-2 last:mb-0">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600 dark:text-gray-300 font-medium">
-                            {getDataFormatada(emp.dataDevolucao)}
-                          </span>
-                          <span className="font-medium text-blue-500">
+                <div className="px-4 pb-4 space-y-2 max-h-[300px] overflow-y-auto">
+                  {emprestimos.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      Nenhum empréstimo registrado neste período
+                    </p>
+                  ) : (
+                    emprestimos.map((emp, index) => (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded text-xs font-medium">
+                              {getDataFormatada(emp.dataDevolucao)}
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {emp.quantidade} {emp.quantidade === 1 ? 'ferramenta' : 'ferramentas'}
+                            </span>
+                          </div>
+                          <span className="font-bold text-blue-600 dark:text-blue-400">
                             +{emp.quantidade * 20} pts
                           </span>
                         </div>
-                        {emp.ferramentas && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 rounded-md p-2">
-                            <div className="flex items-center gap-1 mb-1">
-                              <ToolCase className="w-3 h-3" />
-                              <span className="font-medium">Ferramentas devolvidas:</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-1 ml-4">
+                        {emp.ferramentas && emp.ferramentas.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                            <div className="grid grid-cols-2 gap-1.5">
                               {emp.ferramentas.map((ferramenta, idx) => (
-                                <div key={idx} className="flex items-center gap-1">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                                  <span>{ferramenta.nome || ferramenta}</span>
+                                <div key={idx} className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                  <span className="truncate">{ferramenta.nome || ferramenta}</span>
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </>
+                    ))
+                  )}
+                </div>
               )}
             </div>
 
             {/* Tarefas */}
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-700/50 rounded-lg border-2 border-gray-200 dark:border-gray-600">
               <div 
-                className="flex justify-between items-center mb-2 cursor-pointer"
+                className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/70 transition-colors rounded-t-lg"
                 onClick={() => toggleSection('tarefas')}
               >
-                <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  Tarefas 
-                  <ChevronDown className={`w-4 h-4 transform transition-transform ${sectionsOpen.tarefas ? '' : '-rotate-90'}`} />
+                <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <div>Tarefas Concluídas</div>
+                    <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                      {tarefas.length} {tarefas.length === 1 ? 'tarefa' : 'tarefas'}
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 ml-2 transform transition-transform ${sectionsOpen.tarefas ? '' : '-rotate-90'}`} />
                 </h4>
-                <span className="text-sm font-medium text-green-500">
-                  {tarefas.reduce((total, tarefa) => {
-                    const prioridadePontos = {
-                      baixa: 20,
-                      media: 30,
-                      média: 30,
-                      normal: 30,
-                      alta: 50,
-                      urgente: 70
-                    };
-                    let pontos = prioridadePontos[tarefa.prioridade?.toLowerCase().trim()] || 30;
-                    const tempoEstimado = parseFloat(tarefa.tempoEstimado) || 1;
-                    if (!isNaN(tempoEstimado)) {
-                      pontos += Math.min(Math.floor(tempoEstimado) * 5, 50);
-                    }
-                    return total + pontos;
-                  }, 0)} pontos
-                </span>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
+                  <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                    {funcionario.pontuacao.detalhes.tarefas} pts
+                  </div>
+                </div>
               </div>
               {sectionsOpen.tarefas && (
-                <div className="space-y-1">
-                {tarefas.map((tarefa, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300 flex flex-col">
-                      <div>
-                      <span>{getDataFormatada(tarefa.dataConclusao)}</span>
-                      <div className="flex flex-col text-xs text-gray-500">
-                        <span>{tarefa.titulo || 'Tarefa'}</span>
-                        <span>
-                          {tarefa.prioridade || 'Média'} • {tarefa.tempoEstimado || '1'}h est.
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="font-medium text-green-500">
-                        {(() => {
-                          const prioridadePontos = {
-                            baixa: 20,
-                            media: 30,
-                            média: 30,
-                            normal: 30,
-                            alta: 50,
-                            urgente: 70
-                          };
-                          
-                          const pontosPrioridade = prioridadePontos[tarefa.prioridade?.toLowerCase().trim()] || 30;
-                          const tempoEstimado = parseFloat(tarefa.tempoEstimado) || 1;
-                          const pontosExtra = !isNaN(tempoEstimado) ? Math.min(Math.floor(tempoEstimado) * 5, 50) : 0;
-                          const totalPontos = pontosPrioridade + pontosExtra;
-                          
-                          return `+${totalPontos} pts`;
-                        })()}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        ({(() => {
-                          const prioridadePontos = {
-                            baixa: 20,
-                            media: 30,
-                            média: 30,
-                            normal: 30,
-                            alta: 50,
-                            urgente: 70
-                          };
-                          
-                          const pontosPrioridade = prioridadePontos[tarefa.prioridade?.toLowerCase().trim()] || 30;
-                          const tempoEstimado = parseFloat(tarefa.tempoEstimado) || 1;
-                          const pontosExtra = !isNaN(tempoEstimado) ? Math.min(Math.floor(tempoEstimado) * 5, 50) : 0;
-                          
-                          return `${pontosPrioridade} base + ${pontosExtra} tempo`;
-                        })()})
-                      </span>
-                    </div>
-                    </span>
-                  </div>
-                ))}
+                <div className="px-4 pb-4 space-y-2 max-h-[300px] overflow-y-auto">
+                  {tarefas.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      Nenhuma tarefa concluída neste período
+                    </p>
+                  ) : (
+                    tarefas.map((tarefa, index) => {
+                      const prioridadePontos = {
+                        baixa: 20,
+                        media: 30,
+                        média: 30,
+                        normal: 30,
+                        alta: 50,
+                        urgente: 70
+                      };
+                      
+                      const pontosPrioridade = prioridadePontos[tarefa.prioridade?.toLowerCase().trim()] || 30;
+                      const tempoEstimado = parseFloat(tarefa.tempoEstimado) || 1;
+                      const pontosExtra = !isNaN(tempoEstimado) ? Math.min(Math.floor(tempoEstimado) * 5, 50) : 0;
+                      const totalPontos = pontosPrioridade + pontosExtra;
+                      
+                      return (
+                        <div key={index} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <div className="font-medium text-gray-900 dark:text-white mb-1">
+                                {tarefa.titulo || 'Tarefa sem título'}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-1 rounded font-medium">
+                                  {getDataFormatada(tarefa.dataConclusao)}
+                                </span>
+                                <span className={`px-2 py-1 rounded font-medium ${
+                                  (tarefa.prioridade?.toLowerCase() === 'urgente') ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' :
+                                  (tarefa.prioridade?.toLowerCase() === 'alta') ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' :
+                                  'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                                }`}>
+                                  {tarefa.prioridade || 'Média'}
+                                </span>
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  {tarefa.tempoEstimado || '1'}h
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-green-600 dark:text-green-400 text-lg">
+                                +{totalPontos} pts
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {pontosPrioridade} + {pontosExtra}
+                              </div>
+                            </div>
+                          </div>
+                          {tarefa.descricao && (
+                            <div className="text-xs text-gray-600 dark:text-gray-300 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                              {tarefa.descricao}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>
 
             {/* Avaliações */}
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-700/50 rounded-lg border-2 border-gray-200 dark:border-gray-600">
               <div 
-                className="flex justify-between items-center mb-2 cursor-pointer"
+                className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/70 transition-colors rounded-t-lg"
                 onClick={() => toggleSection('avaliacoes')}
               >
-                <h4 className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500" />
-                  Avaliações 
-                  <ChevronDown className={`w-4 h-4 transform transition-transform ${sectionsOpen.avaliacoes ? '' : '-rotate-90'}`} />
+                <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                    <Star className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div>
+                    <div>Avaliações</div>
+                    <div className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                      {avaliacoes.length} {avaliacoes.length === 1 ? 'avaliação' : 'avaliações'}
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 ml-2 transform transition-transform ${sectionsOpen.avaliacoes ? '' : '-rotate-90'}`} />
                 </h4>
-                <span className="text-sm font-medium text-yellow-500">
-                  {avaliacoes.reduce((acc, av) => {
-                    const pontosEstrelas = {
-                      5: 50,  // 5 estrelas = 50 pontos
-                      4: 40,  // 4 estrelas = 40 pontos
-                      3: 30,  // 3 estrelas = 30 pontos
-                      2: 20,  // 2 estrelas = 20 pontos
-                      1: 10   // 1 estrela = 10 pontos
-                    };
-                    return acc + (pontosEstrelas[av.estrelas] || 0);
-                  }, 0)} pontos
-                </span>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
+                  <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
+                    {funcionario.pontuacao.detalhes.avaliacao} pts
+                  </div>
+                </div>
               </div>
               {sectionsOpen.avaliacoes && (
-                <div className="space-y-1">
-                  {avaliacoes.map((avaliacao, index) => (
-                    <div key={index} className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-300">
-                        {getDataFormatada(avaliacao.data)}
-                      </span>
-                      <span className="font-medium text-yellow-500">
-                        {avaliacao.estrelas}★ (+{(avaliacao.estrelas || 0) * 10} pts)
-                      </span>
-                    </div>
-                  ))}
+                <div className="px-4 pb-4 space-y-2 max-h-[300px] overflow-y-auto">
+                  {avaliacoes.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                      Nenhuma avaliação registrada neste período
+                    </p>
+                  ) : (
+                    avaliacoes.map((avaliacao, index) => {
+                      const pontosEstrelas = {
+                        5: 50,
+                        4: 40,
+                        3: 30,
+                        2: 20,
+                        1: 10
+                      };
+                      
+                      return (
+                        <div key={index} className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 px-2 py-1 rounded text-xs font-medium">
+                                {getDataFormatada(avaliacao.data)}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star 
+                                    key={i} 
+                                    className={`w-4 h-4 ${
+                                      i < avaliacao.estrelas 
+                                        ? 'text-yellow-400 fill-yellow-400' 
+                                        : 'text-gray-300 dark:text-gray-600'
+                                    }`}
+                                  />
+                                ))}
+                                <span className="ml-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  {avaliacao.estrelas}/5
+                                </span>
+                              </div>
+                            </div>
+                            <div className="font-bold text-yellow-600 dark:text-yellow-400 text-lg">
+                              +{pontosEstrelas[avaliacao.estrelas] || 0} pts
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center text-base font-bold">
-            <span className="text-gray-900 dark:text-white">Pontuação da data selecionada:</span>
-            <span className="text-blue-500 dark:text-[#1D9BF0]">{funcionario.pontuacao.total} pontos</span>
+        {/* Footer com total */}
+        <div className="p-6 border-t-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                Pontuação Total do Período
+              </div>
+              <div className="text-3xl font-bold text-[#1D9BF0]">
+                {funcionario.pontuacao.total}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                pontos acumulados
+              </div>
+            </div>
+            <div className="text-right space-y-1">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500 dark:text-gray-400">Ferramentas:</span>
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                  {funcionario.pontuacao.detalhes.ferramentas} pts
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500 dark:text-gray-400">Tarefas:</span>
+                <span className="font-semibold text-green-600 dark:text-green-400">
+                  {funcionario.pontuacao.detalhes.tarefas} pts
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500 dark:text-gray-400">Avaliações:</span>
+                <span className="font-semibold text-yellow-600 dark:text-yellow-400">
+                  {funcionario.pontuacao.detalhes.avaliacao} pts
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

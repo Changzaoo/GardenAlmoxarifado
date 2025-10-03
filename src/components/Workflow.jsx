@@ -24,7 +24,7 @@ import UsuariosTab from './usuarios/UsuariosTab';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import { MessageNotificationProvider } from './Chat/MessageNotificationContext';
 import { NotificationProvider, useNotification } from './NotificationProvider';
-import MensagensMain from './Mensagens/MensagensMain';
+import Chat from './Chat/Chat';
 import { useMensagens } from '../hooks/useMensagens';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
 import TarefasTab from './Tarefas/TarefasTab';
@@ -41,6 +41,13 @@ import CadastroEmpresas from './Empresas/CadastroEmpresas';
 import CadastroSetores from './Setores/CadastroSetores';
 import GerenciamentoUnificado from './EmpresasSetores/GerenciamentoUnificado';
 import { encryptPassword, verifyPassword } from '../utils/crypto';
+import OfflineLogo from './common/OfflineLogo';
+import BluetoothMeshManager from './Bluetooth/BluetoothMeshManager';
+import BluetoothPermissionRequest from './Bluetooth/BluetoothPermissionRequest';
+import { DeveloperModeProvider } from '../contexts/DeveloperModeContext';
+import DeveloperPanel from './Developer/DeveloperPanel';
+import { useDeveloperModeActivator, DeveloperModeActivationIndicator } from '../hooks/useDeveloperModeActivator';
+import MobileErrorScreen from './Error/MobileErrorScreen';
 // Icons
 import { 
   Package,
@@ -252,7 +259,7 @@ const CookieManager = {
   // Função para verificar se cookies estão disponíveis
   areCookiesEnabled: () => {
     try {
-      const testCookie = 'almoxarifado_test';
+      const testCookie = 'workflow_test';
       CookieManager.setCookie(testCookie, 'test', 1);
       const isEnabled = CookieManager.getCookie(testCookie) === 'test';
       CookieManager.removeCookie(testCookie);
@@ -341,9 +348,9 @@ const AuthProvider = ({ children }) => {
 
   // Nomes dos cookies
   const COOKIE_NAMES = {
-    USUARIO: 'almoxarifado_usuario',
-    LEMBRAR: 'almoxarifado_lembrar',
-    EXPIRACAO: 'almoxarifado_expira'
+    USUARIO: 'workflow_usuario',
+    LEMBRAR: 'workflow_lembrar',
+    EXPIRACAO: 'workflow_expira'
   };
 
   // Inicialização do sistema com Firebase
@@ -351,6 +358,39 @@ const AuthProvider = ({ children }) => {
     const initFirebaseSystem = async () => {
       try {
         setFirebaseStatus('connecting');
+        
+        // MIGRAÇÃO AUTOMÁTICA: Cookies antigos → novos (TEMPORÁRIO)
+        try {
+          const oldUser = CookieManager.getCookie('almoxarifado_usuario');
+          const newUser = CookieManager.getCookie('workflow_usuario');
+          
+          if (oldUser && !newUser) {
+            console.log('🔄 Migrando cookies de almoxarifado → workflow...');
+            
+            // Copiar cookies antigos para novos
+            CookieManager.setCookie('workflow_usuario', oldUser, 30);
+            
+            const oldLembrar = CookieManager.getCookie('almoxarifado_lembrar');
+            if (oldLembrar) {
+              CookieManager.setCookie('workflow_lembrar', oldLembrar, 30);
+            }
+            
+            const oldExpira = CookieManager.getCookie('almoxarifado_expira');
+            if (oldExpira) {
+              CookieManager.setCookie('workflow_expira', oldExpira, 30);
+            }
+            
+            // Remover cookies antigos
+            CookieManager.removeCookie('almoxarifado_usuario');
+            CookieManager.removeCookie('almoxarifado_lembrar');
+            CookieManager.removeCookie('almoxarifado_expira');
+            CookieManager.removeCookie('almoxarifado_test');
+            
+            console.log('✅ Cookies migrados com sucesso!');
+          }
+        } catch (migrationError) {
+          console.warn('⚠️ Erro na migração de cookies:', migrationError);
+        }
         
         // Verificar se cookies estão habilitados
         const cookiesOK = CookieManager.areCookiesEnabled();
@@ -982,7 +1022,7 @@ const LoginForm = () => {
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-700/20 p-8">
         <div className="text-center mb-8">
           <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
-            <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
+            <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">WorkFlow</h1>
           
@@ -1379,10 +1419,26 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error Boundary caught an error:', error, errorInfo);
+    this.setState({ errorInfo });
   }
 
   render() {
     if (this.state.hasError) {
+      // Detectar se é mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      // Usar tela mobile-friendly em dispositivos móveis
+      if (isMobile) {
+        return (
+          <MobileErrorScreen 
+            error={this.state.error} 
+            errorInfo={this.state.errorInfo}
+            resetError={() => this.setState({ hasError: false, error: null, errorInfo: null })} 
+          />
+        );
+      }
+      
+      // Desktop usa a tela tradicional
       return <ErrorScreen error={this.state.error} resetError={() => this.setState({ hasError: false, error: null })} />;
     }
 
@@ -1398,6 +1454,9 @@ const AlmoxarifadoSistema = () => {
   const { unreadCount: notificationUnreadCount } = useNotification();
   const { totalNaoLidas: mensagensNaoLidas } = useMensagens();
   const funcionarioInfo = funcionariosData.find(f => f.id === usuario.id);
+  
+  // Hook para ativar modo desenvolvedor com long-press (0.5s)
+  const { isLongPressing, progress, longPressHandlers } = useDeveloperModeActivator();
   
   // Estados locais
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
@@ -3104,7 +3163,7 @@ const AlmoxarifadoSistema = () => {
               {/* Logo e título no header mobile */}
               <div className="flex items-center justify-center w-full">
                 <div className="flex items-center">
-                  <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
+                  <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
                   <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
                 </div>
               </div>
@@ -3138,7 +3197,7 @@ const AlmoxarifadoSistema = () => {
           {!isMobile && (
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className={`flex items-center ${menuRecolhido ? 'justify-center w-full' : ''}`}>
-                <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-auto" />
+                <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-12 h-auto" />
                 {!menuRecolhido && (
                   <div className="ml-3">
                     <h1 className="text-lg font-bold text-gray-900 dark:text-white">WorkFlow</h1>
@@ -3179,7 +3238,7 @@ const AlmoxarifadoSistema = () => {
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
               {/* Logo e nome centralizado */}
               <div className="flex-1 flex items-center justify-center">
-                <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-3" />
+                <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-3" />
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">WorkFlow</h1>
               </div>
               
@@ -3753,7 +3812,9 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'mensagens' && (
-              <MensagensMain />
+              <div className="h-full">
+                <Chat />
+              </div>
             )}
 
             {abaAtiva === 'historico-emprestimos' && (
@@ -3845,6 +3906,7 @@ const AlmoxarifadoSistema = () => {
             })}
             
             {/* Ícone favorito no centro com fundo azul circular - 20% para cima com efeitos minimalistas */}
+            {/* SEGURE POR 0.5s para ativar Modo Desenvolvedor (apenas ADMIN) */}
             {(() => {
               const abaFavorita = getAbaFavorita();
               if (!abaFavorita || !abaFavorita.icone) return null; // Proteção contra aba sem ícone
@@ -3855,6 +3917,7 @@ const AlmoxarifadoSistema = () => {
                     setAbaAtiva(abaFavorita.id);
                     setMenuOpen(false);
                   }}
+                  {...longPressHandlers}
                   className="flex flex-col items-center justify-center p-1 transition-all duration-200 min-w-0 flex-1 transform -translate-y-[20%] hover:scale-105"
                 >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-0.5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-200 dark:hover:shadow-blue-900 ${
@@ -4240,6 +4303,18 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
       )}
+      
+      {/* Solicitação de permissão Bluetooth para mobile */}
+      <BluetoothPermissionRequest />
+      
+      {/* Gerenciador de Bluetooth Mesh - APENAS MODO DEV */}
+      <BluetoothMeshManager />
+      
+      {/* Indicador visual de ativação do modo desenvolvedor */}
+      <DeveloperModeActivationIndicator isActive={isLongPressing} progress={progress} />
+      
+      {/* Painel de Desenvolvedor - APENAS MODO DEV */}
+      <DeveloperPanel />
     </div>
     </FuncionariosProvider>
   );
@@ -4267,18 +4342,20 @@ const Seed = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ToastProvider>
-          <FuncionariosProvider>
-            <NotificationProvider>
-              <MessageNotificationProvider>
-                <AnalyticsProvider>
-                  <App />
-                  <PWAUpdateAvailable />
-                </AnalyticsProvider>
-              </MessageNotificationProvider>
-            </NotificationProvider>
-          </FuncionariosProvider>
-        </ToastProvider>
+        <DeveloperModeProvider>
+          <ToastProvider>
+            <FuncionariosProvider>
+              <NotificationProvider>
+                <MessageNotificationProvider>
+                  <AnalyticsProvider>
+                    <App />
+                    <PWAUpdateAvailable />
+                  </AnalyticsProvider>
+                </MessageNotificationProvider>
+              </NotificationProvider>
+            </FuncionariosProvider>
+          </ToastProvider>
+        </DeveloperModeProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

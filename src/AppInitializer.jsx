@@ -1,162 +1,108 @@
-import React, { useState, useEffect } from 'react';
-import LoadingScreen from './components/common/LoadingScreen';
+﻿import React, { useEffect, useState } from 'react';
 import { useDevToolsProtection } from './hooks/useDevToolsProtection';
 
 /**
- * Sistema de Inicialização com Loading até 100%
- * Garante que todos os recursos sejam carregados antes de mostrar a aplicação
+ * Sistema de Inicialização com Loading adaptado ao tema
  */
 const AppInitializer = ({ children }) => {
-  const [loadingComplete, setLoadingComplete] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [loadingText, setLoadingText] = useState('Iniciando sistema...');
-  const [systemReady, setSystemReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [theme, setTheme] = useState('light');
   
   // Anti-DevTools protection
   const devToolsDetected = useDevToolsProtection();
 
   useEffect(() => {
-    // Se DevTools for detectado, não carregar o sistema
-    if (devToolsDetected) {
-      return;
+    // Detectar tema do sistema
+    const savedTheme = localStorage.getItem('workflow-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    let currentTheme = 'light';
+    if (savedTheme === 'dark' || (savedTheme === 'system' && prefersDark) || (!savedTheme && prefersDark)) {
+      currentTheme = 'dark';
+    }
+    
+    setTheme(currentTheme);
+
+    // Aplicar tema ao body
+    if (currentTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
 
-    // Simular carregamento de recursos do sistema
-    const loadSystemResources = async () => {
-      const stages = [
-        { 
-          progress: 15, 
-          text: 'Verificando segurança...', 
-          duration: 400,
-          action: async () => {
-            // Verificar integridade do sistema
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-        },
-        { 
-          progress: 30, 
-          text: 'Conectando ao banco de dados...', 
-          duration: 500,
-          action: async () => {
-            // Carregar configurações do Firebase
-            await new Promise(resolve => setTimeout(resolve, 400));
-          }
-        },
-        { 
-          progress: 50, 
-          text: 'Carregando configurações...', 
-          duration: 400,
-          action: async () => {
-            // Carregar configurações do sistema
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-        },
-        { 
-          progress: 70, 
-          text: 'Preparando componentes...', 
-          duration: 500,
-          action: async () => {
-            // Pre-carregar componentes principais
-            await new Promise(resolve => setTimeout(resolve, 400));
-          }
-        },
-        { 
-          progress: 85, 
-          text: 'Validando credenciais...', 
-          duration: 400,
-          action: async () => {
-            // Verificar autenticação
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-        },
-        { 
-          progress: 95, 
-          text: 'Carregando interface...', 
-          duration: 400,
-          action: async () => {
-            // Carregar recursos de UI
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-        },
-        { 
-          progress: 100, 
-          text: 'Sistema pronto!', 
-          duration: 300,
-          action: async () => {
-            // Finalizar inicialização
-            await new Promise(resolve => setTimeout(resolve, 200));
-          }
-        }
-      ];
+    // Simular carregamento mínimo
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
 
-      for (let i = 0; i < stages.length; i++) {
-        const stage = stages[i];
-        setLoadingText(stage.text);
-
-        // Executar ação da etapa
-        if (stage.action) {
-          await stage.action();
-        }
-
-        // Animar progresso suavemente
-        const startProgress = i === 0 ? 0 : stages[i - 1].progress;
-        const endProgress = stage.progress;
-        const steps = 20;
-        const increment = (endProgress - startProgress) / steps;
-        const stepDuration = stage.duration / steps;
-
-        for (let step = 0; step < steps; step++) {
-          await new Promise(resolve => setTimeout(resolve, stepDuration));
-          setProgress(Math.min(100, startProgress + increment * (step + 1)));
-        }
-      }
-
-      // Sistema pronto - transição imediata ao atingir 100%
-      setSystemReady(true);
-      setLoadingComplete(true);
-    };
-
-    loadSystemResources();
-  }, [devToolsDetected]);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Se DevTools detectado, não renderizar nada (bloqueio é feito no hook)
   if (devToolsDetected) {
     return null;
   }
 
-  // Mostrar loading enquanto não estiver completo
-  if (!loadingComplete) {
+  // Tela de loading com tema
+  if (isLoading) {
     return (
-      <LoadingScreen 
-        progress={progress} 
-        loadingText={loadingText}
-        isComplete={systemReady}
-      />
+      <div 
+        className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
+          theme === 'dark' 
+            ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+            : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'
+        }`}
+      >
+        <div className="text-center">
+          {/* Logo com animação */}
+          <div className="w-24 h-24 mx-auto mb-6 animate-bounce">
+            <img 
+              src="/logo.png" 
+              alt="Workflow" 
+              className="w-full h-full object-contain"
+              style={{
+                filter: theme === 'dark' 
+                  ? 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.5))' 
+                  : 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.3))'
+              }}
+            />
+          </div>
+
+          {/* Spinner */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div 
+              className={`w-3 h-3 rounded-full animate-pulse ${
+                theme === 'dark' ? 'bg-blue-400' : 'bg-blue-500'
+              }`} 
+              style={{ animationDelay: '0ms' }}
+            ></div>
+            <div 
+              className={`w-3 h-3 rounded-full animate-pulse ${
+                theme === 'dark' ? 'bg-purple-400' : 'bg-purple-500'
+              }`}
+              style={{ animationDelay: '150ms' }}
+            ></div>
+            <div 
+              className={`w-3 h-3 rounded-full animate-pulse ${
+                theme === 'dark' ? 'bg-pink-400' : 'bg-pink-500'
+              }`}
+              style={{ animationDelay: '300ms' }}
+            ></div>
+          </div>
+
+          {/* Texto */}
+          <p className={`text-sm font-medium ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            Carregando Workflow...
+          </p>
+        </div>
+      </div>
     );
   }
 
-  // Renderizar aplicação com fade-in suave
-  return (
-    <div 
-      style={{
-        animation: 'fadeIn 0.5s ease-in-out'
-      }}
-    >
-      {children}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.98);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-      `}</style>
-    </div>
-  );
+  // Renderizar aplicação
+  return <>{children}</>;
 };
 
 export default AppInitializer;

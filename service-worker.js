@@ -1,4 +1,4 @@
-const CACHE_NAME = 'garden-almoxarifado-v1';
+const CACHE_NAME = 'workflow-v2-loading-screen'; // Atualizado para forçar novo cache
 const ASSETS = [
   '/',
   '/index.html',

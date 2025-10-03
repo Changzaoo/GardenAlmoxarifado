@@ -10,7 +10,6 @@ import DevolucaoAnimation from './DevolucaoAnimation';
 import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
 import TransferenciaAnimation from './TransferenciaAnimation';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
-import BotaoExtratoPDF from './BotaoExtratoPDF';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 
 // Enum for sorting options
@@ -939,17 +938,6 @@ const ListaEmprestimos = ({
                                 </div>
                               </div>
                               
-                              {/* Botão Extrato PDF - Sempre visível */}
-                              <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <BotaoExtratoPDF 
-                                    emprestimo={emprestimo} 
-                                    variant="icon" 
-                                    size="sm"
-                                  />
-                                </div>
-                              </div>
-
                               {/* Botões de Ação - Grid 2x2 */}
                               {emprestimo.status === 'emprestado' && temFerramentasEmprestadas(emprestimo) && (
                                 <div className="grid grid-cols-2 gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
@@ -1250,7 +1238,6 @@ const ListaEmprestimos = ({
           ferramentasDevolvidas={dadosDevolucao.ferramentasDevolvidas}
           devolvidoPorTerceiros={dadosDevolucao.devolvidoPorTerceiros}
           onComplete={finalizarDevolucao}
-          onClose={() => setShowDevolucaoAnimation(false)}
         />
       )}
 
