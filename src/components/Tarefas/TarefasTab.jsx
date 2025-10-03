@@ -218,19 +218,28 @@ const TarefasTab = ({
   };
 
   const isUserAssigned = (tarefa) => {
-    if (!usuario) return false;
+    if (!usuario) {
+      console.log('⚠️ Nenhum usuário logado');
+      return false;
+    }
     
     const usuarioNome = usuario?.nome?.toLowerCase();
-    const usuarioId = usuario?.id;
+    const usuarioId = String(usuario?.id);
     const usuarioEmail = usuario?.email?.toLowerCase();
+    
+    console.log('🔍 Verificando tarefa:', tarefa.titulo, {
+      usuarioLogado: { id: usuarioId, nome: usuarioNome, email: usuarioEmail }
+    });
     
     // Função helper melhorada - match por ID, nome ou email
     const matchUser = (value) => {
       if (!value) return false;
       const valueLower = String(value).toLowerCase();
+      const valueStr = String(value);
       
-      // Match exato por ID
-      if (valueLower === usuarioId) return true;
+      // Match exato por ID (string ou number)
+      if (valueStr === usuarioId) return true;
+      if (valueLower === usuarioId.toLowerCase()) return true;
       
       // Match por nome (exato ou parcial)
       if (usuarioNome && valueLower === usuarioNome) return true;
@@ -259,24 +268,38 @@ const TarefasTab = ({
     // Verificar array de funcionáriosIds (pode conter IDs ou nomes)
     const estaNosIds = tarefa.funcionariosIds?.some(matchUser);
     
+    // Verificar array de funcionarios (objetos completos)
+    const estaNosFuncionarios = tarefa.funcionarios?.some(func => {
+      return matchUser(func.id) || matchUser(func.nome) || matchUser(func.email);
+    });
+    
     // Verificar campos legados (funcionario e responsavel)
     const ehResponsavel = matchUser(tarefa.responsavel);
     const ehFuncionario = matchUser(tarefa.funcionario);
     
-    const resultado = estaNosIds || ehResponsavel || ehFuncionario;
+    const resultado = estaNosIds || estaNosFuncionarios || ehResponsavel || ehFuncionario;
     
-    // Debug apenas se não encontrou match
-    if (!resultado && showOnlyUserTasks) {
-      console.log('❌ Tarefa NÃO atribuída ao usuário:', {
-        tarefaTitulo: tarefa.titulo,
+    // Log detalhado para debug
+    console.log(resultado ? '✅' : '❌', `Tarefa "${tarefa.titulo}":`, {
+      resultado,
+      checks: {
+        estaNosIds,
+        estaNosFuncionarios,
+        ehResponsavel,
+        ehFuncionario
+      },
+      tarefa: {
         funcionariosIds: tarefa.funcionariosIds,
+        funcionarios: tarefa.funcionarios,
         funcionario: tarefa.funcionario,
-        responsavel: tarefa.responsavel,
+        responsavel: tarefa.responsavel
+      },
+      usuario: {
         usuarioId,
         usuarioNome,
         usuarioEmail
-      });
-    }
+      }
+    });
     
     return resultado;
   };
@@ -350,18 +373,29 @@ const TarefasTab = ({
 
   // Filtrar tarefas por setor (se não for admin)
   const tarefasPorSetor = useMemo(() => {
+    // Se for admin, vê todas
     if (isAdmin) {
-      return tarefas; // Admin vê todas as tarefas
+      return tarefas;
     }
     
-    // Filtrar tarefas onde o setorId corresponde ao setor do usuário
+    // Se for Meu Perfil (showOnlyUserTasks=true), não filtra por setor
+    // Usuário vê TODAS as tarefas atribuídas a ele, independente do setor
+    if (showOnlyUserTasks) {
+      console.log('📌 Modo Meu Perfil: mostrando todas as tarefas atribuídas ao usuário, ignorando filtro de setor');
+      return tarefas;
+    }
+    
+    // Para página de Tarefas geral, filtra por setor
     return PermissionChecker.filterBySector(tarefas, usuario);
-  }, [tarefas, usuario, isAdmin]);
+  }, [tarefas, usuario, isAdmin, showOnlyUserTasks]);
 
   const tarefasFiltradas = tarefasPorSetor
     .filter(tarefa => {
       // Filtro de usuário
-      if (showOnlyUserTasks && !isUserAssigned(tarefa)) return false;
+      if (showOnlyUserTasks && !isUserAssigned(tarefa)) {
+        console.log('❌ Tarefa filtrada (não atribuída):', tarefa.titulo);
+        return false;
+      }
       
       // Filtro de status
       if (filtroStatus !== 'todas' && tarefa.status !== filtroStatus) return false;
@@ -403,6 +437,39 @@ const TarefasTab = ({
     })
     .slice(0, quantidadeExibida);
 
+  // Log para debug
+  useEffect(() => {
+    console.log('📊 TAREFAS DEBUG:', {
+      totalTarefas: tarefas.length,
+      tarefasPorSetor: tarefasPorSetor.length,
+      tarefasFiltradas: tarefasFiltradas.length,
+      showOnlyUserTasks,
+      isAdmin,
+      filtroStatus,
+      usuarioNivel: usuario?.nivel,
+      usuarioSetor: usuario?.setor,
+      usuarioId: usuario?.id,
+      usuarioNome: usuario?.nome
+    });
+    
+    console.log('📋 Todas as tarefas:', tarefas.map(t => ({
+      titulo: t.titulo,
+      status: t.status,
+      setorId: t.setorId,
+      funcionariosIds: t.funcionariosIds,
+      funcionarios: t.funcionarios
+    })));
+    
+    if (tarefasFiltradas.length > 0) {
+      console.log('✅ Tarefas que passaram no filtro:', tarefasFiltradas.map(t => ({
+        titulo: t.titulo,
+        status: t.status
+      })));
+    } else {
+      console.log('❌ Nenhuma tarefa passou nos filtros');
+    }
+  }, [tarefas, tarefasPorSetor, tarefasFiltradas, showOnlyUserTasks, filtroStatus, usuario, isAdmin]);
+
   return (
     <div className="space-y-6">
       {/* Badge informativo para não-admins */}
@@ -415,80 +482,112 @@ const TarefasTab = ({
         </div>
       )}
 
-      {/* Barra de Filtros */}
-      <div className="bg-white dark:bg-[#1E2732] rounded-lg shadow-md border border-gray-200 dark:border-gray-600 p-4">
-        <div className="flex flex-wrap gap-4">
-          {/* Busca */}
-          <div className="relative flex-1 min-w-[250px]">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* Barra de Filtros Modernizada */}
+      <div className="bg-gradient-to-br from-white via-gray-50 to-blue-50 dark:from-[#1E2732] dark:via-[#1A2332] dark:to-[#1E2742] rounded-2xl shadow-xl border-2 border-gray-200 dark:border-gray-700/50 p-6 relative overflow-hidden">
+        {/* Decoração de fundo */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-400/10 dark:from-blue-500/5 dark:to-purple-500/5 rounded-full blur-3xl -z-0" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-indigo-400/10 to-pink-400/10 dark:from-indigo-500/5 dark:to-pink-500/5 rounded-full blur-3xl -z-0" />
+        
+        <div className="relative z-10 space-y-4">
+          {/* Busca com ícone externo */}
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl p-3 shadow-lg">
+              <Search className="w-5 h-5 text-white" />
+            </div>
             <input
               type="text"
               placeholder="Buscar tarefas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-gray-700 dark:text-white"
+              className="flex-1 h-12 px-4 bg-white dark:bg-[#15202B] border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent shadow-md hover:shadow-lg transition-all duration-300 text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
 
-          {/* Filtros */}
-          <div className="grid grid-cols-3 gap-4 w-full">
-            {/* Status */}
-            <select
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
-            >
-              <option value="todas">Todos os status</option>
-              <option value="pendente">Pendentes</option>
-              <option value="em_andamento">Em andamento</option>
-              <option value="pausada">Pausadas</option>
-              <option value="concluida">Concluídas</option>
-            </select>
+          {/* Filtros em Grid com Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Status Filter Card */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 dark:from-green-500 dark:to-emerald-600 rounded-xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" />
+              <select
+                value={filtroStatus}
+                onChange={(e) => setFiltroStatus(e.target.value)}
+                className="relative w-full h-12 px-4 bg-white dark:bg-[#15202B] border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent shadow-md hover:shadow-lg transition-all duration-300 text-gray-800 dark:text-white cursor-pointer appearance-none bg-no-repeat bg-right pr-10"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundSize: '1.5rem',
+                  backgroundPosition: 'right 0.75rem center'
+                }}
+              >
+                <option value="todas">Todos os status</option>
+                <option value="pendente">Pendentes</option>
+                <option value="em_andamento">Em andamento</option>
+                <option value="pausada">Pausadas</option>
+                <option value="concluida">Concluídas</option>
+              </select>
+            </div>
 
-            {/* Período */}
-            <select
-              value={filtroPeriodo}
-              onChange={(e) => setFiltroPeriodo(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
-            >
-              <option value="todos">Todos os períodos</option>
-              <option value="hoje">Hoje</option>
-              <option value="semana">Últimos 7 dias</option>
-              <option value="mes">Último mês</option>
-            </select>
+            {/* Período Filter Card */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-500 dark:from-blue-500 dark:to-cyan-600 rounded-xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" />
+              <select
+                value={filtroPeriodo}
+                onChange={(e) => setFiltroPeriodo(e.target.value)}
+                className="relative w-full h-12 px-4 bg-white dark:bg-[#15202B] border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent shadow-md hover:shadow-lg transition-all duration-300 text-gray-800 dark:text-white cursor-pointer appearance-none bg-no-repeat bg-right pr-10"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundSize: '1.5rem',
+                  backgroundPosition: 'right 0.75rem center'
+                }}
+              >
+                <option value="todos">Todos os períodos</option>
+                <option value="hoje">Hoje</option>
+                <option value="semana">Últimos 7 dias</option>
+                <option value="mes">Último mês</option>
+              </select>
+            </div>
 
-            {/* Avaliação */}
-            <select
-              value={filtroAvaliacao}
-              onChange={(e) => setFiltroAvaliacao(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] dark:bg-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2C3640]"
-            >
-              <option value="todas">Todas as avaliações</option>
-              <option value="excelente">Excelente (5★)</option>
-              <option value="boa">Boa (4★)</option>
-              <option value="regular">Regular (3★)</option>
-              <option value="ruim">Ruim (≤ 2★)</option>
-              <option value="pendente">Pendente de avaliação</option>
-            </select>
-
-            {/* Botões de Ação */}
-            {showAddButton && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
-              <>
-                <button
-                  onClick={() => setShowAtribuirSemanal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-700 dark:hover:to-purple-800 transition-all shadow-md hover:shadow-lg"
-                >
-                  <CalendarDays className="w-4 h-4" /> Tarefa Semanal
-                </button>
-                <button
-                  onClick={() => setShowCriarTarefa(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors shadow-md hover:shadow-lg"
-                >
-                  <Plus className="w-4 h-4" /> Nova Tarefa
-                </button>
-              </>
-            )}
+            {/* Avaliação Filter Card */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 dark:from-yellow-500 dark:to-orange-600 rounded-xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" />
+              <select
+                value={filtroAvaliacao}
+                onChange={(e) => setFiltroAvaliacao(e.target.value)}
+                className="relative w-full h-12 px-4 bg-white dark:bg-[#15202B] border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-400 focus:border-transparent shadow-md hover:shadow-lg transition-all duration-300 text-gray-800 dark:text-white cursor-pointer appearance-none bg-no-repeat bg-right pr-10"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundSize: '1.5rem',
+                  backgroundPosition: 'right 0.75rem center'
+                }}
+              >
+                <option value="todas">Todas as avaliações</option>
+                <option value="excelente">Excelente (5★)</option>
+                <option value="boa">Boa (4★)</option>
+                <option value="regular">Regular (3★)</option>
+                <option value="ruim">Ruim (≤ 2★)</option>
+                <option value="pendente">Pendente de avaliação</option>
+              </select>
+            </div>
           </div>
+
+          {/* Botões de Ação com destaque */}
+          {showAddButton && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                onClick={() => setShowAtribuirSemanal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-600 dark:via-purple-600 dark:to-pink-600 text-white rounded-xl hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 dark:hover:from-indigo-700 dark:hover:via-purple-700 dark:hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/50 hover:scale-105 font-medium"
+              >
+                <CalendarDays className="w-5 h-5" />
+                <span>Tarefa Semanal</span>
+              </button>
+              <button
+                onClick={() => setShowCriarTarefa(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 dark:from-blue-600 dark:to-cyan-600 text-white rounded-xl hover:from-blue-600 hover:to-cyan-600 dark:hover:from-blue-700 dark:hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/50 hover:scale-105 font-medium"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Nova Tarefa</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -521,34 +620,49 @@ const TarefasTab = ({
                 concluida: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
               };
               
+              // Extrair emoji do título (primeiro caractere se for emoji)
+              const emojiRegex = /(\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu;
+              const emojiMatch = tarefa.titulo.match(emojiRegex);
+              const emoji = emojiMatch ? emojiMatch[0] : null;
+              const tituloSemEmoji = emoji ? tarefa.titulo.replace(emoji, '').trim() : tarefa.titulo;
+              
               return (
               <div
                 key={tarefa.id}
-                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer border border-gray-200 dark:border-gray-700"
+                className="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer border-2 border-gray-100 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500"
                 onClick={() => setTarefaSelecionada(tarefa)}
               >
-                {/* Barra de prioridade no topo */}
-                <div className={`h-2 bg-gradient-to-r ${prioridadeColors[tarefa.prioridade || 'baixa']}`} />
+                {/* Gradiente decorativo de fundo */}
+                <div className={`absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity bg-gradient-to-br ${prioridadeColors[tarefa.prioridade || 'baixa']}`}></div>
                 
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-3">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {tarefa.titulo}
-                        </h3>
-                      </div>
+                {/* Barra de prioridade no topo com brilho */}
+                <div className={`h-3 bg-gradient-to-r ${prioridadeColors[tarefa.prioridade || 'baixa']} shadow-lg`} />
+                
+                <div className="relative p-6">
+                  {/* Header com ícone */}
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className={`p-3 rounded-xl bg-gradient-to-br ${prioridadeColors[tarefa.prioridade || 'baixa']} shadow-lg flex-shrink-0 flex items-center justify-center`}>
+                      {emoji ? (
+                        <span className="text-3xl">{emoji}</span>
+                      ) : (
+                        statusInfo.icon && React.cloneElement(statusInfo.icon, { className: 'w-6 h-6 text-white' })
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-2 line-clamp-2">
+                        {tituloSemEmoji}
+                      </h3>
                       
-                      {/* Badge de Status */}
-                      <div className="flex items-center gap-2 flex-wrap mb-3">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${statusColors[tarefa.status]}`}>
-                          {statusInfo.icon}
+                      {/* Badges de Status e Tempo */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md ${statusColors[tarefa.status]}`}>
                           {statusInfo.text}
                         </span>
                         
                         {!readOnly && tarefa.status === 'em_andamento' && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 dark:bg-[#1D9BF0] text-white rounded-full text-xs font-semibold animate-pulse">
-                            <Clock className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full text-xs font-bold shadow-lg shadow-blue-500/50 animate-pulse">
+                            <Clock className="w-3.5 h-3.5" />
                             {formatarTempo(temposDecorridos[tarefa.id])}
                           </span>
                         )}
@@ -557,8 +671,8 @@ const TarefasTab = ({
                   </div>
 
                   {tarefa.descricao && (
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                    <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
                         {tarefa.descricao}
                       </p>
                     </div>
@@ -566,36 +680,69 @@ const TarefasTab = ({
 
                   {/* Funcionários Atribuídos */}
                   <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="bg-blue-100 dark:bg-blue-900/30 p-1.5 rounded-lg">
+                        <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                         Atribuído para
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {(tarefa.funcionarios && tarefa.funcionarios.length > 0) ? (
-                        tarefa.funcionarios.map((func, idx) => (
-                          <div 
-                            key={idx}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300 hover:shadow-md transition-shadow"
-                          >
-                            <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
-                            {func.nome || func.username || func.email || 'Sem nome'}
-                          </div>
-                        ))
+                        tarefa.funcionarios.map((func, idx) => {
+                          const funcionarioCompleto = funcionarios.find(f => 
+                            f.id === func.id || 
+                            f.email === func.email || 
+                            f.nome === func.nome
+                          );
+                          const photoURL = funcionarioCompleto?.photoURL;
+                          const nomeFuncionario = func.nome || func.username || func.email || 'Sem nome';
+                          
+                          return (
+                            <div 
+                              key={idx}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300 hover:shadow-md transition-shadow"
+                            >
+                              {photoURL ? (
+                                <img 
+                                  src={photoURL} 
+                                  alt={nomeFuncionario}
+                                  className="w-6 h-6 rounded-full object-cover border-2 border-blue-400 dark:border-blue-500"
+                                />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold border-2 border-blue-400 dark:border-blue-500">
+                                  {nomeFuncionario.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              {nomeFuncionario}
+                            </div>
+                          );
+                        })
                       ) : (
                         (tarefa.funcionariosIds || []).map((funcId, idx) => {
                           const funcionarioEncontrado = funcionarios.find(f => f.id === funcId);
                           const nomeFuncionario = funcionarioEncontrado 
                             ? (funcionarioEncontrado.nome || funcionarioEncontrado.username || funcionarioEncontrado.email || 'Sem nome')
                             : funcId;
+                          const photoURL = funcionarioEncontrado?.photoURL;
                           
                           return (
                             <div 
                               key={idx}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300 hover:shadow-md transition-shadow"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-700 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300 hover:shadow-md transition-shadow"
                             >
-                              <div className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 animate-pulse" />
+                              {photoURL ? (
+                                <img 
+                                  src={photoURL} 
+                                  alt={nomeFuncionario}
+                                  className="w-6 h-6 rounded-full object-cover border-2 border-blue-400 dark:border-blue-500"
+                                />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold border-2 border-blue-400 dark:border-blue-500">
+                                  {nomeFuncionario.charAt(0).toUpperCase()}
+                                </div>
+                              )}
                               {nomeFuncionario}
                             </div>
                           );
@@ -606,33 +753,47 @@ const TarefasTab = ({
 
                   {/* Badge de Prioridade */}
                   {tarefa.prioridade && (
-                    <div className="flex items-center gap-2 mb-4">
-                      <AlertCircle className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                      <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide ${
+                    <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <div className={`p-2 rounded-lg ${
                         tarefa.prioridade === 'alta' 
-                          ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' 
+                          ? 'bg-red-100 dark:bg-red-900/40' 
                           : tarefa.prioridade === 'média' 
-                          ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300' 
-                          : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/40' 
+                          : 'bg-green-100 dark:bg-green-900/40'
                       }`}>
-                        {tarefa.prioridade === 'alta' ? '🔥 Alta' : tarefa.prioridade === 'média' ? '⚡ Média' : '✓ Baixa'}
+                        <AlertCircle className={`w-4 h-4 ${
+                          tarefa.prioridade === 'alta' 
+                            ? 'text-red-600 dark:text-red-400' 
+                            : tarefa.prioridade === 'média' 
+                            ? 'text-yellow-600 dark:text-yellow-400' 
+                            : 'text-green-600 dark:text-green-400'
+                        }`} />
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">
+                        Prioridade: {tarefa.prioridade === 'alta' ? '🔥 Alta' : tarefa.prioridade === 'média' ? '⚡ Média' : '✓ Baixa'}
                       </span>
                     </div>
                   )}
 
                   {/* Avaliações */}
-                  {tarefa.status === 'concluida' && (
-                    <div className="space-y-2 mb-4 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  {tarefa.status === 'concluida' && (tarefa.avaliacaoSupervisor || tarefa.avaliacaoFuncionario) && (
+                    <div className="space-y-3 mb-4 p-4 bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-orange-900/20 rounded-xl border-2 border-yellow-200 dark:border-yellow-800 shadow-md">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="bg-yellow-500 p-1.5 rounded-lg">
+                          <Star className="w-4 h-4 text-white fill-white" />
+                        </div>
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Avaliações</span>
+                      </div>
                       {tarefa.avaliacaoSupervisor && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">👔 Supervisor:</span>
-                          <div className="flex items-center gap-0.5">
+                        <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-sm font-bold text-gray-800 dark:text-gray-200">👔 Supervisor</span>
+                          <div className="flex items-center gap-1">
                             {[...Array(5)].map((_, index) => (
                               <Star
                                 key={index}
-                                className={`w-4 h-4 transition-transform hover:scale-110 ${
+                                className={`w-5 h-5 transition-transform hover:scale-125 ${
                                   index < tarefa.avaliacaoSupervisor
-                                    ? 'text-yellow-500 fill-yellow-500'
+                                    ? 'text-yellow-500 fill-yellow-500 drop-shadow-lg'
                                     : 'text-gray-300 dark:text-gray-600'
                                 }`}
                               />
@@ -641,15 +802,15 @@ const TarefasTab = ({
                         </div>
                       )}
                       {tarefa.avaliacaoFuncionario && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">👤 Funcionário:</span>
-                          <div className="flex items-center gap-0.5">
+                        <div className="flex items-center justify-between p-2 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                          <span className="text-sm font-bold text-gray-800 dark:text-gray-200">👤 Funcionário</span>
+                          <div className="flex items-center gap-1">
                             {[...Array(5)].map((_, index) => (
                               <Star
                                 key={index}
-                                className={`w-4 h-4 transition-transform hover:scale-110 ${
+                                className={`w-5 h-5 transition-transform hover:scale-125 ${
                                   index < tarefa.avaliacaoFuncionario
-                                    ? 'text-yellow-500 fill-yellow-500'
+                                    ? 'text-yellow-500 fill-yellow-500 drop-shadow-lg'
                                     : 'text-gray-300 dark:text-gray-600'
                                 }`}
                               />
@@ -661,23 +822,25 @@ const TarefasTab = ({
                   )}
 
                   {/* Data de Criação */}
-                  <div className="mb-4 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>{formatarDataHora(tarefa.dataCriacao)}</span>
+                  <div className="mb-4 flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                    <div className="bg-gray-200 dark:bg-gray-700 p-1.5 rounded-lg">
+                      <Calendar className="w-3.5 h-3.5 text-gray-600 dark:text-gray-300" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{formatarDataHora(tarefa.dataCriacao)}</span>
                   </div>
 
                   {/* Ações */}
                   {!readOnly && (
-                    <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+                    <div className="pt-4 border-t-2 border-gray-200 dark:border-gray-700 flex justify-end gap-2">
                       {tarefa.status === 'pendente' && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleIniciarTarefa(tarefa.id);
                           }}
-                          className="flex-1 px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-500 to-blue-600 dark:from-[#1D9BF0] dark:to-[#1a8cd8] text-white rounded-xl flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-200"
+                          className="flex-1 px-4 py-3 text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-500/70 hover:scale-105 transition-all duration-200"
                         >
-                          <PlayCircle className="w-4 h-4" />
+                          <PlayCircle className="w-5 h-5" />
                           Iniciar Tarefa
                         </button>
                       )}
@@ -689,9 +852,9 @@ const TarefasTab = ({
                               e.stopPropagation();
                               handlePausarTarefa(tarefa.id);
                             }}
-                            className="flex-1 px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl flex items-center justify-center gap-2 hover:shadow-lg hover:scale-105 transition-all duration-200"
+                            className="flex-1 px-3 py-3 text-sm font-bold bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/50 hover:shadow-xl hover:shadow-yellow-500/70 hover:scale-105 transition-all duration-200"
                           >
-                            <Pause className="w-4 h-4" />
+                            <Pause className="w-5 h-5" />
                             Pausar
                           </button>
                           <button

@@ -166,11 +166,11 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
           {/* Descrição */}
           <div>
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Descrição</h3>
-            <p className="text-white whitespace-pre-wrap">
+            <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
               {tarefa.descricao.split(/(@\w+)/).map((parte, index) => {
                 if (parte.startsWith('@')) {
                   return (
-                    <span key={index} className="text-[#60A5FA]">
+                    <span key={index} className="text-blue-600 dark:text-[#60A5FA]">
                       {parte}
                     </span>
                   );
@@ -187,18 +187,18 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
               <div className="space-y-2 text-sm">
                 <p>
                   <span className="text-gray-500 dark:text-gray-400">Criação: </span>
-                  <span className="text-white">{formatarData(tarefa.dataCriacao)}</span>
+                  <span className="text-gray-900 dark:text-white">{formatarData(tarefa.dataCriacao)}</span>
                 </p>
                 {tarefa.dataInicio && (
                   <p>
                     <span className="text-gray-500 dark:text-gray-400">Início: </span>
-                    <span className="text-white">{formatarData(tarefa.dataInicio)}</span>
+                    <span className="text-gray-900 dark:text-white">{formatarData(tarefa.dataInicio)}</span>
                   </p>
                 )}
                 {tarefa.status === 'concluida' && (
                   <p>
                     <span className="text-gray-500 dark:text-gray-400">Conclusão: </span>
-                    <span className="text-white">{formatarData(tarefa.dataConclusao)}</span>
+                    <span className="text-gray-900 dark:text-white">{formatarData(tarefa.dataConclusao)}</span>
                   </p>
                 )}
               </div>
@@ -208,7 +208,7 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 {tarefa.status === 'concluida' ? 'Tempo Total' : 'Tempo Decorrido'}
               </h3>
-              <p className="text-white">
+              <p className="text-gray-900 dark:text-white">
                 {tarefa.status === 'concluida' 
                   ? formatarTempo(tarefa.tempoTotal)
                   : tarefa.status === 'em_andamento'

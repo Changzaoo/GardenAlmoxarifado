@@ -41,7 +41,6 @@ import CadastroEmpresas from './Empresas/CadastroEmpresas';
 import CadastroSetores from './Setores/CadastroSetores';
 import GerenciamentoUnificado from './EmpresasSetores/GerenciamentoUnificado';
 import { encryptPassword, verifyPassword } from '../utils/crypto';
-import LoadingScreen from './common/LoadingScreen';
 // Icons
 import { 
   Package,
@@ -1152,11 +1151,7 @@ const ErrorScreen = ({ error, resetError }) => {
 
   // Função para enviar relatório de erro
   const enviarRelatorioErro = async () => {
-    if (!usuario?.id) {
-      alert('Você precisa estar logado para enviar um relatório de erro.');
-      return;
-    }
-
+    // Permite envio de relatório mesmo sem estar logado
     setShowDescricaoModal(true);
   };
 
@@ -1175,9 +1170,9 @@ const ErrorScreen = ({ error, resetError }) => {
         timestamp: new Date().toISOString(),
         url: window.location.href,
         browserInfo,
-        usuarioId: usuario.id,
-        usuarioNome: usuario.nome || 'Usuário Desconhecido',
-        usuarioEmail: usuario.email || '',
+        usuarioId: usuario?.id || 'anonimo',
+        usuarioNome: usuario?.nome || 'Usuário Anônimo',
+        usuarioEmail: usuario?.email || 'nao-informado',
         descricao: descricao || 'Sem descrição adicional',
         status: 'pendente',
         criadoEm: new Date().toISOString()
@@ -1256,8 +1251,7 @@ const ErrorScreen = ({ error, resetError }) => {
                   alt="WorkFlow Error" 
                   className="w-full h-full object-contain opacity-90 saturate-0"
                   style={{
-                    filter: 'brightness(0.4) sepia(1) hue-rotate(-50deg) saturate(6)',
-                    animation: 'shake 0.5s ease-in-out infinite'
+                    filter: 'brightness(0.4) sepia(1) hue-rotate(-50deg) saturate(6)'
                   }}
                 />
               </div>
@@ -1367,12 +1361,6 @@ const ErrorScreen = ({ error, resetError }) => {
           )}
         </div>
 
-        {/* Rodapé */}
-        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            WorkFlow System • Versão 2.0
-          </p>
-        </div>
       </div>
     </div>
   );
@@ -1422,7 +1410,9 @@ const AlmoxarifadoSistema = () => {
   
   // Estados para personalização do menu
   const [menuPersonalizado, setMenuPersonalizado] = useState(null);
-  const [itemFavorito, setItemFavorito] = useState('emprestimos'); // Item que fica no centro/destaque
+  // Favorito padrão baseado no nível: 'meu-perfil' para nível 1, 'emprestimos' para outros
+  const favoritoPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+  const [itemFavorito, setItemFavorito] = useState(favoritoPadrao); // Item que fica no centro/destaque
   const [showMenuConfig, setShowMenuConfig] = useState(false);
   const [menuLongPressTimer, setMenuLongPressTimer] = useState(null);
   const [menuLongPressProgress, setMenuLongPressProgress] = useState(0);
@@ -2620,7 +2610,7 @@ const AlmoxarifadoSistema = () => {
 
   // Verificar se usuario existe antes de continuar
   if (!usuario) {
-    return <LoadingScreen />;
+    return null; // AppInitializer já gerencia o loading
   }
 
   // Estatísticas do sistema
@@ -2676,7 +2666,7 @@ const AlmoxarifadoSistema = () => {
       id: 'escala', 
       nome: 'Escala', 
       icone: Calendar,
-      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Supervisor ou superior
+      permissao: () => true // Visível para todos os níveis
     },
     { 
       id: 'inventario', 
@@ -2745,26 +2735,84 @@ const AlmoxarifadoSistema = () => {
   useEffect(() => {
     if (!usuario?.id || permissaoAlterada) return;
     
-    // Só restaura estado se NÃO houver mudança de permissão pendente
-    const estadoSalvo = carregarEstadoApp();
-    if (estadoSalvo && estadoSalvo.abaAtiva) {
-      console.log('🔄 Restaurando última página:', estadoSalvo.abaAtiva);
-      setAbaAtiva(estadoSalvo.abaAtiva);
+    // Sempre usar a página favorita como tela inicial
+    const abaFavorita = getAbaFavorita();
+    const paginaInicial = abaFavorita ? abaFavorita.id : 'meu-perfil';
+    console.log('⭐ Iniciando com página favorita:', paginaInicial);
+    setAbaAtiva(paginaInicial);
+  }, [usuario?.id, permissaoAlterada, itemFavorito]);
+
+  // Controlar botão voltar do smartphone para evitar saída acidental
+  useEffect(() => {
+    let backPressCount = 0;
+    let backPressTimer = null;
+
+    const handleBackButton = (e) => {
+      // Previne comportamento padrão
+      e.preventDefault();
       
-      // Restaurar posição de scroll
-      setTimeout(() => {
-        if (estadoSalvo.scrollPosition) {
-          window.scrollTo(0, estadoSalvo.scrollPosition);
-        }
-      }, 100);
-    } else {
-      // Se não houver estado salvo, usar página favorita como inicial
-      const abaFavorita = getAbaFavorita();
-      const paginaInicial = abaFavorita ? abaFavorita.id : 'meu-perfil';
-      console.log('⭐ Iniciando com página inicial:', paginaInicial);
-      setAbaAtiva(paginaInicial);
-    }
-  }, [usuario?.id, carregarEstadoApp, permissaoAlterada, itemFavorito]);
+      backPressCount++;
+      
+      if (backPressCount === 1) {
+        // Primeira vez - não faz nada
+        console.log('📱 Primeiro toque no voltar');
+      } else if (backPressCount === 2) {
+        // Segunda vez - mostra aviso
+        console.log('⚠️ Segundo toque no voltar - mostrando aviso');
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          bottom: 80px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.9);
+          color: white;
+          padding: 12px 24px;
+          border-radius: 8px;
+          z-index: 9999;
+          font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          animation: slideUp 0.3s ease-out;
+        `;
+        toast.textContent = '⚠️ Pressione voltar novamente para sair do app';
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.animation = 'slideDown 0.3s ease-out';
+          setTimeout(() => toast.remove(), 300);
+        }, 2500);
+      } else {
+        // Terceira vez - permite sair
+        console.log('👋 Terceiro toque - saindo do app');
+        backPressCount = 0;
+        window.history.back();
+        return;
+      }
+      
+      // Reseta o contador após 3 segundos
+      if (backPressTimer) {
+        clearTimeout(backPressTimer);
+      }
+      backPressTimer = setTimeout(() => {
+        backPressCount = 0;
+        console.log('🔄 Contador de voltar resetado');
+      }, 3000);
+    };
+
+    // Adiciona um estado no histórico para capturar o botão voltar
+    window.history.pushState({ page: 'workflow' }, '', window.location.href);
+    
+    // Escuta o evento popstate (botão voltar)
+    window.addEventListener('popstate', handleBackButton);
+    
+    return () => {
+      window.removeEventListener('popstate', handleBackButton);
+      if (backPressTimer) {
+        clearTimeout(backPressTimer);
+      }
+    };
+  }, []);
 
   // Carregar configuração do menu personalizado do Firebase
   useEffect(() => {
@@ -2779,7 +2827,10 @@ const AlmoxarifadoSistema = () => {
         const usuarioDoc = await getDoc(doc(db, 'usuarios', usuario.id));
         const dados = usuarioDoc.data();
         const menuConfig = dados?.menuConfig;
-        const favorito = dados?.itemFavorito || 'emprestimos';
+        
+        // Favorito padrão baseado no nível do usuário
+        const favoritoPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+        const favorito = dados?.itemFavorito || favoritoPadrao;
         
         if (menuConfig && menuConfig.length > 0) {
           console.log('✅ Configuração carregada:', { menuConfig, favorito });
@@ -2795,7 +2846,7 @@ const AlmoxarifadoSistema = () => {
             ordem: index
           }));
           setMenuPersonalizado(configPadrao);
-          setItemFavorito('emprestimos');
+          setItemFavorito(favoritoPadrao);
         }
       } catch (error) {
         console.error('❌ Erro ao carregar menu config:', error);
@@ -2901,21 +2952,28 @@ const AlmoxarifadoSistema = () => {
   const getAbasMenuInferior = () => {
     if (!menuPersonalizado) {
       // Configuração padrão se não houver personalização
-      // Para funcionários (nível 1), incluir 'meu-perfil' no menu inferior
-      const filtroAbasExcluidas = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO
-        ? (a => a.id !== 'ranking' && a.id !== itemFavorito) // Funcionário: mantém meu-perfil
-        : (a => a.id !== 'ranking' && a.id !== 'meu-perfil' && a.id !== itemFavorito); // Outros níveis: exclui meu-perfil
-      
-      return abas
-        .filter(filtroAbasExcluidas)
-        .filter(aba => {
-          // Filtrar por permissão
-          if (aba.permissao && typeof aba.permissao === 'function') {
-            return aba.permissao();
-          }
-          return true;
-        })
-        .slice(0, 3);
+      if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
+        // Para nível 1: ordem específica - Mensagens, Notificações, Escala
+        // (Meu Perfil fica no centro como favorito)
+        const ordemNivel1 = ['mensagens', 'notificacoes', 'escala'];
+        return ordemNivel1
+          .map(id => abas.find(a => a.id === id))
+          .filter(aba => aba && aba.permissao && aba.permissao());
+      } else {
+        // Para outros níveis: configuração padrão
+        const filtroAbasExcluidas = (a => a.id !== 'ranking' && a.id !== 'meu-perfil' && a.id !== itemFavorito);
+        
+        return abas
+          .filter(filtroAbasExcluidas)
+          .filter(aba => {
+            // Filtrar por permissão
+            if (aba.permissao && typeof aba.permissao === 'function') {
+              return aba.permissao();
+            }
+            return true;
+          })
+          .slice(0, 3);
+      }
     }
     
     const abasOrdenadas = getAbasOrdenadas();
@@ -4191,7 +4249,7 @@ const App = () => {
   const { usuario, isLoading } = useAuth();
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return null; // AppInitializer já gerencia o loading
   }
 
   return usuario ? <AlmoxarifadoSistema /> : <LoginForm />;
