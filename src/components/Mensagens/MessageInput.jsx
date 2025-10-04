@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Send, Image, Smile, Paperclip } from 'lucide-react';
-import { uploadToDiscord } from '../../services/discordStorage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../../firebaseConfig';
 
 const MessageInput = ({ onEnviar }) => {
   const [texto, setTexto] = useState('');
@@ -44,18 +45,18 @@ const MessageInput = ({ onEnviar }) => {
     setUploadando(true);
 
     try {
-      // Upload para Discord
-      const resultado = await uploadToDiscord(file, 'posts', {
-        tipo: 'mensagem',
-        uploadPor: 'usuario'
-      });
+      // Upload para Firebase Storage
+      const timestamp = Date.now();
+      const fileName = `mensagens/${timestamp}_${file.name}`;
+      const storageRef = ref(storage, fileName);
+      
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
 
       // Enviar mensagem com imagem
-      await onEnviar(resultado.url, 'imagem', {
-        discordMessageId: resultado.messageId,
-        discordChannelId: resultado.channelId,
-        nomeArquivo: resultado.filename,
-        tamanho: resultado.size
+      await onEnviar(url, 'imagem', {
+        nomeArquivo: file.name,
+        tamanho: file.size
       });
 
     } catch (error) {
