@@ -48,6 +48,10 @@ import { DeveloperModeProvider } from '../contexts/DeveloperModeContext';
 import DeveloperPanel from './Developer/DeveloperPanel';
 import { useDeveloperModeActivator, DeveloperModeActivationIndicator } from '../hooks/useDeveloperModeActivator';
 import MobileErrorScreen from './Error/MobileErrorScreen';
+import { FuncionarioPerfilProvider } from '../contexts/FuncionarioPerfilContext';
+import PerfilConfigurador from './Perfil/PerfilConfigurador';
+import SistemaResumo from './Admin/SistemaResumo';
+import useThemeColor from '../hooks/useThemeColor';
 // Icons
 import { 
   Package,
@@ -357,6 +361,9 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initFirebaseSystem = async () => {
       try {
+        console.log('🚀 Iniciando sistema Firebase...');
+        console.log('🔥 Firebase App:', app);
+        console.log('🗄️ Firestore DB:', db);
         setFirebaseStatus('connecting');
         
         // MIGRAÇÃO AUTOMÁTICA: Cookies antigos → novos (TEMPORÁRIO)
@@ -638,20 +645,45 @@ const AuthProvider = ({ children }) => {
 
   const carregarUsuarios = async () => {
     try {
+      console.log('📥 Iniciando carregamento de usuários...');
+      console.log('🔥 Firebase DB:', db);
+      console.log('🔥 Firebase Status:', firebaseStatus);
+      
       const snapshot = await getDocs(collection(db, 'usuarios'));
-      const usuariosCarregados = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      }));
+      console.log('📊 Snapshot recebido:', {
+        size: snapshot.size,
+        empty: snapshot.empty,
+        docs: snapshot.docs.length
+      });
+      
+      const usuariosCarregados = snapshot.docs.map(doc => {
+        const userData = { id: doc.id, ...doc.data() };
+        console.log('👤 Usuário carregado:', {
+          id: userData.id,
+          email: userData.email,
+          nivel: userData.nivel,
+          ativo: userData.ativo
+        });
+        return userData;
+      });
+      
+      console.log('✅ Total de usuários carregados:', usuariosCarregados.length);
+      console.log('📋 Lista de emails:', usuariosCarregados.map(u => u.email));
       
       setUsuarios(usuariosCarregados);
       
       // Se não houver usuários, criar usuário admin padrão
       if (usuariosCarregados.length === 0) {
+        console.log('⚠️ Nenhum usuário encontrado, criando admin padrão...');
         await criarUsuarioAdmin();
       }
     } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
+      console.error('❌ Erro ao carregar usuários:', error);
+      console.error('Detalhes:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       throw error;
     }
   };
@@ -668,10 +700,23 @@ const AuthProvider = ({ children }) => {
     };
 
     try {
-      await addDoc(collection(db, 'usuarios'), adminPadrao);
-      console.log('Usuário admin criado no Firebase');
+      console.log('🔧 Criando usuário admin padrão:', {
+        email: adminPadrao.email,
+        nivel: adminPadrao.nivel,
+        senha: adminPadrao.senha
+      });
+      
+      const docRef = await addDoc(collection(db, 'usuarios'), adminPadrao);
+      console.log('✅ Usuário admin criado no Firebase com ID:', docRef.id);
+      
+      // Recarregar lista de usuários
+      await carregarUsuarios();
     } catch (error) {
-      console.error('Erro ao criar usuário admin:', error);
+      console.error('❌ Erro ao criar usuário admin:', error);
+      console.error('Detalhes:', {
+        message: error.message,
+        code: error.code
+      });
     }
   };
 
@@ -997,16 +1042,27 @@ const LoginForm = () => {
     }
 
     try {
+      console.log('🔐 Iniciando processo de login...');
+      console.log('Email:', formData.email);
+      console.log('Lembrar:', formData.lembrar);
+      
       const resultado = await login(formData.email, formData.senha, formData.lembrar);
-      if (!resultado.success) {
-        setErro(resultado.message);
+      
+      console.log('📩 Resultado do login:', resultado);
+      
+      if (!resultado || !resultado.success) {
+        const mensagemErro = resultado?.message || 'Email ou senha incorretos';
+        console.log('❌ Login falhou:', mensagemErro);
+        setErro(mensagemErro);
+        setCarregando(false);
       } else {
-        console.log('✅ Login realizado com sucesso');
+        console.log('✅ Login realizado com sucesso!');
+        // Não precisa fazer nada aqui - o AuthProvider já atualizou o estado
+        // e o componente será re-renderizado automaticamente
       }
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('❌ Erro no login:', error);
       setErro('Erro ao fazer login. Tente novamente.');
-    } finally {
       setCarregando(false);
     }
   };
@@ -1031,36 +1087,34 @@ const LoginForm = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+              <User className="w-4 h-4 text-green-600 dark:text-green-400" />
               Email/Usuário
             </label>
-            <div className="relative">
-              <User className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
-              <input
-                type="text"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                onKeyPress={handleKeyPress}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
-                placeholder="Digite seu usuário"
-                required
-                disabled={carregando}
-              />
-            </div>
+            <input
+              type="text"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onKeyPress={handleKeyPress}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
+              placeholder="Digite seu usuário"
+              required
+              disabled={carregando}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+              <Lock className="w-4 h-4 text-green-600 dark:text-green-400" />
               Senha
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
               <input
                 type={mostrarSenha ? 'text' : 'password'}
                 value={formData.senha}
                 onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
                 onKeyPress={handleKeyPress}
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
+                className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
                 placeholder="Digite sua senha"
                 required
                 disabled={carregando}
@@ -1068,7 +1122,7 @@ const LoginForm = () => {
               <button
                 type="button"
                 onClick={() => setMostrarSenha(!mostrarSenha)}
-                className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 disabled={carregando}
               >
                 {mostrarSenha ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -1454,9 +1508,13 @@ const AlmoxarifadoSistema = () => {
   const { unreadCount: notificationUnreadCount } = useNotification();
   const { totalNaoLidas: mensagensNaoLidas } = useMensagens();
   const funcionarioInfo = funcionariosData.find(f => f.id === usuario.id);
+  const { theme } = useTheme();
   
   // Hook para ativar modo desenvolvedor com long-press (0.5s)
   const { isLongPressing, progress, longPressHandlers } = useDeveloperModeActivator();
+  
+  // Hook para sincronizar theme-color com barra de status/navegação mobile
+  useThemeColor(theme);
   
   // Estados locais
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
@@ -2761,6 +2819,12 @@ const AlmoxarifadoSistema = () => {
         return isAdmin || isGerente;
       }
     },
+    {
+      id: 'sistema-resumo',
+      nome: 'Sistema',
+      icone: BarChart3,
+      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas administradores
+    },
     
   ].filter(aba => aba.permissao());  
   
@@ -3803,6 +3867,10 @@ const AlmoxarifadoSistema = () => {
               <GerenciamentoUnificado usuarioAtual={usuario} />
             )}
 
+            {abaAtiva === 'sistema-resumo' && (
+              <SistemaResumo />
+            )}
+
             {abaAtiva === 'ranking' && (
               <RankingPontos />
             )}
@@ -4343,18 +4411,20 @@ const Seed = () => {
     <ErrorBoundary>
       <AuthProvider>
         <DeveloperModeProvider>
-          <ToastProvider>
-            <FuncionariosProvider>
-              <NotificationProvider>
-                <MessageNotificationProvider>
-                  <AnalyticsProvider>
-                    <App />
-                    <PWAUpdateAvailable />
-                  </AnalyticsProvider>
-                </MessageNotificationProvider>
-              </NotificationProvider>
-            </FuncionariosProvider>
-          </ToastProvider>
+          <FuncionarioPerfilProvider>
+            <ToastProvider>
+              <FuncionariosProvider>
+                <NotificationProvider>
+                  <MessageNotificationProvider>
+                    <AnalyticsProvider>
+                      <App />
+                      <PWAUpdateAvailable />
+                    </AnalyticsProvider>
+                  </MessageNotificationProvider>
+                </NotificationProvider>
+              </FuncionariosProvider>
+            </ToastProvider>
+          </FuncionarioPerfilProvider>
         </DeveloperModeProvider>
       </AuthProvider>
     </ErrorBoundary>

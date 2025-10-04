@@ -3,35 +3,50 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/logo.png" type="image/png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#16181C" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
-    <meta name="description" content="Workflow - Sistema de gestão empresarial completo" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
-    <link rel="manifest" href="/manifest.json?v=1.0">
-
-    <!-- Preload de fontes para melhor performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <title>Workflow</title>
+    <!-- Viewport otimizado para mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     
-    <!-- Meta tags adicionais para SEO -->
-    <meta name="robots" content="noindex, nofollow" />
-    <meta name="author" content="Workflow" />
-    <meta name="keywords" content="workflow, gestão, inventário, empresarial, sistema" />
+    <!-- Theme Color - Será atualizado dinamicamente via JavaScript -->
+    <meta name="theme-color" content="#3b82f6" id="theme-color-meta" />
+    <meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)" />
     
-    <!-- PWA meta tags -->
+    <meta name="description" content="Workflow - Sistema completo de gestão empresarial com inventário, tarefas, mensagens e ranking" />
+    
+    <!-- iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Workflow" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- iOS Icons -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/logo.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="%PUBLIC_URL%/logo.png" />
+    
+    <!-- Android/PWA -->
+    <link rel="manifest" href="/manifest.json?v=2.0" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Workflow" />
-    <meta name="msapplication-TileColor" content="#1DA1F2" />
+    
+    <!-- Windows -->
+    <meta name="msapplication-TileColor" content="#3b82f6" />
     <meta name="msapplication-tap-highlight" content="no" />
-    <meta name="theme-color" content="#1DA1F2" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)" />
+    <meta name="msapplication-navbutton-color" content="#3b82f6" />
+    
+    <!-- Preload de fontes para melhor performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    
+    <title>Workflow - Sistema de Gestão</title>
+    
+    <!-- SEO -->
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="author" content="Workflow" />
+    <meta name="keywords" content="workflow, gestão, inventário, empresarial, sistema, tarefas, mensagens, ranking" />
     
     <!-- iOS splash screens -->
     <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/icons/apple-splash-2048-2732.jpg" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
@@ -69,13 +84,140 @@
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/service-worker.js')
             .then((registration) => {
-              console.log('SW registered: ', registration);
+              console.log('✅ SW registered: ', registration);
             })
             .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
+              console.log('❌ SW registration failed: ', registrationError);
             });
         });
       }
+      
+      // Atualizar theme-color dinamicamente com base no tema do sistema
+      function updateThemeColor() {
+        const themeColorMeta = document.getElementById('theme-color-meta');
+        const savedTheme = localStorage.getItem('workflow-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        let currentTheme = 'light';
+        if (savedTheme === 'dark' || (savedTheme === 'system' && prefersDark) || (!savedTheme && prefersDark)) {
+          currentTheme = 'dark';
+        }
+        
+        // Cores para cada tema
+        const colors = {
+          light: '#3b82f6', // blue-500
+          dark: '#1f2937'   // gray-800
+        };
+        
+        if (themeColorMeta) {
+          themeColorMeta.setAttribute('content', colors[currentTheme]);
+        }
+        
+        // Aplicar classe dark no html se necessário
+        if (currentTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+      
+      // Atualizar na inicialização
+      updateThemeColor();
+      
+      // Observar mudanças no tema do sistema
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeColor);
+      
+      // Observar mudanças no localStorage (quando usuário muda o tema)
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'workflow-theme') {
+          updateThemeColor();
+        }
+      });
+      
+      // iOS PWA Install Prompt
+      let deferredPrompt;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone);
+      
+      // Mostrar instruções de instalação para iOS Safari
+      if (isIOS && !isInStandaloneMode) {
+        setTimeout(() => {
+          const installMessage = document.createElement('div');
+          installMessage.id = 'ios-install-prompt';
+          installMessage.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 999999;
+            max-width: 90%;
+            width: 400px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            animation: slideUp 0.3s ease-out;
+          `;
+          
+          installMessage.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="font-size: 24px;">📱</div>
+              <div style="flex: 1;">
+                <div style="font-weight: 600; margin-bottom: 4px;">Instalar Workflow</div>
+                <div style="font-size: 13px; opacity: 0.9;">
+                  Toque em <span style="display: inline-flex; align-items: center; padding: 2px 6px; background: rgba(255,255,255,0.2); border-radius: 4px; margin: 0 4px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 5v14M5 12l7 7 7-7"/>
+                    </svg>
+                  </span> e depois em "Adicionar à Tela de Início"
+                </div>
+              </div>
+              <button onclick="this.parentElement.parentElement.remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px;">×</button>
+            </div>
+          `;
+          
+          // Adicionar animação CSS
+          const style = document.createElement('style');
+          style.textContent = `
+            @keyframes slideUp {
+              from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+              to { transform: translateX(-50%) translateY(0); opacity: 1; }
+            }
+          `;
+          document.head.appendChild(style);
+          document.body.appendChild(installMessage);
+          
+          // Auto-remover após 15 segundos
+          setTimeout(() => {
+            if (document.getElementById('ios-install-prompt')) {
+              installMessage.style.animation = 'slideUp 0.3s ease-out reverse';
+              setTimeout(() => installMessage.remove(), 300);
+            }
+          }, 15000);
+        }, 2000);
+      }
+      
+      // Android/Desktop PWA Install
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('💾 PWA install prompt ready');
+        
+        // Evento customizado para que o React possa usar
+        window.dispatchEvent(new CustomEvent('pwaInstallAvailable', { detail: e }));
+      });
+      
+      // Expor função global para instalação
+      window.installPWA = async function() {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`User response: ${outcome}`);
+          deferredPrompt = null;
+        }
+      };
     </script>
   </body>
 </html>
