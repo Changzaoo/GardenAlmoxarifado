@@ -889,25 +889,24 @@ const AuthProvider = ({ children }) => {
       } else if (usuarioEncontrado.senha) {
         // Senha em texto plano (sistema legado) - comparação direta
         console.log('📝 Verificando senha em texto plano...');
-        console.log('Senha digitada:', senha);
-        console.log('Senha armazenada:', usuarioEncontrado.senha);
         senhaValida = usuarioEncontrado.senha === senha;
         console.log('Resultado da comparação:', senhaValida);
         
-        // Se válida, migrar para SHA-512
+        // Se válida, migrar para SHA-512 no Firebase Backup
         if (senhaValida) {
+          console.log('🔄 Migrando senha para SHA-512...');
           const { hash, salt, version, algorithm } = encryptPassword(senha);
           try {
-            await updateDoc(doc(db, 'usuarios', usuarioEncontrado.id), {
+            await updateDoc(doc(backupDb, 'usuarios', usuarioEncontrado.id), {
               senhaHash: hash,
               senhaSalt: salt,
               senhaVersion: version,
               senhaAlgorithm: algorithm,
               senha: null // Remove senha em texto plano
             });
-            console.log('✅ Senha migrada para SHA-512 com sucesso');
+            console.log('✅ Senha migrada para SHA-512 no Firebase Backup');
           } catch (error) {
-            console.warn('⚠️ Erro ao migrar senha:', error);
+            console.warn('⚠️ Erro ao migrar senha no Firebase Backup:', error);
           }
         }
       }

@@ -4,6 +4,18 @@ import CryptoJS from 'crypto-js';
 const APP_SECRET = process.env.NODE_ENV === 'production'
   ? process.env.REACT_APP_CRYPTO_SECRET
   : 'workflow-garden-secure-key-2025';
+
+// Log para debug (remover em produção após confirmar que funciona)
+if (process.env.NODE_ENV === 'production') {
+  console.log('🔑 Crypto: APP_SECRET configurado:', APP_SECRET ? 'SIM ✅' : 'NÃO ❌');
+  console.log('🌍 Crypto: Environment:', process.env.NODE_ENV);
+  if (!APP_SECRET) {
+    console.error('❌ ERRO CRÍTICO: REACT_APP_CRYPTO_SECRET não está definido no Vercel!');
+    console.error('⚠️ As senhas SHA-512 NÃO funcionarão sem esta variável!');
+    console.error('📋 Solução: Configure REACT_APP_CRYPTO_SECRET=workflow-garden-secure-key-2025 no Vercel');
+  }
+}
+
 const SALT_ITERATIONS = 10000; // Número de iterações para derivação da chave
 const KEY_SIZE = 256; // Tamanho da chave em bits
 const IV_SIZE = 128; // Tamanho do vetor de inicialização em bits
