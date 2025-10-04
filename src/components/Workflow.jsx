@@ -390,24 +390,70 @@ const AuthProvider = ({ children }) => {
     
     const setupFirebaseListener = () => {
       try {
-        unsubscribe = onSnapshot(collection(db, 'usuarios'), async (snapshot) => {
-          const usuariosCarregados = snapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data() 
-          }));
-          
-          setUsuarios(usuariosCarregados);
-          
-          // Se não houver usuários, criar usuário admin padrão
-          if (usuariosCarregados.length === 0) {
-            await criarUsuarioAdmin();
+        console.log('🔄 Configurando listener em tempo real para usuários...');
+        unsubscribe = onSnapshot(
+          collection(db, 'usuarios'), 
+          async (snapshot) => {
+            console.log('📡 Atualização em tempo real de usuários recebida');
+            
+            const usuariosCarregados = snapshot.docs.map(doc => {
+              const data = doc.data();
+              return { 
+                id: doc.id,
+                nome: data.nome || '',
+                email: data.email || '',
+                senha: data.senha || null,
+                senhaHash: data.senhaHash || null,
+                senhaSalt: data.senhaSalt || null,
+                senhaVersion: data.senhaVersion || null,
+                senhaAlgorithm: data.senhaAlgorithm || null,
+                nivel: data.nivel || NIVEIS_PERMISSAO.FUNCIONARIO,
+                ativo: data.ativo !== false,
+                empresaId: data.empresaId || null,
+                setorId: data.setorId || null,
+                cargoId: data.cargoId || null,
+                dataCriacao: data.dataCriacao || new Date().toISOString(),
+                ultimoLogin: data.ultimoLogin || null,
+                preferencias: data.preferencias || {
+                  tema: 'auto',
+                  notificacoes: true,
+                  idioma: 'pt-BR'
+                },
+                menuConfig: data.menuConfig || null,
+                menuPersonalizado: data.menuPersonalizado || null,
+                telefone: data.telefone || null,
+                avatar: data.avatar || null,
+                bio: data.bio || null
+              };
+            });
+            
+            console.log(`✅ ${usuariosCarregados.length} usuários sincronizados`);
+            setUsuarios(usuariosCarregados);
+            
+            // Se o usuário logado foi atualizado, atualizar estado
+            if (usuario) {
+              const usuarioAtualizado = usuariosCarregados.find(u => u.id === usuario.id);
+              if (usuarioAtualizado) {
+                console.log('👤 Dados do usuário logado atualizados');
+                setUsuario(usuarioAtualizado);
+              }
+            }
+            
+            // Se não houver usuários, criar usuário admin padrão
+            if (usuariosCarregados.length === 0) {
+              console.log('⚠️ Nenhum usuário encontrado, criando admin...');
+              await criarUsuarioAdmin();
+            }
+          }, 
+          (error) => {
+            console.error('❌ Erro no listener de usuários:', error);
+            setFirebaseStatus('error');
           }
-        }, (error) => {
-          console.error('Erro no listener de usuários:', error);
-          setFirebaseStatus('error');
-        });
+        );
+        
+        console.log('✅ Listener configurado com sucesso');
       } catch (error) {
-        console.error('Erro ao configurar listener:', error);
+        console.error('❌ Erro ao configurar listener:', error);
         setFirebaseStatus('error');
       }
     };
@@ -601,40 +647,112 @@ const AuthProvider = ({ children }) => {
 
   const carregarUsuarios = async () => {
     try {
+      console.log('📥 Carregando usuários do Firebase...');
       const snapshot = await getDocs(collection(db, 'usuarios'));
-      const usuariosCarregados = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      }));
+      const usuariosCarregados = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { 
+          id: doc.id,
+          nome: data.nome || '',
+          email: data.email || '',
+          senha: data.senha || null,
+          senhaHash: data.senhaHash || null,
+          senhaSalt: data.senhaSalt || null,
+          senhaVersion: data.senhaVersion || null,
+          senhaAlgorithm: data.senhaAlgorithm || null,
+          nivel: data.nivel || NIVEIS_PERMISSAO.FUNCIONARIO,
+          ativo: data.ativo !== false, // true por padrão
+          empresaId: data.empresaId || null,
+          setorId: data.setorId || null,
+          cargoId: data.cargoId || null,
+          dataCriacao: data.dataCriacao || new Date().toISOString(),
+          ultimoLogin: data.ultimoLogin || null,
+          // Preferências do usuário
+          preferencias: data.preferencias || {
+            tema: 'auto',
+            notificacoes: true,
+            idioma: 'pt-BR'
+          },
+          // Menu personalizado
+          menuConfig: data.menuConfig || null,
+          menuPersonalizado: data.menuPersonalizado || null,
+          // Dados adicionais
+          telefone: data.telefone || null,
+          avatar: data.avatar || null,
+          bio: data.bio || null
+        };
+      });
+      
+      console.log(`✅ ${usuariosCarregados.length} usuários carregados do Firebase`);
+      console.log('Usuários:', usuariosCarregados.map(u => ({ 
+        email: u.email, 
+        nome: u.nome, 
+        nivel: u.nivel,
+        ativo: u.ativo,
+        temSenha: !!u.senha,
+        temSenhaHash: !!u.senhaHash
+      })));
       
       setUsuarios(usuariosCarregados);
       
       // Se não houver usuários, criar usuário admin padrão
       if (usuariosCarregados.length === 0) {
+        console.log('⚠️ Nenhum usuário encontrado, criando admin padrão...');
         await criarUsuarioAdmin();
       }
+      
+      return usuariosCarregados;
     } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
+      console.error('❌ Erro ao carregar usuários do Firebase:', error);
       throw error;
     }
   };
 
   const criarUsuarioAdmin = async () => {
+    // Criptografar a senha antes de salvar
+    const { hash, salt, version, algorithm } = encryptPassword('admin@362*');
+    
     const adminPadrao = {
       nome: 'Administrador',
       email: 'admin',
-      senha: 'admin@362*',
+      senhaHash: hash,
+      senhaSalt: salt,
+      senhaVersion: version,
+      senhaAlgorithm: algorithm,
       nivel: NIVEIS_PERMISSAO.ADMIN,
       ativo: true,
       dataCriacao: new Date().toISOString(),
-      ultimoLogin: null
+      ultimoLogin: null,
+      // Preferências padrão
+      preferencias: {
+        tema: 'auto',
+        notificacoes: true,
+        idioma: 'pt-BR',
+        sons: true,
+        emailNotificacoes: false
+      },
+      // Menu padrão para admin (todos visíveis)
+      menuConfig: null, // null = usa configuração padrão
+      menuPersonalizado: false,
+      // Dados opcionais
+      empresaId: null,
+      setorId: null,
+      cargoId: null,
+      telefone: null,
+      avatar: null,
+      bio: 'Administrador do sistema'
     };
 
     try {
-      await addDoc(collection(db, 'usuarios'), adminPadrao);
-      console.log('Usuário admin criado no Firebase');
+      const docRef = await addDoc(collection(db, 'usuarios'), adminPadrao);
+      console.log('✅ Usuário admin criado no Firebase com ID:', docRef.id);
+      console.log('📧 Email: admin');
+      console.log('🔑 Senha: admin@362*');
+      
+      // Recarregar usuários após criar admin
+      await carregarUsuarios();
     } catch (error) {
-      console.error('Erro ao criar usuário admin:', error);
+      console.error('❌ Erro ao criar usuário admin:', error);
     }
   };
 
@@ -900,6 +1018,96 @@ const AuthProvider = ({ children }) => {
     }
   };
 
+  const atualizarPreferenciasUsuario = async (userId, novasPreferencias) => {
+    try {
+      const usuarioAlvo = userId || usuario?.id;
+      
+      if (!usuarioAlvo) {
+        return { success: false, message: 'Usuário não identificado' };
+      }
+
+      // Usuário pode atualizar suas próprias preferências
+      // Ou admin pode atualizar de qualquer um
+      if (usuario.id !== usuarioAlvo && usuario.nivel !== NIVEIS_PERMISSAO.ADMIN) {
+        return { success: false, message: 'Sem permissão para alterar preferências deste usuário' };
+      }
+
+      const preferenciasAtuais = usuarios.find(u => u.id === usuarioAlvo)?.preferencias || {};
+      const preferenciasNovas = {
+        ...preferenciasAtuais,
+        ...novasPreferencias
+      };
+
+      await updateDoc(doc(db, 'usuarios', usuarioAlvo), {
+        preferencias: preferenciasNovas
+      });
+
+      console.log('✅ Preferências atualizadas:', preferenciasNovas);
+
+      // Se for o usuário logado, atualizar estado local
+      if (usuario && usuario.id === usuarioAlvo) {
+        const usuarioAtualizado = { 
+          ...usuario, 
+          preferencias: preferenciasNovas 
+        };
+        setUsuario(usuarioAtualizado);
+        
+        // Atualizar cookies se necessário
+        if (CookieManager.getCookie(COOKIE_NAMES.LEMBRAR) === 'true') {
+          salvarDadosLogin(usuarioAtualizado, true);
+        }
+      }
+
+      return { success: true, preferencias: preferenciasNovas };
+    } catch (error) {
+      console.error('❌ Erro ao atualizar preferências:', error);
+      return { success: false, message: 'Erro ao atualizar preferências' };
+    }
+  };
+
+  const atualizarMenuUsuario = async (userId, novoMenuConfig) => {
+    try {
+      const usuarioAlvo = userId || usuario?.id;
+      
+      if (!usuarioAlvo) {
+        return { success: false, message: 'Usuário não identificado' };
+      }
+
+      // Usuário pode atualizar seu próprio menu
+      // Ou admin pode atualizar de qualquer um
+      if (usuario.id !== usuarioAlvo && usuario.nivel !== NIVEIS_PERMISSAO.ADMIN) {
+        return { success: false, message: 'Sem permissão para alterar menu deste usuário' };
+      }
+
+      await updateDoc(doc(db, 'usuarios', usuarioAlvo), {
+        menuConfig: novoMenuConfig,
+        menuPersonalizado: true
+      });
+
+      console.log('✅ Menu personalizado atualizado');
+
+      // Se for o usuário logado, atualizar estado local
+      if (usuario && usuario.id === usuarioAlvo) {
+        const usuarioAtualizado = { 
+          ...usuario, 
+          menuConfig: novoMenuConfig,
+          menuPersonalizado: true
+        };
+        setUsuario(usuarioAtualizado);
+        
+        // Atualizar cookies se necessário
+        if (CookieManager.getCookie(COOKIE_NAMES.LEMBRAR) === 'true') {
+          salvarDadosLogin(usuarioAtualizado, true);
+        }
+      }
+
+      return { success: true, menuConfig: novoMenuConfig };
+    } catch (error) {
+      console.error('❌ Erro ao atualizar menu:', error);
+      return { success: false, message: 'Erro ao atualizar menu' };
+    }
+  };
+
   const removerUsuario = async (id) => {
     // Não permitir remoção do admin principal
     const usuarioAlvo = usuarios.find(u => u.id === id);
@@ -935,6 +1143,8 @@ const AuthProvider = ({ children }) => {
     logout,
     criarUsuario,
     atualizarUsuario,
+    atualizarPreferenciasUsuario,
+    atualizarMenuUsuario,
     removerUsuario,
     temPermissao,
     NIVEIS_PERMISSAO
