@@ -691,11 +691,25 @@ const AuthProvider = ({ children }) => {
       console.log('🔐 Tentativa de login:', { email, senhaLength: senha.length });
       console.log('📋 Total de usuários carregados:', usuarios.length);
       
+      // Se não houver usuários carregados, carregar usuários locais
+      if (usuarios.length === 0) {
+        console.log('⚠️ Nenhum usuário carregado, inicializando usuários locais...');
+        await initUsuariosLocais();
+        // Aguardar um pouco para os usuários serem carregados
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       const usuarioEncontrado = usuarios.find(u => u.email === email && u.ativo);
 
       if (!usuarioEncontrado) {
         console.log('❌ Usuário não encontrado ou inativo');
         console.log('Usuários disponíveis:', usuarios.map(u => ({ email: u.email, ativo: u.ativo })));
+        console.log('');
+        console.log('💡 CREDENCIAIS PADRÃO:');
+        console.log('   Admin: admin / admin@362*');
+        console.log('   Gerente: joao / 123456');
+        console.log('   Supervisor: maria / 123456');
+        console.log('   Funcionário: pedro / 123456');
         return { success: false, message: 'Email ou senha incorretos' };
       }
 
