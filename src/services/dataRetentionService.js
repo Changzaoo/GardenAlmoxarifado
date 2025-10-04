@@ -7,7 +7,7 @@ class DataRetentionService {
   constructor() {
     this.collections = {
       emprestimos: collection(db, 'emprestimos'),
-      funcionarios: collection(db, 'usuarios'),
+      funcionarios: collection(db, 'usuario'),
       ferramentas: collection(db, 'inventario'),
       audit_logs: collection(db, 'audit_logs')
     };
@@ -61,7 +61,7 @@ class DataRetentionService {
   }
 
   async anonymizeEmployeeData(employeeId) {
-    const employeeDoc = doc(db, 'usuarios', employeeId);
+    const employeeDoc = doc(db, 'usuario', employeeId);
     const timestamp = new Date().toISOString();
 
     await updateDoc(employeeDoc, {

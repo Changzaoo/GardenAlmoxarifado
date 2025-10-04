@@ -83,7 +83,7 @@ const CadastroSetores = () => {
     try {
       // Buscar de ambas as coleções
       const funcionariosRef = collection(db, 'funcionarios');
-      const usuariosRef = collection(db, 'usuarios');
+      const usuariosRef = collection(db, 'usuario');
       
       const [funcionariosSnap, usuariosSnap] = await Promise.all([
         getDocs(funcionariosRef),

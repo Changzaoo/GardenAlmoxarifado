@@ -151,7 +151,7 @@ const WorkflowChat = ({
 
   // Carregar usuários disponíveis
   useEffect(() => {
-    const q = query(collection(db, 'usuarios'));
+    const q = query(collection(db, 'usuario'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const users = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))

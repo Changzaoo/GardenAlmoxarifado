@@ -20,7 +20,6 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebaseConfig';
-import cryptographyService from './cryptographyService';
 import {
   MESSAGE_STATUS,
   MESSAGE_TYPE,
@@ -173,52 +172,45 @@ class MensagensService {
         }
         
         // Processar conversas e buscar nomes e fotos dos participantes
-        const conversasPromises = snapshot.docs
-          .filter(doc => {
-            // Filtrar conversas deletadas pelo usuário
-            const data = doc.data();
-            const deletedBy = data.deletedBy || [];
-            return !deletedBy.includes(userId);
-          })
-          .map(async (doc) => {
-            const data = doc.data();
-            let nome = data.nome; // Para grupos já tem nome
-            let photoURL = data.imagemUrl || null; // Para grupos
-            
-            // Se for conversa privada, buscar nome e foto do outro participante
-            if (data.tipo === CONVERSATION_TYPE.PRIVADA) {
-              const outroParticipanteId = data.participantes.find(id => id !== userId);
-              if (outroParticipanteId) {
-                const outroUsuario = await this.getUserInfo(outroParticipanteId);
-                nome = outroUsuario?.nome || 'Usuário';
-                photoURL = outroUsuario?.photoURL || null;
-                console.log('👤 Participante buscado:', { 
-                  nome, 
-                  photoURL, 
-                  id: outroParticipanteId,
-                  usuarioCompleto: outroUsuario 
-                });
-                
-                if (!photoURL) {
-                  console.warn('⚠️ Usuário sem photoURL:', outroParticipanteId);
-                }
+        const conversasPromises = snapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          let nome = data.nome; // Para grupos já tem nome
+          let photoURL = data.imagemUrl || null; // Para grupos
+          
+          // Se for conversa privada, buscar nome e foto do outro participante
+          if (data.tipo === CONVERSATION_TYPE.PRIVADA) {
+            const outroParticipanteId = data.participantes.find(id => id !== userId);
+            if (outroParticipanteId) {
+              const outroUsuario = await this.getUserInfo(outroParticipanteId);
+              nome = outroUsuario?.nome || 'Usuário';
+              photoURL = outroUsuario?.photoURL || null;
+              console.log('👤 Participante buscado:', { 
+                nome, 
+                photoURL, 
+                id: outroParticipanteId,
+                usuarioCompleto: outroUsuario 
+              });
+              
+              if (!photoURL) {
+                console.warn('⚠️ Usuário sem photoURL:', outroParticipanteId);
               }
             }
-            
-            // Adicionar userId do usuário atual para facilitar acesso a participantesInfo
-            return {
-              id: doc.id,
-              ...data,
-              nome, // ← Nome resolvido
-              photoURL, // ← Foto de perfil resolvida
-              userId: userId, // ← Adiciona o ID do usuário atual
-              // Adicionar info do usuário atual
-              naoLidas: data.participantesInfo?.[userId]?.naoLidas || 0,
-              arquivado: data.participantesInfo?.[userId]?.arquivado || false,
-              silenciado: data.participantesInfo?.[userId]?.silenciado || false,
-              fixado: data.participantesInfo?.[userId]?.fixado || false
-            };
-          });
+          }
+          
+          // Adicionar userId do usuário atual para facilitar acesso a participantesInfo
+          return {
+            id: doc.id,
+            ...data,
+            nome, // ← Nome resolvido
+            photoURL, // ← Foto de perfil resolvida
+            userId: userId, // ← Adiciona o ID do usuário atual
+            // Adicionar info do usuário atual
+            naoLidas: data.participantesInfo?.[userId]?.naoLidas || 0,
+            arquivado: data.participantesInfo?.[userId]?.arquivado || false,
+            silenciado: data.participantesInfo?.[userId]?.silenciado || false,
+            fixado: data.participantesInfo?.[userId]?.fixado || false
+          };
+        });
         
         const conversas = await Promise.all(conversasPromises);
         
@@ -253,40 +245,10 @@ class MensagensService {
     }
   }
 
-  /**
-   * Apaga a conversa apenas para o usuário atual
-   * A conversa continua existindo para os outros participantes
-   */
-  async deleteConversationForUser(conversaId, userId) {
-    try {
-      const conversaRef = doc(this.conversasRef, conversaId);
-      
-      // Obtém a conversa atual
-      const conversaSnap = await getDoc(conversaRef);
-      if (!conversaSnap.exists()) {
-        throw new Error('Conversa não encontrada');
-      }
-
-      const conversaData = conversaSnap.data();
-      const deletedBy = conversaData.deletedBy || [];
-
-      // Adiciona o userId ao array deletedBy se ainda não estiver lá
-      if (!deletedBy.includes(userId)) {
-        deletedBy.push(userId);
-        await updateDoc(conversaRef, { deletedBy });
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Erro ao apagar conversa:', error);
-      throw error;
-    }
-  }
-
   // ==================== MENSAGENS ====================
 
   /**
-   * Envia uma mensagem de texto com criptografia E2E
+   * Envia uma mensagem de texto
    */
   async sendMessage(conversaId, remetenteId, texto, tipo = MESSAGE_TYPE.TEXTO, anexoUrl = null) {
     try {
@@ -312,44 +274,21 @@ class MensagensService {
 
       console.log('👥 Participantes:', participantes);
 
-      // Gerar chave de criptografia baseada nos participantes
-      let encryptionKey;
-      if (conversaData.tipo === CONVERSATION_TYPE.GRUPO) {
-        encryptionKey = cryptographyService.generateGroupKey(participantes, conversaId);
-      } else {
-        const outroUsuarioId = participantes.find(id => id !== remetenteId);
-        encryptionKey = cryptographyService.getConversationKey(remetenteId, outroUsuarioId);
-      }
-
-      console.log('� Criptografando mensagem...');
-
-      // Criptografar texto
+      // Mensagem sem criptografia
       const textoOriginal = texto || '';
-      const textoCriptografado = tipo === MESSAGE_TYPE.TEXTO 
-        ? cryptographyService.encryptMessage(textoOriginal, encryptionKey)
-        : textoOriginal;
-
-      // Gerar hash para verificação de integridade
       const timestamp = Date.now();
-      const messageHash = cryptographyService.generateMessageHash(
-        textoOriginal,
-        remetenteId,
-        timestamp
-      );
 
       const mensagensRef = collection(db, `conversas/${conversaId}/mensagens`);
       
       const novaMensagem = {
-        texto: textoCriptografado,
-        textoOriginal: textoOriginal.substring(0, 50), // Preview não criptografado (primeiros 50 chars)
+        texto: textoOriginal,
         remetenteId,
         tipo,
         anexoUrl,
         status: MESSAGE_STATUS.ENVIADA,
         timestamp: serverTimestamp(),
         timestampCliente: timestamp,
-        messageHash,
-        encrypted: tipo === MESSAGE_TYPE.TEXTO, // Flag de criptografia
+        encrypted: false, // Sem criptografia
         editada: false,
         deletada: false,
         leitaPor: [remetenteId],
@@ -365,7 +304,7 @@ class MensagensService {
 
       // Atualizar última mensagem na conversa (não bloquear envio)
       const previewText = tipo === MESSAGE_TYPE.TEXTO 
-        ? textoOriginal.substring(0, 50) 
+        ? texto.substring(0, 50) 
         : `📎 ${tipo}`;
 
       await updateDoc(conversaRef, {
@@ -548,48 +487,12 @@ class MensagensService {
         }
 
         try {
-          // Buscar informações da conversa para obter chave de criptografia
-          const conversaRef = doc(this.conversasRef, conversaId);
-          const conversaDoc = await getDoc(conversaRef);
-          
-          if (!conversaDoc.exists()) {
-            console.error('❌ Conversa não encontrada');
-            callback([]);
-            return;
-          }
-
-          const conversaData = conversaDoc.data();
-          const participantes = conversaData.participantes || [];
-
-          // Gerar chave de descriptografia
-          let encryptionKey;
-          if (conversaData.tipo === CONVERSATION_TYPE.GRUPO) {
-            encryptionKey = cryptographyService.generateGroupKey(participantes, conversaId);
-          } else {
-            const outroUsuarioId = participantes.find(id => id !== currentUserId);
-            if (outroUsuarioId) {
-              encryptionKey = cryptographyService.getConversationKey(currentUserId, outroUsuarioId);
-            }
-          }
-
-          console.log('� Chave de descriptografia gerada');
+          console.log('📝 Processando mensagens sem criptografia');
 
           // Processar mensagens e buscar informações dos remetentes
           const mensagensPromises = snapshot.docs.map(async (doc) => {
             const data = doc.data();
             
-            // Descriptografar mensagem se necessário
-            let textoDescriptografado = data.texto;
-            if (data.encrypted && data.tipo === MESSAGE_TYPE.TEXTO && encryptionKey) {
-              try {
-                textoDescriptografado = cryptographyService.decryptMessage(data.texto, encryptionKey);
-                console.log('🔓 Mensagem descriptografada');
-              } catch (error) {
-                console.error('❌ Erro ao descriptografar:', error);
-                textoDescriptografado = '[Erro ao descriptografar]';
-              }
-            }
-
             // Buscar informações do remetente
             let remetenteInfo = null;
             if (data.remetenteId) {
@@ -603,8 +506,6 @@ class MensagensService {
             return {
               id: doc.id,
               ...data,
-              texto: textoDescriptografado,
-              textoCriptografado: data.texto, // Manter original criptografado
               remetente: remetenteInfo // Adicionar informações do remetente (nome, photoURL, etc)
             };
           });
@@ -618,7 +519,7 @@ class MensagensService {
         } catch (error) {
           console.error('❌ Erro ao processar mensagens:', error);
           console.error('Stack trace:', error.stack);
-          // Em caso de erro, retornar mensagens sem descriptografar
+          // Em caso de erro, retornar mensagens sem processar
           const mensagens = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -1060,8 +961,6 @@ class MensagensService {
    */
   async getUserInfo(userId) {
     try {
-      console.log('🔍 Buscando informações do usuário:', userId);
-      
       // Primeiro tentar buscar na coleção funcionarios (tem photoURL garantido)
       const funcionariosRef = collection(db, 'funcionarios');
       const qFunc = query(funcionariosRef, where('userId', '==', userId));
@@ -1069,18 +968,12 @@ class MensagensService {
       
       if (!funcionariosSnap.empty) {
         const funcionarioData = funcionariosSnap.docs[0].data();
-        console.log('✅ Funcionário encontrado por userId:', {
-          nome: funcionarioData.nome,
-          photoURL: funcionarioData.photoURL,
-          userId: funcionarioData.userId
-        });
+        console.log('✅ Funcionário encontrado com foto:', funcionarioData.photoURL);
         return {
           id: funcionariosSnap.docs[0].id,
           ...funcionarioData
         };
       }
-      
-      console.log('⚠️ Funcionário não encontrado por userId, tentando por email...');
       
       // Se não encontrou por userId, tentar por email na coleção usuarios
       const userRef = doc(this.usuariosRef, userId);
@@ -1088,7 +981,6 @@ class MensagensService {
       
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        console.log('📧 Usuário encontrado, email:', userData.email);
         
         // Tentar buscar funcionário pelo email
         const qFuncEmail = query(funcionariosRef, where('email', '==', userData.email));
@@ -1096,11 +988,7 @@ class MensagensService {
         
         if (!funcionariosSnapEmail.empty) {
           const funcionarioData = funcionariosSnapEmail.docs[0].data();
-          console.log('✅ Funcionário encontrado por email:', {
-            nome: funcionarioData.nome,
-            photoURL: funcionarioData.photoURL,
-            email: funcionarioData.email
-          });
+          console.log('✅ Funcionário encontrado pelo email com foto:', funcionarioData.photoURL);
           return {
             id: funcionariosSnapEmail.docs[0].id,
             ...funcionarioData
@@ -1108,11 +996,7 @@ class MensagensService {
         }
         
         // Se não encontrou funcionário, retornar dados do usuario
-        console.log('⚠️ Usuário encontrado mas sem funcionário vinculado:', {
-          nome: userData.nome,
-          email: userData.email,
-          photoURL: userData.photoURL || 'NENHUMA'
-        });
+        console.log('⚠️ Usuário encontrado mas sem funcionário vinculado');
         return {
           id: userDoc.id,
           ...userData
@@ -1122,8 +1006,7 @@ class MensagensService {
       console.warn('❌ Usuário não encontrado:', userId);
       return null;
     } catch (error) {
-      console.error('❌ Erro ao buscar informações do usuário:', error);
-      console.error('Stack:', error.stack);
+      console.error('Erro ao buscar informações do usuário:', error);
       return null;
     }
   }

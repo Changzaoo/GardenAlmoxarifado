@@ -112,8 +112,8 @@ const AtualizarFuncionariosJardim = () => {
         }
       }
 
-      // Também atualizar na coleção 'usuarios' se existir
-      const usuariosRef = collection(db, 'usuarios');
+      // Também atualizar na coleção 'usuario' se existir
+      const usuariosRef = collection(db, 'usuario');
       const usuariosSnap = await getDocs(usuariosRef);
       
       for (const userDoc of usuariosSnap.docs) {
@@ -124,7 +124,7 @@ const AtualizarFuncionariosJardim = () => {
         
         if (funcionarioCorrespondente) {
           try {
-            const usuarioRef = doc(db, 'usuarios', userDoc.id);
+            const usuarioRef = doc(db, 'usuario', userDoc.id);
             await updateDoc(usuarioRef, {
               empresaId: empresaZendaya.id,
               empresaNome: empresaZendaya.nome,

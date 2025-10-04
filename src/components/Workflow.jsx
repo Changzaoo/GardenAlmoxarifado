@@ -24,7 +24,7 @@ import UsuariosTab from './usuarios/UsuariosTab';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import { MessageNotificationProvider } from './Chat/MessageNotificationContext';
 import { NotificationProvider, useNotification } from './NotificationProvider';
-import Chat from './Chat/Chat';
+import MensagensMain from './Mensagens/MensagensMain';
 import { useMensagens } from '../hooks/useMensagens';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
 import TarefasTab from './Tarefas/TarefasTab';
@@ -41,17 +41,8 @@ import CadastroEmpresas from './Empresas/CadastroEmpresas';
 import CadastroSetores from './Setores/CadastroSetores';
 import GerenciamentoUnificado from './EmpresasSetores/GerenciamentoUnificado';
 import { encryptPassword, verifyPassword } from '../utils/crypto';
-import OfflineLogo from './common/OfflineLogo';
-import BluetoothMeshManager from './Bluetooth/BluetoothMeshManager';
-import BluetoothPermissionRequest from './Bluetooth/BluetoothPermissionRequest';
-import { DeveloperModeProvider } from '../contexts/DeveloperModeContext';
-import DeveloperPanel from './Developer/DeveloperPanel';
-import { useDeveloperModeActivator, DeveloperModeActivationIndicator } from '../hooks/useDeveloperModeActivator';
-import MobileErrorScreen from './Error/MobileErrorScreen';
-import { FuncionarioPerfilProvider } from '../contexts/FuncionarioPerfilContext';
-import PerfilConfigurador from './Perfil/PerfilConfigurador';
-import SistemaResumo from './Admin/SistemaResumo';
-import useThemeColor from '../hooks/useThemeColor';
+import LoadingScreen from './common/LoadingScreen';
+import MessagesBadge from './MessagesBadge';
 // Icons
 import { 
   Package,
@@ -263,7 +254,7 @@ const CookieManager = {
   // Função para verificar se cookies estão disponíveis
   areCookiesEnabled: () => {
     try {
-      const testCookie = 'workflow_test';
+      const testCookie = 'almoxarifado_test';
       CookieManager.setCookie(testCookie, 'test', 1);
       const isEnabled = CookieManager.getCookie(testCookie) === 'test';
       CookieManager.removeCookie(testCookie);
@@ -352,52 +343,16 @@ const AuthProvider = ({ children }) => {
 
   // Nomes dos cookies
   const COOKIE_NAMES = {
-    USUARIO: 'workflow_usuario',
-    LEMBRAR: 'workflow_lembrar',
-    EXPIRACAO: 'workflow_expira'
+    USUARIO: 'almoxarifado_usuario',
+    LEMBRAR: 'almoxarifado_lembrar',
+    EXPIRACAO: 'almoxarifado_expira'
   };
 
   // Inicialização do sistema com Firebase
   useEffect(() => {
     const initFirebaseSystem = async () => {
       try {
-        console.log('🚀 Iniciando sistema Firebase...');
-        console.log('🔥 Firebase App:', app);
-        console.log('🗄️ Firestore DB:', db);
         setFirebaseStatus('connecting');
-        
-        // MIGRAÇÃO AUTOMÁTICA: Cookies antigos → novos (TEMPORÁRIO)
-        try {
-          const oldUser = CookieManager.getCookie('almoxarifado_usuario');
-          const newUser = CookieManager.getCookie('workflow_usuario');
-          
-          if (oldUser && !newUser) {
-            console.log('🔄 Migrando cookies de almoxarifado → workflow...');
-            
-            // Copiar cookies antigos para novos
-            CookieManager.setCookie('workflow_usuario', oldUser, 30);
-            
-            const oldLembrar = CookieManager.getCookie('almoxarifado_lembrar');
-            if (oldLembrar) {
-              CookieManager.setCookie('workflow_lembrar', oldLembrar, 30);
-            }
-            
-            const oldExpira = CookieManager.getCookie('almoxarifado_expira');
-            if (oldExpira) {
-              CookieManager.setCookie('workflow_expira', oldExpira, 30);
-            }
-            
-            // Remover cookies antigos
-            CookieManager.removeCookie('almoxarifado_usuario');
-            CookieManager.removeCookie('almoxarifado_lembrar');
-            CookieManager.removeCookie('almoxarifado_expira');
-            CookieManager.removeCookie('almoxarifado_test');
-            
-            console.log('✅ Cookies migrados com sucesso!');
-          }
-        } catch (migrationError) {
-          console.warn('⚠️ Erro na migração de cookies:', migrationError);
-        }
         
         // Verificar se cookies estão habilitados
         const cookiesOK = CookieManager.areCookiesEnabled();
@@ -645,45 +600,20 @@ const AuthProvider = ({ children }) => {
 
   const carregarUsuarios = async () => {
     try {
-      console.log('📥 Iniciando carregamento de usuários...');
-      console.log('🔥 Firebase DB:', db);
-      console.log('🔥 Firebase Status:', firebaseStatus);
-      
       const snapshot = await getDocs(collection(db, 'usuarios'));
-      console.log('📊 Snapshot recebido:', {
-        size: snapshot.size,
-        empty: snapshot.empty,
-        docs: snapshot.docs.length
-      });
-      
-      const usuariosCarregados = snapshot.docs.map(doc => {
-        const userData = { id: doc.id, ...doc.data() };
-        console.log('👤 Usuário carregado:', {
-          id: userData.id,
-          email: userData.email,
-          nivel: userData.nivel,
-          ativo: userData.ativo
-        });
-        return userData;
-      });
-      
-      console.log('✅ Total de usuários carregados:', usuariosCarregados.length);
-      console.log('📋 Lista de emails:', usuariosCarregados.map(u => u.email));
+      const usuariosCarregados = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      }));
       
       setUsuarios(usuariosCarregados);
       
       // Se não houver usuários, criar usuário admin padrão
       if (usuariosCarregados.length === 0) {
-        console.log('⚠️ Nenhum usuário encontrado, criando admin padrão...');
         await criarUsuarioAdmin();
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar usuários:', error);
-      console.error('Detalhes:', {
-        message: error.message,
-        code: error.code,
-        stack: error.stack
-      });
+      console.error('Erro ao carregar usuários:', error);
       throw error;
     }
   };
@@ -700,23 +630,10 @@ const AuthProvider = ({ children }) => {
     };
 
     try {
-      console.log('🔧 Criando usuário admin padrão:', {
-        email: adminPadrao.email,
-        nivel: adminPadrao.nivel,
-        senha: adminPadrao.senha
-      });
-      
-      const docRef = await addDoc(collection(db, 'usuarios'), adminPadrao);
-      console.log('✅ Usuário admin criado no Firebase com ID:', docRef.id);
-      
-      // Recarregar lista de usuários
-      await carregarUsuarios();
+      await addDoc(collection(db, 'usuarios'), adminPadrao);
+      console.log('Usuário admin criado no Firebase');
     } catch (error) {
-      console.error('❌ Erro ao criar usuário admin:', error);
-      console.error('Detalhes:', {
-        message: error.message,
-        code: error.code
-      });
+      console.error('Erro ao criar usuário admin:', error);
     }
   };
 
@@ -1042,27 +959,16 @@ const LoginForm = () => {
     }
 
     try {
-      console.log('🔐 Iniciando processo de login...');
-      console.log('Email:', formData.email);
-      console.log('Lembrar:', formData.lembrar);
-      
       const resultado = await login(formData.email, formData.senha, formData.lembrar);
-      
-      console.log('📩 Resultado do login:', resultado);
-      
-      if (!resultado || !resultado.success) {
-        const mensagemErro = resultado?.message || 'Email ou senha incorretos';
-        console.log('❌ Login falhou:', mensagemErro);
-        setErro(mensagemErro);
-        setCarregando(false);
+      if (!resultado.success) {
+        setErro(resultado.message);
       } else {
-        console.log('✅ Login realizado com sucesso!');
-        // Não precisa fazer nada aqui - o AuthProvider já atualizou o estado
-        // e o componente será re-renderizado automaticamente
+        console.log('✅ Login realizado com sucesso');
       }
     } catch (error) {
-      console.error('❌ Erro no login:', error);
+      console.error('Erro no login:', error);
       setErro('Erro ao fazer login. Tente novamente.');
+    } finally {
       setCarregando(false);
     }
   };
@@ -1078,7 +984,7 @@ const LoginForm = () => {
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-700/20 p-8">
         <div className="text-center mb-8">
           <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
-            <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
+            <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">WorkFlow</h1>
           
@@ -1087,34 +993,36 @@ const LoginForm = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-              <User className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Email/Usuário
             </label>
-            <input
-              type="text"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              onKeyPress={handleKeyPress}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
-              placeholder="Digite seu usuário"
-              required
-              disabled={carregando}
-            />
+            <div className="relative">
+              <User className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
+              <input
+                type="text"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onKeyPress={handleKeyPress}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
+                placeholder="Digite seu usuário"
+                required
+                disabled={carregando}
+              />
+            </div>
           </div>
 
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-              <Lock className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               Senha
             </label>
             <div className="relative">
+              <Lock className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
               <input
                 type={mostrarSenha ? 'text' : 'password'}
                 value={formData.senha}
                 onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
                 onKeyPress={handleKeyPress}
-                className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
+                className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
                 placeholder="Digite sua senha"
                 required
                 disabled={carregando}
@@ -1122,7 +1030,7 @@ const LoginForm = () => {
               <button
                 type="button"
                 onClick={() => setMostrarSenha(!mostrarSenha)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 disabled={carregando}
               >
                 {mostrarSenha ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -1245,7 +1153,11 @@ const ErrorScreen = ({ error, resetError }) => {
 
   // Função para enviar relatório de erro
   const enviarRelatorioErro = async () => {
-    // Permite envio de relatório mesmo sem estar logado
+    if (!usuario?.id) {
+      alert('Você precisa estar logado para enviar um relatório de erro.');
+      return;
+    }
+
     setShowDescricaoModal(true);
   };
 
@@ -1264,9 +1176,9 @@ const ErrorScreen = ({ error, resetError }) => {
         timestamp: new Date().toISOString(),
         url: window.location.href,
         browserInfo,
-        usuarioId: usuario?.id || 'anonimo',
-        usuarioNome: usuario?.nome || 'Usuário Anônimo',
-        usuarioEmail: usuario?.email || 'nao-informado',
+        usuarioId: usuario.id,
+        usuarioNome: usuario.nome || 'Usuário Desconhecido',
+        usuarioEmail: usuario.email || '',
         descricao: descricao || 'Sem descrição adicional',
         status: 'pendente',
         criadoEm: new Date().toISOString()
@@ -1345,7 +1257,8 @@ const ErrorScreen = ({ error, resetError }) => {
                   alt="WorkFlow Error" 
                   className="w-full h-full object-contain opacity-90 saturate-0"
                   style={{
-                    filter: 'brightness(0.4) sepia(1) hue-rotate(-50deg) saturate(6)'
+                    filter: 'brightness(0.4) sepia(1) hue-rotate(-50deg) saturate(6)',
+                    animation: 'shake 0.5s ease-in-out infinite'
                   }}
                 />
               </div>
@@ -1455,6 +1368,12 @@ const ErrorScreen = ({ error, resetError }) => {
           )}
         </div>
 
+        {/* Rodapé */}
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            WorkFlow System • Versão 2.0
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -1473,26 +1392,10 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error Boundary caught an error:', error, errorInfo);
-    this.setState({ errorInfo });
   }
 
   render() {
     if (this.state.hasError) {
-      // Detectar se é mobile
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      
-      // Usar tela mobile-friendly em dispositivos móveis
-      if (isMobile) {
-        return (
-          <MobileErrorScreen 
-            error={this.state.error} 
-            errorInfo={this.state.errorInfo}
-            resetError={() => this.setState({ hasError: false, error: null, errorInfo: null })} 
-          />
-        );
-      }
-      
-      // Desktop usa a tela tradicional
       return <ErrorScreen error={this.state.error} resetError={() => this.setState({ hasError: false, error: null })} />;
     }
 
@@ -1508,13 +1411,6 @@ const AlmoxarifadoSistema = () => {
   const { unreadCount: notificationUnreadCount } = useNotification();
   const { totalNaoLidas: mensagensNaoLidas } = useMensagens();
   const funcionarioInfo = funcionariosData.find(f => f.id === usuario.id);
-  const { theme } = useTheme();
-  
-  // Hook para ativar modo desenvolvedor com long-press (0.5s)
-  const { isLongPressing, progress, longPressHandlers } = useDeveloperModeActivator();
-  
-  // Hook para sincronizar theme-color com barra de status/navegação mobile
-  useThemeColor(theme);
   
   // Estados locais
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
@@ -1527,9 +1423,7 @@ const AlmoxarifadoSistema = () => {
   
   // Estados para personalização do menu
   const [menuPersonalizado, setMenuPersonalizado] = useState(null);
-  // Favorito padrão baseado no nível: 'meu-perfil' para nível 1, 'emprestimos' para outros
-  const favoritoPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
-  const [itemFavorito, setItemFavorito] = useState(favoritoPadrao); // Item que fica no centro/destaque
+  const [itemFavorito, setItemFavorito] = useState('emprestimos'); // Item que fica no centro/destaque
   const [showMenuConfig, setShowMenuConfig] = useState(false);
   const [menuLongPressTimer, setMenuLongPressTimer] = useState(null);
   const [menuLongPressProgress, setMenuLongPressProgress] = useState(0);
@@ -2515,9 +2409,7 @@ const AlmoxarifadoSistema = () => {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'funcionarios'), (snapshot) => {
       const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Filtrar apenas funcionários ativos (não demitidos)
-      const funcionariosAtivos = lista.filter(func => !func.demitido);
-      setFuncionarios(funcionariosAtivos);
+      setFuncionarios(lista);
     }, (error) => {
       console.error('Erro no listener dos funcionários:', error);
     });
@@ -2729,7 +2621,7 @@ const AlmoxarifadoSistema = () => {
 
   // Verificar se usuario existe antes de continuar
   if (!usuario) {
-    return null; // AppInitializer já gerencia o loading
+    return <LoadingScreen />;
   }
 
   // Estatísticas do sistema
@@ -2785,7 +2677,7 @@ const AlmoxarifadoSistema = () => {
       id: 'escala', 
       nome: 'Escala', 
       icone: Calendar,
-      permissao: () => true // Visível para todos os níveis
+      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Supervisor ou superior
     },
     { 
       id: 'inventario', 
@@ -2818,12 +2710,6 @@ const AlmoxarifadoSistema = () => {
                          usuario?.cargo?.toLowerCase().includes('encarregado');
         return isAdmin || isGerente;
       }
-    },
-    {
-      id: 'sistema-resumo',
-      nome: 'Sistema',
-      icone: BarChart3,
-      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas administradores
     },
     
   ].filter(aba => aba.permissao());  
@@ -2860,84 +2746,26 @@ const AlmoxarifadoSistema = () => {
   useEffect(() => {
     if (!usuario?.id || permissaoAlterada) return;
     
-    // Sempre usar a página favorita como tela inicial
-    const abaFavorita = getAbaFavorita();
-    const paginaInicial = abaFavorita ? abaFavorita.id : 'meu-perfil';
-    console.log('⭐ Iniciando com página favorita:', paginaInicial);
-    setAbaAtiva(paginaInicial);
-  }, [usuario?.id, permissaoAlterada, itemFavorito]);
-
-  // Controlar botão voltar do smartphone para evitar saída acidental
-  useEffect(() => {
-    let backPressCount = 0;
-    let backPressTimer = null;
-
-    const handleBackButton = (e) => {
-      // Previne comportamento padrão
-      e.preventDefault();
+    // Só restaura estado se NÃO houver mudança de permissão pendente
+    const estadoSalvo = carregarEstadoApp();
+    if (estadoSalvo && estadoSalvo.abaAtiva) {
+      console.log('🔄 Restaurando última página:', estadoSalvo.abaAtiva);
+      setAbaAtiva(estadoSalvo.abaAtiva);
       
-      backPressCount++;
-      
-      if (backPressCount === 1) {
-        // Primeira vez - não faz nada
-        console.log('📱 Primeiro toque no voltar');
-      } else if (backPressCount === 2) {
-        // Segunda vez - mostra aviso
-        console.log('⚠️ Segundo toque no voltar - mostrando aviso');
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-          position: fixed;
-          bottom: 80px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(0, 0, 0, 0.9);
-          color: white;
-          padding: 12px 24px;
-          border-radius: 8px;
-          z-index: 9999;
-          font-size: 14px;
-          font-weight: 500;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          animation: slideUp 0.3s ease-out;
-        `;
-        toast.textContent = '⚠️ Pressione voltar novamente para sair do app';
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-          toast.style.animation = 'slideDown 0.3s ease-out';
-          setTimeout(() => toast.remove(), 300);
-        }, 2500);
-      } else {
-        // Terceira vez - permite sair
-        console.log('👋 Terceiro toque - saindo do app');
-        backPressCount = 0;
-        window.history.back();
-        return;
-      }
-      
-      // Reseta o contador após 3 segundos
-      if (backPressTimer) {
-        clearTimeout(backPressTimer);
-      }
-      backPressTimer = setTimeout(() => {
-        backPressCount = 0;
-        console.log('🔄 Contador de voltar resetado');
-      }, 3000);
-    };
-
-    // Adiciona um estado no histórico para capturar o botão voltar
-    window.history.pushState({ page: 'workflow' }, '', window.location.href);
-    
-    // Escuta o evento popstate (botão voltar)
-    window.addEventListener('popstate', handleBackButton);
-    
-    return () => {
-      window.removeEventListener('popstate', handleBackButton);
-      if (backPressTimer) {
-        clearTimeout(backPressTimer);
-      }
-    };
-  }, []);
+      // Restaurar posição de scroll
+      setTimeout(() => {
+        if (estadoSalvo.scrollPosition) {
+          window.scrollTo(0, estadoSalvo.scrollPosition);
+        }
+      }, 100);
+    } else {
+      // Se não houver estado salvo, usar página favorita como inicial
+      const abaFavorita = getAbaFavorita();
+      const paginaInicial = abaFavorita ? abaFavorita.id : 'meu-perfil';
+      console.log('⭐ Iniciando com página inicial:', paginaInicial);
+      setAbaAtiva(paginaInicial);
+    }
+  }, [usuario?.id, carregarEstadoApp, permissaoAlterada, itemFavorito]);
 
   // Carregar configuração do menu personalizado do Firebase
   useEffect(() => {
@@ -2952,10 +2780,7 @@ const AlmoxarifadoSistema = () => {
         const usuarioDoc = await getDoc(doc(db, 'usuarios', usuario.id));
         const dados = usuarioDoc.data();
         const menuConfig = dados?.menuConfig;
-        
-        // Favorito padrão baseado no nível do usuário
-        const favoritoPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
-        const favorito = dados?.itemFavorito || favoritoPadrao;
+        const favorito = dados?.itemFavorito || 'emprestimos';
         
         if (menuConfig && menuConfig.length > 0) {
           console.log('✅ Configuração carregada:', { menuConfig, favorito });
@@ -2971,7 +2796,7 @@ const AlmoxarifadoSistema = () => {
             ordem: index
           }));
           setMenuPersonalizado(configPadrao);
-          setItemFavorito(favoritoPadrao);
+          setItemFavorito('emprestimos');
         }
       } catch (error) {
         console.error('❌ Erro ao carregar menu config:', error);
@@ -3077,28 +2902,16 @@ const AlmoxarifadoSistema = () => {
   const getAbasMenuInferior = () => {
     if (!menuPersonalizado) {
       // Configuração padrão se não houver personalização
-      if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
-        // Para nível 1: ordem específica - Mensagens, Notificações, Escala
-        // (Meu Perfil fica no centro como favorito)
-        const ordemNivel1 = ['mensagens', 'notificacoes', 'escala'];
-        return ordemNivel1
-          .map(id => abas.find(a => a.id === id))
-          .filter(aba => aba && aba.permissao && aba.permissao());
-      } else {
-        // Para outros níveis: configuração padrão
-        const filtroAbasExcluidas = (a => a.id !== 'ranking' && a.id !== 'meu-perfil' && a.id !== itemFavorito);
-        
-        return abas
-          .filter(filtroAbasExcluidas)
-          .filter(aba => {
-            // Filtrar por permissão
-            if (aba.permissao && typeof aba.permissao === 'function') {
-              return aba.permissao();
-            }
-            return true;
-          })
-          .slice(0, 3);
-      }
+      return abas
+        .filter(a => a.id !== 'ranking' && a.id !== 'meu-perfil' && a.id !== itemFavorito)
+        .filter(aba => {
+          // Filtrar por permissão
+          if (aba.permissao && typeof aba.permissao === 'function') {
+            return aba.permissao();
+          }
+          return true;
+        })
+        .slice(0, 3);
     }
     
     const abasOrdenadas = getAbasOrdenadas();
@@ -3227,7 +3040,7 @@ const AlmoxarifadoSistema = () => {
               {/* Logo e título no header mobile */}
               <div className="flex items-center justify-center w-full">
                 <div className="flex items-center">
-                  <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
+                  <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
                   <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
                 </div>
               </div>
@@ -3261,7 +3074,7 @@ const AlmoxarifadoSistema = () => {
           {!isMobile && (
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className={`flex items-center ${menuRecolhido ? 'justify-center w-full' : ''}`}>
-                <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-12 h-auto" />
+                <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-auto" />
                 {!menuRecolhido && (
                   <div className="ml-3">
                     <h1 className="text-lg font-bold text-gray-900 dark:text-white">WorkFlow</h1>
@@ -3302,7 +3115,7 @@ const AlmoxarifadoSistema = () => {
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
               {/* Logo e nome centralizado */}
               <div className="flex-1 flex items-center justify-center">
-                <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-3" />
+                <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-3" />
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">WorkFlow</h1>
               </div>
               
@@ -3339,15 +3152,11 @@ const AlmoxarifadoSistema = () => {
                     >
                       <div className="relative">
                         <Icone className="w-6 h-6 mb-1" />
-                        {aba.id === 'notificacoes' && notificationUnreadCount > 0 && (
-                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                            {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
-                          </span>
+                        {aba.id === 'notificacoes' && (
+                          <MessagesBadge count={notificationUnreadCount} size="sm" max={9} />
                         )}
-                        {aba.id === 'mensagens' && mensagensNaoLidas > 0 && (
-                          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                            {mensagensNaoLidas > 99 ? '99+' : mensagensNaoLidas}
-                          </span>
+                        {aba.id === 'mensagens' && (
+                          <MessagesBadge count={mensagensNaoLidas} size="sm" max={99} />
                         )}
                       </div>
                       <span className="text-xs font-medium text-center leading-tight">
@@ -3500,15 +3309,11 @@ const AlmoxarifadoSistema = () => {
                           ? 'text-white' 
                           : 'text-gray-700 dark:text-[#E7E9EA] group-hover:text-blue-500 dark:group-hover:text-[#1D9BF0]'
                       }`} />
-                      {aba.id === 'notificacoes' && notificationUnreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                          {notificationUnreadCount > 9 ? '9+' : notificationUnreadCount}
-                        </span>
+                      {aba.id === 'notificacoes' && (
+                        <MessagesBadge count={notificationUnreadCount} size="md" max={9} />
                       )}
-                      {aba.id === 'mensagens' && mensagensNaoLidas > 0 && (
-                        <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                          {mensagensNaoLidas > 99 ? '99+' : mensagensNaoLidas}
-                        </span>
+                      {aba.id === 'mensagens' && (
+                        <MessagesBadge count={mensagensNaoLidas} size="md" max={99} />
                       )}
                     </div>
                     {!menuRecolhido && <span>{aba.nome}</span>}
@@ -3767,9 +3572,9 @@ const AlmoxarifadoSistema = () => {
 
 
 
-      <main className={`${isMobile ? 'pt-16 pb-20' : `${menuRecolhido ? 'pl-16' : 'pl-80'} transition-all duration-300 ease-in-out`} w-full min-h-screen ${abaAtiva === 'mensagens' ? '' : 'bg-white dark:bg-black'}`}>
-        <div className={abaAtiva === 'mensagens' ? (isMobile ? 'h-[calc(100vh-9rem)]' : 'h-[calc(100vh-4rem)]') : 'max-w-5xl mx-auto px-4'}>
-          <div className={abaAtiva === 'mensagens' ? 'h-full' : 'py-3'}>
+      <main className={`${isMobile ? 'pt-16 pb-20' : `${menuRecolhido ? 'pl-16' : 'pl-80'} transition-all duration-300 ease-in-out`} w-full min-h-screen bg-white dark:bg-black`}>
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="py-3">
 
             {abaAtiva === 'dashboard' && (
               usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
@@ -3867,10 +3672,6 @@ const AlmoxarifadoSistema = () => {
               <GerenciamentoUnificado usuarioAtual={usuario} />
             )}
 
-            {abaAtiva === 'sistema-resumo' && (
-              <SistemaResumo />
-            )}
-
             {abaAtiva === 'ranking' && (
               <RankingPontos />
             )}
@@ -3880,9 +3681,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'mensagens' && (
-              <div className="h-full">
-                <Chat />
-              </div>
+              <MensagensMain />
             )}
 
             {abaAtiva === 'historico-emprestimos' && (
@@ -3974,7 +3773,6 @@ const AlmoxarifadoSistema = () => {
             })}
             
             {/* Ícone favorito no centro com fundo azul circular - 20% para cima com efeitos minimalistas */}
-            {/* SEGURE POR 0.5s para ativar Modo Desenvolvedor (apenas ADMIN) */}
             {(() => {
               const abaFavorita = getAbaFavorita();
               if (!abaFavorita || !abaFavorita.icone) return null; // Proteção contra aba sem ícone
@@ -3985,7 +3783,6 @@ const AlmoxarifadoSistema = () => {
                     setAbaAtiva(abaFavorita.id);
                     setMenuOpen(false);
                   }}
-                  {...longPressHandlers}
                   className="flex flex-col items-center justify-center p-1 transition-all duration-200 min-w-0 flex-1 transform -translate-y-[20%] hover:scale-105"
                 >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-0.5 transition-all duration-300 hover:shadow-lg hover:shadow-blue-200 dark:hover:shadow-blue-900 ${
@@ -4315,7 +4112,7 @@ const AlmoxarifadoSistema = () => {
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-7 h-7 text-white animate-pulse" />
+                  <Bell className="w-7 h-7 text-white" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -4371,18 +4168,6 @@ const AlmoxarifadoSistema = () => {
           </div>
         </div>
       )}
-      
-      {/* Solicitação de permissão Bluetooth para mobile */}
-      <BluetoothPermissionRequest />
-      
-      {/* Gerenciador de Bluetooth Mesh - APENAS MODO DEV */}
-      <BluetoothMeshManager />
-      
-      {/* Indicador visual de ativação do modo desenvolvedor */}
-      <DeveloperModeActivationIndicator isActive={isLongPressing} progress={progress} />
-      
-      {/* Painel de Desenvolvedor - APENAS MODO DEV */}
-      <DeveloperPanel />
     </div>
     </FuncionariosProvider>
   );
@@ -4394,7 +4179,7 @@ const App = () => {
   const { usuario, isLoading } = useAuth();
 
   if (isLoading) {
-    return null; // AppInitializer já gerencia o loading
+    return <LoadingScreen />;
   }
 
   return usuario ? <AlmoxarifadoSistema /> : <LoginForm />;
@@ -4410,22 +4195,18 @@ const Seed = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <DeveloperModeProvider>
-          <FuncionarioPerfilProvider>
-            <ToastProvider>
-              <FuncionariosProvider>
-                <NotificationProvider>
-                  <MessageNotificationProvider>
-                    <AnalyticsProvider>
-                      <App />
-                      <PWAUpdateAvailable />
-                    </AnalyticsProvider>
-                  </MessageNotificationProvider>
-                </NotificationProvider>
-              </FuncionariosProvider>
-            </ToastProvider>
-          </FuncionarioPerfilProvider>
-        </DeveloperModeProvider>
+        <ToastProvider>
+          <FuncionariosProvider>
+            <NotificationProvider>
+              <MessageNotificationProvider>
+                <AnalyticsProvider>
+                  <App />
+                  <PWAUpdateAvailable />
+                </AnalyticsProvider>
+              </MessageNotificationProvider>
+            </NotificationProvider>
+          </FuncionariosProvider>
+        </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

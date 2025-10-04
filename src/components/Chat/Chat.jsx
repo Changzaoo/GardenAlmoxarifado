@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ChatButton from './ChatButton';
 import ChatWindow from './ChatWindow';
-import useAuth from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../firebaseConfig';
 import { useMessageNotification } from '../../hooks/useMessageNotification';
 import {
@@ -22,14 +22,17 @@ import {
 
 const Chat = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useAuth();
+  const { usuario: user } = useAuth();
   const [chats, setChats] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const { sendNotification, clearNotifications } = useMessageNotification();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !user.uid) {
+      console.warn('Chat: usuário ou user.uid não definido');
+      return;
+    }
 
     // Buscar chats individuais e grupos do usuário
     const chatsQuery = query(

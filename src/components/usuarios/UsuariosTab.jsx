@@ -17,9 +17,7 @@ import {
   AlertTriangle,
   User,
   Building2,
-  Briefcase,
-  BarChart3,
-  Activity
+  Briefcase
 } from 'lucide-react';
 
 const { classes, colors } = twitterThemeConfig;
@@ -337,31 +335,16 @@ const UsuariosTab = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              {/* Botão de Estatísticas de Acesso */}
+            {niveisDisponiveis.length > 0 && (
               <button
-                onClick={() => {
-                  const baseUrl = window.location.origin;
-                  window.location.href = `${baseUrl}/estatisticas-acesso`;
-                }}
-                className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 dark:from-purple-600 dark:to-purple-700 dark:hover:from-purple-700 dark:hover:to-purple-800 text-white px-6 py-2.5 rounded-full transition-all shadow-md hover:shadow-lg transform hover:scale-105"
-                title="Estatísticas de Acesso"
+                onClick={abrirModalCriar}
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-[#1D9BF0] dark:to-[#1A8CD8] dark:hover:from-[#1A8CD8] dark:hover:to-[#1D9BF0] text-white px-6 py-2.5 rounded-full transition-all shadow-md hover:shadow-lg transform hover:scale-105"
               >
-                <Activity className="w-5 h-5" />
-                <span className="font-medium hidden md:inline">Estatísticas</span>
+                <Plus className="w-5 h-5" />
+                <span className="font-medium hidden sm:inline">Novo Usuário</span>
+                <span className="font-medium sm:hidden">Novo</span>
               </button>
-              
-              {niveisDisponiveis.length > 0 && (
-                <button
-                  onClick={abrirModalCriar}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 dark:from-[#1D9BF0] dark:to-[#1A8CD8] dark:hover:from-[#1A8CD8] dark:hover:to-[#1D9BF0] text-white px-6 py-2.5 rounded-full transition-all shadow-md hover:shadow-lg transform hover:scale-105"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="font-medium hidden sm:inline">Novo Usuário</span>
-                  <span className="font-medium sm:hidden">Novo</span>
-                </button>
-              )}
-            </div>
+            )}
           </div>
           
           {/* Campo de busca aprimorado */}

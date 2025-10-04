@@ -59,13 +59,6 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100vw;
-  position: relative;
-}
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -328,44 +321,4 @@ code {
   20%, 40%, 60%, 80% {
     transform: translateX(2px) rotate(1deg);
   }
-}
-
-/* Animações para Modal Editar Item */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.2s ease-out;
-}
-
-.animate-slideUp {
-  animation: slideUp 0.3s ease-out;
 }

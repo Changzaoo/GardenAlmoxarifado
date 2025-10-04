@@ -35,7 +35,7 @@ import {
 class MensagensService {
   constructor() {
     this.conversasRef = collection(db, 'conversas');
-    this.usuariosRef = collection(db, 'usuarios');
+    this.usuariosRef = collection(db, 'usuario');
   }
 
   // ==================== CONVERSAS ====================

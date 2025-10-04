@@ -30,6 +30,7 @@ const EscalaPage = ({ usuarioAtual }) => {
   const [dataCalendarioSelecionada, setDataCalendarioSelecionada] = useState(new Date());
   const [modalResumo, setModalResumo] = useState({ aberto: false, tipo: null, dados: [] });
   const [animacaoAtiva, setAnimacaoAtiva] = useState(null); // { tipo: 'presente'|'ausente'|'folga', origem: {x, y}, destino: {x, y} }
+  const [animacaoVerificacao, setAnimacaoVerificacao] = useState(null); // { funcionarioId, dia, tipo, funcionario, fase }
   const [avaliacaoExpandida, setAvaliacaoExpandida] = useState(null);
   const [novaAvaliacao, setNovaAvaliacao] = useState({ estrelas: 0, comentario: '' });
   const [hoverEstrelas, setHoverEstrelas] = useState(0);
@@ -37,7 +38,6 @@ const EscalaPage = ({ usuarioAtual }) => {
   const [abaGerenciar, setAbaGerenciar] = useState('horarios'); // 'horarios' ou 'funcionarios'
   const [horariosPersonalizados, setHorariosPersonalizados] = useState({});
   const [novoHorario, setNovoHorario] = useState({ nome: '', descricao: '', setor: '' });
-  const [particulas, setParticulas] = useState([]); // Array de partículas animadas
 
   // Tipos de escala com cores
   const TIPOS_ESCALA = {
@@ -335,7 +335,7 @@ const EscalaPage = ({ usuarioAtual }) => {
     return () => unsubscribe();
   }, []);
 
-  // Carregar funcionários (apenas ativos)
+  // Carregar funcionários
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, 'funcionarios'),
@@ -344,9 +344,7 @@ const EscalaPage = ({ usuarioAtual }) => {
           id: doc.id,
           ...doc.data()
         }));
-        // Filtrar apenas funcionários ativos (não demitidos)
-        const funcionariosAtivos = funcsData.filter(func => !func.demitido);
-        setFuncionarios(funcionariosAtivos);
+        setFuncionarios(funcsData);
 
         // Extrair setores únicos
         const setoresUnicos = [...new Set(funcsData.map(f => f.setor).filter(Boolean))];
@@ -476,14 +474,8 @@ const EscalaPage = ({ usuarioAtual }) => {
     });
   };
 
-  // Verificar permissão - ATUALIZADO para permitir nível 1 ver seus próprios dados
+  // Verificar permissão
   const temPermissao = useMemo(() => {
-    if (!usuarioAtual) return false;
-    return usuarioAtual.nivel >= 1; // Todos os níveis podem acessar (nivel 1, 2, 3 ou 4)
-  }, [usuarioAtual]);
-
-  // Verificar se usuário pode EDITAR (apenas nível 2+)
-  const podeEditar = useMemo(() => {
     if (!usuarioAtual) return false;
     return usuarioAtual.nivel >= 2; // Supervisor ou superior (nivel 2, 3 ou 4)
   }, [usuarioAtual]);
@@ -491,17 +483,6 @@ const EscalaPage = ({ usuarioAtual }) => {
   // Filtrar funcionários por empresa, setor e ocultos
   const funcionariosFiltrados = useMemo(() => {
     let filtrados = funcionarios;
-    
-    // SE NÍVEL 1: mostrar APENAS o próprio funcionário
-    if (usuarioAtual?.nivel === 1) {
-      filtrados = filtrados.filter(f => 
-        f.id === usuarioAtual.id || 
-        f.email === usuarioAtual.email ||
-        f.nome === usuarioAtual.nome
-      );
-      console.log('👤 Nível 1 - Mostrando apenas próprio registro:', filtrados);
-      return filtrados;
-    }
     
     // Filtrar por empresa
     if (empresaSelecionada !== 'todas') {
@@ -524,7 +505,7 @@ const EscalaPage = ({ usuarioAtual }) => {
     });
     
     return filtrados;
-  }, [funcionarios, empresaSelecionada, setorSelecionado, funcionariosOcultos, usuarioAtual]);
+  }, [funcionarios, empresaSelecionada, setorSelecionado, funcionariosOcultos]);
 
   // Obter setores filtrados por empresa
   const setoresFiltrados = useMemo(() => {
@@ -608,7 +589,7 @@ const EscalaPage = ({ usuarioAtual }) => {
 
   // Marcar escala
   const marcarEscala = async (funcionarioId, dia, tipo, eventoClick) => {
-    if (!podeEditar) {
+    if (!temPermissao) {
       toast.warning('Você não tem permissão para editar a escala.', {
         position: 'top-right',
         autoClose: 3000
@@ -616,36 +597,38 @@ const EscalaPage = ({ usuarioAtual }) => {
       return;
     }
 
-    // Animação de partículas para FOLGA
+    // Ativar animação sofisticada para FOLGA
     if (tipo === 'FOLGA' && eventoClick) {
       const funcionario = funcionarios.find(f => f.id === funcionarioId);
-      const buttonRect = eventoClick.currentTarget.getBoundingClientRect();
       
-      // Encontrar posição do card de estatísticas de folgas
-      const statElement = document.querySelector(`[data-stat-folga="${funcionarioId}"]`);
-      
-      if (statElement) {
-        const statRect = statElement.getBoundingClientRect();
-        
-        // Criar múltiplas partículas amarelas para folga
-        const novasParticulas = Array.from({ length: 8 }, (_, i) => ({
-          id: `${Date.now()}-${i}`,
-          startX: buttonRect.left + buttonRect.width / 2,
-          startY: buttonRect.top + buttonRect.height / 2,
-          endX: statRect.left + statRect.width / 2,
-          endY: statRect.top + statRect.height / 2,
-          color: '#eab308', // yellow-500
-          delay: i * 50,
-          tipo: 'folga'
-        }));
-        
-        setParticulas(prev => [...prev, ...novasParticulas]);
-        
-        // Remover partículas após animação
-        setTimeout(() => {
-          setParticulas(prev => prev.filter(p => !novasParticulas.find(np => np.id === p.id)));
-        }, 1000);
-      }
+      // Fase 1: Iniciar verificação de folga
+      setAnimacaoVerificacao({
+        funcionarioId,
+        dia,
+        tipo: 'folga',
+        funcionario,
+        fase: 'scanning'
+      });
+
+      // Fase 2: Análise
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'analyzing' } : null);
+      }, 1000);
+
+      // Fase 3: Verificação
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'verifying' } : null);
+      }, 2000);
+
+      // Fase 4: Confirmação
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'confirmed' } : null);
+      }, 3000);
+
+      // Fase 5: Finalização
+      setTimeout(() => {
+        setAnimacaoVerificacao(null);
+      }, 4000);
     }
 
     try {
@@ -662,15 +645,6 @@ const EscalaPage = ({ usuarioAtual }) => {
       };
 
       await setDoc(doc(db, 'escalas', mesAno, 'registros', docId), escalaData);
-      
-      // Se marcou folga, avançar para próximo funcionário após animação
-      if (tipo === 'FOLGA') {
-        setTimeout(() => {
-          if (funcionarioAtualIndex < funcionariosFiltrados.length - 1) {
-            setFuncionarioAtualIndex(funcionarioAtualIndex + 1);
-          }
-        }, 1000);
-      }
     } catch (error) {
       console.error('Erro ao marcar escala:', error);
       toast.error('Erro ao salvar escala. Tente novamente.', {
@@ -682,7 +656,7 @@ const EscalaPage = ({ usuarioAtual }) => {
 
   // Marcar presença
   const marcarPresenca = async (funcionarioId, dia, presente, eventoClick) => {
-    if (!podeEditar) {
+    if (!temPermissao) {
       toast.warning('Você não tem permissão para marcar presença.', {
         position: 'top-right',
         autoClose: 3000
@@ -690,39 +664,38 @@ const EscalaPage = ({ usuarioAtual }) => {
       return;
     }
 
-    // Animação fluida de partículas
-    if (presente !== null && eventoClick) {
+    // Se está marcando presença (não desmarcando), ativar animação sofisticada
+    if (presente !== null) {
       const funcionario = funcionarios.find(f => f.id === funcionarioId);
-      const buttonRect = eventoClick.currentTarget.getBoundingClientRect();
       
-      // Encontrar posição do card de estatísticas
-      const statElement = presente 
-        ? document.querySelector(`[data-stat-trabalho="${funcionarioId}"]`)
-        : document.querySelector('.text-red-600.dark\\:text-red-400');
-      
-      if (statElement) {
-        const statRect = statElement.getBoundingClientRect();
-        
-        // Criar múltiplas partículas
-        const novasParticulas = Array.from({ length: 8 }, (_, i) => ({
-          id: `${Date.now()}-${i}`,
-          startX: buttonRect.left + buttonRect.width / 2,
-          startY: buttonRect.top + buttonRect.height / 2,
-          endX: statRect.left + statRect.width / 2,
-          endY: statRect.top + statRect.height / 2,
-          color: presente ? '#10b981' : '#ef4444', // green-500 ou red-500
-          delay: i * 50,
-          tipo: presente ? 'presente' : 'ausente'
-        }));
-        
-        setParticulas(prev => [...prev, ...novasParticulas]);
-        
-        // Remover partículas após animação
-        setTimeout(() => {
-          setParticulas(prev => prev.filter(p => !novasParticulas.find(np => np.id === p.id)));
-        }, 1000);
-      }
-      
+      // Fase 1: Iniciar verificação
+      setAnimacaoVerificacao({
+        funcionarioId,
+        dia,
+        tipo: presente ? 'presente' : 'ausente',
+        funcionario,
+        fase: 'scanning'
+      });
+
+      // Fase 2: Análise
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'analyzing' } : null);
+      }, 1000);
+
+      // Fase 3: Verificação
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'verifying' } : null);
+      }, 2000);
+
+      // Fase 4: Confirmação
+      setTimeout(() => {
+        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'confirmed' } : null);
+      }, 3000);
+
+      // Fase 5: Finalização
+      setTimeout(() => {
+        setAnimacaoVerificacao(null);
+      }, 4000);
     }
 
     try {
@@ -742,13 +715,6 @@ const EscalaPage = ({ usuarioAtual }) => {
           marcadoEm: new Date()
         };
         await setDoc(doc(db, 'presencas', mesAno, 'registros', docId), presencaData);
-        
-        // Avançar para próximo funcionário após animação (tanto presente quanto ausente)
-        setTimeout(() => {
-          if (funcionarioAtualIndex < funcionariosFiltrados.length - 1) {
-            setFuncionarioAtualIndex(funcionarioAtualIndex + 1);
-          }
-        }, 1000);
       }
     } catch (error) {
       console.error('Erro ao marcar presença:', error);
@@ -756,6 +722,7 @@ const EscalaPage = ({ usuarioAtual }) => {
         position: 'top-right',
         autoClose: 4000
       });
+      setAnimacaoVerificacao(null);
     }
   };
 
@@ -770,7 +737,7 @@ const EscalaPage = ({ usuarioAtual }) => {
 
   // Salvar avaliação do funcionário
   const salvarAvaliacao = async (funcionarioId, funcionarioNome) => {
-    if (!podeEditar) {
+    if (!temPermissao) {
       toast.warning('Você não tem permissão para avaliar funcionários.', {
         position: 'top-right',
         autoClose: 3000
@@ -840,9 +807,9 @@ const EscalaPage = ({ usuarioAtual }) => {
     }
   };
 
-  // Salvar anotação de funcionário (apenas nível 2+)
+  // Salvar anotação de funcionário
   const salvarAnotacaoFuncionario = async (funcionarioId, dia, anotacao) => {
-    if (!podeEditar) {
+    if (!temPermissao) {
       toast.warning('Você não tem permissão para adicionar anotações.', {
         position: 'top-right',
         autoClose: 3000
@@ -876,9 +843,9 @@ const EscalaPage = ({ usuarioAtual }) => {
     }
   };
 
-  // Salvar anotação do dia (apenas nível 2+)
+  // Salvar anotação do dia
   const salvarAnotacaoDia = async (dia, anotacao) => {
-    if (!podeEditar) {
+    if (!temPermissao) {
       toast.warning('Você não tem permissão para adicionar anotações.', {
         position: 'top-right',
         autoClose: 3000
@@ -1043,28 +1010,30 @@ const EscalaPage = ({ usuarioAtual }) => {
     );
   }
 
-  // Todos os níveis podem acessar a página (nível 1 apenas visualiza seus próprios dados)
+  if (!temPermissao) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
+          <div className="text-red-500 mb-4">
+            <Calendar className="w-16 h-16 mx-auto" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+            Acesso Negado
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Você não tem permissão para acessar a escala de trabalho.
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+            Apenas supervisores e administradores podem visualizar e editar escalas.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       {/* Cabeçalho */}
-      {/* Banner informativo para nível 1 */}
-      {usuarioAtual?.nivel === 1 && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6 rounded-lg">
-          <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300">
-                Modo de Visualização
-              </h3>
-              <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
-                Você está visualizando <strong>apenas seus próprios registros</strong> de escala e presença. 
-                Esta página é somente leitura para o seu nível de acesso.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
@@ -1073,7 +1042,7 @@ const EscalaPage = ({ usuarioAtual }) => {
               Escala de Trabalho
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              {podeEditar ? 'Gerencie a escala de trabalho e folgas dos funcionários' : 'Visualize sua escala de trabalho e registro de presença'}
+              Gerencie a escala de trabalho e folgas dos funcionários
             </p>
           </div>
 
@@ -1196,43 +1165,34 @@ const EscalaPage = ({ usuarioAtual }) => {
             </div>
           )}
 
-          {/* Botão Unificado - Gerenciar (APENAS NÍVEL 2+) */}
-          {podeEditar && (
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setModalConfiguracoes(true)}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                title="Gerenciar funcionários e configurar horários de escala"
-              >
-                <Settings className="w-5 h-5" />
-                <span className="text-sm">Gerenciar Funcionários e Horários</span>
-              </button>
+          {/* Botão Unificado - Gerenciar */}
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setModalConfiguracoes(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              title="Gerenciar funcionários e configurar horários de escala"
+            >
+              <Settings className="w-5 h-5" />
+              <span className="text-sm">Gerenciar Funcionários e Horários</span>
+            </button>
 
-              {funcionariosOcultos.length > 0 && (
-                <button
-                  onClick={() => setFuncionariosOcultos([])}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  title="Mostrar todos os funcionários"
-                >
-                  <Eye className="w-5 h-5" />
-                  <span className="text-sm">Mostrar Todos ({funcionariosOcultos.length})</span>
-                </button>
-              )}
-            </div>
-          )}
+            {funcionariosOcultos.length > 0 && (
+              <button
+                onClick={() => setFuncionariosOcultos([])}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                title="Mostrar todos os funcionários"
+              >
+                <Eye className="w-5 h-5" />
+                <span className="text-sm">Mostrar Todos ({funcionariosOcultos.length})</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Visualização em Carrossel (Modo Diário Mobile) */}
       {modoVisualizacao === 'diario' && window.innerWidth < 768 && funcionariosFiltrados.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-          {/* Dica de navegação automática */}
-          <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-            <p className="text-xs text-blue-700 dark:text-blue-300 text-center">
-              💡 Ao marcar <strong className="text-green-600 dark:text-green-400">Presente</strong>, <strong className="text-red-600 dark:text-red-400">Ausente</strong> ou <strong className="text-yellow-600 dark:text-yellow-400">Folga</strong>, avança automaticamente para o próximo funcionário
-            </p>
-          </div>
-          
           {/* Navegação do Carrossel */}
           <div className="flex items-center justify-between mb-4">
             <button
@@ -1499,44 +1459,41 @@ const EscalaPage = ({ usuarioAtual }) => {
                   )}
                 </div>
 
-                {/* Presença e Folga - COMPACTO (Apenas visualização para nível 1) */}
+                {/* Presença e Folga - COMPACTO */}
                 <div className="bg-gray-50 dark:bg-gray-750 rounded-lg p-2">
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {podeEditar ? 'Presença e Folga' : 'Status (Visualização)'}
+                    Presença e Folga
                   </label>
                   <div className="grid grid-cols-3 gap-1">
                     <button
-                      onClick={podeEditar ? (e) => marcarPresenca(func.id, dia, presencaStatus === true ? null : true, e) : undefined}
-                      disabled={!podeEditar}
+                      onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === true ? null : true, e)}
                       className={`py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 relative overflow-hidden ${
                         presencaStatus === true
                           ? 'bg-green-600 text-white scale-105 ring-2 ring-green-300'
                           : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-800'
-                      } ${!podeEditar ? 'cursor-not-allowed opacity-75' : ''}`}
+                      }`}
                     >
                       <Check className="w-4 h-4" />
                       <span className="text-[10px]">Presente</span>
                     </button>
                     <button
-                      onClick={podeEditar ? (e) => marcarPresenca(func.id, dia, presencaStatus === false ? null : false, e) : undefined}
-                      disabled={!podeEditar}
+                      onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === false ? null : false, e)}
                       className={`py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 relative overflow-hidden ${
                         presencaStatus === false
                           ? 'bg-red-600 text-white scale-105 ring-2 ring-red-300'
                           : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-800'
-                      } ${!podeEditar ? 'cursor-not-allowed opacity-75' : ''}`}
+                      }`}
                     >
                       <X className="w-4 h-4" />
                       <span className="text-[10px]">Ausente</span>
                     </button>
                     <button
-                      onClick={podeEditar ? (e) => marcarEscala(func.id, dia, tipo === 'FOLGA' ? 'VAZIO' : 'FOLGA', e) : undefined}
-                      disabled={!podeEditar}
+                      onClick={(e) => marcarEscala(func.id, dia, tipo === 'FOLGA' ? 'VAZIO' : 'FOLGA', e)}
                       className={`py-2 rounded-lg text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 relative overflow-hidden ${
                         tipo === 'FOLGA'
                           ? 'bg-yellow-500 text-white scale-105 ring-2 ring-yellow-300'
                           : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-yellow-100 dark:hover:bg-yellow-800'
-                      } ${!podeEditar ? 'cursor-not-allowed opacity-75' : ''}`}
+                      }`}
                     >
                       <span className="text-lg">📅</span>
                       <span className="text-[10px]">Folga</span>
@@ -1832,16 +1789,15 @@ const EscalaPage = ({ usuarioAtual }) => {
                         return (
                           <td
                             key={dia}
-                            className={`px-2 py-2 border-r border-gray-200 dark:border-gray-700 ${
+                            className={`px-1 py-1 border-r border-gray-200 dark:border-gray-700 ${
                               ehFimDeSemana ? 'bg-gray-100 dark:bg-gray-750' : ''
                             }`}
                           >
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-1">
                               <select
                                 value={tipo}
-                                onChange={podeEditar ? (e) => marcarEscala(func.id, dia, e.target.value) : undefined}
-                                disabled={!podeEditar}
-                                className={`w-full px-1 py-1 text-xs font-bold text-center rounded border-0 ${config.cor} ${config.corTexto} focus:ring-2 focus:ring-green-500 ${podeEditar ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'}`}
+                                onChange={(e) => marcarEscala(func.id, dia, e.target.value)}
+                                className={`w-full px-1 py-1 text-xs font-bold text-center rounded cursor-pointer border-0 ${config.cor} ${config.corTexto} focus:ring-2 focus:ring-green-500`}
                               >
                                 {Object.entries(TIPOS_ESCALA).map(([key, t]) => (
                                   <option key={key} value={key}>
@@ -1850,44 +1806,41 @@ const EscalaPage = ({ usuarioAtual }) => {
                                 ))}
                               </select>
                               
-                              <div className="flex gap-1.5 justify-center">
+                              <div className="flex gap-0.5 justify-center">
                                 <button
-                                  onClick={podeEditar ? (e) => marcarPresenca(func.id, dia, presencaStatus === true ? null : true, e) : undefined}
-                                  disabled={!podeEditar}
-                                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${
+                                  onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === true ? null : true, e)}
+                                  className={`flex-1 px-1 py-0.5 rounded text-xs font-bold transition-all ${
                                     presencaStatus === true
-                                      ? 'bg-gradient-to-br from-green-500 to-green-600 text-white scale-105 shadow-green-500/50'
-                                      : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-green-50 hover:to-green-100 dark:hover:from-green-900 dark:hover:to-green-800'
-                                  } ${!podeEditar ? 'cursor-not-allowed opacity-75' : ''}`}
+                                      ? 'bg-green-600 text-white scale-105'
+                                      : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-800'
+                                  }`}
                                   title="Presente"
                                   >
-                                    <Check className="w-5 h-5 mx-auto" />
+                                    <Check className="w-3 h-3 mx-auto" />
                                   </button>
                                   <button
-                                    onClick={podeEditar ? (e) => marcarPresenca(func.id, dia, presencaStatus === false ? null : false, e) : undefined}
-                                    disabled={!podeEditar}
-                                    className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${
+                                    onClick={(e) => marcarPresenca(func.id, dia, presencaStatus === false ? null : false, e)}
+                                    className={`flex-1 px-1 py-0.5 rounded text-xs font-bold transition-all ${
                                       presencaStatus === false
-                                        ? 'bg-gradient-to-br from-red-500 to-red-600 text-white scale-105 shadow-red-500/50'
-                                        : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-red-50 hover:to-red-100 dark:hover:from-red-900 dark:hover:to-red-800'
-                                    } ${!podeEditar ? 'cursor-not-allowed opacity-75' : ''}`}
+                                        ? 'bg-red-600 text-white scale-105'
+                                        : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-800'
+                                    }`}
                                     title="Falta"
                                   >
-                                    <X className="w-5 h-5 mx-auto" />
+                                    <X className="w-3 h-3 mx-auto" />
                                 </button>
                               </div>
                               
-                              {/* Anotações permitidas para todos (apenas visualização para nível 1) */}
                               <button
                                 onClick={() => abrirModalAnotacao(func.id, dia)}
-                                className={`w-full px-3 py-2.5 rounded-lg text-sm transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ${
+                                className={`w-full px-1 py-0.5 rounded text-xs transition-colors ${
                                   temAnotacao
-                                    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/50 hover:from-blue-600 hover:to-blue-700'
-                                    : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900 dark:hover:to-blue-800'
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-800'
                                 }`}
-                                title={temAnotacao ? 'Ver anotação' : (podeEditar ? 'Adicionar anotação' : 'Ver anotações')}
+                                title={temAnotacao ? 'Ver anotação' : 'Adicionar anotação'}
                               >
-                                <MessageSquare className="w-5 h-5 mx-auto" />
+                                <MessageSquare className="w-3 h-3 mx-auto" />
                               </button>
                             </div>
                           </td>
@@ -2020,7 +1973,7 @@ const EscalaPage = ({ usuarioAtual }) => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <Settings className="w-6 h-6 text-blue-500" />
+                <Settings className="w-6 h-6 text-purple-500" />
                 Gerenciar Funcionários e Horários
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
@@ -2033,7 +1986,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                   onClick={() => setAbaGerenciar('horarios')}
                   className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all shadow-md ${
                     abaGerenciar === 'horarios'
-                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-blue-500/50'
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/50'
                       : 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-300 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-700'
                   }`}
                 >
@@ -2067,7 +2020,7 @@ const EscalaPage = ({ usuarioAtual }) => {
               {abaGerenciar === 'horarios' && (
                 <div className="space-y-6">
                   {/* Info Box */}
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-2 border-blue-300 dark:border-blue-600 rounded-xl p-4 shadow-lg">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-xl p-4 shadow-lg">
                     <p className="text-sm text-blue-900 dark:text-blue-200 leading-relaxed">
                       <strong className="flex items-center gap-2 mb-2">
                         <span className="text-blue-600 dark:text-blue-400">ℹ️</span> Atribuição de Horários
@@ -2087,7 +2040,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                   {/* Lista de Funcionários com Seleção de Horário */}
                   <div className="space-y-3">
                     <h4 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                      <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg px-3 py-1 text-sm">
+                      <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg px-3 py-1 text-sm">
                         👥 Atribuir Horários aos Funcionários
                       </span>
                     </h4>
@@ -2710,8 +2663,8 @@ const EscalaPage = ({ usuarioAtual }) => {
         </div>
       )}
 
-      {/* Animação de verificação removida - usando apenas partículas */}
-      {false && (
+      {/* Animação Sofisticada de Verificação */}
+      {animacaoVerificacao && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <style>{`
             @keyframes scan-line {
@@ -3127,6 +3080,25 @@ const EscalaPage = ({ usuarioAtual }) => {
 
                 {/* Status da verificação */}
                 <div className="w-full space-y-3">
+                  {/* Barra de progresso - cor baseada no tipo */}
+                  <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-1000 ${
+                        animacaoVerificacao.tipo === 'presente'
+                          ? 'bg-gradient-to-r from-green-500 via-emerald-400 to-green-500'
+                          : animacaoVerificacao.tipo === 'ausente'
+                          ? 'bg-gradient-to-r from-red-500 via-orange-400 to-red-500'
+                          : 'bg-gradient-to-r from-yellow-400 via-amber-500 via-orange-400 to-pink-400'
+                      } ${
+                        animacaoVerificacao.fase === 'scanning' ? 'w-1/4' :
+                        animacaoVerificacao.fase === 'analyzing' ? 'w-1/2' :
+                        animacaoVerificacao.fase === 'verifying' ? 'w-3/4' :
+                        'w-full'
+                      }`}
+                      style={{ animation: 'data-flow 2s ease-in-out infinite' }}
+                    />
+                  </div>
+
                   {/* Texto do status - mensagens diferentes para presente/ausente/folga */}
                   <div className="text-center">
                     {animacaoVerificacao.fase === 'scanning' && (
@@ -3454,46 +3426,6 @@ const EscalaPage = ({ usuarioAtual }) => {
           </div>
         </div>
       )}
-
-      {/* Partículas animadas voando do botão para as estatísticas */}
-      {particulas.map((particula) => (
-        <div
-          key={particula.id}
-          className="fixed pointer-events-none z-[9999]"
-          style={{
-            left: `${particula.startX}px`,
-            top: `${particula.startY}px`,
-            animation: `fly-to-stat 800ms cubic-bezier(0.25, 0.46, 0.45, 0.94) ${particula.delay}ms forwards`,
-            '--end-x': `${particula.endX - particula.startX}px`,
-            '--end-y': `${particula.endY - particula.startY}px`
-          }}
-        >
-          <div 
-            className="w-3 h-3 rounded-full shadow-lg"
-            style={{
-              backgroundColor: particula.color,
-              boxShadow: `0 0 10px ${particula.color}, 0 0 20px ${particula.color}`
-            }}
-          />
-        </div>
-      ))}
-
-      <style jsx>{`
-        @keyframes fly-to-stat {
-          0% {
-            transform: translate(0, 0) scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: translate(calc(var(--end-x) * 0.5), calc(var(--end-y) * 0.5)) scale(1.5);
-            opacity: 0.8;
-          }
-          100% {
-            transform: translate(var(--end-x), var(--end-y)) scale(0.5);
-            opacity: 0;
-          }
-        }
-      `}</style>
     </div>
   );
 };

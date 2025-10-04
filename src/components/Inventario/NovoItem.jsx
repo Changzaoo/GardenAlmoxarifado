@@ -12,8 +12,7 @@ const NovoItem = ({ adicionarItem }) => {
   const [novoItem, setNovoItem] = useState({
     nome: '',
     quantidade: '',
-    categoria: '',
-    valorUnitario: ''
+    categoria: ''
   });
   
   const [empresas, setEmpresas] = useState([]);
@@ -148,7 +147,7 @@ const NovoItem = ({ adicionarItem }) => {
       
       if (sucesso) {
         // Limpar formulário
-        setNovoItem({ nome: '', quantidade: '', categoria: '', valorUnitario: '' });
+        setNovoItem({ nome: '', quantidade: '', categoria: '' });
       }
     }
 
@@ -238,7 +237,7 @@ const NovoItem = ({ adicionarItem }) => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <input
           type="text"
           placeholder="Nome do item"
@@ -252,15 +251,6 @@ const NovoItem = ({ adicionarItem }) => {
           placeholder="Quantidade"
           value={novoItem.quantidade}
           onChange={(e) => setNovoItem({...novoItem, quantidade: e.target.value})}
-          className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors"
-        />
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder="Valor Unitário (R$)"
-          value={novoItem.valorUnitario}
-          onChange={(e) => setNovoItem({...novoItem, valorUnitario: e.target.value})}
           className="w-full bg-white dark:bg-gray-800 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors"
         />
         <select

@@ -182,117 +182,175 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      {/* Preview da Foto */}
-      {fotoPreview && (
-        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-600">
-          <img 
-            src={fotoPreview} 
-            alt="Preview" 
-            className="w-16 h-16 rounded-lg object-cover"
-          />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">Foto selecionada</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{fotoFile?.name}</p>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+          <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Adicionar Novo Funcionário</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Preencha os dados para cadastrar</p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Preview da Foto */}
+        {fotoPreview && (
+          <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <img 
+              src={fotoPreview} 
+              alt="Preview" 
+              className="w-16 h-16 rounded-lg object-cover ring-2 ring-blue-300 dark:ring-blue-700"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">Foto selecionada</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{fotoFile?.name}</p>
+            </div>
+            <button
+              type="button"
+              onClick={removerFoto}
+              className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors flex-shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={removerFoto}
-            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Nome */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Nome Completo *
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: João Silva"
+              value={dados.nome}
+              onChange={e => setDados({ ...dados, nome: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              required
+            />
+          </div>
+        
+          {/* Cargo */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Cargo *
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Analista"
+              value={dados.cargo}
+              onChange={e => setDados({ ...dados, cargo: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              required
+            />
+          </div>
+        
+          {/* Telefone */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Telefone *
+            </label>
+            <input
+              type="text"
+              placeholder="(00) 00000-0000"
+              value={dados.telefone ? formatarTelefone(dados.telefone) : ''}
+              onChange={e => {
+                const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+                setDados({ ...dados, telefone: onlyNums });
+              }}
+              className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              required
+              maxLength={15}
+            />
+          </div>
+        
+          {/* Empresa */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Empresa *
+            </label>
+            <select
+              value={dados.empresaId}
+              onChange={handleEmpresaChange}
+              className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              required
+            >
+              <option value="">Selecione a Empresa</option>
+              {empresas.map(empresa => (
+                <option key={empresa.id} value={empresa.id}>
+                  {empresa.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        
+          {/* Setor */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Setor *
+            </label>
+            <select
+              value={dados.setorId}
+              onChange={handleSetorChange}
+              className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              required
+              disabled={!dados.empresaId}
+            >
+              <option value="">Selecione o Setor</option>
+              {setoresDisponiveis.map(setor => (
+                <option key={setor.id} value={setor.id}>
+                  {setor.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        
+          {/* Upload de Foto */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Foto (Opcional)
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFotoChange}
+              className="hidden"
+              id="foto-funcionario"
+            />
+            <label
+              htmlFor="foto-funcionario"
+              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm cursor-pointer border border-gray-300 dark:border-gray-600"
+            >
+              <Upload className="w-4 h-4" /> Escolher Foto
+            </label>
+          </div>
+        </div>
+
+        {/* Botão Submit */}
+        <div className="flex justify-end pt-2">
+          <button 
+            type="submit" 
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" 
+            disabled={loading}
           >
-            <X className="w-4 h-4" />
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Adicionando...</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                <span>Adicionar Funcionário</span>
+              </>
+            )}
           </button>
         </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-2">
-        <input
-          type="text"
-          placeholder="Nome"
-          value={dados.nome}
-          onChange={e => setDados({ ...dados, nome: e.target.value })}
-          className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
-          required
-        />
-      
-      <input
-        type="text"
-        placeholder="Cargo"
-        value={dados.cargo}
-        onChange={e => setDados({ ...dados, cargo: e.target.value })}
-        className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
-        required
-      />
-      
-      <input
-        type="text"
-        placeholder="(00) 00000-0000"
-        value={dados.telefone ? formatarTelefone(dados.telefone) : ''}
-        onChange={e => {
-          const onlyNums = e.target.value.replace(/[^0-9]/g, '');
-          setDados({ ...dados, telefone: onlyNums });
-        }}
-        className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
-        required
-        maxLength={15}
-      />
-      
-      <select
-        value={dados.empresaId}
-        onChange={handleEmpresaChange}
-        className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
-        required
-      >
-        <option value="">Selecione a Empresa</option>
-        {empresas.map(empresa => (
-          <option key={empresa.id} value={empresa.id}>
-            {empresa.nome}
-          </option>
-        ))}
-      </select>
-      
-      <select
-        value={dados.setorId}
-        onChange={handleSetorChange}
-        className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
-        required
-        disabled={!dados.empresaId}
-      >
-        <option value="">Selecione o Setor</option>
-        {setoresDisponiveis.map(setor => (
-          <option key={setor.id} value={setor.id}>
-            {setor.nome}
-          </option>
-        ))}
-      </select>
-      
-      {/* Botão Upload de Foto */}
-      <div className="relative">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFotoChange}
-          className="hidden"
-          id="foto-funcionario"
-        />
-        <label
-          htmlFor="foto-funcionario"
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm cursor-pointer border border-gray-200 dark:border-gray-600"
-        >
-          <Upload className="w-3 h-3" /> Foto
-        </label>
-      </div>
-
-      <button 
-        type="submit" 
-        className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors text-sm lg:col-span-2" 
-        disabled={loading}
-      >
-        <Plus className="w-3 h-3" /> Adicionar Funcionário
-      </button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
 

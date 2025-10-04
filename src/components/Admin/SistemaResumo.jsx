@@ -3,11 +3,17 @@ import { useAuth } from '../../hooks/useAuth';
 import { 
   BarChart3, Users, Package, CheckSquare, MessageSquare, Trophy, 
   Calendar, Bluetooth, Database, Activity, TrendingUp, Clock,
-  Server, Zap, Shield, Globe, Smartphone, Monitor, AlertCircle
+  Server, Zap, Shield, Globe, Smartphone, Monitor, AlertCircle, Building2,
+  RefreshCw
 } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
+import { useModal } from '../../hooks/useModal';
+import CustomModal from '../common/CustomModal';
+import MigracaoUsuariosModal from './MigracaoUsuariosModal';
+import ExportacaoUsuariosModal from './ExportacaoUsuariosModal';
+import MigracaoUsuariosNovoModeloModal from './MigracaoUsuariosNovoModeloModal';
 
 /**
  * Página de Resumo do Sistema
@@ -21,7 +27,8 @@ import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
  * - Métricas de uso
  */
 const SistemaResumo = () => {
-  const { usuario, nivelPermissao } = useAuth();
+  const { usuario, nivelPermissao, sincronizarFuncionariosComUsuarios } = useAuth();
+  const { modalState, handleConfirm, handleCancel, showConfirm, showSuccess, showError } = useModal();
   const [stats, setStats] = useState({
     usuarios: 0,
     funcionarios: 0,
@@ -38,9 +45,27 @@ const SistemaResumo = () => {
   
   const [loading, setLoading] = useState(true);
   const [modulosAtivos, setModulosAtivos] = useState([]);
+  const [mostrarMigracaoModal, setMostrarMigracaoModal] = useState(false);
+  const [mostrarExportacaoModal, setMostrarExportacaoModal] = useState(false);
+  const [mostrarMigracaoNovoModeloModal, setMostrarMigracaoNovoModeloModal] = useState(false);
 
   // Verificar permissão de admin
-  const isAdmin = nivelPermissao === NIVEIS_PERMISSAO.ADMIN;
+  console.log('🔍 SistemaResumo - Dados do usuário:', {
+    usuario,
+    nivelPermissao,
+    nivelUsuario: usuario?.nivel,
+    NIVEL_ADMIN: NIVEIS_PERMISSAO.ADMIN,
+    comparacao: {
+      'nivelPermissao === ADMIN': nivelPermissao === NIVEIS_PERMISSAO.ADMIN,
+      'usuario.nivel === ADMIN': usuario?.nivel === NIVEIS_PERMISSAO.ADMIN,
+      'usuario.nivel === 4': usuario?.nivel === 4,
+      'nivelPermissao === 4': nivelPermissao === 4
+    }
+  });
+
+  const isAdmin = nivelPermissao === NIVEIS_PERMISSAO.ADMIN || usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
+
+  console.log('✅ isAdmin:', isAdmin);
 
   useEffect(() => {
     if (isAdmin) {
@@ -410,17 +435,101 @@ const SistemaResumo = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-              <BarChart3 className="text-white" size={32} />
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
+                <BarChart3 className="text-white" size={32} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Resumo do Sistema
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Visão geral completa • Acesso exclusivo para administradores
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Resumo do Sistema
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Visão geral completa • Acesso exclusivo para administradores
-              </p>
+            
+            {/* Botões de Ação */}
+            <div className="flex flex-wrap gap-2">
+              {/* Botão de Sincronização de Funcionários */}
+              <button
+                onClick={async () => {
+                  const confirmed = await showConfirm(
+                    'Deseja sincronizar todos os funcionários com o sistema de usuários?\n\nIsso irá:\n• Criar logins para funcionários sem acesso\n• Atualizar dados de funcionários existentes\n• Preservar senhas já cadastradas\n• Senha padrão para novos: 123456',
+                    '🔄 Sincronizar Funcionários'
+                  );
+                  
+                  if (confirmed) {
+                    setLoading(true);
+                    try {
+                      const resultado = await sincronizarFuncionariosComUsuarios();
+                      const mensagem = `✨ ${resultado.criados} usuários criados\n🔄 ${resultado.atualizados} usuários atualizados${resultado.criados > 0 ? '\n\n⚠️ Novos usuários criados com senha padrão: 123456' : ''}`;
+                      await showSuccess(mensagem, 'Sincronização Concluída');
+                      carregarEstatisticas();
+                    } catch (error) {
+                      await showError(`Erro na sincronização: ${error.message}`);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }
+                }}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-lg shadow-md transition-all transform hover:scale-105 disabled:hover:scale-100"
+              >
+                <Users className="w-5 h-5" />
+                <span className="hidden md:inline font-medium">
+                  {loading ? 'Sincronizando...' : 'Sincronizar Funcionários'}
+                </span>
+                <span className="md:hidden font-medium">
+                  {loading ? '...' : 'Sync'}
+                </span>
+              </button>
+
+              {/* Botão de Migração de Coleção */}
+              <button
+                onClick={() => setMostrarMigracaoModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg shadow-md transition-all transform hover:scale-105"
+                title="Migrar coleção 'usuarios' para 'usuario'"
+              >
+                <Database className="w-5 h-5" />
+                <span className="hidden md:inline font-medium">
+                  Migração de Usuários
+                </span>
+                <span className="md:hidden font-medium">
+                  Migrar
+                </span>
+              </button>
+
+              {/* Botão de Exportação para Funcionários */}
+              <button
+                onClick={() => setMostrarExportacaoModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white rounded-lg shadow-md transition-all transform hover:scale-105"
+                title="Exportar usuários para funcionários (Zendaya/Jardim)"
+              >
+                <Building2 className="w-5 h-5" />
+                <span className="hidden md:inline font-medium">
+                  Exportar para Funcionários
+                </span>
+                <span className="md:hidden font-medium">
+                  Exportar
+                </span>
+              </button>
+
+              {/* Botão de Migração para Novo Modelo */}
+              <button
+                onClick={() => setMostrarMigracaoNovoModeloModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white rounded-lg shadow-md transition-all transform hover:scale-105"
+                title="Migrar usuários para novo modelo (status, menuConfig, etc)"
+              >
+                <Activity className="w-5 h-5" />
+                <span className="hidden md:inline font-medium">
+                  Atualizar Modelo de Usuários
+                </span>
+                <span className="md:hidden font-medium">
+                  Atualizar
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -581,6 +690,40 @@ const SistemaResumo = () => {
           <p className="mt-1">© 2025 - Todos os direitos reservados</p>
         </div>
       </div>
+
+      {/* Modal Customizado */}
+      <CustomModal
+        isOpen={modalState.isOpen}
+        type={modalState.type}
+        title={modalState.title}
+        message={modalState.message}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+        showCancel={modalState.showCancel}
+        onConfirm={handleConfirm}
+        onClose={handleCancel}
+      />
+
+      {/* Modal de Migração de Usuários */}
+      {mostrarMigracaoModal && (
+        <MigracaoUsuariosModal 
+          onClose={() => setMostrarMigracaoModal(false)}
+        />
+      )}
+
+      {/* Modal de Exportação de Usuários para Funcionários */}
+      {mostrarExportacaoModal && (
+        <ExportacaoUsuariosModal 
+          onClose={() => setMostrarExportacaoModal(false)}
+        />
+      )}
+
+      {/* Modal de Migração para Novo Modelo */}
+      {mostrarMigracaoNovoModeloModal && (
+        <MigracaoUsuariosNovoModeloModal 
+          onClose={() => setMostrarMigracaoNovoModeloModal(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,69 +1,68 @@
 import React, { useState } from 'react';
-import { HelpCircle, X, UsersRound } from 'lucide-react';
+import { HelpCircle, X, UsersRound, Search, SlidersHorizontal } from 'lucide-react';
 
 const BarraBusca = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, onManageGroups, showGroupsButton = true }) => {
   const [showHelp, setShowHelp] = useState(false);
   return (
-    <div className="flex items-center gap-4 mb-4">
-      {/* Dropdown de Filtro */}
-      <select
-        value={filtroAtual}
-        onChange={(e) => setFiltroAtual(e.target.value)}
-        className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-white px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] transition-colors cursor-pointer w-[200px]"
-      >
-        <option value="nome">Nome</option>
-        <option value="pontos">Mais Pontos</option>
-        <option value="avaliacao">Mais Avaliados</option>
-        <option value="tarefas">Mais Tarefas</option>
-        <option value="emprestimos">Mais Empréstimos</option>
-        <option value="demitidos">Funcionários Demitidos</option>
-      </select>
-
-      {/* Campo de Busca */}
-      <div className="relative w-36">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      {/* Campo de Busca Principal */}
+      <div className="relative flex-1 max-w-md">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
         <input
           type="text"
-          placeholder="         Buscar..."
+          placeholder="Buscar por nome, cargo, email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 pl-12 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
+          className="w-full pl-12 pr-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
         />
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
       </div>
 
-      {/* Botão de Grupos */}
-      {showGroupsButton && (
-        <button
-          onClick={onManageGroups}
-          className="bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors flex items-center gap-2"
-          title="Gerenciar grupos de funcionários"
-        >
-          <UsersRound className="w-4 h-4" />
-          <span className="text-sm">Grupos</span>
-        </button>
-      )}
+      {/* Filtros e Ações */}
+      <div className="flex items-center gap-2">
+        {/* Dropdown de Filtro com ícone */}
+        <div className="relative">
+          <SlidersHorizontal className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 w-4 h-4 pointer-events-none" />
+          <select
+            value={filtroAtual}
+            onChange={(e) => setFiltroAtual(e.target.value)}
+            className="pl-10 pr-8 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer appearance-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.5rem center',
+              backgroundSize: '1.5em 1.5em'
+            }}
+          >
+            <option value="nome">🔤 Nome</option>
+            <option value="pontos">🏆 Mais Pontos</option>
+            <option value="avaliacao">⭐ Mais Avaliados</option>
+            <option value="tarefas">✅ Mais Tarefas</option>
+            <option value="emprestimos">🔧 Mais Empréstimos</option>
+            <option value="demitidos">❌ Inativos</option>
+          </select>
+        </div>
 
-      {/* Ícone de Ajuda */}
-      <button
-        onClick={() => setShowHelp(true)}
-        className="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-full transition-colors"
-        title="Ajuda"
-      >
-        <HelpCircle className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0]" />
-      </button>
+        {/* Botão de Grupos */}
+        {showGroupsButton && (
+          <button
+            onClick={onManageGroups}
+            className="px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white transition-colors flex items-center gap-2 shadow-sm"
+            title="Gerenciar grupos de funcionários"
+          >
+            <UsersRound className="w-4 h-4" />
+            <span className="hidden sm:inline">Grupos</span>
+          </button>
+        )}
+
+        {/* Botão de Ajuda */}
+        <button
+          onClick={() => setShowHelp(true)}
+          className="p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          title="Ajuda"
+        >
+          <HelpCircle className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+        </button>
+      </div>
 
       {/* Modal de Ajuda */}
       {showHelp && (

@@ -1,0 +1,201 @@
+// ==========================================
+// REGRAS DE SEGURANÇA - SISTEMA DE MENSAGENS
+// ==========================================
+// Adicione estas regras ao seu arquivo firestore.rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // CONVERSAS
+    // ==========================================
+    match /conversas/{conversaId} {
+      
+      // Função auxiliar para verificar se o usuário é participante
+      function isParticipant() {
+        return request.auth.uid in resource.data.participantes;
+      }
+      
+      // Função auxiliar para verificar se o usuário será participante (create)
+      function willBeParticipant() {
+        return request.auth.uid in request.resource.data.participantes;
+      }
+      
+      // Leitura: apenas participantes podem ver a conversa
+      allow read: if request.auth != null && isParticipant();
+      
+      // Criação: usuário autenticado pode criar, se for participante
+      allow create: if request.auth != null 
+                    && willBeParticipant()
+                    && request.resource.data.keys().hasAll([
+                         'tipo', 
+                         'participantes', 
+                         'criadoPor', 
+                         'criadoEm',
+                         'ultimaAtualizacao'
+                       ]);
+      
+      // Atualização: apenas participantes podem atualizar
+      allow update: if request.auth != null 
+                    && isParticipant()
+                    && request.resource.data.participantes == resource.data.participantes; // Não pode mudar participantes
+      
+      // Deleção: apenas criador pode deletar
+      allow delete: if request.auth != null 
+                    && request.auth.uid == resource.data.criadoPor;
+    }
+    
+    // ==========================================
+    // MENSAGENS
+    // ==========================================
+    match /mensagens/{mensagemId} {
+      
+      // Função para obter a conversa
+      function getConversa(conversaId) {
+        return get(/databases/$(database)/documents/conversas/$(conversaId));
+      }
+      
+      // Função para verificar se o usuário é participante da conversa
+      function isConversaParticipant() {
+        return request.auth.uid in getConversa(resource.data.conversaId).data.participantes;
+      }
+      
+      // Função para verificar se o usuário será participante (create)
+      function willBeConversaParticipant() {
+        return request.auth.uid in getConversa(request.resource.data.conversaId).data.participantes;
+      }
+      
+      // Leitura: apenas participantes da conversa podem ver mensagens
+      allow read: if request.auth != null && isConversaParticipant();
+      
+      // Criação: apenas participantes podem criar mensagens
+      allow create: if request.auth != null 
+                    && willBeConversaParticipant()
+                    && request.resource.data.remetenteId == request.auth.uid
+                    && request.resource.data.keys().hasAll([
+                         'conversaId',
+                         'remetenteId',
+                         'remetenteNome',
+                         'conteudo',
+                         'tipo',
+                         'timestamp',
+                         'status'
+                       ])
+                    && request.resource.data.tipo in ['texto', 'imagem'];
+      
+      // Atualização: apenas participantes podem atualizar (para marcar como lida)
+      allow update: if request.auth != null 
+                    && isConversaParticipant()
+                    && request.resource.data.conversaId == resource.data.conversaId
+                    && request.resource.data.remetenteId == resource.data.remetenteId
+                    && request.resource.data.conteudo == resource.data.conteudo; // Não pode mudar conteúdo
+      
+      // Deleção: apenas remetente pode deletar (soft delete via status.deletada)
+      allow delete: if request.auth != null 
+                    && request.auth.uid == resource.data.remetenteId;
+    }
+    
+    // ==========================================
+    // FUNCIONÁRIOS (necessário para buscar participantes)
+    // ==========================================
+    match /funcionarios/{funcId} {
+      // Leitura: apenas usuários da mesma empresa e setor
+      allow read: if request.auth != null 
+                  && get(/databases/$(database)/documents/funcionarios/$(request.auth.uid)).data.empresaId == resource.data.empresaId
+                  && get(/databases/$(database)/documents/funcionarios/$(request.auth.uid)).data.setorId == resource.data.setorId;
+    }
+  }
+}
+
+// ==========================================
+// ÍNDICES COMPOSTOS NECESSÁRIOS
+// ==========================================
+// Crie estes índices no Console do Firestore:
+
+// 1. Coleção: conversas
+//    Campos: participantes (Array), ultimaAtualizacao (Descendente)
+//    Query scope: Collection
+
+// 2. Coleção: mensagens  
+//    Campos: conversaId (Ascendente), status.deletada (Ascendente), timestamp (Ascendente)
+//    Query scope: Collection
+
+// 3. Coleção: mensagens
+//    Campos: conversaId (Ascendente), timestamp (Ascendente)
+//    Query scope: Collection
+
+// ==========================================
+// COMANDOS PARA CRIAR ÍNDICES VIA CLI
+// ==========================================
+
+// firebase firestore:indexes:create conversas \
+//   --field participantes:ARRAY \
+//   --field ultimaAtualizacao:DESCENDING
+
+// firebase firestore:indexes:create mensagens \
+//   --field conversaId:ASCENDING \
+//   --field status.deletada:ASCENDING \
+//   --field timestamp:ASCENDING
+
+// firebase firestore:indexes:create mensagens \
+//   --field conversaId:ASCENDING \
+//   --field timestamp:ASCENDING
+
+// ==========================================
+// NOTAS IMPORTANTES
+// ==========================================
+
+/*
+1. PARTICIPANTES ARRAY:
+   - Use array-contains para queries eficientes
+   - Limite de 10 participantes por grupo (recomendado)
+
+2. STATUS DE MENSAGEM:
+   - status.deletada: false sempre nas queries
+   - status.lida: mapa com userId como chave
+
+3. TIMESTAMPS:
+   - Use serverTimestamp() sempre
+   - Nunca confie em timestamps do cliente
+
+4. SEGURANÇA:
+   - Sempre valide request.auth.uid
+   - Verifique participantes antes de permitir acesso
+   - Não permita mudanças em campos críticos
+
+5. PERFORMANCE:
+   - Crie todos os índices compostos
+   - Use .limit() nas queries
+   - Implemente paginação para mensagens antigas
+
+6. TESTES:
+   - Teste com diferentes usuários
+   - Verifique permissões de leitura/escrita
+   - Valide que não-participantes não têm acesso
+*/
+
+// ==========================================
+// EXEMPLO DE TESTE DE SEGURANÇA
+// ==========================================
+
+/*
+// No console do Firebase:
+
+// 1. Tentar ler conversa como não-participante (deve falhar):
+db.collection('conversas').doc('CONVERSA_ID').get()
+
+// 2. Tentar criar mensagem em conversa de outros (deve falhar):
+db.collection('mensagens').add({
+  conversaId: 'CONVERSA_ALHEIA',
+  remetenteId: 'MEU_ID',
+  conteudo: 'Teste'
+})
+
+// 3. Tentar modificar participantes (deve falhar):
+db.collection('conversas').doc('CONVERSA_ID').update({
+  participantes: ['NOVO_USER']
+})
+
+// Todos devem retornar erro de permissão
+*/

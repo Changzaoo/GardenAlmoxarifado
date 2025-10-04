@@ -406,7 +406,7 @@ const RankingPontos = () => {
       const emprestimosRef = collection(db, 'emprestimos');
       const tarefasRef = collection(db, 'tarefas');
       const avaliacoesRef = collection(db, 'avaliacoes');
-      const usuariosRef = collection(db, 'usuarios');
+      const usuariosRef = collection(db, 'usuario');
 
       // Buscar dados necessários
       const [emprestimosSnap, tarefasSnap, avaliacoesSnap, usuariosSnap] = await Promise.all([

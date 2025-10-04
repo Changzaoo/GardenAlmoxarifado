@@ -132,6 +132,17 @@ class NotificationManager {
    */
   async initializeFirebaseMessaging(userId) {
     try {
+      // Verificar se está rodando em Capacitor (Android/iOS)
+      const isCapacitor = await this.isCapacitorPlatform();
+      
+      if (isCapacitor) {
+        console.log('📱 Inicializando notificações mobile com Capacitor');
+        await this.setupCapacitorNotifications(userId);
+        return;
+      }
+
+      // Web: usar Firebase Cloud Messaging
+      console.log('🌐 Inicializando notificações web com FCM');
       const { default: app } = await import('../firebaseConfig');
       this.messaging = getMessaging(app);
 
@@ -162,6 +173,97 @@ class NotificationManager {
       console.error('❌ Erro ao inicializar FCM:', error);
       this.setupLocalMode();
     }
+  }
+
+  /**
+   * Verifica se está rodando em plataforma Capacitor
+   */
+  async isCapacitorPlatform() {
+    try {
+      const { Capacitor } = await import('@capacitor/core');
+      return Capacitor.isNativePlatform();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Configura notificações no Capacitor (Android/iOS)
+   */
+  async setupCapacitorNotifications(userId) {
+    try {
+      const { PushNotifications } = await import('@capacitor/push-notifications');
+      const { Capacitor } = await import('@capacitor/core');
+
+      console.log('📱 Plataforma:', Capacitor.getPlatform());
+
+      // Solicitar permissão
+      let permStatus = await PushNotifications.checkPermissions();
+
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+
+      if (permStatus.receive !== 'granted') {
+        console.warn('❌ Permissão de notificações negada');
+        return;
+      }
+
+      // Registrar para receber notificações
+      await PushNotifications.register();
+      console.log('✅ Push notifications registradas');
+
+      // Listener: token FCM recebido
+      await PushNotifications.addListener('registration', async (token) => {
+        console.log('📱 Push registration token:', token.value);
+        await this.saveToken(userId, token.value);
+      });
+
+      // Listener: erro no registro
+      await PushNotifications.addListener('registrationError', (error) => {
+        console.error('❌ Erro ao registrar push:', error);
+      });
+
+      // Listener: notificação recebida (app em primeiro plano)
+      await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('📨 Push recebido:', notification);
+        this.handleCapacitorNotification(notification);
+      });
+
+      // Listener: notificação clicada
+      await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+        console.log('👆 Notificação clicada:', notification);
+        const conversaId = notification.notification?.data?.conversaId;
+        this.handleNotificationClick(conversaId);
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao configurar Capacitor notifications:', error);
+    }
+  }
+
+  /**
+   * Processa notificação recebida pelo Capacitor
+   */
+  handleCapacitorNotification(notification) {
+    const { title, body, data } = notification;
+    
+    // Se o app está aberto e na página de mensagens, apenas mostrar toast
+    if (this.isOnMessagesPage() && this.isWindowActive()) {
+      toast.info(body || 'Nova mensagem', {
+        icon: '💬',
+        autoClose: 3000
+      });
+      
+      if (this.preferences.sound) {
+        this.playSound('message');
+      }
+      
+      return;
+    }
+
+    // App em background ou outra página - notificação já foi mostrada pelo sistema
+    console.log('📬 Notificação recebida pelo sistema:', title);
   }
 
   /**
@@ -207,12 +309,8 @@ class NotificationManager {
    * Envia mensagem para o service worker
    */
   sendMessageToSW(message) {
-    if ('serviceWorker' in navigator && navigator.serviceWorker && navigator.serviceWorker.controller) {
-      try {
-        navigator.serviceWorker.controller.postMessage(message);
-      } catch (error) {
-        console.warn('⚠️ Erro ao enviar mensagem para Service Worker:', error);
-      }
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage(message);
     }
   }
 
@@ -345,24 +443,20 @@ class NotificationManager {
    * Atualiza contador de badge
    */
   updateBadge(increment = 0) {
-    try {
-      if ('setAppBadge' in navigator) {
-        // Obter contagem atual de não lidas
-        const currentCount = this.getCurrentUnreadCount();
-        const newCount = currentCount + increment;
-        
-        navigator.setAppBadge(newCount).catch(err => {
-          console.log('Badge API não suportada:', err);
-        });
+    if ('setAppBadge' in navigator) {
+      // Obter contagem atual de não lidas
+      const currentCount = this.getCurrentUnreadCount();
+      const newCount = currentCount + increment;
+      
+      navigator.setAppBadge(newCount).catch(err => {
+        console.log('Badge API não suportada:', err);
+      });
 
-        // Atualizar SW também
-        this.sendMessageToSW({
-          type: 'UPDATE_BADGE',
-          count: newCount
-        });
-      }
-    } catch (error) {
-      console.warn('⚠️ Erro ao atualizar badge:', error);
+      // Atualizar SW também
+      this.sendMessageToSW({
+        type: 'UPDATE_BADGE',
+        count: newCount
+      });
     }
   }
 
@@ -370,15 +464,11 @@ class NotificationManager {
    * Limpa badge
    */
   clearBadge() {
-    try {
-      if ('clearAppBadge' in navigator) {
-        navigator.clearAppBadge().catch(() => {});
-      }
-      
-      this.sendMessageToSW({ type: 'CLEAR_BADGE' });
-    } catch (error) {
-      console.warn('⚠️ Erro ao limpar badge:', error);
+    if ('clearAppBadge' in navigator) {
+      navigator.clearAppBadge().catch(() => {});
     }
+    
+    this.sendMessageToSW({ type: 'CLEAR_BADGE' });
   }
 
   /**
@@ -445,18 +535,14 @@ class NotificationManager {
    * Salva preferências
    */
   savePreferences(newPreferences) {
-    try {
-      this.preferences = { ...this.preferences, ...newPreferences };
-      localStorage.setItem('notification_preferences', JSON.stringify(this.preferences));
-      
-      // Atualizar SW
-      this.sendMessageToSW({
-        type: 'UPDATE_CONFIG',
-        preferences: this.preferences
-      });
-    } catch (error) {
-      console.warn('⚠️ Erro ao salvar preferências:', error);
-    }
+    this.preferences = { ...this.preferences, ...newPreferences };
+    localStorage.setItem('notification_preferences', JSON.stringify(this.preferences));
+    
+    // Atualizar SW
+    this.sendMessageToSW({
+      type: 'UPDATE_CONFIG',
+      preferences: this.preferences
+    });
   }
 
   /**
@@ -546,24 +632,20 @@ class NotificationManager {
    */
   async loadPendingNotifications() {
     // Obter do service worker
-    if ('serviceWorker' in navigator && navigator.serviceWorker && navigator.serviceWorker.controller) {
-      try {
-        const channel = new MessageChannel();
-        
-        channel.port1.onmessage = (event) => {
-          if (event.data.notifications) {
-            this.notificationQueue = event.data.notifications;
-            console.log('📬 Notificações pendentes carregadas:', this.notificationQueue.length);
-          }
-        };
+    if (navigator.serviceWorker.controller) {
+      const channel = new MessageChannel();
+      
+      channel.port1.onmessage = (event) => {
+        if (event.data.notifications) {
+          this.notificationQueue = event.data.notifications;
+          console.log('📬 Notificações pendentes carregadas:', this.notificationQueue.length);
+        }
+      };
 
-        navigator.serviceWorker.controller.postMessage(
-          { type: 'GET_PENDING_NOTIFICATIONS' },
-          [channel.port2]
-        );
-      } catch (error) {
-        console.warn('⚠️ Erro ao carregar notificações pendentes:', error);
-      }
+      navigator.serviceWorker.controller.postMessage(
+        { type: 'GET_PENDING_NOTIFICATIONS' },
+        [channel.port2]
+      );
     }
   }
 
@@ -584,14 +666,10 @@ class NotificationManager {
    * Cleanup
    */
   cleanup() {
-    try {
-      this.initialized = false;
-      this.currentUserId = null;
-      this.notificationQueue = [];
-      this.clearBadge();
-    } catch (error) {
-      console.warn('⚠️ Erro durante cleanup:', error);
-    }
+    this.initialized = false;
+    this.currentUserId = null;
+    this.notificationQueue = [];
+    this.clearBadge();
   }
 }
 

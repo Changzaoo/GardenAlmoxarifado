@@ -354,38 +354,6 @@ const FerramentasDanificadasTab = ({
           </div>
         </div>
 
-        {/* Card Destacado de Valor Total de Prejuízo */}
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border-2 border-orange-300 dark:border-orange-600 rounded-xl px-6 py-4 shadow-lg mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-orange-500 dark:bg-orange-600 p-3 rounded-xl shadow-md">
-                <AlertCircle className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                  Valor Total em Danos e Reparos
-                </p>
-                <p className="text-xs text-orange-600 dark:text-orange-400">
-                  {estatisticas.aguardandoReparo + estatisticas.emReparo + estatisticas.irreparaveis} ferramentas danificadas
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                {(() => {
-                  const valorTotalTodos = ferramentasDanificadasPorSetor
-                    .filter(f => f.statusReparo !== 'reparada' && f.statusReparo !== 'substituida')
-                    .reduce((total, f) => total + (parseFloat(f.valorReparo) || 0), 0);
-                  return valorTotalTodos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                })()}
-              </p>
-              <p className="text-xs text-orange-500 dark:text-orange-500 mt-1">
-                Prejuízo estimado
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">

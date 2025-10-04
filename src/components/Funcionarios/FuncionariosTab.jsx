@@ -456,75 +456,114 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl">
-      <div className="flex flex-col gap-4 mb-4">
-        {/* Formulário de Adição */}
-        {!isFuncionario && !readonly && (
-          <FormularioAdicao
-            onSubmit={handleAdicionar}
-            loading={loading}
-            formatarTelefone={formatarTelefone}
-          />
-        )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Header Corporativo */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Gestão de Funcionários
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {funcionariosFiltrados.length} {funcionariosFiltrados.length === 1 ? 'funcionário encontrado' : 'funcionários encontrados'}
+              </p>
+            </div>
+            
+            {/* Stats resumo */}
+            <div className="hidden md:flex items-center gap-6">
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {funcionarios.filter(f => !f.demitido).length}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Ativos</div>
+              </div>
+              {filtroAtual === 'demitidos' && (
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {funcionarios.filter(f => f.demitido).length}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Inativos</div>
+                </div>
+              )}
+            </div>
+          </div>
 
-        {/* Barra de Busca e Filtros */}
-        <BarraBusca
-          filtroAtual={filtroAtual}
-          setFiltroAtual={setFiltroAtual}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          onManageGroups={() => setShowGruposModal(true)}
-          showGroupsButton={!readonly && usuario?.nivel >= 2}
-        />
+          {/* Barra de Busca e Filtros */}
+          <BarraBusca
+            filtroAtual={filtroAtual}
+            setFiltroAtual={setFiltroAtual}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            onManageGroups={() => setShowGruposModal(true)}
+            showGroupsButton={!readonly && usuario?.nivel >= 2}
+          />
+        </div>
       </div>
 
-      {/* Lista de Funcionários */}
-      {funcionariosFiltrados.length === 0 ? (
-        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-          <div className="bg-white dark:bg-gray-800 rounded-full p-6 mb-4">
-            {filtroAtual === 'demitidos' ? (
-              <UserX className="w-12 h-12 text-gray-400" />
-            ) : (
-              <Users className="w-12 h-12 text-gray-400" />
-            )}
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            {filtroAtual === 'demitidos' ? 'Nenhum funcionário demitido' : 'Nenhum funcionário encontrado'}
-          </h3>
-          <p className="text-gray-400 max-w-md">
-            {filtroAtual === 'demitidos' 
-              ? 'Não há funcionários demitidos no sistema.'
-              : searchTerm 
-                ? `Não foram encontrados funcionários que correspondam ao termo "${searchTerm}".`
-                : 'Ainda não há funcionários cadastrados no sistema.'
-            }
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[...funcionariosFiltrados].sort(getFuncaoOrdenacao()).map((func) => (
-            <CardFuncionario
-              key={func.id}
-              funcionario={func}
-              funcionariosStats={funcionariosStats}
-              funcionariosPontos={funcionariosPontos}
-              isFuncionario={isFuncionario}
-              readonly={readonly}
-              avaliacoesExpandidas={avaliacoesExpandidas}
-              avaliacoesDesempenhoExpandidas={avaliacoesDesempenhoExpandidas}
-              setAvaliacoesExpandidas={setAvaliacoesExpandidas}
-              setAvaliacoesDesempenhoExpandidas={setAvaliacoesDesempenhoExpandidas}
-              handleEditar={handleEditar}
-              confirmarExclusao={confirmarExclusao}
-              calcularMediaAvaliacoesDesempenho={calcularMediaAvaliacoesDesempenho}
-              onClick={() => setFuncionarioSelecionado(func)}
-              demitirFuncionario={demitirFuncionario}
-              reintegrarFuncionario={reintegrarFuncionario}
-              filtroAtual={filtroAtual}
+      {/* Container Principal */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Formulário de Adição */}
+        {!isFuncionario && !readonly && (
+          <div className="mb-6">
+            <FormularioAdicao
+              onSubmit={handleAdicionar}
+              loading={loading}
+              formatarTelefone={formatarTelefone}
             />
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+
+        {/* Lista de Funcionários */}
+        {funcionariosFiltrados.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                {filtroAtual === 'demitidos' ? (
+                  <UserX className="w-10 h-10 text-gray-400" />
+                ) : (
+                  <Users className="w-10 h-10 text-gray-400" />
+                )}
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                {filtroAtual === 'demitidos' ? 'Nenhum funcionário inativo' : 'Nenhum funcionário encontrado'}
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md">
+                {filtroAtual === 'demitidos' 
+                  ? 'Não há funcionários inativos no sistema.'
+                  : searchTerm 
+                    ? `Não foram encontrados funcionários que correspondam ao termo "${searchTerm}".`
+                    : 'Ainda não há funcionários cadastrados no sistema.'
+                }
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-5">
+            {[...funcionariosFiltrados].sort(getFuncaoOrdenacao()).map((func) => (
+              <CardFuncionario
+                key={func.id}
+                funcionario={func}
+                funcionariosStats={funcionariosStats}
+                funcionariosPontos={funcionariosPontos}
+                isFuncionario={isFuncionario}
+                readonly={readonly}
+                avaliacoesExpandidas={avaliacoesExpandidas}
+                avaliacoesDesempenhoExpandidas={avaliacoesDesempenhoExpandidas}
+                setAvaliacoesExpandidas={setAvaliacoesExpandidas}
+                setAvaliacoesDesempenhoExpandidas={setAvaliacoesDesempenhoExpandidas}
+                handleEditar={handleEditar}
+                confirmarExclusao={confirmarExclusao}
+                calcularMediaAvaliacoesDesempenho={calcularMediaAvaliacoesDesempenho}
+                onClick={() => setFuncionarioSelecionado(func)}
+                demitirFuncionario={demitirFuncionario}
+                reintegrarFuncionario={reintegrarFuncionario}
+                filtroAtual={filtroAtual}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Modal de Perfil do Funcionário */}
       {funcionarioSelecionado && (

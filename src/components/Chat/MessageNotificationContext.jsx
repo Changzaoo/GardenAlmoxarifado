@@ -124,6 +124,11 @@ export const MessageNotificationProvider = ({ children }) => {
       console.log('MessageNotificationContext: Marcando mensagens como lidas para', chatIdOrUserId);
       
       // Buscar todos os chats do usuário
+      if (!usuario || !usuario.id) {
+        console.warn('MessageNotificationContext: usuário ou usuario.id não definido');
+        return;
+      }
+      
       const chatsRef = collection(db, 'chats');
       const q = query(
         chatsRef,

@@ -96,22 +96,59 @@ class CryptographyService {
         return encryptedText;
       }
 
+      // Verificar se parece ser texto criptografado
+      // Mensagens criptografadas AES geralmente começam com caracteres específicos
+      if (!this.looksLikeEncryptedText(encryptedText)) {
+        console.warn('⚠️ Texto não parece estar criptografado, retornando como está');
+        return encryptedText;
+      }
+
       // Tenta descriptografar
       const decrypted = CryptoJS.AES.decrypt(encryptedText, conversationKey);
       const decryptedStr = decrypted.toString(CryptoJS.enc.Utf8);
 
-      if (!decryptedStr) {
-        console.warn('⚠️ Falha ao descriptografar mensagem');
+      if (!decryptedStr || decryptedStr.trim() === '') {
+        console.warn('⚠️ Falha ao descriptografar mensagem (chave incorreta?)');
         return '[Mensagem criptografada]';
       }
 
       // Parse do JSON
       const data = JSON.parse(decryptedStr);
-      return data.text;
+      return data.text || decryptedStr;
     } catch (error) {
-      console.error('❌ Erro ao descriptografar:', error);
+      console.error('❌ Erro ao descriptografar:', error.message);
+      // Se falhar no parse JSON, pode ser mensagem antiga sem formato JSON
+      if (error instanceof SyntaxError) {
+        console.log('📝 Tentando retornar texto descriptografado direto (sem JSON)');
+        try {
+          const decrypted = CryptoJS.AES.decrypt(encryptedText, conversationKey);
+          const decryptedStr = decrypted.toString(CryptoJS.enc.Utf8);
+          if (decryptedStr && decryptedStr.trim()) {
+            return decryptedStr;
+          }
+        } catch (e) {
+          // Ignorar erro secundário
+        }
+      }
       return '[Mensagem criptografada - erro ao descriptografar]';
     }
+  }
+
+  /**
+   * Verifica se o texto parece estar criptografado
+   */
+  looksLikeEncryptedText(text) {
+    if (!text || text.length < 10) return false;
+    
+    // Mensagens criptografadas com CryptoJS.AES geralmente:
+    // 1. Não são texto legível normal
+    // 2. Contêm caracteres especiais de base64
+    // 3. Começam com "U2FsdGVk" (base64 de "Salted__") quando têm salt
+    
+    const hasBase64Chars = /^[A-Za-z0-9+/=]+$/.test(text);
+    const startsWithSalted = text.startsWith('U2FsdGVk');
+    
+    return hasBase64Chars || startsWithSalted;
   }
 
   /**

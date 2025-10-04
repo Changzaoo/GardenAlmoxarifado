@@ -59,7 +59,7 @@ const ModalFuncionariosSetor = ({ isOpen, onClose, setor }) => {
 
       // Buscar funcionários do setor
       const funcionariosRef = collection(db, 'funcionarios');
-      const usuariosRef = collection(db, 'usuarios');
+      const usuariosRef = collection(db, 'usuario');
       
       const [funcionariosSnap, usuariosSnap] = await Promise.all([
         getDocs(funcionariosRef),
