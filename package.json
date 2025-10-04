@@ -36,11 +36,12 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "prebuild": "node scripts/generate-version.js",
     "build": "cross-env CI=false react-scripts build",
     "build:win": "set CI=false && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build:version": "node scripts/build-with-version.js",
+    "build:version": "node scripts/generate-version.js && cross-env CI=false react-scripts build",
     "vercel-build": "npm run build:version",
     "lint": "eslint src --ext .js,.jsx",
     "lint:fix": "eslint src --ext .js,.jsx --fix"

@@ -12,6 +12,7 @@ import ThemeToggle from './Theme/ThemeToggle';
 
 import UserProfileModal from './Auth/UserProfileModal';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
+import AppUpdateModal from './AppUpdateModal';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { Menu as MenuIcon, X, Scale, BarChart3 } from 'lucide-react';
 import RankingPontos from './Rankings/RankingPontos';
@@ -4202,6 +4203,7 @@ const Seed = () => {
                 <AnalyticsProvider>
                   <App />
                   <PWAUpdateAvailable />
+                  <AppUpdateModal />
                 </AnalyticsProvider>
               </MessageNotificationProvider>
             </NotificationProvider>

@@ -1,4 +1,5 @@
 const CACHE_NAME = 'garden-almoxarifado-v1';
+const VERSION_CACHE = 'version-cache-v1';
 const ASSETS = [
   '/',
   '/index.html',
@@ -12,34 +13,98 @@ let badgeCount = 0;
 
 // Instalar service worker
 self.addEventListener('install', (e) => {
-  console.log('[SW] Instalando...');
+  console.log('[SW] Instalando nova versão...');
   e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+    Promise.all([
+      // Cache dos assets principais
+      caches.open(CACHE_NAME).then(cache => {
+        return cache.addAll(ASSETS).catch(err => {
+          console.warn('[SW] Erro ao cachear alguns assets:', err);
+          return Promise.resolve();
+        });
+      }),
+      // Cache do arquivo de versão
+      caches.open(VERSION_CACHE).then(cache => {
+        return cache.add('/version.json').catch(err => {
+          console.warn('[SW] Erro ao cachear version.json:', err);
+          return Promise.resolve();
+        });
+      })
+    ]).then(() => {
+      console.log('[SW] Instalação concluída, ativando...');
+      return self.skipWaiting();
+    })
   );
 });
 
 // Ativar service worker
 self.addEventListener('activate', (e) => {
-  console.log('[SW] Ativando...');
+  console.log('[SW] Ativando nova versão...');
   e.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cache => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    Promise.all([
+      // Limpar caches antigos
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cache => {
+            if (cache !== CACHE_NAME && cache !== VERSION_CACHE) {
+              console.log('[SW] Removendo cache antigo:', cache);
+              return caches.delete(cache);
+            }
+          })
+        );
+      }),
+      // Tomar controle de todos os clientes imediatamente
+      self.clients.claim()
+    ]).then(() => {
+      console.log('[SW] Ativação concluída');
+      // Notificar todos os clientes sobre a atualização
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'SW_ACTIVATED',
+            cacheName: CACHE_NAME
+          });
+        });
+      });
+    })
   );
 });
 
-// Cache estratégico
+// Cache estratégico com Network First para version.json
 self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+  
+  // Para version.json, sempre buscar na rede primeiro
+  if (url.pathname.includes('version.json')) {
+    e.respondWith(
+      fetch(e.request, {
+        cache: 'no-store'
+      })
+        .then(response => {
+          // Atualizar cache com nova versão
+          caches.open(VERSION_CACHE).then(cache => {
+            cache.put(e.request, response.clone());
+          });
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+  
+  // Para outros recursos, Network First com fallback para cache
   e.respondWith(
     fetch(e.request)
+      .then(response => {
+        // Cachear respostas válidas
+        if (response && response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(e.request, responseToCache);
+          });
+        }
+        return response;
+      })
       .catch(() => caches.match(e.request))
   );
 });
