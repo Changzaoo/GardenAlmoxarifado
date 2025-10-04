@@ -44,6 +44,7 @@ import GerenciamentoUnificado from './EmpresasSetores/GerenciamentoUnificado';
 import { encryptPassword, verifyPassword } from '../utils/crypto';
 import LoadingScreen from './common/LoadingScreen';
 import MessagesBadge from './MessagesBadge';
+import BackupMonitoringPage from '../pages/BackupMonitoringPage';
 // Icons
 import { 
   Package,
@@ -83,7 +84,8 @@ import {
   Check,
   CheckCircle,
   RefreshCw,
-  Save
+  Save,
+  Database
 } from 'lucide-react';
 
 // Função para bloquear teclas de atalho e menu de contexto
@@ -2936,6 +2938,12 @@ const AlmoxarifadoSistema = () => {
         return isAdmin || isGerente;
       }
     },
+    { 
+      id: 'backup-monitoring', 
+      nome: 'Backup & Monitoramento', 
+      icone: Database,
+      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas administradores (nível 4)
+    },
     
   ].filter(aba => aba.permissao());  
   
@@ -3824,6 +3832,14 @@ const AlmoxarifadoSistema = () => {
             {abaAtiva === 'meu-perfil' && <ProfileTab />}
 
             {abaAtiva === 'relatorios-erro' && <ErrorReportsPage />}
+
+            {abaAtiva === 'backup-monitoring' && (
+              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
+                <BackupMonitoringPage />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para acessar o sistema de backup." />
+              )
+            )}
 
             {abaAtiva === 'meu-inventario' && (
               <MeuInventarioTab
