@@ -6,6 +6,7 @@ import LegalTab from './Legal/LegalTab';
 import SupportTab from './Support/SupportTab';
 import { Shield } from 'lucide-react';
 import { db } from '../firebaseConfig';
+import { backupDb } from '../config/firebaseDual'; // Import do Firebase Backup
 import { FuncionariosProvider, useFuncionarios } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './Theme/ThemeSystem';
 import ThemeToggle from './Theme/ThemeToggle';
@@ -811,27 +812,55 @@ const AuthProvider = ({ children }) => {
   const login = async (email, senha, lembrarLogin = false) => {
     try {
       console.log('🔐 Tentativa de login:', { email, senhaLength: senha.length });
-      console.log('📋 Total de usuários carregados:', usuarios.length);
+      console.log('�️ Buscando usuário no Firebase Backup (garden-backup)...');
       
-      // Se não houver usuários carregados, carregar usuários locais
-      if (usuarios.length === 0) {
-        console.log('⚠️ Nenhum usuário carregado, inicializando usuários locais...');
-        await initUsuariosLocais();
-        // Aguardar um pouco para os usuários serem carregados
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Buscar usuário diretamente do Firebase Backup usando o campo email
+      let usuarioEncontrado = null;
+      
+      try {
+        const usuariosRef = collection(backupDb, 'usuarios');
+        const q = query(usuariosRef, where('email', '==', email));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const userDoc = querySnapshot.docs[0];
+          usuarioEncontrado = {
+            id: userDoc.id,
+            ...userDoc.data()
+          };
+          console.log('✅ Usuário encontrado no Firebase Backup:', {
+            id: usuarioEncontrado.id,
+            email: usuarioEncontrado.email,
+            nivel: usuarioEncontrado.nivel,
+            ativo: usuarioEncontrado.ativo
+          });
+        } else {
+          console.log('❌ Nenhum usuário encontrado com o email:', email);
+        }
+      } catch (firebaseError) {
+        console.error('❌ Erro ao buscar usuário no Firebase Backup:', firebaseError);
+        // Fallback: tentar buscar nos usuários carregados em memória
+        console.log('⚠️ Tentando fallback com usuários em memória...');
+        if (usuarios.length === 0) {
+          console.log('⚠️ Nenhum usuário carregado, inicializando usuários locais...');
+          await initUsuariosLocais();
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        usuarioEncontrado = usuarios.find(u => u.email === email && u.ativo);
       }
       
-      const usuarioEncontrado = usuarios.find(u => u.email === email && u.ativo);
-
-      if (!usuarioEncontrado) {
+      // Verificar se o usuário foi encontrado e está ativo
+      if (!usuarioEncontrado || !usuarioEncontrado.ativo) {
         console.log('❌ Usuário não encontrado ou inativo');
-        console.log('Usuários disponíveis:', usuarios.map(u => ({ email: u.email, ativo: u.ativo })));
+        if (usuarios.length > 0) {
+          console.log('Usuários disponíveis:', usuarios.map(u => ({ email: u.email, ativo: u.ativo })));
+        }
         console.log('');
-        console.log('💡 CREDENCIAIS PADRÃO:');
-        console.log('   Admin: admin / admin@362*');
-        console.log('   Gerente: joao / 123456');
-        console.log('   Supervisor: maria / 123456');
-        console.log('   Funcionário: pedro / 123456');
+        console.log('💡 Para testar, crie um usuário na coleção "usuarios" do Firebase Backup com:');
+        console.log('   - Campo "email": seu email');
+        console.log('   - Campo "senha": sua senha');
+        console.log('   - Campo "ativo": true');
+        console.log('   - Campo "nivel": 1-4 (1=Funcionário, 2=Supervisor, 3=Gerente, 4=Admin)');
         return { success: false, message: 'Email ou senha incorretos' };
       }
 
@@ -916,13 +945,14 @@ const AuthProvider = ({ children }) => {
         ultimoLogin: new Date().toISOString()
       };
       
-      // Atualizar no Firebase
+      // Atualizar no Firebase Backup
       try {
-        await updateDoc(doc(db, 'usuarios', usuarioEncontrado.id), {
+        await updateDoc(doc(backupDb, 'usuarios', usuarioEncontrado.id), {
           ultimoLogin: usuarioAtualizado.ultimoLogin
         });
+        console.log('✅ Último login atualizado no Firebase Backup');
       } catch (firebaseError) {
-        console.warn('Erro ao atualizar último login no Firebase:', firebaseError);
+        console.warn('⚠️ Erro ao atualizar último login no Firebase Backup:', firebaseError);
       }
       
       // Sempre salvar dados de login para persistência em localhost
