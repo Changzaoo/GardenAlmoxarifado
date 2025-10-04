@@ -16,13 +16,79 @@ import {
   TrendingUp,
   Save,
   Play,
-  Pause
+  Pause,
+  AlertTriangle
 } from 'lucide-react';
+
+/**
+ * 🚨 Componente de Erro Amigável
+ */
+const ErrorDisplay = ({ message, details }) => {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center"
+      >
+        <div className="flex justify-center mb-6">
+          <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-400" />
+          </div>
+        </div>
+        
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+          Oops! Algo deu errado
+        </h2>
+        
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {message || 'Não foi possível carregar o sistema de backup.'}
+        </p>
+        
+        {details && (
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6 text-left">
+            <p className="text-xs font-mono text-gray-700 dark:text-gray-300 break-words">
+              {details}
+            </p>
+          </div>
+        )}
+        
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          >
+            Recarregar Página
+          </button>
+          
+          <a
+            href="/"
+            className="w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-medium transition-colors inline-block"
+          >
+            Voltar ao Início
+          </a>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 /**
  * 🎛️ Página de Monitoramento Completo do Backup
  */
-export const BackupMonitoringPage = () => {
+const BackupMonitoringPageContent = () => {
+  const rotationContext = useDatabaseRotationContext();
+  
+  // Se o contexto não existe, mostra erro amigável
+  if (!rotationContext) {
+    return (
+      <ErrorDisplay 
+        message="Sistema de backup não disponível"
+        details="O contexto de rotação de banco de dados não foi inicializado. Verifique se DatabaseRotationProvider está configurado."
+      />
+    );
+  }
+
   const {
     activeDatabase,
     lastRotation,
@@ -36,7 +102,7 @@ export const BackupMonitoringPage = () => {
     getInfo,
     hoursUntilRotation,
     autoRotate
-  } = useDatabaseRotationContext();
+  } = rotationContext;
 
   // Estados
   const [metrics, setMetrics] = useState({
@@ -783,6 +849,48 @@ export const BackupMonitoringPage = () => {
 
       </div>
     </div>
+  );
+};
+
+/**
+ * 🛡️ ErrorBoundary para capturar erros do componente
+ */
+class BackupErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('❌ Erro no BackupMonitoringPage:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <ErrorDisplay 
+          message="Erro ao carregar o sistema de backup"
+          details={this.state.error?.message}
+        />
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+/**
+ * 📦 Export principal com ErrorBoundary
+ */
+const BackupMonitoringPage = () => {
+  return (
+    <BackupErrorBoundary>
+      <BackupMonitoringPageContent />
+    </BackupErrorBoundary>
   );
 };
 

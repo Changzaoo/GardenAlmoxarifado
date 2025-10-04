@@ -45,6 +45,7 @@ import { encryptPassword, verifyPassword } from '../utils/crypto';
 import LoadingScreen from './common/LoadingScreen';
 import MessagesBadge from './MessagesBadge';
 import BackupMonitoringPage from '../pages/BackupMonitoringPage';
+import { DatabaseRotationProvider } from '../contexts/DatabaseRotationContext';
 // Icons
 import { 
   Package,
@@ -4436,19 +4437,21 @@ const Seed = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ToastProvider>
-          <FuncionariosProvider>
-            <NotificationProvider>
-              <MessageNotificationProvider>
-                <AnalyticsProvider>
-                  <App />
-                  <PWAUpdateAvailable />
-                  <AppUpdateModal />
-                </AnalyticsProvider>
-              </MessageNotificationProvider>
-            </NotificationProvider>
-          </FuncionariosProvider>
-        </ToastProvider>
+        <DatabaseRotationProvider>
+          <ToastProvider>
+            <FuncionariosProvider>
+              <NotificationProvider>
+                <MessageNotificationProvider>
+                  <AnalyticsProvider>
+                    <App />
+                    <PWAUpdateAvailable />
+                    <AppUpdateModal />
+                  </AnalyticsProvider>
+                </MessageNotificationProvider>
+              </NotificationProvider>
+            </FuncionariosProvider>
+          </ToastProvider>
+        </DatabaseRotationProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
