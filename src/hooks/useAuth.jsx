@@ -58,19 +58,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Usuário não encontrado');
     }
 
-    // Verificar se a senha está no formato antigo (string) ou novo (objeto)
-    let senhaCorreta = false;
-    
-    if (typeof usuarioEncontrado.senha === 'object' && usuarioEncontrado.senha !== null) {
-      // Formato novo: { hash, salt, version }
-      const { hash, salt, version } = usuarioEncontrado.senha;
-      senhaCorreta = verifyPassword(password, hash, salt, version);
-    } else if (typeof usuarioEncontrado.senha === 'string') {
-      // Formato antigo: apenas hash
-      // Tentar verificar com salt padrão ou sem salt
-      senhaCorreta = verifyPassword(password, usuarioEncontrado.senha, usuarioEncontrado.senhaSalt || '', 1);
-    }
-    
+    const senhaCorreta = await verifyPassword(password, usuarioEncontrado.senha);
     if (!senhaCorreta) {
       throw new Error('Senha incorreta');
     }

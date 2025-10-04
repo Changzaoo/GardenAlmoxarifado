@@ -224,69 +224,32 @@ export {
 };
 
 // Export das instâncias dinâmicas (baseadas no database ativo)
-// Com fallback seguro para evitar erros de inicialização
 export const db = new Proxy({}, {
   get: (target, prop) => {
-    try {
-      const activeDb = dbManager.getActiveDb();
-      if (!activeDb) {
-        console.warn('⚠️ Database Manager não inicializado, usando primaryDb como fallback');
-        return primaryDb[prop];
-      }
-      return activeDb[prop];
-    } catch (error) {
-      console.error('❌ Erro ao acessar database ativo, usando primaryDb:', error);
-      return primaryDb[prop];
-    }
+    const activeDb = dbManager.getActiveDb();
+    return activeDb[prop];
   }
 });
 
 export const auth = new Proxy({}, {
   get: (target, prop) => {
-    try {
-      const activeAuth = dbManager.getActiveAuth();
-      if (!activeAuth) {
-        console.warn('⚠️ Auth Manager não inicializado, usando primaryAuth como fallback');
-        return primaryAuth[prop];
-      }
-      return activeAuth[prop];
-    } catch (error) {
-      console.error('❌ Erro ao acessar auth ativo, usando primaryAuth:', error);
-      return primaryAuth[prop];
-    }
+    const activeAuth = dbManager.getActiveAuth();
+    return activeAuth[prop];
   }
 });
 
 export const storage = new Proxy({}, {
   get: (target, prop) => {
-    try {
-      const activeStorage = dbManager.getActiveStorage();
-      if (!activeStorage) {
-        console.warn('⚠️ Storage Manager não inicializado, usando primaryStorage como fallback');
-        return primaryStorage[prop];
-      }
-      return activeStorage[prop];
-    } catch (error) {
-      console.error('❌ Erro ao acessar storage ativo, usando primaryStorage:', error);
-      return primaryStorage[prop];
-    }
+    const activeStorage = dbManager.getActiveStorage();
+    return activeStorage[prop];
   }
 });
 
 // Export do app ativo
 export const app = new Proxy({}, {
   get: (target, prop) => {
-    try {
-      const activeApp = dbManager.activeDatabase === 'primary' ? primaryApp : backupApp;
-      if (!activeApp) {
-        console.warn('⚠️ App Manager não inicializado, usando primaryApp como fallback');
-        return primaryApp[prop];
-      }
-      return activeApp[prop];
-    } catch (error) {
-      console.error('❌ Erro ao acessar app ativo, usando primaryApp:', error);
-      return primaryApp[prop];
-    }
+    const activeApp = dbManager.activeDatabase === 'primary' ? primaryApp : backupApp;
+    return activeApp[prop];
   }
 });
 

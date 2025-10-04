@@ -46,6 +46,7 @@ import LoadingScreen from './common/LoadingScreen';
 import MessagesBadge from './MessagesBadge';
 import BackupMonitoringPage from '../pages/BackupMonitoringPage';
 import { DatabaseRotationProvider } from '../contexts/DatabaseRotationContext';
+import '../utils/passwordDebug'; // Carrega utilitário de debug de senhas
 // Icons
 import { 
   Package,

@@ -40,13 +40,13 @@ export const SECURITY_CONFIG = {
 
   // Proteções contra DevTools
   devTools: {
-    enabled: false, // ⚠️ DESABILITADO TEMPORARIAMENTE - Estava causando tela branca
-    preventInspect: false, // Impede a inspeção de elementos
-    preventConsole: false, // Bloqueia acesso ao console
+    enabled: true, // Ativa/desativa todas as proteções contra DevTools
+    preventInspect: true, // Impede a inspeção de elementos
+    preventConsole: true, // Bloqueia acesso ao console
     preventSourceMap: true, // Remove source maps em produção
-    clearDataOnDetection: false, // Limpa dados locais quando DevTools é detectado
-    checkInterval: 5000, // Intervalo de verificação em milissegundos (aumentado)
-    sizeThreshold: 500, // Diferença máxima permitida entre outer e inner size (aumentado)
+    clearDataOnDetection: true, // Limpa dados locais quando DevTools é detectado
+    checkInterval: 1000, // Intervalo de verificação em milissegundos
+    sizeThreshold: 160, // Diferença máxima permitida entre outer e inner size
   },
 
   // Ofuscação de código
