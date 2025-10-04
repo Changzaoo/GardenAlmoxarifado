@@ -23,8 +23,7 @@ export const MENU_CONFIG_PADRAO = [
   { id: 'ponto', ordem: 10, visivel: false },
   { id: 'ranking', ordem: 11, visivel: false },
   { id: 'bluetooth', ordem: 12, visivel: false },
-  { id: 'feed', ordem: 13, visivel: false },
-  { id: 'admin', ordem: 14, visivel: false },
+  { id: 'admin', ordem: 13, visivel: false },
 ];
 
 /**
@@ -139,7 +138,7 @@ export const atualizarMenuPorNivel = (nivel, menuAtual = null) => {
   const menuVisibilidadePorNivel = {
     [NIVEIS_PERMISSAO.FUNCIONARIO]: ['notificacoes', 'mensagens', 'tarefas'],
     [NIVEIS_PERMISSAO.SUPERVISOR]: ['notificacoes', 'mensagens', 'tarefas', 'escala', 'ponto', 'ranking'],
-    [NIVEIS_PERMISSAO.GERENTE]: ['notificacoes', 'mensagens', 'tarefas', 'escala', 'inventario', 'emprestimos', 'funcionarios', 'ponto', 'ranking', 'feed'],
+    [NIVEIS_PERMISSAO.GERENTE]: ['notificacoes', 'mensagens', 'tarefas', 'escala', 'inventario', 'emprestimos', 'funcionarios', 'ponto', 'ranking'],
     [NIVEIS_PERMISSAO.ADMIN]: 'todos' // Admin vê tudo
   };
   
