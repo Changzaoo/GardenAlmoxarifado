@@ -1,6 +1,10 @@
 {
   "version": "1.0.0",
-  "buildDate": "2025-01-20T00:00:00.000Z",
-  "buildNumber": 1,
-  "environment": "production"
+  "buildDate": "2025-10-04T17:29:38.310Z",
+  "buildNumber": 1759598978312,
+  "buildId": "build-1759598978312",
+  "gitCommit": "b9de574c",
+  "gitBranch": "main",
+  "environment": "production",
+  "timestamp": 1759598978312
 }

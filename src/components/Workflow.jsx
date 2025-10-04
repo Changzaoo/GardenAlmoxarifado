@@ -45,6 +45,7 @@ import { encryptPassword, verifyPassword } from '../utils/crypto';
 import LoadingScreen from './common/LoadingScreen';
 import MessagesBadge from './MessagesBadge';
 import BackupMonitoringPage from '../pages/BackupMonitoringPage';
+import DatabaseManagementPage from '../pages/DatabaseManagementPage';
 import { DatabaseRotationProvider } from '../contexts/DatabaseRotationContext';
 import '../utils/passwordDebug'; // Carrega utilitário de debug de senhas
 // Icons
@@ -2946,6 +2947,12 @@ const AlmoxarifadoSistema = () => {
       icone: Database,
       permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas administradores (nível 4)
     },
+    { 
+      id: 'database-management', 
+      nome: 'Gerenciar Bancos de Dados', 
+      icone: Settings,
+      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas administradores (nível 4)
+    },
     
   ].filter(aba => aba.permissao());  
   
@@ -3840,6 +3847,14 @@ const AlmoxarifadoSistema = () => {
                 <BackupMonitoringPage />
               ) : (
                 <PermissionDenied message="Você não tem permissão para acessar o sistema de backup." />
+              )
+            )}
+
+            {abaAtiva === 'database-management' && (
+              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
+                <DatabaseManagementPage />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para gerenciar bancos de dados." />
               )
             )}
 
