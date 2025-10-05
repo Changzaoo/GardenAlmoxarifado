@@ -601,31 +601,6 @@ const UsuariosTab = () => {
                                 </button>
                               </div>
                             </div>
-                            
-                            {/* Informações do Banco de Dados */}
-                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/30 rounded-lg p-2">
-                              <div className="flex flex-col gap-1 text-xs">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-blue-700 dark:text-blue-400">📊 Banco:</span>
-                                  <span className={`font-mono ${colors.text}`}>garden-c0b50</span>
-                                  <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-bold">
-                                    PRINCIPAL
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-blue-700 dark:text-blue-400">📁 Coleção:</span>
-                                  <span className={`font-mono ${colors.text}`}>usuarios</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-blue-700 dark:text-blue-400">🔑 Campo:</span>
-                                  <span className={`font-mono ${colors.text}`}>senha</span>
-                                </div>
-                                <div className="flex items-center gap-2 mt-1 pt-1 border-t border-blue-200 dark:border-blue-700/30">
-                                  <span className="font-semibold text-blue-700 dark:text-blue-400">🔄 Login tenta:</span>
-                                  <span className={`font-mono text-[10px] ${colors.text}`}>1º workflowbr1, 2º garden-c0b50</span>
-                                </div>
-                              </div>
-                            </div>
                           </div>
                         )}
 
