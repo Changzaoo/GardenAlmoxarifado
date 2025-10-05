@@ -3,6 +3,7 @@ import { db } from '../../firebaseConfig';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, serverTimestamp } from 'firebase/firestore';
 import { Building2, Briefcase, Plus, Edit2, Trash2, Save, X, Users, Clock } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { isAdmin as checkIsAdmin, hasManagementPermission } from '../../constants/permissoes';
 
 const GerenciamentoUnificado = ({ usuarioAtual }) => {
   const [abaAtiva, setAbaAtiva] = useState('empresas');
@@ -44,9 +45,9 @@ const GerenciamentoUnificado = ({ usuarioAtual }) => {
     ativo: true
   });
 
-  // Verificar permissões
-  const isAdmin = usuarioAtual?.nivel === 4;
-  const isGerente = usuarioAtual?.nivel === 3 || 
+  // Verificar permissões usando o sistema correto
+  const isAdmin = checkIsAdmin(usuarioAtual?.nivel) || hasManagementPermission(usuarioAtual?.nivel);
+  const isGerente = hasManagementPermission(usuarioAtual?.nivel) || 
                     usuarioAtual?.cargo?.toLowerCase().includes('gerente') ||
                     usuarioAtual?.cargo?.toLowerCase().includes('supervisor') ||
                     usuarioAtual?.cargo?.toLowerCase().includes('encarregado');

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { NIVEIS_PERMISSAO, NIVEIS_LABELS, PermissionChecker } from '../../constants/permissoes';
+import { NIVEIS_PERMISSAO, NIVEIS_LABELS, PermissionChecker, isAdmin } from '../../constants/permissoes';
 import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
+import NivelPermissaoSelector from './NivelPermissaoSelector';
 import { 
   UserCog,
   Plus, 
@@ -17,7 +18,19 @@ import {
   AlertTriangle,
   User,
   Building2,
-  Briefcase
+  Briefcase,
+  Search,
+  Mail,
+  Lock,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Star,
+  Award,
+  Target,
+  Zap,
+  TrendingUp,
+  Phone
 } from 'lucide-react';
 
 const { classes, colors } = twitterThemeConfig;
@@ -43,6 +56,8 @@ const UsuariosTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [empresas, setEmpresas] = useState([]);
   const [setores, setSetores] = useState([]);
+  const [funcionarios, setFuncionarios] = useState([]);
+  const [usuariosStats, setUsuariosStats] = useState({});
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -55,24 +70,79 @@ const UsuariosTab = () => {
     semEmpresaSetor: false
   });
 
-  // Carregar empresas e setores
+  // Carregar empresas, setores, funcionários e estatísticas
   useEffect(() => {
     const carregarDados = async () => {
       try {
-        const [empresasSnapshot, setoresSnapshot] = await Promise.all([
+        const [empresasSnapshot, setoresSnapshot, funcionariosSnapshot] = await Promise.all([
           getDocs(collection(db, 'empresas')),
-          getDocs(collection(db, 'setores'))
+          getDocs(collection(db, 'setores')),
+          getDocs(collection(db, 'funcionarios'))
         ]);
 
         setEmpresas(empresasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         setSetores(setoresSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setFuncionarios(funcionariosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
-        console.error('Erro ao carregar empresas e setores:', error);
+        console.error('Erro ao carregar dados:', error);
       }
     };
 
     carregarDados();
   }, []);
+
+  // Carregar estatísticas de avaliações para cada usuário
+  useEffect(() => {
+    const carregarEstatisticas = async () => {
+      if (!usuarios.length || !funcionarios.length) return;
+
+      const stats = {};
+
+      for (const usuario of usuarios) {
+        // Buscar funcionário correspondente pelo email ou nome
+        const funcionario = funcionarios.find(
+          f => f.email?.toLowerCase() === usuario.email?.toLowerCase() || 
+               f.nome?.toLowerCase() === usuario.nome?.toLowerCase()
+        );
+
+        if (funcionario) {
+          try {
+            // Buscar avaliações do funcionário
+            const avaliacoesQuery = query(
+              collection(db, 'avaliacoes'),
+              where('funcionarioId', '==', funcionario.id)
+            );
+            const avaliacoesSnapshot = await getDocs(avaliacoesQuery);
+            
+            const avaliacoes = avaliacoesSnapshot.docs.map(doc => ({
+              ...doc.data(),
+              nota: Number(doc.data().estrelas || doc.data().nota || 0)
+            }));
+
+            const mediaAvaliacao = avaliacoes.length > 0
+              ? avaliacoes.reduce((sum, av) => sum + av.nota, 0) / avaliacoes.length
+              : 0;
+
+            stats[usuario.id] = {
+              funcionarioId: funcionario.id,
+              photoURL: funcionario.photoURL,
+              telefone: funcionario.telefone,
+              cargo: funcionario.cargo,
+              avaliacoes: avaliacoes,
+              totalAvaliacoes: avaliacoes.length,
+              mediaAvaliacao: mediaAvaliacao
+            };
+          } catch (error) {
+            console.error(`Erro ao carregar estatísticas do usuário ${usuario.email}:`, error);
+          }
+        }
+      }
+
+      setUsuariosStats(stats);
+    };
+
+    carregarEstatisticas();
+  }, [usuarios, funcionarios]);
 
   // Check if context is properly loaded
   if (!usuarioLogado) {
@@ -85,6 +155,28 @@ const UsuariosTab = () => {
   }
 
   const isFuncionario = usuarioLogado?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO;
+
+  // Definir níveis disponíveis baseado nas permissões do usuário logado
+  const getNiveisDisponiveis = () => {
+    const niveis = [];
+    
+    // Apenas administradores (nível 0) podem criar/editar outros usuários
+    if (usuarioLogado?.nivel === NIVEIS_PERMISSAO.ADMIN) {
+      // Admin pode criar todos os tipos
+      Object.entries(NIVEIS_PERMISSAO).forEach(([key, value]) => {
+        niveis.push({
+          valor: value,
+          label: NIVEIS_LABELS[value],
+          key: key
+        });
+      });
+    }
+    
+    // Ordenar por valor (0, 1, 2, 3, 4, 5, 6)
+    return niveis.sort((a, b) => a.valor - b.valor);
+  };
+
+  const niveisDisponiveis = getNiveisDisponiveis();
 
   // Resetar formulário
   const resetarForm = () => {
@@ -219,6 +311,14 @@ const UsuariosTab = () => {
       // Incluir senha apenas se foi fornecida
       if (formData.senha) {
         dadosParaSalvar.senha = formData.senha;
+        
+        // 🔑 ATUALIZAR AUTHKEY PARA NOVO SISTEMA DE AUTENTICAÇÃO
+        // Se for administrador (nível 0), usa authKey "admin2024"
+        // Se for outro usuário, usa authKey "workflow2024"
+        dadosParaSalvar.authKey = dadosParaSalvar.nivel === NIVEIS_PERMISSAO.ADMIN ? 'admin2024' : 'workflow2024';
+        dadosParaSalvar.authKeyUpdatedAt = new Date();
+        
+        console.log('🔑 Campo authKey definido junto com a senha:', dadosParaSalvar.authKey);
       }
 
       let resultado;
@@ -274,32 +374,13 @@ const UsuariosTab = () => {
     }
   };
 
-  // Obter níveis disponíveis para criação
-  const getNiveisDisponiveis = () => {
-    const niveis = [];
-    
-    if (usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN) {
-      // Admin pode criar todos os tipos
-      niveis.push(
-        { valor: NIVEIS_PERMISSAO.FUNCIONARIO, label: NIVEIS_LABELS[NIVEIS_PERMISSAO.FUNCIONARIO] },
-        { valor: NIVEIS_PERMISSAO.SUPERVISOR, label: NIVEIS_LABELS[NIVEIS_PERMISSAO.SUPERVISOR] },
-        { valor: NIVEIS_PERMISSAO.GERENTE, label: NIVEIS_LABELS[NIVEIS_PERMISSAO.GERENTE] },
-        { valor: NIVEIS_PERMISSAO.ADMIN, label: NIVEIS_LABELS[NIVEIS_PERMISSAO.ADMIN] }
-      );
-    }
-    
-    return niveis;
-  };
-
-  const niveisDisponiveis = getNiveisDisponiveis();
-
   // Filtrar usuários visíveis e ordenar alfabeticamente
   const usuariosVisiveis = usuarios
     .filter(usuario => {
       // Primeiro aplicar filtro de permissões
       const temPermissao = usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN ? true :
-        usuarioLogado.nivel === NIVEIS_PERMISSAO.GERENTE ? 
-          (usuario.nivel < NIVEIS_PERMISSAO.GERENTE || usuario.id === usuarioLogado.id) :
+        usuarioLogado.nivel <= NIVEIS_PERMISSAO.GERENTE_SETOR ? 
+          (usuario.nivel > NIVEIS_PERMISSAO.GERENTE_SETOR || usuario.id === usuarioLogado.id) :
           usuario.id === usuarioLogado.id;
 
       // Depois aplicar filtro de busca
@@ -349,12 +430,13 @@ const UsuariosTab = () => {
           
           {/* Campo de busca aprimorado */}
           <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="🔍 Buscar por nome, email, empresa, setor ou função..."
+              placeholder="Buscar por nome, email, empresa, setor ou função..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full px-5 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent transition-all shadow-sm`}
+              className={`w-full pl-12 pr-12 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent transition-all shadow-sm`}
             />
             {searchTerm && (
               <button
@@ -389,340 +471,251 @@ const UsuariosTab = () => {
         )}
       </div>
 
-      {/* Lista de Usuários - Desktop (Tabela) */}
-      <div className={`hidden md:block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden`}>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750">
-              <tr>
-                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
-                  👤 Usuário
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
-                  🏢 Empresa / Setor
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
-                  💼 Função
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
-                  🔐 Nível de Acesso
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
-                  ⚡ Status
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
-                  🕐 Último Login
-                </th>
-                <th className={`px-6 py-4 text-left text-xs font-bold ${colors.text} uppercase tracking-wider`}>
-                  ⚙️ Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-              {usuariosVisiveis.map((usuario, index) => (
-                <tr key={usuario.id} className={`transition-all hover:bg-blue-50 dark:hover:bg-gray-700/50 ${index % 2 === 0 ? 'bg-gray-50/30 dark:bg-gray-800/50' : ''}`}>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
+      {/* Grid de Cards de Usuários */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {usuariosVisiveis.length === 0 ? (
+          <div className="col-span-full">
+            <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-12`}>
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                  <User className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                </div>
+                <div className="text-center">
+                  <p className={`text-lg font-medium ${colors.text}`}>Nenhum usuário encontrado</p>
+                  <p className={`text-sm ${colors.textSecondary} mt-1`}>
+                    {searchTerm ? 'Tente ajustar os termos de busca' : 'Adicione usuários para começar'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          usuariosVisiveis.map((usuario) => {
+            const stats = usuariosStats[usuario.id] || {};
+            const mediaAvaliacao = Number(stats.mediaAvaliacao) || 0;
+            const totalAvaliacoes = stats.totalAvaliacoes || 0;
+
+            return (
+              <div
+                key={usuario.id}
+                className="group relative overflow-hidden bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 rounded-2xl border border-white/20 dark:border-gray-700/50 hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/25 dark:hover:shadow-blue-500/10"
+              >
+                {/* Background decorativo */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white/50 to-purple-50/50 dark:from-blue-900/10 dark:via-gray-800/50 dark:to-purple-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                
+                {/* Barra lateral com gradiente */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl ${
+                  !usuario.ativo 
+                    ? 'bg-gradient-to-b from-red-400 to-red-600' 
+                    : usuario.nivel === NIVEIS_PERMISSAO.ADMIN
+                    ? 'bg-gradient-to-b from-red-500 to-red-700'
+                    : 'bg-gradient-to-b from-blue-400 via-purple-500 to-blue-600'
+                } shadow-lg`}>
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent rounded-l-2xl" />
+                </div>
+
+                <div className="relative pl-6 pr-5 py-6">
+                  {/* Header Section */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      {/* Avatar com foto do funcionário */}
                       <div className="relative flex-shrink-0">
-                        <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-white shadow-md ${
-                          usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-br from-red-500 to-red-600' :
-                          usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
-                          usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-br from-green-500 to-green-600' :
-                          'bg-gradient-to-br from-yellow-500 to-yellow-600'
+                        <div className={`h-16 w-16 rounded-2xl flex items-center justify-center font-bold text-white shadow-lg overflow-hidden ${
+                          usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-br from-red-500 to-red-700' :
+                          usuario.nivel === NIVEIS_PERMISSAO.GERENTE_GERAL ? 'bg-gradient-to-br from-blue-500 to-blue-700' :
+                          usuario.nivel === NIVEIS_PERMISSAO.GERENTE_SETOR ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
+                          usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-br from-green-500 to-green-700' :
+                          'bg-gradient-to-br from-yellow-500 to-yellow-700'
                         }`}>
-                          {usuario.nome.charAt(0).toUpperCase()}
+                          {stats.photoURL ? (
+                            <img 
+                              src={stats.photoURL} 
+                              alt={usuario.nome}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-2xl">{usuario.nome.charAt(0).toUpperCase()}</span>
+                          )}
                         </div>
+                        
+                        {/* Badge de segurança SHA-512 */}
                         {usuario.senhaVersion === 2 && (
-                          <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
-                            <Shield className="w-3 h-3 text-white" />
+                          <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 shadow-lg">
+                            <Shield className="w-3.5 h-3.5 text-white" />
                           </div>
                         )}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className={`text-sm font-semibold ${colors.text} truncate`}>
+
+                      {/* Info do Usuário */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className={`text-lg font-bold ${colors.text} truncate`}>
                             {usuario.nome}
-                          </p>
+                          </h3>
                           {usuario.id === usuarioLogado.id && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
                               Você
                             </span>
                           )}
                         </div>
-                        <p className={`text-sm ${colors.textSecondary} truncate`}>{usuario.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="space-y-1">
-                      <div className={`text-sm font-medium ${colors.text}`}>
-                        {usuario.empresaNome || <span className="text-gray-400 dark:text-gray-500 italic text-xs">Não atribuída</span>}
-                      </div>
-                      <div className={`text-xs ${colors.textSecondary} flex items-center gap-1`}>
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-[#1D9BF0]"></div>
-                        {usuario.setorNome || <span className="text-gray-400 dark:text-gray-500 italic">Não atribuído</span>}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className={`text-sm font-medium ${colors.text}`}>
-                      {usuario.cargo || <span className="text-gray-400 dark:text-gray-500 italic text-xs">Não definida</span>}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
-                        usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' :
-                        usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
-                        usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' :
-                        'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white'
-                      }`}>
-                        <Shield className="w-3.5 h-3.5" />
-                        {NIVEIS_LABELS[usuario.nivel]}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
-                      usuario.ativo 
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' 
-                        : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-                    }`}>
-                      {usuario.ativo ? '✓ Ativo' : '✗ Inativo'}
-                    </span>
-                  </td>
-                  <td className={`px-6 py-4 text-sm ${colors.textSecondary}`}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">
-                        {usuario.ultimoLogin ? 
-                          new Date(usuario.ultimoLogin).toLocaleDateString('pt-BR') : 
-                          'Nunca acessou'
-                        }
-                      </span>
-                      {usuario.ultimoLogin && (
-                        <span className="text-xs">
-                          {new Date(usuario.ultimoLogin).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      {PermissionChecker.canEditUser(usuarioLogado.nivel, usuarioLogado.id, usuario.id, usuario.nivel) && (
-                        <button
-                          onClick={() => abrirModalEditar(usuario)}
-                          className="p-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 rounded-lg transition-all transform hover:scale-110"
-                          title="Editar usuário"
-                        >
-                          <Edit className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        </button>
-                      )}
-                      {usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN &&
-                        usuario.email !== 'admin' && usuario.id !== usuarioLogado.id && (
-                        <button
-                          onClick={() => confirmarRemocao(usuario)}
-                          className="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 rounded-lg transition-all transform hover:scale-110"
-                          title="Remover usuário"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              
-              {usuariosVisiveis.length === 0 && (
-                <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                        <User className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-                      </div>
-                      <div>
-                        <p className={`text-lg font-medium ${colors.text}`}>Nenhum usuário encontrado</p>
-                        <p className={`text-sm ${colors.textSecondary} mt-1`}>
-                          {searchTerm ? 'Tente ajustar os termos de busca' : 'Adicione usuários para começar'}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Lista de Usuários - Mobile (Cards) */}
-      <div className="md:hidden space-y-4">
-        {usuariosVisiveis.length === 0 ? (
-          <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-8`}>
-            <div className="flex flex-col items-center justify-center space-y-3">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-gray-400 dark:text-gray-500" />
-              </div>
-              <div className="text-center">
-                <p className={`text-lg font-medium ${colors.text}`}>Nenhum usuário encontrado</p>
-                <p className={`text-sm ${colors.textSecondary} mt-1`}>
-                  {searchTerm ? 'Tente ajustar os termos de busca' : 'Adicione usuários para começar'}
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          usuariosVisiveis.map((usuario) => (
-            <div
-              key={usuario.id}
-              className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden`}
-            >
-              {/* Header do Card */}
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750 p-4 border-b border-gray-200 dark:border-gray-600">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex-shrink-0">
-                      <div className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-white shadow-md ${
-                        usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-br from-red-500 to-red-600' :
-                        usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
-                        usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-br from-green-500 to-green-600' :
-                        'bg-gradient-to-br from-yellow-500 to-yellow-600'
-                      }`}>
-                        {usuario.nome.charAt(0).toUpperCase()}
-                      </div>
-                      {usuario.senhaVersion === 2 && (
-                        <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
-                          <Shield className="w-3 h-3 text-white" />
+                        
+                        <div className="flex items-center gap-2 mb-2">
+                          <Mail className="w-3.5 h-3.5 text-gray-400" />
+                          <p className={`text-sm ${colors.textSecondary} truncate`}>{usuario.email}</p>
                         </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-base font-bold ${colors.text}`}>
-                          {usuario.nome}
-                        </p>
-                        {usuario.id === usuarioLogado.id && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                            Você
-                          </span>
-                        )}
+
+                        {/* Badge de Nível */}
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full shadow-sm ${
+                          usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' :
+                          usuario.nivel === NIVEIS_PERMISSAO.GERENTE_GERAL ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
+                          usuario.nivel === NIVEIS_PERMISSAO.GERENTE_SETOR ? 'bg-gradient-to-r from-blue-400 to-blue-500 text-white' :
+                          usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' :
+                          'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white'
+                        }`}>
+                          <Shield className="w-3 h-3" />
+                          {NIVEIS_LABELS[usuario.nivel]}
+                        </span>
                       </div>
-                      <p className={`text-sm ${colors.textSecondary}`}>{usuario.email}</p>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Corpo do Card */}
-              <div className="p-4 space-y-3">
-                {/* Empresa e Setor */}
-                <div className="flex items-start gap-2">
-                  <Building2 className="w-5 h-5 text-blue-500 dark:text-[#1D9BF0] flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs ${colors.textSecondary} font-medium`}>Empresa / Setor</p>
-                    <p className={`text-sm font-medium ${colors.text}`}>
-                      {usuario.empresaNome || <span className="text-gray-400 dark:text-gray-500 italic text-xs">Não atribuída</span>}
-                    </p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-[#1D9BF0]"></div>
-                      <p className={`text-xs ${colors.textSecondary}`}>
-                        {usuario.setorNome || <span className="text-gray-400 dark:text-gray-500 italic">Não atribuído</span>}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Função */}
-                <div className="flex items-start gap-2">
-                  <Briefcase className="w-5 h-5 text-purple-500 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs ${colors.textSecondary} font-medium`}>Função</p>
-                    <p className={`text-sm font-medium ${colors.text}`}>
-                      {usuario.cargo || <span className="text-gray-400 dark:text-gray-500 italic text-xs">Não definida</span>}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Badges: Nível e Status */}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <div className="flex-1">
-                    <p className={`text-xs ${colors.textSecondary} font-medium mb-1`}>Nível de Acesso</p>
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
-                      usuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' :
-                      usuario.nivel === NIVEIS_PERMISSAO.GERENTE ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
-                      usuario.nivel === NIVEIS_PERMISSAO.SUPERVISOR ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' :
-                      'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white'
-                    }`}>
-                      <Shield className="w-3.5 h-3.5" />
-                      {NIVEIS_LABELS[usuario.nivel]}
-                    </span>
-                  </div>
-
-                  <div className="flex-1">
-                    <p className={`text-xs ${colors.textSecondary} font-medium mb-1`}>Status</p>
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full shadow-sm ${
+                    {/* Status Badge */}
+                    <span className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full shadow-sm ${
                       usuario.ativo 
                         ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' 
                         : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
                     }`}>
-                      {usuario.ativo ? '✓ Ativo' : '✗ Inativo'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Último Login */}
-                <div className="flex items-start gap-2 pt-2 border-t border-gray-200 dark:border-gray-600">
-                  <svg className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs ${colors.textSecondary} font-medium`}>Último Login</p>
-                    <p className={`text-sm font-medium ${colors.text}`}>
-                      {usuario.ultimoLogin ? (
+                      {usuario.ativo ? (
                         <>
-                          {new Date(usuario.ultimoLogin).toLocaleDateString('pt-BR')}
-                          <span className={`text-xs ${colors.textSecondary} ml-1`}>
-                            às {new Date(usuario.ultimoLogin).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          <CheckCircle className="w-3 h-3" />
+                          Ativo
                         </>
                       ) : (
-                        <span className="text-gray-400 dark:text-gray-500 italic text-xs">Nunca acessou</span>
+                        <>
+                          <XCircle className="w-3 h-3" />
+                          Inativo
+                        </>
                       )}
-                    </p>
+                    </span>
                   </div>
-                </div>
-              </div>
 
-              {/* Footer do Card - Ações */}
-              {(PermissionChecker.canEditUser(usuarioLogado.nivel, usuarioLogado.id, usuario.id, usuario.nivel) ||
-                (usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN && usuario.email !== 'admin' && usuario.id !== usuarioLogado.id)) && (
-                <div className="bg-gray-50 dark:bg-gray-750 p-3 border-t border-gray-200 dark:border-gray-600">
-                  <div className="flex gap-2 justify-end">
+                  {/* Informações Complementares */}
+                  <div className="space-y-3 mb-4">
+                    {/* Empresa e Setor */}
+                    {(usuario.empresaNome || usuario.setorNome) && (
+                      <div className="flex items-start gap-2">
+                        <Building2 className="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${colors.text} truncate`}>
+                            {usuario.empresaNome || <span className="text-gray-400 italic">Sem empresa</span>}
+                          </p>
+                          {usuario.setorNome && (
+                            <p className={`text-xs ${colors.textSecondary} truncate`}>
+                              {usuario.setorNome}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cargo do Funcionário */}
+                    {(stats.cargo || usuario.cargo) && (
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+                        <p className={`text-sm ${colors.text}`}>
+                          {stats.cargo || usuario.cargo}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Telefone */}
+                    {stats.telefone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-green-500 dark:text-green-400" />
+                        <p className={`text-sm ${colors.text}`}>
+                          {stats.telefone}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Avaliações */}
+                    {totalAvaliacoes > 0 && (
+                      <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200/50 dark:border-yellow-700/30">
+                        <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-lg font-bold ${colors.text}`}>
+                              {mediaAvaliacao.toFixed(1)}
+                            </span>
+                            <div className="flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-3.5 h-3.5 ${
+                                    star <= Math.round(mediaAvaliacao)
+                                      ? 'text-yellow-500 fill-yellow-500'
+                                      : 'text-gray-300 dark:text-gray-600'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className={`text-xs ${colors.textSecondary}`}>
+                            {totalAvaliacoes} avaliação{totalAvaliacoes !== 1 ? 'ões' : ''}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Último Login */}
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span className={colors.textSecondary}>
+                        {usuario.ultimoLogin ? (
+                          <>
+                            Último acesso: {new Date(usuario.ultimoLogin).toLocaleDateString('pt-BR')}
+                          </>
+                        ) : (
+                          <span className="italic">Nunca acessou</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Ações */}
+                  <div className="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
                     {PermissionChecker.canEditUser(usuarioLogado.nivel, usuarioLogado.id, usuario.id, usuario.nivel) && (
                       <button
-                        onClick={() => abrirModalEditar(usuario)}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          abrirModalEditar(usuario);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm text-sm font-medium"
                       >
                         <Edit className="w-4 h-4" />
-                        <span className="text-sm font-medium">Editar</span>
+                        Editar
                       </button>
                     )}
                     {usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN &&
                       usuario.email !== 'admin' && usuario.id !== usuarioLogado.id && (
                       <button
-                        onClick={() => confirmarRemocao(usuario)}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg transition-all shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          confirmarRemocao(usuario);
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg transition-all shadow-sm text-sm font-medium"
                       >
                         <Trash2 className="w-4 h-4" />
-                        <span className="text-sm font-medium">Remover</span>
+                        Remover
                       </button>
                     )}
                   </div>
                 </div>
-              )}
-            </div>
-          ))
+              </div>
+            );
+          })
         )}
       </div>
+
 
       {/* Modal de Usuário */}
       {mostrarModal && (
@@ -745,35 +738,38 @@ const UsuariosTab = () => {
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
               <div className="space-y-3 md:space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
+                  <label className={`flex items-center gap-2 text-sm font-medium ${colors.text} mb-2`}>
+                    <User className="w-4 h-4" />
                     Nome Completo *
                   </label>
                   <input
                     type="text"
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                    className={`w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                     placeholder="Digite o nome completo"
                     disabled={carregando}
                   />
                 </div>
 
                 <div>
-                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
+                  <label className={`flex items-center gap-2 text-sm font-medium ${colors.text} mb-2`}>
+                    <Mail className="w-4 h-4" />
                     Email/Usuário *
                   </label>
                   <input
                     type="text"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                    className={`w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                     placeholder="Digite o email ou nome de usuário"
                     disabled={carregando}
                   />
                 </div>
 
                 <div>
-                  <label className={`block text-sm font-medium ${colors.text} mb-2`}>
+                  <label className={`flex items-center gap-2 text-sm font-medium ${colors.text} mb-2`}>
+                    <Lock className="w-4 h-4" />
                     Senha {usuarioEditando ? '(deixe vazio para manter a atual)' : '*'}
                   </label>
                   <div className="relative">
@@ -781,7 +777,7 @@ const UsuariosTab = () => {
                       type={mostrarSenha ? 'text' : 'password'}
                       value={formData.senha}
                       onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-                      className={`w-full px-3 py-2 pr-10 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                      className={`w-full px-4 py-2 pr-10 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
                       placeholder={usuarioEditando ? "Nova senha" : "Digite a senha"}
                       disabled={carregando}
                     />
@@ -803,24 +799,13 @@ const UsuariosTab = () => {
                   <label className={`block text-sm font-medium ${colors.text} mb-2`}>
                     Nível de Acesso *
                   </label>
-                  <select
-                    value={formData.nivel}
-                    onChange={(e) => setFormData({ ...formData, nivel: parseInt(e.target.value) })}
-                    className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
+                  <NivelPermissaoSelector
+                    nivelAtual={formData.nivel}
+                    onChange={(nivel) => setFormData({ ...formData, nivel })}
                     disabled={carregando}
-                  >
-                    {niveisDisponiveis.map(nivel => (
-                      <option key={nivel.valor} value={nivel.valor}>
-                        {nivel.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className={`text-xs ${colors.textSecondary} mt-1`}>
-                    {formData.nivel === NIVEIS_PERMISSAO.FUNCIONARIO && "Apenas visualizar informações"}
-                    {formData.nivel === NIVEIS_PERMISSAO.SUPERVISOR && "Criar funcionários + operações"}
-                    {formData.nivel === NIVEIS_PERMISSAO.GERENTE && "Gerenciar funcionários e usuários"}
-                    {formData.nivel === NIVEIS_PERMISSAO.ADMIN && "Todas as permissões"}
-                  </p>
+                    usuarioPermissoes={usuarioLogado}
+                    podeAlterarAdmins={isAdmin(usuarioLogado.nivel)}
+                  />
                 </div>
 
                 {/* Checkbox para registrar sem empresa/setor */}

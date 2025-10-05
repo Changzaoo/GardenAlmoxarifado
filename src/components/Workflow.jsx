@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback, useMemo } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs, getDoc, query, where } from 'firebase/firestore';
 import { useDevToolsProtection } from '../hooks/useDevToolsProtection';
 import { ToastProvider } from './ToastProvider';
@@ -7,9 +7,23 @@ import SupportTab from './Support/SupportTab';
 import { Shield } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { backupDb } from '../config/firebaseDual'; // Import do Firebase Backup
+import { dbWorkflowBR1 } from '../config/firebaseWorkflowBR1'; // Import do Firebase WorkflowBR1
 import { FuncionariosProvider, useFuncionarios } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './Theme/ThemeSystem';
 import ThemeToggle from './Theme/ThemeToggle';
+// ✅ Importar sistema de permissões CORRIGIDO
+import { 
+  NIVEIS_PERMISSAO, 
+  NIVEIS_LABELS, 
+  NIVEIS_ICONE,
+  PermissionChecker,
+  isAdmin,
+  hasHighLevelPermission,
+  hasManagementPermission,
+  hasSupervisionPermission,
+  isAdminTotal,
+  temPermissaoUniversal
+} from '../constants/permissoes';
 
 import UserProfileModal from './Auth/UserProfileModal';
 import PWAUpdateAvailable from './PWAUpdateAvailable';
@@ -37,16 +51,17 @@ import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
 import EscalaPage from '../pages/Escala/EscalaPage';
-import ErrorReportsPage from '../pages/ErrorReports/ErrorReportsPage';
+import SystemAdminPage from '../pages/SystemAdminPage';
 import { notifyNewLoan } from '../utils/notificationHelpers';
 import CadastroEmpresas from './Empresas/CadastroEmpresas';
 import CadastroSetores from './Setores/CadastroSetores';
-import GerenciamentoUnificado from './EmpresasSetores/GerenciamentoUnificado';
+import GerenciamentoIntegrado from './EmpresasSetores/GerenciamentoIntegrado';
 import { encryptPassword, verifyPassword } from '../utils/crypto';
 import LoadingScreen from './common/LoadingScreen';
 import MessagesBadge from './MessagesBadge';
-import BackupMonitoringPage from '../pages/BackupMonitoringPage';
 import { DatabaseRotationProvider } from '../contexts/DatabaseRotationContext';
+import PasswordResetForm from './PasswordReset/PasswordResetForm';
+import UserCreationForm from './PasswordReset/UserCreationForm';
 import '../utils/passwordDebug'; // Carrega utilitário de debug de senhas
 // Icons
 import { 
@@ -88,13 +103,15 @@ import {
   CheckCircle,
   RefreshCw,
   Save,
-  Database
+  Database,
+  Key,
+  MousePointer
 } from 'lucide-react';
 
 // Função para bloquear teclas de atalho e menu de contexto
 const useSecurityBlock = () => {
   const { usuario } = useAuth();
-  const isAdmin = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
+  const isAdmin = usuario?.nivel === 0; // Admin sempre tem nível 0
 
   const handleKeyDown = useCallback((e) => {
     // Se for admin, permite todas as teclas
@@ -271,73 +288,8 @@ const CookieManager = {
   }
 };
 
-// Níveis de permissão
-export const NIVEIS_PERMISSAO = {
-  FUNCIONARIO: 1,      // Apenas visualizar
-  SUPERVISOR: 2,       // Criar funcionários + todas as funções operacionais
-  GERENTE: 3,          // Criar funcionários + usuários supervisor/funcionário
-  ADMIN: 4             // Todas as permissões
-};
-
-export const NIVEIS_LABELS = {
-  1: 'Funcionário',
-  2: 'Supervisor/Encarregado', 
-  3: 'Gerente',
-  4: 'Administrador'
-};
-
-// Sistema de permissões
-export const PermissionChecker = {
-  // Verificar se pode visualizar
-  canView: (userLevel, section) => {
-    return userLevel >= NIVEIS_PERMISSAO.FUNCIONARIO;
-  },
-
-  // Verificar se pode criar/editar/deletar dados operacionais (inventário, empréstimos, etc.)
-  canManageOperational: (userLevel) => {
-    // Funcionário (nivel 1) não pode editar nada
-    return userLevel > NIVEIS_PERMISSAO.FUNCIONARIO;
-  },
-
-  // Verificar se pode gerenciar funcionários (para empréstimos)
-  canManageEmployees: (userLevel) => {
-    // Funcionário (nivel 1) não pode editar nada
-    return userLevel > NIVEIS_PERMISSAO.FUNCIONARIO;
-  },
-
-  // Verificar se pode gerenciar usuários do sistema
-  canManageUsers: (userLevel) => {
-    // Funcionário (nivel 1) não pode editar nada
-    return userLevel > NIVEIS_PERMISSAO.FUNCIONARIO && userLevel >= NIVEIS_PERMISSAO.GERENTE;
-  },
-
-  // Verificar se pode criar usuários de nível específico
-  canCreateUserLevel: (userLevel, targetLevel) => {
-    if (userLevel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
-    if (userLevel === NIVEIS_PERMISSAO.ADMIN) return true;
-    if (userLevel === NIVEIS_PERMISSAO.GERENTE) {
-      return targetLevel <= NIVEIS_PERMISSAO.SUPERVISOR;
-    }
-    return false;
-  },
-
-  // Verificar se pode editar usuário específico
-  canEditUser: (userLevel, userId, targetUserId, targetUserLevel) => {
-    if (userLevel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
-    if (userId === targetUserId) return true; // Próprio perfil
-    if (userLevel === NIVEIS_PERMISSAO.ADMIN) return true;
-    if (userLevel === NIVEIS_PERMISSAO.GERENTE) {
-      return targetUserLevel < NIVEIS_PERMISSAO.GERENTE;
-    }
-    return false;
-  },
-
-  // Verificar se pode gerenciar compras
-  canManagePurchases: (userLevel) => {
-    // Funcionário (nivel 1) não pode editar nada
-    return userLevel > NIVEIS_PERMISSAO.FUNCIONARIO;
-  }
-};
+// ✅ NIVEIS_PERMISSAO, NIVEIS_LABELS, NIVEIS_ICONE e PermissionChecker 
+// agora são importados de '../constants/permissoes' (SISTEMA CORRIGIDO)
 
 // Provider de autenticação melhorado
 const AuthProvider = ({ children }) => {
@@ -377,9 +329,6 @@ const AuthProvider = ({ children }) => {
         console.error('Erro ao conectar com Firebase:', error);
         setFirebaseStatus('error');
         
-        // Ainda assim tentar verificar usuário salvo
-        await verificarUsuarioSalvo();
-        
         // Fallback para usuários em memória se Firebase falhar
         await initUsuariosLocais();
         setIsLoading(false);
@@ -395,11 +344,11 @@ const AuthProvider = ({ children }) => {
     
     const setupFirebaseListener = () => {
       try {
-        console.log('🔄 Configurando listener em tempo real para usuários...');
+        console.log('🔄 Configurando listener em tempo real para usuários no Firebase Backup...');
         unsubscribe = onSnapshot(
-          collection(db, 'usuarios'), 
+          collection(backupDb, 'usuarios'), 
           async (snapshot) => {
-            console.log('📡 Atualização em tempo real de usuários recebida');
+            console.log('📡 Atualização em tempo real de usuários recebida do Firebase Backup');
             
             const usuariosCarregados = snapshot.docs.map(doc => {
               const data = doc.data();
@@ -440,6 +389,16 @@ const AuthProvider = ({ children }) => {
               const usuarioAtualizado = usuariosCarregados.find(u => u.id === usuario.id);
               if (usuarioAtualizado) {
                 console.log('👤 Dados do usuário logado atualizados');
+                
+                // 🔐 PROTEÇÃO ESPECIAL: Se usuário atual é admin (nível 0), manter nível 0
+                if (usuario.nivel === 0 && usuarioAtualizado.nivel !== 0) {
+                  console.log('⚠️ BLOQUEANDO alteração de nível admin:', {
+                    nivelAtual: usuario.nivel,
+                    nivelNovo: usuarioAtualizado.nivel
+                  });
+                  usuarioAtualizado.nivel = 0; // Forçar manter nível admin
+                }
+                
                 setUsuario(usuarioAtualizado);
               }
             }
@@ -474,82 +433,6 @@ const AuthProvider = ({ children }) => {
     };
   }, [firebaseStatus]);
 
-  // Listener em tempo real para o usuário logado - Atualiza automaticamente quando dados mudam
-  useEffect(() => {
-    if (!usuario || !usuario.id) return;
-
-    let unsubscribe = null;
-
-    const setupUserListener = () => {
-      try {
-        console.log('🔄 Configurando listener para o usuário logado:', usuario.email);
-        
-        unsubscribe = onSnapshot(doc(db, 'usuarios', usuario.id), (docSnapshot) => {
-          if (docSnapshot.exists()) {
-            const dadosAtualizados = { id: docSnapshot.id, ...docSnapshot.data() };
-            
-            // Verificar se houve mudanças relevantes
-            const mudouNivel = dadosAtualizados.nivel !== usuario.nivel;
-            const mudouAtivo = dadosAtualizados.ativo !== usuario.ativo;
-            const mudouEmpresa = dadosAtualizados.empresaId !== usuario.empresaId;
-            const mudouSetor = dadosAtualizados.setorId !== usuario.setorId;
-            
-            if (mudouNivel || mudouAtivo || mudouEmpresa || mudouSetor) {
-              console.log('⚡ Dados do usuário alterados em tempo real:', {
-                nivel: { antes: usuario.nivel, depois: dadosAtualizados.nivel },
-                ativo: { antes: usuario.ativo, depois: dadosAtualizados.ativo },
-                empresa: { antes: usuario.empresaId, depois: dadosAtualizados.empresaId },
-                setor: { antes: usuario.setorId, depois: dadosAtualizados.setorId }
-              });
-
-              // Se o usuário foi desativado, fazer logout
-              if (!dadosAtualizados.ativo) {
-                console.log('❌ Usuário foi desativado. Fazendo logout...');
-                alert('Sua conta foi desativada. Você será desconectado.');
-                logout();
-                return;
-              }
-
-              // Atualizar estado do usuário
-              setUsuario(dadosAtualizados);
-
-              // Atualizar cookies se "lembrar de mim" estiver ativado
-              if (CookieManager.getCookie(COOKIE_NAMES.LEMBRAR) === 'true') {
-                salvarDadosLogin(dadosAtualizados, true);
-              }
-
-              // Se mudou nível, redirecionar para notificações
-              if (mudouNivel) {
-                console.log('⚡ Nível de permissão alterado! Redirecionando para notificações...');
-                // O AlmoxarifadoSistema detectará e mostrará o modal
-              }
-            }
-          } else {
-            // Usuário foi removido do banco de dados
-            console.log('❌ Usuário foi removido do sistema. Fazendo logout...');
-            alert('Sua conta foi removida do sistema. Você será desconectado.');
-            logout();
-          }
-        }, (error) => {
-          console.error('Erro no listener do usuário logado:', error);
-        });
-      } catch (error) {
-        console.error('Erro ao configurar listener do usuário:', error);
-      }
-    };
-
-    if (firebaseStatus === 'connected') {
-      setupUserListener();
-    }
-
-    return () => {
-      if (unsubscribe) {
-        console.log('🔌 Desconectando listener do usuário logado');
-        unsubscribe();
-      }
-    };
-  }, [usuario?.id, firebaseStatus]);
-
   // Função para verificar usuário salvo nos cookies
   const verificarUsuarioSalvo = async () => {
     try {
@@ -577,8 +460,67 @@ const AuthProvider = ({ children }) => {
         }
         // Validar estrutura dos dados do usuário
         if (usuarioSalvo && typeof usuarioSalvo === 'object' && usuarioSalvo.id && usuarioSalvo.email) {
-          setUsuario(usuarioSalvo);
-          console.log('✅ Usuário restaurado dos cookies:', usuarioSalvo.nome);
+          console.log('🔄 Usuário encontrado nos cookies, revalidando dados no Firebase...');
+          
+          // Revalidar dados no Firebase para garantir que estão atualizados
+          try {
+            const usuariosRef = collection(dbWorkflowBR1, 'usuarios');
+            const q = query(usuariosRef, where('email', '==', usuarioSalvo.email), where('ativo', '==', true));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+              const doc = querySnapshot.docs[0];
+              const usuarioAtualizado = { id: doc.id, ...doc.data() };
+              
+              console.log('✅ Dados atualizados do Firebase:', {
+                nome: usuarioAtualizado.nome,
+                nivel: usuarioAtualizado.nivel,
+                nivelTipo: typeof usuarioAtualizado.nivel,
+                cookieNivel: usuarioSalvo.nivel,
+                cookieNivelTipo: typeof usuarioSalvo.nivel,
+                isAdmin: usuarioAtualizado.nivel === NIVEIS_PERMISSAO.ADMIN,
+                NIVEIS_PERMISSAO_ADMIN: NIVEIS_PERMISSAO.ADMIN
+              });
+              
+              // CORREÇÃO TEMPORÁRIA: Se é o usuário admin e tem nível incorreto, corrigir
+              if (usuarioAtualizado.email === 'admin' && usuarioAtualizado.nivel !== NIVEIS_PERMISSAO.ADMIN) {
+                console.log('🔧 CORRIGINDO: Admin tem nível incorreto, ajustando para 0...');
+                usuarioAtualizado.nivel = NIVEIS_PERMISSAO.ADMIN;
+                
+                // Atualizar também no Firebase
+                try {
+                  await updateDoc(doc.ref, { nivel: NIVEIS_PERMISSAO.ADMIN });
+                  console.log('✅ Nível do admin corrigido no Firebase');
+                } catch (error) {
+                  console.error('❌ Erro ao corrigir nível do admin no Firebase:', error);
+                }
+              }
+              
+              // 🔐 PROTEÇÃO ESPECIAL: Se usuário salvo é admin (nível 0), garantir que permanece admin
+              if (usuarioSalvo?.nivel === 0 && usuarioAtualizado.nivel !== 0) {
+                console.log('⚠️ PROTEÇÃO ADMIN: Impedindo alteração de nível admin:', {
+                  nivelSalvo: usuarioSalvo.nivel,
+                  nivelAtualizado: usuarioAtualizado.nivel
+                });
+                usuarioAtualizado.nivel = 0; // Forçar manter nível admin
+              }
+              
+              // Usar dados atualizados do Firebase
+              setUsuario(usuarioAtualizado);
+              
+              // Atualizar cookies com dados mais recentes
+              if (lembrarLogin === 'true') {
+                salvarDadosLogin(usuarioAtualizado, true);
+              }
+            } else {
+              console.log('❌ Usuário não encontrado no Firebase, usando dados dos cookies');
+              setUsuario(usuarioSalvo);
+            }
+          } catch (error) {
+            console.error('Erro ao revalidar usuário no Firebase:', error);
+            // Em caso de erro, usar dados dos cookies como fallback
+            setUsuario(usuarioSalvo);
+          }
         } else {
           console.log('❌ Dados do usuário nos cookies inválidos, limpando');
           limparDadosLogin();
@@ -652,8 +594,8 @@ const AuthProvider = ({ children }) => {
 
   const carregarUsuarios = async () => {
     try {
-      console.log('📥 Carregando usuários do Firebase...');
-      const snapshot = await getDocs(collection(db, 'usuarios'));
+      console.log('📥 Carregando usuários do Firebase Backup...');
+      const snapshot = await getDocs(collection(backupDb, 'usuarios'));
       const usuariosCarregados = snapshot.docs.map(doc => {
         const data = doc.data();
         return { 
@@ -778,7 +720,7 @@ const AuthProvider = ({ children }) => {
         nome: 'João Silva',
         email: 'joao',
         senha: '123456',
-        nivel: NIVEIS_PERMISSAO.GERENTE,
+        nivel: NIVEIS_PERMISSAO.GERENTE_SETOR,
         ativo: true,
         dataCriacao: new Date().toISOString(),
         ultimoLogin: null
@@ -867,60 +809,74 @@ const AuthProvider = ({ children }) => {
       console.log('✅ Usuário encontrado:', {
         email: usuarioEncontrado.email,
         nivel: usuarioEncontrado.nivel,
+        temAuthKey: !!usuarioEncontrado.authKey,
         temSenhaHash: !!usuarioEncontrado.senhaHash,
         temSenhaSalt: !!usuarioEncontrado.senhaSalt,
         temSenhaTexto: !!usuarioEncontrado.senha,
         senhaVersion: usuarioEncontrado.senhaVersion
       });
 
-      // Verificar senha com criptografia SHA-512
-      let senhaValida = false;
+      // ==============================================================================
+      // 🔑 NOVO SISTEMA DE AUTENTICAÇÃO COM CAMPO authKey
+      // ==============================================================================
       
-      if (usuarioEncontrado.senhaHash && usuarioEncontrado.senhaSalt) {
-        // Senha criptografada (SHA-512)
-        console.log('🔒 Verificando senha criptografada SHA-512...');
-        senhaValida = verifyPassword(
-          senha, 
-          usuarioEncontrado.senhaHash, 
-          usuarioEncontrado.senhaSalt,
-          usuarioEncontrado.senhaVersion || 2
-        );
-        console.log('Resultado da verificação SHA-512:', senhaValida);
-      } else if (usuarioEncontrado.senha) {
-        // Senha em texto plano (sistema legado) - comparação direta
-        console.log('📝 Verificando senha em texto plano...');
-        senhaValida = usuarioEncontrado.senha === senha;
-        console.log('Resultado da comparação:', senhaValida);
+      let senhaValida = false;
+
+      // PRIORIDADE 1: Verificar se o usuário tem o campo authKey (NOVO SISTEMA)
+      if (usuarioEncontrado.authKey) {
+        console.log('🔑 Verificando autenticação com campo authKey...');
+        console.log('Senha recebida:', senha);
+        console.log('Campo authKey do usuário:', usuarioEncontrado.authKey);
         
-        // Se válida, migrar para SHA-512 no Firebase Backup
+        // Verificação direta com authKey
+        senhaValida = usuarioEncontrado.authKey === senha;
+        console.log('✅ Resultado da verificação authKey:', senhaValida);
+        
         if (senhaValida) {
-          console.log('🔄 Migrando senha para SHA-512...');
-          const { hash, salt, version, algorithm } = encryptPassword(senha);
-          try {
-            await updateDoc(doc(backupDb, 'usuarios', usuarioEncontrado.id), {
-              senhaHash: hash,
-              senhaSalt: salt,
-              senhaVersion: version,
-              senhaAlgorithm: algorithm,
-              senha: null // Remove senha em texto plano
-            });
-            console.log('✅ Senha migrada para SHA-512 no Firebase Backup');
-          } catch (error) {
-            console.warn('⚠️ Erro ao migrar senha no Firebase Backup:', error);
+          console.log('🎉 Autenticação aprovada com novo sistema authKey!');
+        }
+      } 
+      // FALLBACK: Sistema antigo para usuários não migrados
+      else {
+        console.log('⚠️ Usuário sem campo authKey, usando sistema legado...');
+        console.log('📋 Status: Este usuário ainda não foi migrado para o novo sistema');
+        
+        // Verificar senha com criptografia SHA-512
+        if (usuarioEncontrado.senhaHash && usuarioEncontrado.senhaSalt) {
+          console.log('🔒 Verificando senha criptografada SHA-512...');
+          senhaValida = verifyPassword(
+            senha, 
+            usuarioEncontrado.senhaHash, 
+            usuarioEncontrado.senhaSalt,
+            usuarioEncontrado.senhaVersion || 2
+          );
+          console.log('Resultado da verificação SHA-512:', senhaValida);
+        } else if (usuarioEncontrado.senha) {
+          // Senha em texto plano (sistema legado) - comparação direta
+          console.log('📝 Verificando senha em texto plano...');
+          senhaValida = usuarioEncontrado.senha === senha;
+          console.log('Resultado da comparação:', senhaValida);
+          
+          // Se válida, NÃO migrar automaticamente - deixar para ferramenta específica
+          if (senhaValida) {
+            console.log('⚠️ ATENÇÃO: Usuário autenticado com sistema legado. Execute a migração authKey!');
           }
         }
+        
+        console.log('Resultado da verificação de fallback:', senhaValida);
       }
 
       if (!senhaValida) {
-        console.log('❌ Senha inválida!');
-        console.log('💡 Dica: A senha padrão do admin é "admin@362*"');
+        console.log('❌ Autenticação inválida!');
+        console.log('💡 NOVO SISTEMA: Para administradores use "admin2024", para outros use "workflow2024"');
+        console.log('� SISTEMA LEGADO: Se não migrado, use as senhas antigas');
         return { success: false, message: 'Email ou senha incorretos' };
       }
 
-      console.log('✅ Senha válida! Prosseguindo com login...');
+      console.log('✅ Autenticação válida! Prosseguindo com login...');
 
       // Verificar se o usuário tem setor e empresa definidos
-      // EXCEÇÃO: Administradores (nivel 4) não precisam ter setor, empresa ou cargo
+      // EXCEÇÃO: Administradores (nivel 0) não precisam ter setor, empresa ou cargo
       const isAdmin = usuarioEncontrado.nivel === NIVEIS_PERMISSAO.ADMIN;
       
       if (!isAdmin) {
@@ -994,11 +950,12 @@ const AuthProvider = ({ children }) => {
       // Remove senha do objeto antes de salvar
       delete novoUsuario.senha;
 
-      // Tentar salvar no Firebase
-      const docRef = await addDoc(collection(db, 'usuarios'), novoUsuario);
+      // Tentar salvar no Firebase Backup
+      console.log('💾 Salvando novo usuário no Firebase Backup...');
+      const docRef = await addDoc(collection(backupDb, 'usuarios'), novoUsuario);
       const usuarioComId = { id: docRef.id, ...novoUsuario };
       
-      console.log('✅ Usuário criado com senha SHA-512');
+      console.log('✅ Usuário criado com senha SHA-512 no Firebase Backup');
       return { success: true, usuario: usuarioComId };
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
@@ -1008,14 +965,18 @@ const AuthProvider = ({ children }) => {
 
   const atualizarUsuario = async (id, dadosAtualizados) => {
     try {
+      console.log('🔄 Iniciando atualização de usuário:', { id, dadosAtualizados });
+      
       // Verificar permissão para editar usuário
       const usuarioAlvo = usuarios.find(u => u.id === id);
       if (!PermissionChecker.canEditUser(usuario.nivel, usuario.id, id, usuarioAlvo?.nivel)) {
+        console.log('❌ Sem permissão para editar usuário');
         return { success: false, message: 'Sem permissão para editar este usuário' };
       }
 
       // Se a senha foi alterada, criptografar com SHA-512
       if (dadosAtualizados.senha) {
+        console.log('🔐 Criptografando senha...');
         const { hash, salt, version, algorithm } = encryptPassword(dadosAtualizados.senha);
         
         dadosAtualizados = {
@@ -1032,7 +993,9 @@ const AuthProvider = ({ children }) => {
         console.log('✅ Senha do usuário atualizada para SHA-512');
       }
 
-      await updateDoc(doc(db, 'usuarios', id), dadosAtualizados);
+      console.log('💾 Salvando no Firebase Backup...', dadosAtualizados);
+      await updateDoc(doc(backupDb, 'usuarios', id), dadosAtualizados);
+      console.log('✅ Dados salvos no Firebase Backup com sucesso!');
       
       if (usuario && usuario.id === id) {
         const usuarioAtualizado = { ...usuario, ...dadosAtualizados };
@@ -1046,8 +1009,8 @@ const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
-      console.error('Erro ao atualizar usuário:', error);
-      return { success: false, message: 'Erro ao atualizar usuário' };
+      console.error('❌ Erro ao atualizar usuário:', error);
+      return { success: false, message: 'Erro ao atualizar usuário: ' + error.message };
     }
   };
 
@@ -1071,11 +1034,11 @@ const AuthProvider = ({ children }) => {
         ...novasPreferencias
       };
 
-      await updateDoc(doc(db, 'usuarios', usuarioAlvo), {
+      await updateDoc(doc(backupDb, 'usuarios', usuarioAlvo), {
         preferencias: preferenciasNovas
       });
 
-      console.log('✅ Preferências atualizadas:', preferenciasNovas);
+      console.log('✅ Preferências atualizadas no Firebase Backup:', preferenciasNovas);
 
       // Se for o usuário logado, atualizar estado local
       if (usuario && usuario.id === usuarioAlvo) {
@@ -1112,12 +1075,12 @@ const AuthProvider = ({ children }) => {
         return { success: false, message: 'Sem permissão para alterar menu deste usuário' };
       }
 
-      await updateDoc(doc(db, 'usuarios', usuarioAlvo), {
+      await updateDoc(doc(backupDb, 'usuarios', usuarioAlvo), {
         menuConfig: novoMenuConfig,
         menuPersonalizado: true
       });
 
-      console.log('✅ Menu personalizado atualizado');
+      console.log('✅ Menu personalizado atualizado no Firebase Backup');
 
       // Se for o usuário logado, atualizar estado local
       if (usuario && usuario.id === usuarioAlvo) {
@@ -1154,16 +1117,24 @@ const AuthProvider = ({ children }) => {
     }
 
     try {
-      await deleteDoc(doc(db, 'usuarios', id));
+      console.log('🗑️ Removendo usuário do Firebase Backup...');
+      await deleteDoc(doc(backupDb, 'usuarios', id));
+      console.log('✅ Usuário removido com sucesso do Firebase Backup');
       return { success: true };
     } catch (error) {
-      console.error('Erro ao remover usuário:', error);
-      return { success: false, message: 'Erro ao remover usuário' };
+      console.error('❌ Erro ao remover usuário:', error);
+      return { success: false, message: 'Erro ao remover usuário: ' + error.message };
     }
   };
 
   const temPermissao = (nivelNecessario) => {
-    return usuario && usuario.nivel >= nivelNecessario;
+    // ADMIN tem acesso TOTAL - nunca pode ser negado
+    if (usuario?.nivel === 0) {
+      return true;
+    }
+    // Sistema reversivo: níveis menores = maior permissão
+    // Verificar se o nível do usuário é menor ou igual ao necessário
+    return usuario && usuario.nivel <= nivelNecessario;
   };
 
   const value = {
@@ -1195,6 +1166,8 @@ const LoginForm = () => {
   const [erro, setErro] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
+  const [mostrarRedefinicao, setMostrarRedefinicao] = useState(false);
+  const [mostrarCriarUsuario, setMostrarCriarUsuario] = useState(false);
   // Removido: agora o campo está em formData
   const { login, cookiesEnabled } = useAuth();
 
@@ -1237,12 +1210,36 @@ const LoginForm = () => {
     }
   };
 
+  // Se estiver na tela de redefinição
+  if (mostrarRedefinicao) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <PasswordResetForm 
+          onVoltar={() => setMostrarRedefinicao(false)}
+          onSucesso={() => setMostrarRedefinicao(false)}
+        />
+      </div>
+    );
+  }
+
+  // Se estiver na tela de criar usuário
+  if (mostrarCriarUsuario) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <UserCreationForm 
+          onVoltar={() => setMostrarCriarUsuario(false)}
+          onSucesso={() => setMostrarCriarUsuario(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-700/20 p-8">
         <div className="text-center mb-8">
-          <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4">
-            <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain" />
+          <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4 relative">
+            <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">WorkFlow</h1>
           
@@ -1251,36 +1248,34 @@ const LoginForm = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+              <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               Email/Usuário
             </label>
-            <div className="relative">
-              <User className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
-              <input
-                type="text"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                onKeyPress={handleKeyPress}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
-                placeholder="Digite seu usuário"
-                required
-                disabled={carregando}
-              />
-            </div>
+            <input
+              type="text"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onKeyPress={handleKeyPress}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+              placeholder="Digite seu usuário"
+              required
+              disabled={carregando}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+              <Lock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               Senha
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
               <input
                 type={mostrarSenha ? 'text' : 'password'}
                 value={formData.senha}
                 onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
                 onKeyPress={handleKeyPress}
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:border-transparent"
+                className="w-full px-4 pr-12 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                 placeholder="Digite sua senha"
                 required
                 disabled={carregando}
@@ -1288,7 +1283,7 @@ const LoginForm = () => {
               <button
                 type="button"
                 onClick={() => setMostrarSenha(!mostrarSenha)}
-                className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 disabled={carregando}
               >
                 {mostrarSenha ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -1318,9 +1313,9 @@ const LoginForm = () => {
             disabled={carregando}
             className={`w-full font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${
               carregando 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-green-600 hover:bg-green-700'
-            } text-gray-900 dark:text-white`}
+                ? 'bg-gray-400 cursor-not-allowed text-white' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
           >
             {carregando ? (
               <div className="flex items-center justify-center gap-2">
@@ -1332,8 +1327,37 @@ const LoginForm = () => {
             )}
           </button>
         </form>
+
+        {/* Links para Redefinição de Senha e Criar Conta */}
+        <div className="mt-6 text-center space-y-3">
+          <button
+            onClick={() => setMostrarRedefinicao(true)}
+            className="block w-full text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+          >
+            Esqueci minha senha
+          </button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                ou
+              </span>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => setMostrarCriarUsuario(true)}
+            className="block w-full px-4 py-2 border-2 border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg font-medium transition-colors text-sm"
+          >
+            Criar Nova Conta
+          </button>
+        </div>
+
         {/* Footer or legal info only, no test users, cookies, or login tips */}
-        <div className="mt-6 text-center text-xs text-gray-500">
+        <div className="mt-4 text-center text-xs text-gray-500">
           <p>Sistema protegido por autenticação</p>
         </div>
       </div>
@@ -1462,7 +1486,7 @@ const ErrorScreen = ({ error, resetError }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-red-900 dark:to-orange-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center p-4">
       {/* Modal de descrição */}
       {showDescricaoModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -1504,22 +1528,16 @@ const ErrorScreen = ({ error, resetError }) => {
         {/* Logo WorkFlow com efeito de erro */}
         <div className="mb-6 flex justify-center">
           <div className="relative w-32 h-32">
-            {/* Glow vermelho pulsante */}
-            <div className="absolute inset-0 bg-red-500 rounded-full blur-3xl opacity-40 animate-pulse"></div>
-            
-            {/* Container do logo com borda vermelha */}
-            <div className="relative w-full h-full rounded-full bg-gradient-to-br from-red-500 to-orange-500 p-1 shadow-2xl">
-              <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 p-3 flex items-center justify-center">
-                <img 
-                  src="/logo.png" 
-                  alt="WorkFlow Error" 
-                  className="w-full h-full object-contain opacity-90 saturate-0"
-                  style={{
-                    filter: 'brightness(0.4) sepia(1) hue-rotate(-50deg) saturate(6)',
-                    animation: 'shake 0.5s ease-in-out infinite'
-                  }}
-                />
-              </div>
+            {/* Logo com ícone de erro */}
+            <div className="relative w-full h-full flex items-center justify-center">
+              <img 
+                src="/logo.png" 
+                alt="WorkFlow Error" 
+                className="w-full h-full object-contain opacity-90 saturate-0"
+                style={{
+                  filter: 'brightness(0.4) sepia(1) hue-rotate(-50deg) saturate(6)'
+                }}
+              />
             </div>
             
             {/* Ícone de alerta sobreposto */}
@@ -1556,7 +1574,7 @@ const ErrorScreen = ({ error, resetError }) => {
           <ul className="text-left space-y-2 text-gray-700 dark:text-gray-300">
             <li className="flex items-start gap-2">
               <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-              <span>Recarregue a página (F5)</span>
+              <span>Recarregue o sistema (F5)</span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -1577,9 +1595,9 @@ const ErrorScreen = ({ error, resetError }) => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={() => window.location.reload()}
-            className="px-8 py-3.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-lg shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
+            className="px-8 py-3.5 rounded-full bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1A8CD8] text-white font-bold text-lg shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
           >
-            Recarregar Página
+            Recarregar Sistema
           </button>
           
           <button
@@ -1663,7 +1681,7 @@ class ErrorBoundary extends React.Component {
 
 // Componente principal do sistema
 const AlmoxarifadoSistema = () => {
-  const { usuario, logout, firebaseStatus } = useAuth();
+  const { usuario, logout, firebaseStatus, temPermissao } = useAuth();
   const isMobile = useIsMobile();
   const { funcionarios: funcionariosData } = useFuncionarios();
   const { unreadCount: notificationUnreadCount } = useNotification();
@@ -1671,7 +1689,7 @@ const AlmoxarifadoSistema = () => {
   const funcionarioInfo = funcionariosData.find(f => f.id === usuario.id);
   
   // Estados locais
-  const [abaAtiva, setAbaAtiva] = useState('dashboard');
+  const [abaAtiva, setAbaAtiva] = useState(null); // Inicia como null para evitar flash do dashboard
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuRecolhido, setMenuRecolhido] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -1681,16 +1699,77 @@ const AlmoxarifadoSistema = () => {
   
   // Estados para personalização do menu
   const [menuPersonalizado, setMenuPersonalizado] = useState(null);
-  const [itemFavorito, setItemFavorito] = useState('emprestimos'); // Item que fica no centro/destaque
+  const [itemFavorito, setItemFavorito] = useState(null); // Inicia como null até carregar do Firebase
+  const [favoritoCarregado, setFavoritoCarregado] = useState(false); // Flag para controlar se favorito foi carregado
+  const [paginaInicialDefinida, setPaginaInicialDefinida] = useState(false); // Flag para controlar se página inicial já foi definida
   const [showMenuConfig, setShowMenuConfig] = useState(false);
   const [menuLongPressTimer, setMenuLongPressTimer] = useState(null);
   const [menuLongPressProgress, setMenuLongPressProgress] = useState(0);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverItem, setDragOverItem] = useState(null);
   const [menuConfigSaved, setMenuConfigSaved] = useState(false);
+  
+  // Estados para controle de loading e redirecionamento
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  
+  // Estados para clique longo no desktop
+  const [desktopLongPressTimer, setDesktopLongPressTimer] = useState(null);
+  const [desktopLongPressItem, setDesktopLongPressItem] = useState(null);
+  const [desktopEditMode, setDesktopEditMode] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
+  };
+
+  // ===== SISTEMA DE CLIQUE LONGO PARA DESKTOP =====
+  const startDesktopLongPress = (abaId) => {
+    if (isMobile) return; // Só para desktop
+    
+    console.log('🖱️ Iniciando long press para:', abaId);
+    setDesktopLongPressItem(abaId);
+    
+    const timer = setTimeout(() => {
+      console.log('🎯 Long press ativado para:', abaId);
+      setDesktopEditMode(true);
+      setShowMenuConfig(true);
+      
+      // Vibração se disponível
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 800); // 800ms para desktop
+    
+    setDesktopLongPressTimer(timer);
+  };
+
+  const stopDesktopLongPress = () => {
+    console.log('🛑 Parando long press, timer existe:', !!desktopLongPressTimer);
+    
+    if (desktopLongPressTimer) {
+      clearTimeout(desktopLongPressTimer);
+      setDesktopLongPressTimer(null);
+    }
+    
+    // Limpar item apenas se não estiver no modo de edição
+    if (!desktopEditMode) {
+      setDesktopLongPressItem(null);
+    }
+  };
+
+  const handleDesktopItemClick = (abaId) => {
+    // Sempre navegar para a aba clicada, independente do modo
+    console.log('🖱️ Clique em aba:', abaId, 'Modo edição:', desktopEditMode);
+    
+    setAbaAtiva(abaId);
+    if (isMobile) {
+      setMenuOpen(false);
+    }
+    
+    // Se estava no modo de edição, sair dele após navegar
+    if (desktopEditMode) {
+      setDesktopEditMode(false);
+      setDesktopLongPressItem(null);
+    }
   };
 
   // ===== SISTEMA DE PERSISTÊNCIA DE ESTADO =====
@@ -1790,16 +1869,11 @@ const AlmoxarifadoSistema = () => {
         
         // Verificar se mudou o nível de permissão
         if (dadosAtualizados.nivel !== nivelAnterior) {
-          const niveisLabels = {
-            1: 'Funcionário',
-            2: 'Supervisor/Encarregado',
-            3: 'Gerente',
-            4: 'Administrador'
-          };
-          
           console.log('⚡ Nível de permissão alterado:', {
             antes: nivelAnterior,
-            depois: dadosAtualizados.nivel
+            depois: dadosAtualizados.nivel,
+            labelAntes: NIVEIS_LABELS[nivelAnterior],
+            labelDepois: NIVEIS_LABELS[dadosAtualizados.nivel]
           });
           
           // Verificar se usuário já viu o alerta para este nível
@@ -1902,18 +1976,15 @@ const AlmoxarifadoSistema = () => {
   // Função para reimportar inventário inicial
   const reimportarInventario = async () => {
     // Remove todos os itens atuais do Firestore
-    const snapshot = await onSnapshot(collection(db, 'inventario'), async (snap) => {
-      for (const docItem of snap.docs) {
-        await deleteDoc(doc(db, 'inventario', docItem.id));
-      }
-      // Adiciona todos os itens do inventarioInicial
-      for (const item of inventarioInicial) {
-        const { id, ...rest } = item;
-        await addDoc(collection(db, 'inventario'), rest);
-      }
-    });
-    // Unsubscribe imediatamente após execução
-    snapshot();
+    const snapshot = await getDocs(collection(db, 'inventario'));
+    for (const docItem of snapshot.docs) {
+      await deleteDoc(doc(db, 'inventario', docItem.id));
+    }
+    // Adiciona todos os itens do inventarioInicial
+    for (const item of inventarioInicial) {
+      const { id, ...rest } = item;
+      await addDoc(collection(db, 'inventario'), rest);
+    }
   };
 
   // Função para corrigir campos 'disponivel' e 'emUso' no inventário do Firestore
@@ -2662,18 +2733,8 @@ const AlmoxarifadoSistema = () => {
   };
 
   // ===== FUNCIONÁRIOS =====
-  const [funcionarios, setFuncionarios] = useState([]);
-  
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'funcionarios'), (snapshot) => {
-      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setFuncionarios(lista);
-    }, (error) => {
-      console.error('Erro no listener dos funcionários:', error);
-    });
-    
-    return () => unsubscribe();
-  }, []);
+  // Usar dados do contexto em vez de criar listener duplicado
+  const funcionarios = funcionariosData;
 
   const adicionarFuncionario = async (funcionario) => {
     if (!PermissionChecker.canManageEmployees(usuario?.nivel)) {
@@ -2892,144 +2953,227 @@ const AlmoxarifadoSistema = () => {
     compras
   };
 
-  // Configuração das abas baseada em permissões
-  const abas = [
-    
+  // 📋 Configuração das abas baseada no novo sistema de permissões (0-6)
+  // Usando useMemo para evitar recriação do array a cada render
+  const abas = useMemo(() => [
     {
       id: 'meu-perfil',
       nome: 'Meu Perfil',
       icone: UserCircle,
-      permissao: () => true // Visível para todos os níveis
+      permissao: () => true // Todos os usuários autenticados
     },
     {
       id: 'ranking',
       nome: 'Ranking',
       icone: Trophy,
-      permissao: () => true // Visível para todos os níveis
+      permissao: () => true // Todos os usuários autenticados
     },
     {
       id: 'notificacoes',
       nome: 'Notificações',
       icone: Bell,
-      permissao: () => true // Visível para todos os níveis
-    },
-    {
-      id: 'relatorios-erro',
-      nome: 'Relatórios de Erros',
-      icone: AlertTriangle,
-      permissao: () => true // Visível para todos os níveis
+      permissao: () => true // Todos os usuários autenticados
     },
     {
       id: 'mensagens',
       nome: 'Mensagens',
       icone: MessageCircle,
-      permissao: () => true // Visível para todos os níveis
+      permissao: () => true // Todos os usuários autenticados
     },
     { 
       id: 'tarefas', 
       nome: 'Tarefas', 
       icone: ClipboardCheck,
-      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Apenas nível 2 (Supervisor) ou superior
+      permissao: () => true // Todos os usuários autenticados
     },
     { 
       id: 'escala', 
       nome: 'Escala', 
       icone: Calendar,
-      permissao: () => usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR // Supervisor ou superior
+      permissao: () => {
+        // ADMIN sempre tem acesso TOTAL
+        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
+        // Funcionários (nível 1) NÃO podem ver a escala
+        if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
+        return usuario?.nivel <= NIVEIS_PERMISSAO.SUPERVISOR;
+      }
     },
     { 
       id: 'inventario', 
       nome: 'Inventário', 
       icone: Package,
-      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
+      permissao: () => {
+        // ADMIN sempre tem acesso TOTAL
+        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
+        // Funcionários (nível 1) NÃO podem ver o inventário geral
+        if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
+        return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_SETOR;
+      }
+    },
+    { 
+      id: 'meu-inventario', 
+      nome: 'Meu Inventário', 
+      icone: Package,
+      permissao: () => true // Todos os usuários autenticados
     },
     { 
       id: 'emprestimos', 
       nome: 'Empréstimos', 
       icone: ClipboardList,
-      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
+      permissao: () => {
+        // ADMIN sempre tem acesso TOTAL
+        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
+        // Funcionários (nível 1) NÃO podem ver a página de empréstimos
+        if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
+        return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_SETOR;
+      }
     },
     { 
       id: 'funcionarios', 
       nome: 'Funcionários', 
       icone: Users,
-      permissao: () => usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO
+      permissao: () => {
+        // ADMIN sempre tem acesso TOTAL
+        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
+        // Funcionários (nível 1) NÃO podem ver a lista de funcionários
+        if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
+        return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_GERAL;
+      }
     },
     { 
       id: 'empresas-setores', 
       nome: 'Empresas & Setores', 
       icone: Building2,
       permissao: () => {
-        // Admin vê tudo, Gerente/Supervisor/Encarregado vê só do seu setor
-        const isAdmin = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
-        const isGerente = usuario?.nivel === NIVEIS_PERMISSAO.GERENTE || 
-                         usuario?.cargo?.toLowerCase().includes('gerente') ||
-                         usuario?.cargo?.toLowerCase().includes('supervisor') ||
-                         usuario?.cargo?.toLowerCase().includes('encarregado');
-        return isAdmin || isGerente;
+        // ADMIN sempre tem acesso TOTAL
+        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
+        // Funcionários (nível 1) NÃO podem ver empresas e setores
+        if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
+        return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_GERAL;
       }
     },
     { 
-      id: 'backup-monitoring', 
-      nome: 'Backup & Monitoramento', 
-      icone: Database,
-      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // Apenas administradores (nível 4)
+      id: 'system-admin', 
+      nome: 'Administração do Sistema', 
+      icone: Settings,
+      permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // APENAS Admin
+    },
+    { 
+      id: 'feed-social', 
+      nome: 'Feed Social', 
+      icone: MessageCircle,
+      permissao: () => true // Todos os usuários autenticados
     },
     
-  ].filter(aba => aba.permissao());  
+  ].filter(aba => aba.permissao()), [usuario?.nivel]); // Memorizar baseado no nível do usuário
   
-  // Permissão para aba de usuários (apenas nível 4)
-  const podeVerUsuarios = usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
+  // Permissões simplificadas usando sistema reversivo com prioridade para ADMIN
+  const podeVerUsuarios = () => {
+    if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true; // ADMIN sempre pode
+    return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_GERAL;
+  };
   
-  // Permissão para aba legal (todos podem ver, nível 1 apenas visualiza)
-  const podeEditarLegal = usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO;
+  const podeEditarLegal = () => {
+    if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true; // ADMIN sempre pode
+    return usuario?.nivel <= NIVEIS_PERMISSAO.SUPERVISOR;
+  };
 
-  // Obter aba favorita (item central) com verificação de permissões
+  // Obter aba favorita (item central) com verificação de permissões e fallbacks robustos
   const getAbaFavorita = () => {
     if (!abas || abas.length === 0) return null;
     
-    const favorita = abas.find(aba => aba.id === itemFavorito) || abas.find(aba => aba.id === 'emprestimos');
+    // Primeiro, tentar encontrar a aba favorita configurada
+    let favorita = abas.find(aba => aba.id === itemFavorito);
+    
+    // Se não encontrar, usar fallback baseado no nível do usuário
+    if (!favorita) {
+      const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+      favorita = abas.find(aba => aba.id === fallbackPadrao);
+    }
     
     // Verificar se usuário tem permissão para a aba favorita
     if (favorita && favorita.permissao && typeof favorita.permissao === 'function') {
       if (!favorita.permissao()) {
-        // Se não tem permissão, retornar a primeira aba com permissão
-        return abas.find(aba => {
+        console.log(`⚠️ Usuário sem permissão para página favorita: ${favorita.id}`);
+        
+        // Buscar primeira aba com permissão, priorizando páginas mais importantes
+        // Para funcionários, priorizar Meu Perfil
+        const abaasPriorizadas = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO 
+          ? ['meu-perfil', 'meu-inventario', 'tarefas', 'mensagens']
+          : ['meu-perfil', 'emprestimos', 'inventario', 'funcionarios'];
+        
+        for (const abaId of abaasPriorizadas) {
+          const aba = abas.find(a => a.id === abaId);
+          if (aba && (!aba.permissao || aba.permissao())) {
+            console.log(`✅ Usando fallback priorizado: ${abaId}`);
+            return aba;
+          }
+        }
+        
+        // Se nenhuma das priorizadas funcionar, encontrar qualquer aba disponível
+        const abaDisponivel = abas.find(aba => {
           if (aba.permissao && typeof aba.permissao === 'function') {
             return aba.permissao();
           }
           return true;
         });
+        
+        if (abaDisponivel) {
+          console.log(`✅ Usando fallback geral: ${abaDisponivel.id}`);
+          return abaDisponivel;
+        }
+        
+        // Último recurso: retornar a primeira aba (mesmo sem permissão)
+        console.warn('⚠️ Nenhuma aba com permissão encontrada, usando primeira aba');
+        return abas[0];
       }
     }
     
     return favorita;
   };
 
-  // Carregar estado ao montar componente - DEPOIS da definição de abas e getAbaFavorita
+  // Carregar estado ao montar componente - APÓS favorito ser carregado
   useEffect(() => {
-    if (!usuario?.id || permissaoAlterada) return;
+    if (!usuario?.id || permissaoAlterada || !favoritoCarregado) return;
+    
+    console.log('🎯 Inicializando página inicial (favorito carregado)...');
     
     // Só restaura estado se NÃO houver mudança de permissão pendente
     const estadoSalvo = carregarEstadoApp();
     if (estadoSalvo && estadoSalvo.abaAtiva) {
-      console.log('🔄 Restaurando última página:', estadoSalvo.abaAtiva);
-      setAbaAtiva(estadoSalvo.abaAtiva);
-      
-      // Restaurar posição de scroll
-      setTimeout(() => {
-        if (estadoSalvo.scrollPosition) {
-          window.scrollTo(0, estadoSalvo.scrollPosition);
-        }
-      }, 100);
-    } else {
-      // Se não houver estado salvo, usar página favorita como inicial
-      const abaFavorita = getAbaFavorita();
-      const paginaInicial = abaFavorita ? abaFavorita.id : 'meu-perfil';
-      console.log('⭐ Iniciando com página inicial:', paginaInicial);
-      setAbaAtiva(paginaInicial);
+      // Verificar se a aba salva ainda existe e usuário tem permissão
+      const abaSalva = abas.find(aba => aba.id === estadoSalvo.abaAtiva);
+      if (abaSalva && (!abaSalva.permissao || abaSalva.permissao())) {
+        console.log('🔄 Restaurando última página:', estadoSalvo.abaAtiva);
+        setAbaAtiva(estadoSalvo.abaAtiva);
+        
+        // Restaurar posição de scroll
+        setTimeout(() => {
+          if (estadoSalvo.scrollPosition) {
+            window.scrollTo(0, estadoSalvo.scrollPosition);
+          }
+        }, 100);
+        return;
+      } else {
+        console.log('⚠️ Página salva inválida ou sem permissão:', estadoSalvo.abaAtiva);
+      }
     }
-  }, [usuario?.id, carregarEstadoApp, permissaoAlterada, itemFavorito]);
+    
+    // Se não houver estado válido, usar página favorita como inicial
+    const abaFavorita = getAbaFavorita();
+    const paginaInicial = abaFavorita ? abaFavorita.id : 'meu-perfil';
+    console.log('⭐ Iniciando com página favorita:', paginaInicial);
+    setAbaAtiva(paginaInicial);
+    
+  }, [usuario?.id, carregarEstadoApp, permissaoAlterada, favoritoCarregado, abas]);
+
+  // Resetar estado do favorito quando usuário trocar
+  useEffect(() => {
+    if (usuario?.id) {
+      setFavoritoCarregado(false);
+      setMenuPersonalizado(null);
+    }
+  }, [usuario?.id]);
 
   // Carregar configuração do menu personalizado do Firebase
   useEffect(() => {
@@ -3044,12 +3188,16 @@ const AlmoxarifadoSistema = () => {
         const usuarioDoc = await getDoc(doc(db, 'usuarios', usuario.id));
         const dados = usuarioDoc.data();
         const menuConfig = dados?.menuConfig;
-        const favorito = dados?.itemFavorito || 'emprestimos';
+        
+        // Definir favorito padrão baseado no nível do usuário
+        const favoritoPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+        const favorito = dados?.itemFavorito || favoritoPadrao;
         
         if (menuConfig && menuConfig.length > 0) {
           console.log('✅ Configuração carregada:', { menuConfig, favorito });
           setMenuPersonalizado(menuConfig);
           setItemFavorito(favorito);
+          setFavoritoCarregado(true); // Marca favorito como carregado
         } else {
           console.log('📝 Criando configuração padrão...');
           // Configuração padrão: primeiros 4 itens visíveis (exceto ranking e meu-perfil)
@@ -3060,15 +3208,107 @@ const AlmoxarifadoSistema = () => {
             ordem: index
           }));
           setMenuPersonalizado(configPadrao);
-          setItemFavorito('emprestimos');
+          setItemFavorito(favoritoPadrao);
+          setFavoritoCarregado(true); // Marca favorito como carregado mesmo com padrão
         }
       } catch (error) {
         console.error('❌ Erro ao carregar menu config:', error);
+        // Mesmo com erro, definir valores padrão e marcar como carregado
+        const favoritoPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+        setItemFavorito(favoritoPadrao);
+        setFavoritoCarregado(true);
       }
     };
 
     carregarMenuConfig();
   }, [usuario?.id, abas.length]);
+
+  // Definir página inicial como favorita ao carregar o sistema (apenas uma vez)
+  useEffect(() => {
+    if (favoritoCarregado && itemFavorito && usuario?.id && !paginaInicialDefinida) {
+      console.log('🏠 Definindo página inicial como favorita:', {
+        itemFavorito,
+        nivelUsuario: usuario?.nivel,
+        abaAtiva: abaAtiva
+      });
+      
+      // Iniciar fase de redirecionamento
+      setIsRedirecting(true);
+      
+      // Verificar se a aba favorita é válida e o usuário tem permissão
+      const abaFavorita = abas.find(aba => aba.id === itemFavorito);
+      if (abaFavorita && abaFavorita.permissao && abaFavorita.permissao()) {
+        setAbaAtiva(itemFavorito);
+        console.log('✅ Redirecionado para página favorita:', itemFavorito);
+      } else {
+        // Se não tiver permissão, usar fallback
+        const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+        const abaFallback = abas.find(aba => aba.id === fallbackPadrao);
+        if (abaFallback && abaFallback.permissao && abaFallback.permissao()) {
+          setAbaAtiva(fallbackPadrao);
+          console.log('✅ Redirecionado para fallback:', fallbackPadrao);
+        } else {
+          // Fallback final: primeira aba disponível
+          const primeiraAbaDisponivel = abas.find(aba => aba.permissao && aba.permissao());
+          if (primeiraAbaDisponivel) {
+            setAbaAtiva(primeiraAbaDisponivel.id);
+            console.log('⚠️ Usando primeira aba disponível:', primeiraAbaDisponivel.id);
+          }
+        }
+      }
+      
+      setPaginaInicialDefinida(true);
+      
+      // Finalizar fase de redirecionamento após um breve delay
+      setTimeout(() => {
+        setIsRedirecting(false);
+      }, 300);
+    }
+  }, [favoritoCarregado, itemFavorito, usuario?.id, paginaInicialDefinida, abas]);
+
+  // Resetar flag quando usuário fizer logout
+  useEffect(() => {
+    if (!usuario) {
+      setPaginaInicialDefinida(false);
+      setFavoritoCarregado(false);
+      setAbaAtiva(null);
+    }
+  }, [usuario]);
+
+  // Fallback de segurança: Se após 2 segundos ainda não houver aba definida, usar fallback
+  // Este useEffect só deve rodar uma vez após o login, não toda vez que abaAtiva muda
+  useEffect(() => {
+    if (usuario?.id && !abaAtiva && abas.length > 0 && favoritoCarregado) {
+      const timer = setTimeout(() => {
+        // Verificar novamente se ainda não há aba ativa
+        setAbaAtiva(currentAba => {
+          // Se já foi definida, não fazer nada
+          if (currentAba) {
+            console.log('✅ Aba já definida, cancelando timeout:', currentAba);
+            return currentAba;
+          }
+          
+          // Se ainda está null, usar fallback
+          const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+          const abaFallback = abas.find(aba => aba.id === fallbackPadrao);
+          if (abaFallback && abaFallback.permissao && abaFallback.permissao()) {
+            console.log('⚠️ Timeout - Usando fallback de emergência:', fallbackPadrao);
+            return fallbackPadrao;
+          } else {
+            // Se nem o fallback funcionar, usar primeira aba disponível
+            const primeiraAbaDisponivel = abas.find(aba => aba.permissao && aba.permissao());
+            if (primeiraAbaDisponivel) {
+              console.log('⚠️ Timeout - Usando primeira aba disponível:', primeiraAbaDisponivel.id);
+              return primeiraAbaDisponivel.id;
+            }
+          }
+          return currentAba;
+        });
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [usuario?.id, favoritoCarregado, abas.length]);
 
   // Salvar configuração do menu no Firebase
   const salvarMenuConfig = async (novaConfig, novoFavorito) => {
@@ -3081,7 +3321,7 @@ const AlmoxarifadoSistema = () => {
         itemFavorito: favoritoFinal 
       });
       
-      await updateDoc(doc(db, 'usuarios', usuario.id), {
+      await updateDoc(doc(backupDb, 'usuarios', usuario.id), {
         menuConfig: novaConfig,
         itemFavorito: favoritoFinal
       });
@@ -3090,7 +3330,7 @@ const AlmoxarifadoSistema = () => {
       setItemFavorito(favoritoFinal);
       setMenuConfigSaved(true);
       
-      console.log('✅ Configuração salva com sucesso!');
+      console.log('✅ Configuração salva no Firebase Backup com sucesso!');
       
       // Remove mensagem após 2 segundos
       setTimeout(() => setMenuConfigSaved(false), 2000);
@@ -3159,7 +3399,7 @@ const AlmoxarifadoSistema = () => {
     return menuPersonalizado
       .sort((a, b) => a.ordem - b.ordem)
       .map(config => abasMap.get(config.id))
-      .filter(aba => aba !== undefined && aba.icone !== undefined); // Garantir que aba e icone existem
+      .filter(aba => aba !== undefined); // Garantir que a aba existe
   };
 
   // Obter abas visíveis no menu inferior
@@ -3304,7 +3544,9 @@ const AlmoxarifadoSistema = () => {
               {/* Logo e título no header mobile */}
               <div className="flex items-center justify-center w-full">
                 <div className="flex items-center">
-                  <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-2" />
+                  <div className="relative w-10 h-10 mr-2">
+                    <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
+                  </div>
                   <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
                 </div>
               </div>
@@ -3338,7 +3580,9 @@ const AlmoxarifadoSistema = () => {
           {!isMobile && (
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className={`flex items-center ${menuRecolhido ? 'justify-center w-full' : ''}`}>
-                <img src="/logo.png" alt="Logo WorkFlow" className="w-12 h-auto" />
+                <div className="relative w-12 h-12">
+                  <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
+                </div>
                 {!menuRecolhido && (
                   <div className="ml-3">
                     <h1 className="text-lg font-bold text-gray-900 dark:text-white">WorkFlow</h1>
@@ -3379,7 +3623,9 @@ const AlmoxarifadoSistema = () => {
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
               {/* Logo e nome centralizado */}
               <div className="flex-1 flex items-center justify-center">
-                <img src="/logo.png" alt="Logo WorkFlow" className="w-10 h-10 mr-3" />
+                <div className="relative w-10 h-10 mr-3">
+                  <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
+                </div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">WorkFlow</h1>
               </div>
               
@@ -3396,7 +3642,7 @@ const AlmoxarifadoSistema = () => {
 
           {/* Menu em grade para mobile */}
           {isMobile && menuOpen ? (
-            <div className="flex-1 p-3">
+            <div className="flex-1 p-3 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-4 gap-3">
                 {getAbasOrdenadas().map((aba) => {
                   if (!aba || !aba.icone) return null; // Proteção contra abas sem ícone
@@ -3452,7 +3698,7 @@ const AlmoxarifadoSistema = () => {
                   </span>
                 </button>
 
-                {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
+                {temPermissao(NIVEIS_PERMISSAO.ADMIN) && (
                   <button
                     onClick={() => {
                       setAbaAtiva('usuarios');
@@ -3554,16 +3800,22 @@ const AlmoxarifadoSistema = () => {
                 return (
                   <button
                     key={aba.id}
-                    onClick={() => {
-                      setAbaAtiva(aba.id);
-                      if (isMobile) {
-                        setMenuOpen(false);
-                      }
-                    }}
+                    onClick={() => handleDesktopItemClick(aba.id)}
+                    onMouseDown={() => startDesktopLongPress(aba.id)}
+                    onMouseUp={stopDesktopLongPress}
+                    onMouseLeave={stopDesktopLongPress}
                     className={`${menuRecolhido ? 'justify-center' : 'justify-start'} w-full flex items-center ${menuRecolhido ? 'px-0' : 'space-x-3 px-4'} ${isMobile ? 'py-4' : 'py-3'} rounded-full font-medium text-[20px] transition-all duration-200 relative ${
                       abaAtiva === aba.id
                         ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
                         : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
+                    } ${
+                      aba.id === itemFavorito && desktopEditMode 
+                        ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-800' 
+                        : ''
+                    } ${
+                      desktopLongPressItem === aba.id 
+                        ? 'transform scale-95 bg-gray-200 dark:bg-gray-700' 
+                        : ''
                     }`}
                     title={menuRecolhido ? aba.nome : ''}
                   >
@@ -3578,6 +3830,12 @@ const AlmoxarifadoSistema = () => {
                       )}
                       {aba.id === 'mensagens' && (
                         <MessagesBadge count={mensagensNaoLidas} size="md" max={99} />
+                      )}
+                      {/* Indicador de página favorita */}
+                      {aba.id === itemFavorito && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full flex items-center justify-center">
+                          <span className="text-yellow-900 text-xs">★</span>
+                        </div>
                       )}
                     </div>
                     {!menuRecolhido && <span>{aba.nome}</span>}
@@ -3608,7 +3866,7 @@ const AlmoxarifadoSistema = () => {
                 </svg>
               </button>
               
-              {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
+              {temPermissao(NIVEIS_PERMISSAO.ADMIN) && (
                 <button
                   onClick={() => setAbaAtiva('usuarios')}
                   className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
@@ -3725,20 +3983,28 @@ const AlmoxarifadoSistema = () => {
               )}
               
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   logout();
                   setMenuOpen(false);
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                onMouseLeave={(e) => e.stopPropagation()}
                 className="p-2 rounded-full hover:bg-red-500/10 transition-colors"
                 title="Sair"
               >
                 <LogOut className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
               </button>
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setShowProfileModal(true);
                   setMenuOpen(false);
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                onMouseLeave={(e) => e.stopPropagation()}
                 className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                 title="Editar perfil"
               >
@@ -3752,22 +4018,30 @@ const AlmoxarifadoSistema = () => {
             <div className="mt-2">
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setAbaAtiva('suporte');
                     setMenuOpen(false);
                   }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseUp={(e) => e.stopPropagation()}
+                  onMouseLeave={(e) => e.stopPropagation()}
                   className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                   title="Ajuda"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-[#E7E9EA]"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
                 </button>
                 {/* Usuários - Apenas Admin */}
-                {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
+                {temPermissao(NIVEIS_PERMISSAO.ADMIN) && (
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setAbaAtiva('usuarios');
                       setMenuOpen(false);
                     }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onMouseUp={(e) => e.stopPropagation()}
+                    onMouseLeave={(e) => e.stopPropagation()}
                     className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                     title="Usuários"
                   >
@@ -3775,33 +4049,45 @@ const AlmoxarifadoSistema = () => {
                   </button>
                 )}
                 {/* Dashboard, Históricos - Apenas Admin (Gerente, Supervisor e Encarregado NÃO veem) */}
-                {usuario?.nivel === NIVEIS_PERMISSAO.ADMIN && (
+                {temPermissao(NIVEIS_PERMISSAO.ADMIN) && (
                   <>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setAbaAtiva('dashboard');
                         setMenuOpen(false);
                       }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onMouseUp={(e) => e.stopPropagation()}
+                      onMouseLeave={(e) => e.stopPropagation()}
                       className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                       title="Dashboard"
                     >
                       <BarChart3 className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
                     </button>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setAbaAtiva('historico-emprestimos');
                         setMenuOpen(false);
                       }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onMouseUp={(e) => e.stopPropagation()}
+                      onMouseLeave={(e) => e.stopPropagation()}
                       className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                       title="Histórico de Empréstimos"
                     >
                       <History className="w-5 h-5 text-gray-900 dark:text-[#E7E9EA]" />
                     </button>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setAbaAtiva('historico-transferencias');
                         setMenuOpen(false);
                       }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onMouseUp={(e) => e.stopPropagation()}
+                      onMouseLeave={(e) => e.stopPropagation()}
                       className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                       title="Histórico de Transferências"
                     >
@@ -3810,10 +4096,14 @@ const AlmoxarifadoSistema = () => {
                   </>
                 )}
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setAbaAtiva('legal');
                     setMenuOpen(false);
                   }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseUp={(e) => e.stopPropagation()}
+                  onMouseLeave={(e) => e.stopPropagation()}
                   className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
                   title="Legal"
                 >
@@ -3841,7 +4131,7 @@ const AlmoxarifadoSistema = () => {
           <div className="py-3">
 
             {abaAtiva === 'dashboard' && (
-              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
+              temPermissao(NIVEIS_PERMISSAO.ADMIN) ? (
                 <DashboardTab stats={stats} />
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar o dashboard." />
@@ -3849,7 +4139,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'analytics' && (
-              usuario?.nivel >= NIVEIS_PERMISSAO.GERENTE ? (
+              hasManagementPermission(usuario?.nivel) ? (
                 <AnalyticsTab />
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar as análises do sistema." />
@@ -3862,13 +4152,11 @@ const AlmoxarifadoSistema = () => {
             
             {abaAtiva === 'meu-perfil' && <ProfileTab />}
 
-            {abaAtiva === 'relatorios-erro' && <ErrorReportsPage />}
-
-            {abaAtiva === 'backup-monitoring' && (
-              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
-                <BackupMonitoringPage />
+            {abaAtiva === 'system-admin' && (
+              temPermissao(NIVEIS_PERMISSAO.ADMIN) ? (
+                <SystemAdminPage />
               ) : (
-                <PermissionDenied message="Você não tem permissão para acessar o sistema de backup." />
+                <PermissionDenied message="Você não tem permissão para acessar a administração do sistema." />
               )
             )}
 
@@ -3941,7 +4229,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'empresas-setores' && (
-              <GerenciamentoUnificado usuarioAtual={usuario} />
+              <GerenciamentoIntegrado usuarioAtual={usuario} />
             )}
 
             {abaAtiva === 'ranking' && (
@@ -3971,7 +4259,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'usuarios' && (
-              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
+              temPermissao(NIVEIS_PERMISSAO.ADMIN) ? (
                 <UsuariosTab />
               ) : (
                 <PermissionDenied message="Apenas administradores podem gerenciar usuários do sistema." />
@@ -3979,7 +4267,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'historico-transferencias' && (
-              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
+              temPermissao(NIVEIS_PERMISSAO.ADMIN) ? (
                 <HistoricoTransferenciasTab />
               ) : (
                 <PermissionDenied message="Apenas administradores podem visualizar o histórico de transferências." />
@@ -3997,7 +4285,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'escala' && (
-              usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR ? (
+              hasSupervisionPermission(usuario?.nivel) ? (
                 <EscalaPage usuarioAtual={usuario} />
               ) : (
                 <PermissionDenied message="Você não tem permissão para visualizar a escala de trabalho." />
@@ -4169,11 +4457,18 @@ const AlmoxarifadoSistema = () => {
                   Personalizar Menu
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Escolha quais itens aparecem no menu inferior e sua ordem
+                  {desktopEditMode 
+                    ? `Configure o item selecionado: ${desktopLongPressItem || 'Menu'}`
+                    : 'Escolha quais itens aparecem no menu inferior e sua ordem'
+                  }
                 </p>
               </div>
               <button
-                onClick={() => setShowMenuConfig(false)}
+                onClick={() => {
+                  setShowMenuConfig(false);
+                  setDesktopEditMode(false);
+                  setDesktopLongPressItem(null);
+                }}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
@@ -4190,20 +4485,44 @@ const AlmoxarifadoSistema = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900 dark:text-white">Página Favorita</h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">Aparece destacada no centro do menu inferior</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {desktopEditMode 
+                        ? 'Clique para definir como página favorita'
+                        : 'Aparece destacada no centro do menu inferior'
+                      }
+                    </p>
                   </div>
                 </div>
-                <select
-                  value={itemFavorito}
-                  onChange={(e) => setItemFavorito(e.target.value)}
-                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-blue-300 dark:border-blue-600 rounded-lg text-gray-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {abas.map((aba) => (
-                    <option key={aba.id} value={aba.id}>
-                      {aba.nome}
-                    </option>
-                  ))}
-                </select>
+                {desktopEditMode && desktopLongPressItem ? (
+                  <button
+                    onClick={() => {
+                      setItemFavorito(desktopLongPressItem);
+                      // Auto-salvar quando em modo de edição desktop
+                      setTimeout(async () => {
+                        await salvarMenuConfig(menuPersonalizado, desktopLongPressItem);
+                        setShowMenuConfig(false);
+                        setDesktopEditMode(false);
+                        setDesktopLongPressItem(null);
+                      }, 300);
+                    }}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    <Trophy className="w-5 h-5" />
+                    Definir "{abas.find(aba => aba.id === desktopLongPressItem)?.nome}" como Favorita
+                  </button>
+                ) : (
+                  <select
+                    value={itemFavorito}
+                    onChange={(e) => setItemFavorito(e.target.value)}
+                    className="w-full px-4 py-2 bg-white dark:bg-gray-800 border-2 border-blue-300 dark:border-blue-600 rounded-lg text-gray-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {abas.map((aba) => (
+                      <option key={aba.id} value={aba.id}>
+                        {aba.nome}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Lista de Itens */}
@@ -4231,9 +4550,11 @@ const AlmoxarifadoSistema = () => {
                             ? 'opacity-50 scale-95'
                             : isDragOver
                               ? 'border-yellow-400 dark:border-yellow-500 shadow-lg scale-105'
-                              : config?.visivel
-                                ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 dark:border-blue-400'
-                                : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                              : desktopEditMode && desktopLongPressItem === aba.id
+                                ? 'bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 border-purple-400 dark:border-purple-500 shadow-xl ring-2 ring-purple-300 dark:ring-purple-600'
+                                : config?.visivel
+                                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 dark:border-blue-400'
+                                  : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                         } ${aba.id === itemFavorito ? 'ring-2 ring-yellow-400 ring-offset-2 dark:ring-offset-gray-900' : ''}`}
                       >
                         {/* Drag handle */}
@@ -4263,6 +4584,12 @@ const AlmoxarifadoSistema = () => {
                               }`}>
                                 {aba.nome}
                               </p>
+                              {desktopEditMode && desktopLongPressItem === aba.id && (
+                                <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold rounded-full flex items-center gap-1 shadow-lg">
+                                  <MousePointer className="w-3 h-3" />
+                                  Selecionado
+                                </span>
+                              )}
                               {aba.id === itemFavorito && (
                                 <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full flex items-center gap-1">
                                   <Trophy className="w-3 h-3" />
@@ -4347,30 +4674,36 @@ const AlmoxarifadoSistema = () => {
             {/* Footer */}
             <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
               <button
-                onClick={() => setShowMenuConfig(false)}
+                onClick={() => {
+                  setShowMenuConfig(false);
+                  setDesktopEditMode(false);
+                  setDesktopLongPressItem(null);
+                }}
                 className="px-6 py-2.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
-                Cancelar
+                {desktopEditMode ? 'Fechar' : 'Cancelar'}
               </button>
-              <button
-                onClick={async () => {
-                  await salvarMenuConfig(menuPersonalizado, itemFavorito);
-                  setTimeout(() => setShowMenuConfig(false), 500);
-                }}
-                className="px-6 py-2.5 rounded-full bg-blue-500 dark:bg-blue-600 text-white font-medium hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg"
-              >
-                {menuConfigSaved ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Salvo!
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Salvar Configuração
-                  </>
-                )}
-              </button>
+              {!desktopEditMode && (
+                <button
+                  onClick={async () => {
+                    await salvarMenuConfig(menuPersonalizado, itemFavorito);
+                    setTimeout(() => setShowMenuConfig(false), 500);
+                  }}
+                  className="px-6 py-2.5 rounded-full bg-blue-500 dark:bg-blue-600 text-white font-medium hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg"
+                >
+                  {menuConfigSaved ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Salvo!
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Salvar Configuração
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -4448,13 +4781,46 @@ const AlmoxarifadoSistema = () => {
 // Componente principal da aplicação
 const App = () => {
   useDevToolsProtection();
-  const { usuario, isLoading } = useAuth();
+  const { usuario, loading } = useAuth();
+  const [sistemaInicializado, setSistemaInicializado] = useState(false);
+  const [fadeOutLoading, setFadeOutLoading] = useState(false);
+  const [mostrarConteudo, setMostrarConteudo] = useState(false);
 
-  if (isLoading) {
-    return <LoadingScreen />;
+  // Aguardar a inicialização completa antes de mostrar conteúdo
+  useEffect(() => {
+    if (!loading) {
+      console.log('🎯 Sistema carregado, iniciando transição suave...');
+      
+      // Aguardar um pouco para garantir que a barra chegou a 100%
+      const delayInicial = setTimeout(() => {
+        console.log('✅ Iniciando fade-out da tela de loading...');
+        setSistemaInicializado(true);
+        
+        // Iniciar fade-out
+        setFadeOutLoading(true);
+        
+        // Aguardar animação de fade-out antes de mostrar conteúdo
+        setTimeout(() => {
+          console.log('🚀 Mostrando conteúdo principal...');
+          setMostrarConteudo(true);
+        }, 600); // Tempo para completar fade-out
+      }, 800); // Delay inicial após loading = false
+      
+      return () => clearTimeout(delayInicial);
+    }
+  }, [loading]);
+
+  // Mostrar loading até sistema estar completamente pronto
+  if (loading || !mostrarConteudo) {
+    return <LoadingScreen fadeOut={fadeOutLoading} />;
   }
 
-  return usuario ? <AlmoxarifadoSistema /> : <LoginForm />;
+  // Renderizar conteúdo com fade-in suave
+  return (
+    <div className="animate-fadeIn min-h-screen bg-gray-50 dark:bg-gray-900">
+      {usuario ? <AlmoxarifadoSistema /> : <LoginForm />}
+    </div>
+  );
 };
 
 // Componente principal com Provider

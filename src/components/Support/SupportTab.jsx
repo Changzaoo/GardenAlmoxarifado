@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
-import { NIVEIS_PERMISSAO } from '../Workflow';
+import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 
 const SupportTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,7 +78,7 @@ const SupportTab = () => {
         {
           name: 'Gestão de Permissões',
           description: 'Configure níveis de acesso dos funcionários',
-          permission: NIVEIS_PERMISSAO.GERENTE,
+          permission: NIVEIS_PERMISSAO.GERENTE_SETOR,
           howTo: 'Acesse a área de edição do funcionário e ajuste seu nível de permissão.'
         }
       ]
@@ -97,7 +97,7 @@ const SupportTab = () => {
         {
           name: 'Aprovação',
           description: 'Aprove ou rejeite requisições de compra',
-          permission: NIVEIS_PERMISSAO.GERENTE,
+          permission: NIVEIS_PERMISSAO.GERENTE_SETOR,
           howTo: 'Revise as requisições pendentes e utilize os botões de aprovação ou rejeição.'
         },
         {
@@ -154,13 +154,13 @@ const SupportTab = () => {
         {
           name: 'Visão Geral',
           description: 'Visualize estatísticas e métricas principais',
-          permission: NIVEIS_PERMISSAO.GERENTE,
+          permission: NIVEIS_PERMISSAO.GERENTE_SETOR,
           howTo: 'Acesse o Dashboard para ver gráficos e estatísticas atualizadas do sistema.'
         },
         {
           name: 'Análise de Dados',
           description: 'Explore dados detalhados sobre o uso do sistema',
-          permission: NIVEIS_PERMISSAO.GERENTE,
+          permission: NIVEIS_PERMISSAO.GERENTE_SETOR,
           howTo: 'Utilize os filtros e gráficos interativos para analisar diferentes aspectos.'
         }
       ]
@@ -173,13 +173,13 @@ const SupportTab = () => {
         {
           name: 'Relatórios Personalizados',
           description: 'Crie e exporte relatórios específicos',
-          permission: NIVEIS_PERMISSAO.GERENTE,
+          permission: NIVEIS_PERMISSAO.GERENTE_SETOR,
           howTo: 'Em Analytics, selecione os parâmetros desejados e gere relatórios personalizados.'
         },
         {
           name: 'Métricas Avançadas',
           description: 'Acesse métricas detalhadas de uso e eficiência',
-          permission: NIVEIS_PERMISSAO.GERENTE,
+          permission: NIVEIS_PERMISSAO.GERENTE_SETOR,
           howTo: 'Explore as diferentes seções de métricas para análises aprofundadas.'
         }
       ]

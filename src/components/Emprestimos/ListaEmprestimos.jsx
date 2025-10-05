@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit, Package2, CircleUser, Shield } from 'lucide-react';
+import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit, Package2, CircleUser, Shield, FileText } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { NIVEIS_PERMISSAO, PermissionChecker } from '../../constants/permissoes';
 import { doc, updateDoc, collection, getDocs, addDoc, arrayUnion } from 'firebase/firestore';
@@ -10,6 +10,7 @@ import DevolucaoAnimation from './DevolucaoAnimation';
 import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
 import TransferenciaAnimation from './TransferenciaAnimation';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
+import ComprovanteEmprestimoModal from './ComprovanteEmprestimoModal';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 
 // Enum for sorting options
@@ -81,6 +82,10 @@ const ListaEmprestimos = ({
   // Estados para animação de transferência
   const [showTransferenciaAnimation, setShowTransferenciaAnimation] = useState(false);
   const [dadosTransferencia, setDadosTransferencia] = useState(null);
+  
+  // Estados para modal de comprovante
+  const [showComprovanteModal, setShowComprovanteModal] = useState(false);
+  const [emprestimoParaComprovante, setEmprestimoParaComprovante] = useState(null);
   
   const { usuario } = useAuth();
   
@@ -436,6 +441,12 @@ const ListaEmprestimos = ({
     const emprestimoParaEditar = JSON.parse(JSON.stringify(emprestimo));
     setEmprestimoParaEditar(emprestimoParaEditar);
     setShowEditModal(true);
+  };
+
+  const handleGerarComprovante = (emprestimo) => {
+    console.log('📄 Gerando comprovante para empréstimo:', emprestimo);
+    setEmprestimoParaComprovante(emprestimo);
+    setShowComprovanteModal(true);
   };
 
   const handleSaveEdit = async (emprestimoEditado) => {
@@ -938,42 +949,85 @@ const ListaEmprestimos = ({
                                 </div>
                               </div>
                               
-                              {/* Botões de Ação - Grid 2x2 */}
+                              {/* Botões de Ação */}
                               {emprestimo.status === 'emprestado' && temFerramentasEmprestadas(emprestimo) && (
-                                <div className="grid grid-cols-2 gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
-                                  {/* Linha Superior */}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleEditarEmprestimo(emprestimo);
-                                    }}
-                                    className="p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all duration-200"
-                                    title="Editar empréstimo"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </button>
+                                <div className="flex flex-col gap-1">
+                                  {/* Linha 1 - Ações principais */}
+                                  <div className="grid grid-cols-3 gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditarEmprestimo(emprestimo);
+                                      }}
+                                      className="p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all duration-200"
+                                      title="Editar empréstimo"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
+                                    
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleTransferirFerramentas(emprestimo);
+                                      }}
+                                      className="p-2 text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-md transition-all duration-200"
+                                      title="Transferir ferramentas"
+                                    >
+                                      <ArrowRightLeft className="w-4 h-4" />
+                                    </button>
+                                    
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleGerarComprovante(emprestimo);
+                                      }}
+                                      className="p-2 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-md transition-all duration-200"
+                                      title="Gerar comprovante PDF"
+                                    >
+                                      <FileText className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                   
+                                  {/* Linha 2 - Ações secundárias */}
+                                  <div className="grid grid-cols-2 gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDevolverFerramentas(emprestimo.id);
+                                      }}
+                                      className="p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-all duration-200"
+                                      title="Devolver ferramentas"
+                                    >
+                                      <CheckCircle className="w-4 h-4" />
+                                    </button>
+                                    
+                                    {temPermissaoEdicao && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoverEmprestimo(emprestimo);
+                                        }}
+                                        className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all duration-200"
+                                        title="Remover registro"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {emprestimo.status !== 'emprestado' && (
+                                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleTransferirFerramentas(emprestimo);
+                                      handleGerarComprovante(emprestimo);
                                     }}
-                                    className="p-2 text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-md transition-all duration-200"
-                                    title="Transferir ferramentas"
+                                    className="p-2 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-md transition-all duration-200"
+                                    title="Gerar comprovante PDF"
                                   >
-                                    <ArrowRightLeft className="w-4 h-4" />
-                                  </button>
-                                  
-                                  {/* Linha Inferior */}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDevolverFerramentas(emprestimo.id);
-                                    }}
-                                    className="p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-all duration-200"
-                                    title="Devolver ferramentas"
-                                  >
-                                    <CheckCircle className="w-4 h-4" />
+                                    <FileText className="w-4 h-4" />
                                   </button>
                                   
                                   {temPermissaoEdicao && (
@@ -988,21 +1042,6 @@ const ListaEmprestimos = ({
                                       <Trash2 className="w-4 h-4" />
                                     </button>
                                   )}
-                                </div>
-                              )}
-                              
-                              {emprestimo.status !== 'emprestado' && temPermissaoEdicao && (
-                                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleRemoverEmprestimo(emprestimo);
-                                    }}
-                                    className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all duration-200"
-                                    title="Remover registro"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
                                 </div>
                               )}
                             </div>
@@ -1248,6 +1287,21 @@ const ListaEmprestimos = ({
           funcionarioDestino={dadosTransferencia.funcionarioDestino}
           ferramentas={dadosTransferencia.ferramentas}
           onComplete={finalizarTransferencia}
+        />
+      )}
+
+      {/* Modal de Comprovante PDF */}
+      {showComprovanteModal && emprestimoParaComprovante && (
+        <ComprovanteEmprestimoModal
+          emprestimo={emprestimoParaComprovante}
+          ferramenta={emprestimoParaComprovante.ferramentas?.[0] || {}}
+          funcionario={funcionarios.find(f => f.id === emprestimoParaComprovante.funcionarioId) || { nome: emprestimoParaComprovante.nomeFuncionario }}
+          empresa={{ nome: emprestimoParaComprovante.empresaNome || 'N/A' }}
+          setor={{ nome: emprestimoParaComprovante.setorNome || 'N/A' }}
+          onClose={() => {
+            setShowComprovanteModal(false);
+            setEmprestimoParaComprovante(null);
+          }}
         />
       )}
 

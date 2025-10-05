@@ -13,13 +13,7 @@ import AvaliacaoTarefaModal from './AvaliacaoTarefaModal';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { formatarDataHora } from '../../utils/dateUtils';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
-import { PermissionChecker } from '../../constants/permissoes';
-
-const NIVEIS_PERMISSAO = {
-  FUNCIONARIO: 1,
-  SUPERVISOR: 2,
-  ADMIN: 3
-};
+import { PermissionChecker, hasSupervisionPermission, NIVEIS_PERMISSAO } from '../../constants/permissoes';
 
 const TarefasTab = ({ 
   funcionarios = [], 
@@ -159,7 +153,7 @@ const TarefasTab = ({
         setShowAvaliacaoModal(true);
       }
       // Se for supervisor ou admin, mostramos o modal de avaliação
-      else if (usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR) {
+      else if (hasSupervisionPermission(usuario?.nivel)) {
         setShowAvaliacaoModal(true);
       }
 
@@ -181,7 +175,7 @@ const TarefasTab = ({
       if (usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) {
         updateData.avaliacaoFuncionario = avaliacao;
         updateData.comentarioFuncionario = comentario;
-      } else if (usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR) {
+      } else if (hasSupervisionPermission(usuario.nivel)) {
         updateData.avaliacaoSupervisor = avaliacao;
         updateData.comentarioSupervisor = comentario;
       }
@@ -470,7 +464,7 @@ const TarefasTab = ({
             </select>
 
             {/* Botão Nova Tarefa */}
-            {showAddButton && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
+            {showAddButton && hasSupervisionPermission(usuario.nivel) && (
               <button
                 onClick={() => setShowCriarTarefa(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-lg hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors"
@@ -683,7 +677,7 @@ const TarefasTab = ({
                         </button>
                       )}
 
-                      {tarefa.status === 'concluida' && !tarefa.avaliacaoSupervisor && usuario?.nivel >= 2 && (
+                      {tarefa.status === 'concluida' && !tarefa.avaliacaoSupervisor && hasSupervisionPermission(usuario?.nivel) && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -748,8 +742,8 @@ const TarefasTab = ({
             setTarefaParaAvaliacao(null);
           }}
           onConfirm={handleAvaliacaoSubmit}
-          titulo={usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR ? "Avaliar Tarefa" : "Autoavaliação"}
-          tipoAvaliacao={usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR ? "supervisor" : "colaborador"}
+          titulo={hasSupervisionPermission(usuario.nivel) ? "Avaliar Tarefa" : "Autoavaliação"}
+          tipoAvaliacao={hasSupervisionPermission(usuario.nivel) ? "supervisor" : "colaborador"}
         />
       )}
 

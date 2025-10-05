@@ -88,12 +88,19 @@ const PrimeiroAcessoModal = ({ usuario, onComplete }) => {
       // Criptografar resposta secreta
       const { hash: respostaHash, salt: respostaSalt } = encryptPassword(respostaSecreta.toLowerCase());
 
+      // 🔑 ATUALIZAR AUTHKEY PARA NOVO SISTEMA DE AUTENTICAÇÃO
+      // Se for administrador (nível 0), usa authKey "admin2024"
+      // Se for outro usuário, usa authKey "workflow2024"
+      const authKey = usuario.nivel === 0 ? 'admin2024' : 'workflow2024';
+
       // Atualizar usuário no Firestore
       await updateDoc(doc(db, 'usuarios', usuario.id), {
         senhaHash: hash,
         senhaSalt: salt,
         senhaVersion: version,
         senha: null, // Remover senha em texto plano
+        authKey: authKey,
+        authKeyUpdatedAt: new Date(),
         fraseSecreta: fraseSecreta,
         respostaSecretaHash: respostaHash,
         respostaSecretaSalt: respostaSalt,

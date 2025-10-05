@@ -3,6 +3,7 @@ import { Calendar, ChevronLeft, ChevronRight, Info, Filter, Check, X, Eye, EyeOf
 import { collection, doc, setDoc, onSnapshot, deleteDoc, getDocs, addDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { toast } from 'react-toastify';
+import { hasSupervisionPermission, isAdmin, hasManagementPermission } from '../../constants/permissoes';
 
 const EscalaPage = ({ usuarioAtual }) => {
   const [dataAtual, setDataAtual] = useState(new Date());
@@ -474,10 +475,10 @@ const EscalaPage = ({ usuarioAtual }) => {
     });
   };
 
-  // Verificar permissão
+  // Verificar permissão usando o sistema correto - Admin (0) tem todas as permissões
   const temPermissao = useMemo(() => {
     if (!usuarioAtual) return false;
-    return usuarioAtual.nivel >= 2; // Supervisor ou superior (nivel 2, 3 ou 4)
+    return hasSupervisionPermission(usuarioAtual.nivel); // Admin, Supervisor ou superior
   }, [usuarioAtual]);
 
   // Filtrar funcionários por empresa, setor e ocultos
@@ -1140,8 +1141,8 @@ const EscalaPage = ({ usuarioAtual }) => {
             </select>
           </div>
 
-          {/* Botão de Filtros - Apenas para Administrador */}
-          {usuarioAtual?.nivel === 4 && (
+          {/* Botão de Filtros - Apenas para Admin e Gerentes */}
+          {hasManagementPermission(usuarioAtual?.nivel) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Filtros Avançados
@@ -1994,8 +1995,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                 </button>
                 {(() => {
                   const cargoLower = (usuarioAtual?.cargo || '').toLowerCase();
-                  const podeGerenciar = usuarioAtual?.nivel === 4 || 
-                                       usuarioAtual?.nivel === 3 || 
+                  const podeGerenciar = hasManagementPermission(usuarioAtual?.nivel) || 
                                        cargoLower.includes('supervisor') || 
                                        cargoLower.includes('encarregado') || 
                                        cargoLower.includes('gerente');
@@ -2236,7 +2236,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                       <div className="space-y-3">
                         {Object.values(horariosPersonalizados)
                           .filter(horario => 
-                            usuarioAtual?.nivel === 4 || 
+                            hasManagementPermission(usuarioAtual?.nivel) || 
                             horario.setorNome === usuarioAtual?.setor ||
                             horario.criadoPorId === usuarioAtual?.id
                           )

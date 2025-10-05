@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { encryptData, encryptPassword, verifyPassword } from '../utils/crypto';
+import { dbWorkflowBR1 } from '../config/firebaseWorkflowBR1';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 // Criar o contexto
 export const AuthContext = createContext({
@@ -53,6 +55,51 @@ export const AuthProvider = ({ children }) => {
   }, [usuario, usuarios]);
 
   const login = async (username, password) => {
+    // 1. Primeiro tenta buscar no workflowbr1
+    try {
+      const usuariosRef = collection(dbWorkflowBR1, 'usuarios');
+      const q = query(usuariosRef, where('email', '==', username), where('ativo', '==', true));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        const usuarioEncontrado = { id: doc.id, ...doc.data() };
+
+        // Verificar senha com novo sistema (hash + salt)
+        // Suporta tanto o formato antigo (senha, salt) quanto o novo (senhaHash, senhaSalt)
+        const hash = usuarioEncontrado.senhaHash || usuarioEncontrado.senha;
+        const salt = usuarioEncontrado.senhaSalt || usuarioEncontrado.salt;
+        const version = usuarioEncontrado.senhaVersion || usuarioEncontrado.version || 2;
+        
+        const senhaCorreta = verifyPassword(password, hash, salt, version);
+
+        if (!senhaCorreta) {
+          throw new Error('Senha incorreta');
+        }
+
+        // Validar setor/empresa para usuários não-admin
+        const NIVEL_ADMIN = 0;
+        const isAdmin = usuarioEncontrado.nivel === NIVEL_ADMIN;
+        
+        if (!isAdmin) {
+          if (usuarioEncontrado.nivel >= 1 && usuarioEncontrado.nivel <= 3) {
+            if (!usuarioEncontrado.setorId || !usuarioEncontrado.setorId.trim()) {
+              throw new Error('Usuário sem setor atribuído. Entre em contato com o administrador.');
+            }
+            if (!usuarioEncontrado.empresaId || !usuarioEncontrado.empresaId.trim()) {
+              throw new Error('Usuário sem empresa atribuída. Entre em contato com o administrador.');
+            }
+          }
+        }
+
+        setUsuario(usuarioEncontrado);
+        return usuarioEncontrado;
+      }
+    } catch (error) {
+      console.error('Erro ao buscar no workflowbr1:', error);
+    }
+
+    // 2. Se não encontrou no workflowbr1, tenta no localStorage (sistema antigo)
     const usuarioEncontrado = usuarios.find(u => u.username === username);
     if (!usuarioEncontrado) {
       throw new Error('Usuário não encontrado');
@@ -64,9 +111,8 @@ export const AuthProvider = ({ children }) => {
     }
 
     // Verificar se o usuário tem setor e empresa definidos
-    // EXCEÇÃO: Administradores (nivel 4) não precisam ter setor, empresa ou cargo
-    const NIVEL_ADMIN = 4;
-    const isAdmin = usuarioEncontrado.nivel === NIVEL_ADMIN;
+    const NIVEL_ADMIN_OLD = 4;
+    const isAdmin = usuarioEncontrado.nivel === NIVEL_ADMIN_OLD;
     
     if (!isAdmin) {
       if (!usuarioEncontrado.setorId || !usuarioEncontrado.setorId.trim()) {
@@ -85,6 +131,20 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUsuario(null);
     localStorage.removeItem('usuario');
+    
+    // Limpar cookies de autenticação para evitar login automático
+    try {
+      // Lista de cookies relacionados à autenticação
+      const cookieNames = ['workflow_usuario', 'workflow_lembrar', 'workflow_expiracao'];
+      
+      cookieNames.forEach(cookieName => {
+        document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/;SameSite=Strict`;
+      });
+      
+      console.log('✅ Cookies de autenticação removidos no logout');
+    } catch (error) {
+      console.error('❌ Erro ao remover cookies no logout:', error);
+    }
   };
 
   const cadastrarUsuario = async (dadosUsuario) => {
@@ -112,6 +172,15 @@ export const AuthProvider = ({ children }) => {
 
     if (dadosAtualizados.senha) {
       usuarioAtualizado.senha = await encryptPassword(dadosAtualizados.senha);
+      
+      // 🔑 ATUALIZAR AUTHKEY PARA NOVO SISTEMA DE AUTENTICAÇÃO
+      // Se for administrador (nível 0), usa authKey "admin2024"
+      // Se for outro usuário, usa authKey "workflow2024"
+      const nivelUsuario = usuarioAtualizado.nivel;
+      usuarioAtualizado.authKey = nivelUsuario === 0 ? 'admin2024' : 'workflow2024';
+      usuarioAtualizado.authKeyUpdatedAt = new Date();
+      
+      console.log('🔑 Campo authKey atualizado junto com a senha:', usuarioAtualizado.authKey);
     }
 
     const novosUsuarios = [...usuarios];

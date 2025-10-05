@@ -1,14 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { X, Clock, User, Wrench, ChevronLeft } from 'lucide-react';
+import { X, Clock, User, Wrench, ChevronLeft, FileText } from 'lucide-react';
+import ComprovanteEmprestimoModal from '../../Emprestimos/ComprovanteEmprestimoModal';
 
-const EmprestimoCard = ({ emprestimo }) => {
+const EmprestimoCard = ({ emprestimo, onGerarComprovante }) => {
   const getFerramentaNome = (ferramenta) => {
     if (!ferramenta) return 'Ferramenta não encontrada';
     return typeof ferramenta === 'object' ? ferramenta.nome : ferramenta;
   };
 
   return (
-    <div className="bg-white dark:bg-gray-700 rounded-xl p-4 flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-700 rounded-xl p-4 flex flex-col h-full relative">
       {/* Cabeçalho com Data/Hora e Status */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -50,6 +51,15 @@ const EmprestimoCard = ({ emprestimo }) => {
           </span>
         </div>
       )}
+
+      {/* Botão de Comprovante */}
+      <button
+        onClick={() => onGerarComprovante(emprestimo)}
+        className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm"
+      >
+        <FileText className="w-4 h-4" />
+        Ver Comprovante
+      </button>
     </div>
   );
 };
@@ -71,6 +81,8 @@ const FuncionarioCard = ({ nome, emprestimos, onClick }) => (
 
 const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
   const [selectedFuncionario, setSelectedFuncionario] = useState(null);
+  const [showComprovanteModal, setShowComprovanteModal] = useState(false);
+  const [emprestimoParaComprovante, setEmprestimoParaComprovante] = useState(null);
 
   const getFuncionarioNome = (emprestimo) => {
     return emprestimo.funcionario?.nome || 
@@ -100,6 +112,11 @@ const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
 
   const voltarParaLista = () => {
     setSelectedFuncionario(null);
+  };
+
+  const handleGerarComprovante = (emprestimo) => {
+    setEmprestimoParaComprovante(emprestimo);
+    setShowComprovanteModal(true);
   };
 
   return (
@@ -157,6 +174,7 @@ const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
                     <EmprestimoCard
                       key={emprestimo.id || index}
                       emprestimo={emprestimo}
+                      onGerarComprovante={handleGerarComprovante}
                     />
                   ))}
               </div>
@@ -168,6 +186,17 @@ const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
           )}
         </div>
       </div>
+
+      {/* Modal de Comprovante */}
+      {showComprovanteModal && emprestimoParaComprovante && (
+        <ComprovanteEmprestimoModal
+          emprestimo={emprestimoParaComprovante}
+          onClose={() => {
+            setShowComprovanteModal(false);
+            setEmprestimoParaComprovante(null);
+          }}
+        />
+      )}
     </div>
   );
 };

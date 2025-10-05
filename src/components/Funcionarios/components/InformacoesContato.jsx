@@ -27,6 +27,12 @@ const InformacoesContato = ({ funcionario }) => {
       console.error('Erro ao copiar:', err);
     }
   };
+
+  // Verificação de segurança
+  if (!funcionario) {
+    return null;
+  }
+
   return (
     <div className="space-y-2 pt-3 border-t border-gray-200 dark:border-gray-600">
       {funcionario.setor && (

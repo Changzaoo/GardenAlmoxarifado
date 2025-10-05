@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useAuth } from './useAuth';
-import { PermissionChecker } from '../constants/permissoes';
+import { PermissionChecker, hasSupervisionPermission } from '../constants/permissoes';
 
 /**
  * Hook personalizado para gerenciar permissões por setor
@@ -30,7 +30,7 @@ export const useSectorPermissions = () => {
       /**
        * Se o usuário pode gerenciar seu setor atual
        */
-      canManageCurrentSector: usuario.nivel >= 2, // Supervisor ou superior
+      canManageCurrentSector: hasSupervisionPermission(usuario.nivel), // Admin, Supervisor ou superior
 
       /**
        * ID do setor do usuário

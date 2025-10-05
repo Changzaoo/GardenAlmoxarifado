@@ -27,7 +27,7 @@ const MobileErrorScreen = ({ error, errorInfo, resetError }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 dark:from-gray-900 dark:to-red-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
         {/* Header com animação */}
         <div className="bg-gradient-to-r from-red-500 to-orange-500 p-8 text-center relative overflow-hidden">
@@ -37,7 +37,7 @@ const MobileErrorScreen = ({ error, errorInfo, resetError }) => {
           </div>
           
           <div className="relative">
-            <div className="w-24 h-24 mx-auto mb-4 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center animate-bounce">
+            <div className="w-24 h-24 mx-auto mb-4 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
               <AlertTriangle className="w-12 h-12 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
@@ -102,10 +102,10 @@ const MobileErrorScreen = ({ error, errorInfo, resetError }) => {
           <div className="space-y-3">
             <button
               onClick={handleReload}
-              className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-blue-500 dark:bg-[#1D9BF0] hover:bg-blue-600 dark:hover:bg-[#1A8CD8] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-5 h-5" />
-              Recarregar Página
+              Recarregar Sistema
             </button>
 
             <button

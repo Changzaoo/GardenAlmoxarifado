@@ -855,45 +855,81 @@ const RankingPontos = () => {
           };
         });
 
-      // Verificar duplicatas por nome ou email
-      const nomesUnicos = new Set();
-      const emailsUnicos = new Set();
-      const duplicatas = [];
+      // Agrupar funcionários com o mesmo nome e unir seus pontos
+      const funcionariosPorNome = new Map();
       
       rankingList.forEach(func => {
-        const nomeKey = func.nome?.toLowerCase();
-        const emailKey = func.email?.toLowerCase();
+        const nomeKey = func.nome?.toLowerCase().trim();
         
-        if (nomeKey && nomesUnicos.has(nomeKey)) {
-          duplicatas.push(`Nome duplicado: ${func.nome} (${func.id})`);
-        }
-        if (emailKey && emailsUnicos.has(emailKey)) {
-          duplicatas.push(`Email duplicado: ${func.email} (${func.id})`);
-        }
+        if (!nomeKey) return; // Ignorar funcionários sem nome
         
-        if (nomeKey) nomesUnicos.add(nomeKey);
-        if (emailKey) emailsUnicos.add(emailKey);
+        if (funcionariosPorNome.has(nomeKey)) {
+          // Funcionário já existe - unir os dados
+          const funcionarioExistente = funcionariosPorNome.get(nomeKey);
+          
+          // Unir empréstimos
+          funcionarioExistente.emprestimos = [
+            ...funcionarioExistente.emprestimos,
+            ...func.emprestimos
+          ];
+          
+          // Unir tarefas
+          funcionarioExistente.tarefas = [
+            ...funcionarioExistente.tarefas,
+            ...func.tarefas
+          ];
+          
+          // Unir avaliações
+          funcionarioExistente.avaliacoes = [
+            ...funcionarioExistente.avaliacoes,
+            ...func.avaliacoes
+          ];
+          
+          // Manter foto se existir em qualquer dos perfis
+          if (!funcionarioExistente.photoURL && func.photoURL) {
+            funcionarioExistente.photoURL = func.photoURL;
+          }
+          
+          // Recalcular pontuação com os dados unidos
+          funcionarioExistente.pontuacao = calcularPontuacao({
+            emprestimos: funcionarioExistente.emprestimos,
+            tarefas: funcionarioExistente.tarefas,
+            avaliacoes: funcionarioExistente.avaliacoes
+          });
+          
+          console.log(`🔗 Dados unidos para: ${func.nome}`, {
+            totalEmprestimos: funcionarioExistente.emprestimos.length,
+            totalTarefas: funcionarioExistente.tarefas.length,
+            totalAvaliacoes: funcionarioExistente.avaliacoes.length,
+            pontuacaoTotal: funcionarioExistente.pontuacao.total
+          });
+        } else {
+          // Primeira vez vendo este nome - adicionar ao mapa
+          funcionariosPorNome.set(nomeKey, { ...func });
+        }
       });
       
-      if (duplicatas.length > 0) {
-        console.warn('⚠️ DUPLICATAS ENCONTRADAS:', duplicatas);
-      }
-
+      // Converter de volta para array
+      const rankingListUnificado = Array.from(funcionariosPorNome.values());
+      
       console.log('✅ Ranking processado com sucesso:', {
-        totalFuncionarios: rankingList.length,
-        funcionariosUnicos: nomesUnicos.size,
-        funcionariosComFoto: rankingList.filter(f => f.photoURL).length,
-        duplicatas: duplicatas.length,
-        primeiros3: rankingList.slice(0, 3).map(f => ({ 
-          id: f.id,
-          nome: f.nome, 
-          email: f.email,
-          pontos: f.pontuacao.total, 
-          foto: !!f.photoURL 
-        }))
+        totalOriginal: rankingList.length,
+        totalUnificado: rankingListUnificado.length,
+        funcionariosUnidos: rankingList.length - rankingListUnificado.length,
+        funcionariosComFoto: rankingListUnificado.filter(f => f.photoURL).length,
+        primeiros3: rankingListUnificado
+          .sort((a, b) => b.pontuacao.total - a.pontuacao.total)
+          .slice(0, 3)
+          .map(f => ({ 
+            id: f.id,
+            nome: f.nome, 
+            email: f.email,
+            pontos: f.pontuacao.total, 
+            foto: !!f.photoURL 
+          }))
       });
 
-      setRankings(rankingList);
+      setRankings(rankingListUnificado);
       setLoading(false);
     } catch (error) {
       console.error('❌ Erro ao carregar dados:', error);
@@ -1497,11 +1533,28 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
         {/* Header com gradiente */}
         <div className="bg-gradient-to-r from-[#1D9BF0] to-[#1A8CD8] p-6 rounded-t-lg">
           <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-xl font-bold text-white mb-1">
-                {funcionario.nome}
-              </h3>
-              <p className="text-blue-100 text-sm">Detalhes de Pontuação</p>
+            <div className="flex items-center gap-4">
+              {/* Foto do funcionário */}
+              {funcionario.photoURL ? (
+                <img 
+                  src={funcionario.photoURL} 
+                  alt={funcionario.nome}
+                  className="w-16 h-16 rounded-full object-cover border-4 border-white/30 shadow-lg"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-white/20 border-4 border-white/30 shadow-lg">
+                  <span className="text-2xl font-bold text-white">
+                    {funcionario.nome.charAt(0)}
+                  </span>
+                </div>
+              )}
+              
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">
+                  {funcionario.nome}
+                </h3>
+                <p className="text-blue-100 text-sm">Detalhes de Pontuação</p>
+              </div>
             </div>
             <button
               onClick={onClose}

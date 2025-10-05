@@ -49,12 +49,14 @@ const Sidebar = ({ onProfileClick }) => {
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="p-4 flex items-center">
-          <OfflineLogo src="/logo.png" alt="Logo" className="w-10 h-10" />
+          <div className="relative w-10 h-10">
+            <OfflineLogo src="/logo.png" alt="Logo" className="w-full h-full relative z-10" />
+          </div>
           <span className="ml-2 text-lg font-bold text-white">WorkFlow</span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 pt-4">
+        <nav className="flex-1 pt-4 overflow-y-auto sidebar-scrollbar">
           {menu.map((item) => (
             usuario?.nivel >= item.requiredLevel && (
               <div key={item.path} className="relative">

@@ -24,7 +24,7 @@ import { db } from '../../firebaseConfig';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
+import { NIVEIS_PERMISSAO, hasSupervisionPermission } from '../../constants/permissoes';
 
 const calcularPontuacao = (dados) => {
   const pontosPorFerramentasDevolvidas = (dados.ferramentasDevolvidas || 0) * 20;
@@ -49,18 +49,27 @@ const ProfileTab = () => {
   const { funcionarios } = useFuncionarios();
   const [dadosFuncionario, setDadosFuncionario] = useState(null);
   
-  // Buscar funcionarioInfo da lista carregada (MESMA FONTE que página de Tarefas)
+  // Buscar funcionarioInfo da lista carregada (MESMA FONTE que página de Tarefas e Funcionários)
   // Garante que photoURL e cargo são exatamente os mesmos em todo o sistema
   const funcionarioInfo = funcionarios.find(f => {
-    // Tenta match por email (mais confiável)
-    if (f.email && usuario?.email && f.email === usuario.email) return true;
-    // Tenta match por ID do documento Firestore
-    if (f.id === usuario?.id) return true;
-    // Tenta match por campo 'id' interno do documento
-    if (f.id === usuario?.uid) return true;
-    // Tenta match convertendo para string
-    if (String(f.id) === String(usuario?.id)) return true;
-    if (String(f.email) === String(usuario?.email)) return true;
+    // Debug: mostrar tentativas de match
+    const emailMatch = f.email && usuario?.email && f.email.toLowerCase() === usuario.email.toLowerCase();
+    const idMatch = f.id === usuario?.id;
+    const uidMatch = f.id === usuario?.uid;
+    const stringIdMatch = String(f.id) === String(usuario?.id);
+    const stringEmailMatch = String(f.email)?.toLowerCase() === String(usuario?.email)?.toLowerCase();
+    const nomeMatch = f.nome && usuario?.nome && f.nome.toLowerCase() === usuario.nome.toLowerCase();
+    
+    if (emailMatch || idMatch || uidMatch || stringIdMatch || stringEmailMatch || nomeMatch) {
+      console.log('🎯 Match encontrado para funcionário:', {
+        funcionario: f.nome,
+        email: f.email,
+        id: f.id,
+        photoURL: f.photoURL,
+        matchType: emailMatch ? 'email' : idMatch ? 'id' : uidMatch ? 'uid' : stringIdMatch ? 'stringId' : stringEmailMatch ? 'stringEmail' : 'nome'
+      });
+      return true;
+    }
     return false;
   });
   
@@ -74,10 +83,11 @@ const ProfileTab = () => {
     
     if (!usuario?.email) return;
     
-    console.log('⚠️ funcionarioInfo não encontrado, buscando diretamente do Firestore...');
-    console.log('Buscando por email:', usuario.email);
+    console.log('⚠️ funcionarioInfo não encontrado no contexto, buscando diretamente do Firestore...');
+    console.log('Buscando por email:', usuario.email, 'ID:', usuario.id);
     
-    const unsubscribe = onSnapshot(
+    // Tentar primeiro na coleção 'funcionarios'
+    const unsubscribeFuncionarios = onSnapshot(
       query(
         collection(db, 'funcionarios'),
         where('email', '==', usuario.email)
@@ -85,13 +95,33 @@ const ProfileTab = () => {
       (snapshot) => {
         if (!snapshot.empty) {
           const dados = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-          console.log('✅ Dados encontrados no Firestore:', dados);
+          console.log('✅ Dados encontrados em "funcionarios":', dados);
           setDadosFuncionario(dados);
         } else {
-          console.log('❌ Nenhum funcionário encontrado com email:', usuario.email);
+          console.log('⚠️ Não encontrado em "funcionarios", tentando "usuario"...');
         }
       }
     );
+    
+    // Tentar também na coleção 'usuario'
+    const unsubscribeUsuario = onSnapshot(
+      doc(db, 'usuario', usuario.id),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const dados = { id: docSnap.id, ...docSnap.data() };
+          console.log('✅ Dados encontrados em "usuario":', dados);
+          // Só usar se não encontrou em funcionários
+          setDadosFuncionario(prev => prev || dados);
+        } else {
+          console.log('❌ Nenhum dado encontrado em "usuario"');
+        }
+      }
+    );
+    
+    return () => {
+      unsubscribeFuncionarios();
+      unsubscribeUsuario();
+    };
     
     return () => unsubscribe();
   }, [usuario?.email, funcionarioInfo]);
@@ -100,8 +130,9 @@ const ProfileTab = () => {
   // Isso garante que cargo, foto e setor sejam os mesmos em todo o sistema
   const dadosExibicao = funcionarioInfo || dadosFuncionario;
   
-  // Debug do cargo e usuário
+  // Debug do cargo, foto e usuário
   useEffect(() => {
+    const fotoFinal = dadosExibicao?.photoURL || usuario?.photoURL;
     console.log('👤 USUÁRIO LOGADO (ProfileTab):', {
       id: usuario?.id,
       nome: usuario?.nome,
@@ -111,8 +142,18 @@ const ProfileTab = () => {
       dadosExibicao: dadosExibicao,
       cargo_funcionarioInfo: funcionarioInfo?.cargo,
       cargo_dadosFuncionario: dadosFuncionario?.cargo,
-      cargo_dadosExibicao: dadosExibicao?.cargo
+      cargo_dadosExibicao: dadosExibicao?.cargo,
+      photoURL_funcionarioInfo: funcionarioInfo?.photoURL,
+      photoURL_dadosFuncionario: dadosFuncionario?.photoURL,
+      photoURL_dadosExibicao: dadosExibicao?.photoURL,
+      photoURL_usuario: usuario?.photoURL,
+      '🖼️ FOTO QUE SERÁ EXIBIDA': fotoFinal || 'Nenhuma foto disponível'
     });
+    
+    if (!fotoFinal) {
+      console.warn('⚠️ Nenhuma foto encontrada para o usuário:', usuario?.nome);
+      console.warn('Verifique se o funcionário tem photoURL cadastrado no Firestore');
+    }
   }, [dadosExibicao, funcionarios, usuario, funcionarioInfo, dadosFuncionario]);
   
   const [activeTab, setActiveTab] = useState('inventario');
@@ -135,7 +176,7 @@ const ProfileTab = () => {
   });
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [showAvaliacaoModal, setShowAvaliacaoModal] = useState(false);
-  const temPermissaoAvaliacao = usuario?.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
+  const temPermissaoAvaliacao = hasSupervisionPermission(usuario?.nivel);
 
   // Carregar cargo do funcionário
   useEffect(() => {
@@ -477,18 +518,20 @@ const ProfileTab = () => {
         <div className="absolute -bottom-16 left-8">
           <div className="relative group">
             <div className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-900 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center overflow-hidden shadow-2xl transform transition-transform duration-300 group-hover:scale-105">
-              {dadosExibicao?.photoURL ? (
+              {(dadosExibicao?.photoURL || usuario?.photoURL) ? (
                 <img 
-                  src={dadosExibicao.photoURL} 
-                  alt={usuario.nome} 
+                  src={dadosExibicao?.photoURL || usuario?.photoURL} 
+                  alt={usuario?.nome || 'Usuário'} 
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('Erro ao carregar foto:', e.target.src);
+                    e.target.style.display = 'none';
+                  }}
                 />
               ) : (
                 <UserCircle className="w-20 h-20 text-gray-400" />
               )}
             </div>
-            {/* Badge de status online */}
-            <div className="absolute bottom-2 right-2 w-7 h-7 bg-green-500 border-4 border-white dark:border-gray-900 rounded-full animate-pulse shadow-lg"></div>
           </div>
         </div>
       </div>

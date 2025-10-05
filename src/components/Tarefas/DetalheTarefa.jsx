@@ -1,16 +1,10 @@
-import React from 'react';
-import { X, Star, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, X, Clock, Star, Trash2, MessageSquare, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { hasSupervisionPermission, NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ToastProvider';
-import { deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../../firebaseConfig';
-import ConfirmDialog from '../common/ConfirmDialog';
-
-const NIVEIS_PERMISSAO = {
-  FUNCIONARIO: 1,
-  SUPERVISOR: 2,
-  ADMIN: 3
-};
 
 const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
   const { usuario } = useAuth();
@@ -109,7 +103,7 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
                 )}
                 
                 {/* Botão de excluir para supervisores */}
-                {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && (
+                {hasSupervisionPermission(usuario.nivel) && (
                   <button
                     onClick={handleDeletarTarefa}
                     className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors"
@@ -284,7 +278,7 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
               )}
 
               {/* Botão para Supervisor Avaliar */}
-              {usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR && !tarefa.avaliacaoSupervisor && (
+              {hasSupervisionPermission(usuario.nivel) && !tarefa.avaliacaoSupervisor && (
                 <button
                   onClick={() => onConcluir?.(tarefa)}
                   className="w-full px-4 py-2 bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors flex items-center justify-center gap-2 mt-4"

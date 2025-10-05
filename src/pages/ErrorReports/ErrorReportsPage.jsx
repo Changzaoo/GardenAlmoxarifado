@@ -19,7 +19,7 @@ import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
+import { NIVEIS_PERMISSAO, isAdmin } from '../../constants/permissoes';
 
 const ErrorReportsPage = () => {
   const { usuario } = useAuth();
@@ -30,14 +30,14 @@ const ErrorReportsPage = () => {
   const [relatorioSelecionado, setRelatorioSelecionado] = useState(null);
   const [showDetalhes, setShowDetalhes] = useState(false);
 
-  const isAdmin = usuario?.nivel >= NIVEIS_PERMISSAO.ADMIN;
+  const isAdminUser = isAdmin(usuario?.nivel);
 
   // Carregar relatórios
   useEffect(() => {
     if (!usuario?.id) return;
 
     let q;
-    if (isAdmin) {
+    if (isAdminUser) {
       // Admin vê todos os relatórios
       q = query(
         collection(db, 'errorReports'),
@@ -62,7 +62,7 @@ const ErrorReportsPage = () => {
     });
 
     return () => unsubscribe();
-  }, [usuario?.id, isAdmin]);
+  }, [usuario?.id, isAdminUser]);
 
   // Filtrar relatórios
   const relatoriosFiltrados = relatorios.filter(relatorio => {
@@ -245,7 +245,7 @@ const ErrorReportsPage = () => {
           </div>
 
           {/* Footer com ações */}
-          {isAdmin && (
+          {isAdminUser && (
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
               <button
                 onClick={() => atualizarStatus(relatorio.id, 'analisando')}
@@ -293,7 +293,7 @@ const ErrorReportsPage = () => {
               Relatórios de Erros
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {isAdmin ? 'Gerencie todos os relatórios de erro do sistema' : 'Seus relatórios de erro enviados'}
+              {isAdminUser ? 'Gerencie todos os relatórios de erro do sistema' : 'Seus relatórios de erro enviados'}
             </p>
           </div>
           <div className="flex items-center gap-2">

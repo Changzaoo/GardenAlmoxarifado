@@ -280,7 +280,8 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
               <p className="text-xs text-[#8899A6] mt-1">
                 {userData.nivel === NIVEIS_PERMISSAO.FUNCIONARIO && "Apenas visualizar informações"}
                 {userData.nivel === NIVEIS_PERMISSAO.SUPERVISOR && "Criar funcionários + operações"}
-                {userData.nivel === NIVEIS_PERMISSAO.GERENTE && "Gerenciar funcionários e usuários"}
+                {userData.nivel === NIVEIS_PERMISSAO.GERENTE_SETOR && "Gerenciar setor específico"}
+                {userData.nivel === NIVEIS_PERMISSAO.GERENTE_GERAL && "Gerenciar múltiplos setores"}
                 {userData.nivel === NIVEIS_PERMISSAO.ADMIN && "Todas as permissões"}
               </p>
             </div>

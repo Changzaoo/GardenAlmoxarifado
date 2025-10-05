@@ -907,7 +907,9 @@ const WorkflowChat = ({
                     ))}
                     <div ref={messagesEndRef} />
                   </div>
-                  <div className="p-3 border-t border-gray-200 dark:border-gray-400 bg-gray-100 dark:bg-gray-600 flex items-center gap-2 relative">
+
+                  {/* Barra de ferramentas acima do campo de input */}
+                  <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-400 bg-gray-100 dark:bg-gray-600 flex items-center gap-2">
                     <div className="relative">
                       <button
                         type="button"
@@ -918,7 +920,7 @@ const WorkflowChat = ({
                         <Smile className="w-5 h-5" />
                       </button>
                       {showEmojiPicker && (
-                        <div className="absolute bottom-full left-0 mb-2">
+                        <div className="absolute bottom-full left-0 mb-2 z-50">
                           <EmojiPicker
                             onEmojiClick={handleEmojiClick}
                             theme="dark"
@@ -940,7 +942,7 @@ const WorkflowChat = ({
                       </button>
 
                       {showAttachMenu && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-[#2f3136] rounded-lg shadow-lg border border-gray-200 dark:border-gray-400">
+                        <div className="absolute bottom-full left-0 mb-2 bg-[#2f3136] rounded-lg shadow-lg border border-gray-200 dark:border-gray-400 z-50">
                           <input
                             type="file"
                             accept="image/*"
@@ -995,7 +997,10 @@ const WorkflowChat = ({
                         </div>
                       )}
                     </div>
+                  </div>
 
+                  {/* Campo de input de mensagem */}
+                  <div className="p-3 bg-gray-100 dark:bg-gray-600 flex items-center gap-2 relative">
                     <form onSubmit={handleSendMessage} className="flex-1 flex gap-2">
                       <input
                         type="text"

@@ -138,7 +138,8 @@ export const atualizarMenuPorNivel = (nivel, menuAtual = null) => {
   const menuVisibilidadePorNivel = {
     [NIVEIS_PERMISSAO.FUNCIONARIO]: ['notificacoes', 'mensagens', 'tarefas'],
     [NIVEIS_PERMISSAO.SUPERVISOR]: ['notificacoes', 'mensagens', 'tarefas', 'escala', 'ponto', 'ranking'],
-    [NIVEIS_PERMISSAO.GERENTE]: ['notificacoes', 'mensagens', 'tarefas', 'escala', 'inventario', 'emprestimos', 'funcionarios', 'ponto', 'ranking'],
+    [NIVEIS_PERMISSAO.GERENTE_SETOR]: ['notificacoes', 'mensagens', 'tarefas', 'escala', 'inventario', 'emprestimos', 'funcionarios', 'ponto', 'ranking'],
+    [NIVEIS_PERMISSAO.GERENTE_GERAL]: ['notificacoes', 'mensagens', 'tarefas', 'escala', 'inventario', 'emprestimos', 'funcionarios', 'ponto', 'ranking', 'compras', 'analytics'],
     [NIVEIS_PERMISSAO.ADMIN]: 'todos' // Admin vê tudo
   };
   

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Edit2, Pencil } from 'lucide-react';
+import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Edit2, Pencil, FileText } from 'lucide-react';
 import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import DevolucaoTerceirosModal from './DevolucaoTerceirosModal';
 import DevolucaoParcialModal from './DevolucaoParcialModal';
+import ComprovanteEmprestimoModal from './ComprovanteEmprestimoModal';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import { useAuth } from '../../hooks/useAuth';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
@@ -24,6 +25,8 @@ const HistoricoEmprestimosTab = ({
   const [emprestimoParaDevolucaoParcial, setEmprestimoParaDevolucaoParcial] = useState(null);
   const [showConfirmacaoExclusao, setShowConfirmacaoExclusao] = useState(false);
   const [emprestimoParaExcluir, setEmprestimoParaExcluir] = useState(null);
+  const [showComprovanteModal, setShowComprovanteModal] = useState(false);
+  const [emprestimoParaComprovante, setEmprestimoParaComprovante] = useState(null);
   const { usuario } = useAuth();
   
   const temPermissaoEdicao = usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
@@ -197,6 +200,11 @@ const HistoricoEmprestimosTab = ({
     setEmprestimoParaExcluir(null);
   };
 
+  const handleGerarComprovante = (emprestimo) => {
+    setEmprestimoParaComprovante(emprestimo);
+    setShowComprovanteModal(true);
+  };
+
   // Verifica se há ferramentas emprestadas no array de ferramentas
   const temFerramentasEmprestadas = (emprestimo) => {
     if (!emprestimo || typeof emprestimo !== 'object') {
@@ -343,6 +351,17 @@ const HistoricoEmprestimosTab = ({
                 </div>
               </div>
 
+              {/* Botão de Comprovante */}
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-3 mt-2 mb-3">
+                <button
+                  onClick={() => handleGerarComprovante(emprestimo)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm"
+                >
+                  <FileText className="w-4 h-4" />
+                  Ver Comprovante
+                </button>
+              </div>
+
               {/* Campo de Observações */}
               <div className="border-t border-gray-200 dark:border-gray-600 pt-3 mt-2">
                 <div 
@@ -470,6 +489,17 @@ const HistoricoEmprestimosTab = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Comprovante */}
+      {showComprovanteModal && emprestimoParaComprovante && (
+        <ComprovanteEmprestimoModal
+          emprestimo={emprestimoParaComprovante}
+          onClose={() => {
+            setShowComprovanteModal(false);
+            setEmprestimoParaComprovante(null);
+          }}
+        />
       )}
     </div>
   );

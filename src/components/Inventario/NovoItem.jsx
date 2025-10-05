@@ -4,10 +4,11 @@ import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../firebaseConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import AdicionarItemAnimation from './AdicionarItemAnimation';
+import { isAdmin as checkIsAdmin, hasManagementPermission } from '../../constants/permissoes';
 
 const NovoItem = ({ adicionarItem }) => {
   const { usuario } = useAuth();
-  const isAdmin = usuario?.nivel === 4;
+  const isAdmin = checkIsAdmin(usuario?.nivel) || hasManagementPermission(usuario?.nivel);
   
   const [novoItem, setNovoItem] = useState({
     nome: '',

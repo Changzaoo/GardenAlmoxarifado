@@ -11,10 +11,11 @@ import { RouteStateManager } from './components/RouteStateManager';
 import { ScrollPersistence } from './hooks/useScrollPersistence';
 import Layout from './components/Layout/Layout';
 import { MessageNotificationProvider } from './components/Chat/MessageNotificationContext';
-import LoginForm from './components/Auth/LoginForm';
+import LoginFormContainer from './components/Auth/LoginFormContainer';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import UserProfileModal from './components/Auth/UserProfileModal';
 import NotificationPermissionModal from './components/Notifications/NotificationPermissionModal';
+import CriarAdminTemp from './components/Auth/CriarAdminTemp';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Componentes das páginas
@@ -46,7 +47,8 @@ function AppContent() {
         }}
       />
       <Routes>
-        <Route path="/login" element={<LoginForm />} />
+        <Route path="/login" element={<LoginFormContainer />} />
+        <Route path="/criar-admin-temp" element={<CriarAdminTemp />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<PrivateRoute requiredLevel={1}><Workflow /></PrivateRoute>} />
           <Route path="/estatisticas-acesso" element={<PrivateRoute requiredLevel={4}><EstatisticasAcesso /></PrivateRoute>} />

@@ -426,7 +426,8 @@ function atribuirCargoPorNivel(nivel) {
   const cargos = {
     [NIVEIS_PERMISSAO.FUNCIONARIO]: 'Jardineiro',
     [NIVEIS_PERMISSAO.SUPERVISOR]: 'Supervisor de Jardim',
-    [NIVEIS_PERMISSAO.GERENTE]: 'Gerente de Operações',
+    [NIVEIS_PERMISSAO.GERENTE_SETOR]: 'Gerente de Setor',
+    [NIVEIS_PERMISSAO.GERENTE_GERAL]: 'Gerente Geral',
     [NIVEIS_PERMISSAO.ADMIN]: 'Administrador do Sistema'
   };
   

@@ -1,17 +1,37 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { storage, db } from '../../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '../ToastProvider';
 import FuncionarioProfile from './FuncionarioProfile';
-import { UsersRound, Users, UserX } from 'lucide-react';
+import { 
+  UsersRound, 
+  Users, 
+  UserX, 
+  Plus, 
+  Search, 
+  Filter, 
+  Grid3X3, 
+  List,
+  Star,
+  TrendingUp,
+  Award,
+  Target,
+  Sparkles,
+  User,
+  Crown,
+  Trophy,
+  Building2,
+  ChevronDown
+} from 'lucide-react';
 import GruposModal from './components/GruposModal';
 
 // Importando os componentes refatorados
 import FormularioAdicao from './components/FormularioAdicao';
-import BarraBusca from './components/BarraBusca';
-import CardFuncionario from './components/CardFuncionario';
+import BarraBuscaModerna from './components/BarraBuscaModerna';
+import CardFuncionarioModerno from './components/CardFuncionarioModerno';
 import ModalEditar from './components/ModalEditar';
 import ModalConfirmacao from './components/ModalConfirmacao';
 
@@ -43,6 +63,12 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   const [avaliacoesExpandidas, setAvaliacoesExpandidas] = useState(null);
   const [avaliacoesDesempenhoExpandidas, setAvaliacoesDesempenhoExpandidas] = useState(null);
   const fileInputRef = useRef();
+  
+  // Estados para filtros de empresa e setor
+  const [empresas, setEmpresas] = useState([]);
+  const [setores, setSetores] = useState([]);
+  const [empresaSelecionada, setEmpresaSelecionada] = useState('todas');
+  const [setorSelecionado, setSetorSelecionado] = useState('todos');
 
   const calcularPontuacao = (dados) => {
     const pontosPorFerramentasDevolvidas = (dados.ferramentasDevolvidas || 0) * 20;
@@ -151,12 +177,18 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                            func.matricula?.toLowerCase().includes(searchLower) ||
                            func.setor?.toLowerCase().includes(searchLower);
       
+      // Filtro por empresa
+      const matchesEmpresa = empresaSelecionada === 'todas' || func.empresaId === empresaSelecionada;
+      
+      // Filtro por setor
+      const matchesSetor = setorSelecionado === 'todos' || func.setorId === setorSelecionado;
+      
       // Filtro por status de demissão
       if (filtroAtual === 'demitidos') {
-        return matchesSearch && func.demitido === true;
+        return matchesSearch && matchesEmpresa && matchesSetor && func.demitido === true;
       } else {
         // Para outros filtros, mostrar apenas funcionários ativos (não demitidos)
-        return matchesSearch && !func.demitido;
+        return matchesSearch && matchesEmpresa && matchesSetor && !func.demitido;
       }
     });
   };
@@ -164,8 +196,32 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   // Processar funcionários com filtro e ordenação
   const funcionariosFiltrados = filtrarFuncionarios(funcionarios);
 
+  // Obter setores filtrados por empresa
+  const setoresFiltrados = empresaSelecionada === 'todas' 
+    ? setores 
+    : setores.filter(setor => setor.empresaId === empresaSelecionada);
+
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
+
+  // Carregar empresas e setores
+  useEffect(() => {
+    const carregarEmpresasSetores = async () => {
+      try {
+        const [empresasSnapshot, setoresSnapshot] = await Promise.all([
+          getDocs(collection(db, 'empresas')),
+          getDocs(collection(db, 'setores'))
+        ]);
+
+        setEmpresas(empresasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setSetores(setoresSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error('Erro ao carregar empresas e setores:', error);
+      }
+    };
+    
+    carregarEmpresasSetores();
+  }, []);
 
   // Buscar estatísticas dos funcionários
   useEffect(() => {
@@ -340,7 +396,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 
         const statsData = {
           emprestimosAtivos,
-          mediaAvaliacao: totalAvaliacoes > 0 ? (somaAvaliacoes / totalAvaliacoes).toFixed(1) : 0,
+          mediaAvaliacao: totalAvaliacoes > 0 ? (somaAvaliacoes / totalAvaliacoes) : 0,
           totalAvaliacoes,
           tarefasConcluidas,
           tarefasEmAndamento,
@@ -456,113 +512,281 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Header Corporativo */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Gestão de Funcionários
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {funcionariosFiltrados.length} {funcionariosFiltrados.length === 1 ? 'funcionário encontrado' : 'funcionários encontrados'}
-              </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-gray-900 dark:via-slate-900 dark:to-blue-900/20">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden">
+        {/* Background decorativo */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 opacity-95" />
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute inset-0 bg-white/5" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }} />
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-6 py-12">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-8"
+          >
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl mb-6">
+              <Users className="w-10 h-10 text-white" />
             </div>
-            
-            {/* Stats resumo */}
-            <div className="hidden md:flex items-center gap-6">
-              <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {funcionarios.filter(f => !f.demitido).length}
+            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+              Gestão de Talentos
+            </h1>
+            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+              Acompanhe, gerencie e desenvolva sua equipe com ferramentas modernas e intuitivas
+            </p>
+          </motion.div>
+
+          {/* Estatísticas em destaque */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto"
+          >
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-white mb-1">
+                {funcionarios.filter(f => !f.demitido).length}
+              </div>
+              <div className="text-blue-100 text-sm font-medium">Funcionários Ativos</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-white mb-1">
+                {Object.keys(funcionariosStats).length}
+              </div>
+              <div className="text-blue-100 text-sm font-medium">Com Avaliações</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-white mb-1">
+                {Object.values(funcionariosStats).reduce((acc, stats) => acc + (stats.tarefasConcluidas || 0), 0)}
+              </div>
+              <div className="text-blue-100 text-sm font-medium">Tarefas Concluídas</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
+              <div className="text-3xl font-bold text-white mb-1">
+                {(Object.values(funcionariosStats).reduce((acc, stats) => acc + (stats.mediaAvaliacao || 0), 0) / Object.keys(funcionariosStats).length || 0).toFixed(1)}
+              </div>
+              <div className="text-blue-100 text-sm font-medium">Avaliação Média</div>
+            </div>
+          </motion.div>
+          
+          {/* Filtros de Empresa e Setor */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-8 max-w-4xl mx-auto"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Filtro por Empresa */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-blue-100 mb-2">
+                  <Building2 className="w-4 h-4 inline mr-2" />
+                  Filtrar por Empresa
+                </label>
+                <div className="relative">
+                  <select
+                    value={empresaSelecionada}
+                    onChange={(e) => {
+                      setEmpresaSelecionada(e.target.value);
+                      setSetorSelecionado('todos'); // Reset setor quando mudar empresa
+                    }}
+                    className="w-full bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none"
+                  >
+                    <option value="todas" className="bg-blue-600 text-white">Todas as Empresas</option>
+                    {empresas.map(empresa => (
+                      <option key={empresa.id} value={empresa.id} className="bg-blue-600 text-white">
+                        {empresa.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-200 pointer-events-none" />
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">Ativos</div>
+              </div>
+
+              {/* Filtro por Setor */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-blue-100 mb-2">
+                  <Filter className="w-4 h-4 inline mr-2" />
+                  Filtrar por Setor
+                </label>
+                <div className="relative">
+                  <select
+                    value={setorSelecionado}
+                    onChange={(e) => setSetorSelecionado(e.target.value)}
+                    disabled={empresaSelecionada === 'todas'}
+                    className={`w-full bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none ${
+                      empresaSelecionada === 'todas' ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <option value="todos" className="bg-blue-600 text-white">
+                      {empresaSelecionada === 'todas' ? 'Selecione uma empresa primeiro' : 'Todos os Setores'}
+                    </option>
+                    {setoresFiltrados.map(setor => (
+                      <option key={setor.id} value={setor.id} className="bg-blue-600 text-white">
+                        {setor.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-200 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Controles e Filtros */}
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200/50 dark:bg-gray-900/80 dark:border-gray-700/50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col lg:flex-row items-center justify-between gap-4"
+          >
+            {/* Controles de visualização */}
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {funcionariosFiltrados.length} de {funcionarios.length} funcionários
               </div>
               {filtroAtual === 'demitidos' && (
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                    {funcionarios.filter(f => f.demitido).length}
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Inativos</div>
-                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                  <UserX className="w-3 h-3" />
+                  Inativos
+                </span>
               )}
             </div>
-          </div>
 
-          {/* Barra de Busca e Filtros */}
-          <BarraBusca
-            filtroAtual={filtroAtual}
-            setFiltroAtual={setFiltroAtual}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            onManageGroups={() => setShowGruposModal(true)}
-            showGroupsButton={!readonly && usuario?.nivel >= 2}
-          />
+            {/* Barra de Busca e Filtros */}
+            <BarraBuscaModerna
+              filtroAtual={filtroAtual}
+              setFiltroAtual={setFiltroAtual}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              onManageGroups={() => setShowGruposModal(true)}
+              showGroupsButton={!readonly && usuario?.nivel >= 2}
+            />
+          </motion.div>
         </div>
       </div>
 
       {/* Container Principal */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Formulário de Adição */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Formulário de Adição Modernizado */}
         {!isFuncionario && !readonly && (
-          <div className="mb-6">
-            <FormularioAdicao
-              onSubmit={handleAdicionar}
-              loading={loading}
-              formatarTelefone={formatarTelefone}
-            />
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <div className="bg-white/70 backdrop-blur-sm dark:bg-gray-800/70 rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl shadow-blue-500/10 dark:shadow-blue-500/5 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+                  <Plus className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Adicionar Novo Funcionário
+                </h2>
+              </div>
+              <FormularioAdicao
+                onSubmit={handleAdicionar}
+                loading={loading}
+                formatarTelefone={formatarTelefone}
+              />
+            </div>
+          </motion.div>
         )}
 
         {/* Lista de Funcionários */}
-        {funcionariosFiltrados.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                {filtroAtual === 'demitidos' ? (
-                  <UserX className="w-10 h-10 text-gray-400" />
-                ) : (
-                  <Users className="w-10 h-10 text-gray-400" />
+        <AnimatePresence>
+          {funcionariosFiltrados.length === 0 ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white/70 backdrop-blur-sm dark:bg-gray-800/70 rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl shadow-blue-500/10 dark:shadow-blue-500/5 p-12"
+            >
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="relative mb-6">
+                  <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center">
+                    {filtroAtual === 'demitidos' ? (
+                      <UserX className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+                    ) : (
+                      <Users className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+                    )}
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
+                    <Sparkles className="w-3 h-3 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                  {filtroAtual === 'demitidos' ? 'Nenhum funcionário inativo' : 'Nenhum funcionário encontrado'}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 max-w-md leading-relaxed">
+                  {filtroAtual === 'demitidos' 
+                    ? 'Não há funcionários inativos no sistema. Que ótima notícia!'
+                    : searchTerm 
+                      ? `Não foram encontrados funcionários que correspondam ao termo "${searchTerm}". Tente ajustar os filtros ou buscar por outros termos.`
+                      : 'Comece adicionando seu primeiro funcionário ao sistema e construa sua equipe dos sonhos!'
+                  }
+                </p>
+                {!filtroAtual.includes('demitidos') && !searchTerm && !isFuncionario && !readonly && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg"
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Adicionar Funcionário
+                  </motion.button>
                 )}
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {filtroAtual === 'demitidos' ? 'Nenhum funcionário inativo' : 'Nenhum funcionário encontrado'}
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-md">
-                {filtroAtual === 'demitidos' 
-                  ? 'Não há funcionários inativos no sistema.'
-                  : searchTerm 
-                    ? `Não foram encontrados funcionários que correspondam ao termo "${searchTerm}".`
-                    : 'Ainda não há funcionários cadastrados no sistema.'
-                }
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-5">
-            {[...funcionariosFiltrados].sort(getFuncaoOrdenacao()).map((func) => (
-              <CardFuncionario
-                key={func.id}
-                funcionario={func}
-                funcionariosStats={funcionariosStats}
-                funcionariosPontos={funcionariosPontos}
-                isFuncionario={isFuncionario}
-                readonly={readonly}
-                avaliacoesExpandidas={avaliacoesExpandidas}
-                avaliacoesDesempenhoExpandidas={avaliacoesDesempenhoExpandidas}
-                setAvaliacoesExpandidas={setAvaliacoesExpandidas}
-                setAvaliacoesDesempenhoExpandidas={setAvaliacoesDesempenhoExpandidas}
-                handleEditar={handleEditar}
-                confirmarExclusao={confirmarExclusao}
-                calcularMediaAvaliacoesDesempenho={calcularMediaAvaliacoesDesempenho}
-                onClick={() => setFuncionarioSelecionado(func)}
-                demitirFuncionario={demitirFuncionario}
-                reintegrarFuncionario={reintegrarFuncionario}
-                filtroAtual={filtroAtual}
-              />
-            ))}
-          </div>
-        )}
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6"
+            >
+              {[...funcionariosFiltrados].sort(getFuncaoOrdenacao()).map((func, index) => (
+                <motion.div
+                  key={func.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                >
+                  <CardFuncionarioModerno
+                    funcionario={func}
+                    funcionariosStats={funcionariosStats}
+                    funcionariosPontos={funcionariosPontos}
+                    isFuncionario={isFuncionario}
+                    readonly={readonly}
+                    avaliacoesExpandidas={avaliacoesExpandidas}
+                    avaliacoesDesempenhoExpandidas={avaliacoesDesempenhoExpandidas}
+                    setAvaliacoesExpandidas={setAvaliacoesExpandidas}
+                    setAvaliacoesDesempenhoExpandidas={setAvaliacoesDesempenhoExpandidas}
+                    handleEditar={handleEditar}
+                    confirmarExclusao={confirmarExclusao}
+                    calcularMediaAvaliacoesDesempenho={calcularMediaAvaliacoesDesempenho}
+                    onClick={() => setFuncionarioSelecionado(func)}
+                    demitirFuncionario={demitirFuncionario}
+                    reintegrarFuncionario={reintegrarFuncionario}
+                    filtroAtual={filtroAtual}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Modal de Perfil do Funcionário */}

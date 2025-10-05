@@ -1,8 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { ToolCase, ArrowRight, Clock, Package, User, CheckCircle, CircleDotDashed } from 'lucide-react';
+import { ToolCase, ArrowRight, Clock, Package, User, CheckCircle, CircleDotDashed, FileText } from 'lucide-react';
 import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import TransferirFerramenta from '../Transferencias/TransferirFerramenta';
+import ComprovanteEmprestimoModal from '../Emprestimos/ComprovanteEmprestimoModal';
 import { FuncionariosContext } from '../Funcionarios/FuncionariosProvider';
 import { db } from '../../firebaseConfig';
 
@@ -10,6 +11,8 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
   const [transferindoEmprestimo, setTransferindoEmprestimo] = useState(null);
   const [transferenciasRecebimento, setTransferenciasRecebimento] = useState([]);
   const [transferenciasEnvio, setTransferenciasEnvio] = useState([]);
+  const [showComprovanteModal, setShowComprovanteModal] = useState(false);
+  const [emprestimoParaComprovante, setEmprestimoParaComprovante] = useState(null);
   const { funcionarios } = useContext(FuncionariosContext);
 
   // Garantir que emprestimos seja sempre um array
@@ -87,6 +90,11 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
     } catch (error) {
       console.error('Erro ao recusar transferência:', error);
     }
+  };
+
+  const handleGerarComprovante = (emprestimo) => {
+    setEmprestimoParaComprovante(emprestimo);
+    setShowComprovanteModal(true);
   };
 
   // Filtrar empréstimos
@@ -285,6 +293,16 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
 
                   {/* Datas e Informações */}
                   <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 mb-4 space-y-2">
+                    {/* Nome de quem pegou */}
+                    {emprestimo.colaborador && (
+                      <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <div className="bg-purple-100 dark:bg-purple-900/30 p-1.5 rounded-lg">
+                          <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <span className="font-medium">Emprestado para</span>
+                        <span className="text-gray-900 dark:text-white font-semibold">{emprestimo.colaborador}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                       <div className="bg-blue-100 dark:bg-blue-900/30 p-1.5 rounded-lg">
                         <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -304,7 +322,7 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
                   </div>
 
                   {/* Lista de Ferramentas */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 mb-4">
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ferramentas:</h4>
                     <div className="space-y-2">
                       {emprestimo.ferramentas?.map((ferramenta, idx) => (
@@ -324,6 +342,30 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
                       ))}
                     </div>
                   </div>
+
+                  {/* Observações */}
+                  {emprestimo.observacoes && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 mb-4 border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-start gap-2">
+                        <div className="bg-amber-100 dark:bg-amber-900/40 p-1.5 rounded-lg mt-0.5">
+                          <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">Observações:</h4>
+                          <p className="text-sm text-amber-800 dark:text-amber-300 whitespace-pre-wrap">{emprestimo.observacoes}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Botão de Comprovante */}
+                  <button
+                    onClick={() => handleGerarComprovante(emprestimo)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Ver Comprovante
+                  </button>
                 </div>
               ))}
             </div>
@@ -336,6 +378,17 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
         <TransferirFerramenta
           emprestimo={transferindoEmprestimo}
           onClose={() => setTransferindoEmprestimo(null)}
+        />
+      )}
+
+      {/* Modal de Comprovante */}
+      {showComprovanteModal && emprestimoParaComprovante && (
+        <ComprovanteEmprestimoModal
+          emprestimo={emprestimoParaComprovante}
+          onClose={() => {
+            setShowComprovanteModal(false);
+            setEmprestimoParaComprovante(null);
+          }}
         />
       )}
     </div>
