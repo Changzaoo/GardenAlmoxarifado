@@ -309,16 +309,9 @@ const UsuariosTab = () => {
       }
 
       // Incluir senha apenas se foi fornecida
+      // O Workflow.jsx cuidará de criptografar e definir o authKey automaticamente
       if (formData.senha) {
         dadosParaSalvar.senha = formData.senha;
-        
-        // 🔑 ATUALIZAR AUTHKEY PARA NOVO SISTEMA DE AUTENTICAÇÃO
-        // Se for administrador (nível 0), usa authKey "admin2024"
-        // Se for outro usuário, usa authKey "workflow2024"
-        dadosParaSalvar.authKey = dadosParaSalvar.nivel === NIVEIS_PERMISSAO.ADMIN ? 'admin2024' : 'workflow2024';
-        dadosParaSalvar.authKeyUpdatedAt = new Date();
-        
-        console.log('🔑 Campo authKey definido junto com a senha:', dadosParaSalvar.authKey);
       }
 
       let resultado;

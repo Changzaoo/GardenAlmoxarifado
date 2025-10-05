@@ -932,12 +932,17 @@ const AuthProvider = ({ children }) => {
         return { success: false, message: 'Sem permissão para criar usuário deste nível' };
       }
 
-      // Criptografar senha com SHA-512
+      // 🔑 SISTEMA NOVO: Definir authKey baseado no nível do usuário
+      const novoAuthKey = dadosUsuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'admin2024' : 'workflow2024';
+      
+      // COMPATIBILIDADE: Manter também a criptografia SHA-512 para fallback
       const { hash, salt, version, algorithm } = encryptPassword(dadosUsuario.senha);
 
       const novoUsuario = {
         ...dadosUsuario,
-        senhaHash: hash,
+        authKey: novoAuthKey, // 🔑 Campo principal para autenticação
+        authKeyUpdatedAt: new Date(),
+        senhaHash: hash, // Fallback para compatibilidade
         senhaSalt: salt,
         senhaVersion: version,
         senhaAlgorithm: algorithm,
@@ -952,10 +957,11 @@ const AuthProvider = ({ children }) => {
 
       // Tentar salvar no Firebase Backup
       console.log('💾 Salvando novo usuário no Firebase Backup...');
+      console.log('🔑 AuthKey definido como:', novoAuthKey);
       const docRef = await addDoc(collection(backupDb, 'usuarios'), novoUsuario);
       const usuarioComId = { id: docRef.id, ...novoUsuario };
       
-      console.log('✅ Usuário criado com senha SHA-512 no Firebase Backup');
+      console.log('✅ Usuário criado com authKey e SHA-512 no Firebase Backup');
       return { success: true, usuario: usuarioComId };
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
@@ -974,14 +980,22 @@ const AuthProvider = ({ children }) => {
         return { success: false, message: 'Sem permissão para editar este usuário' };
       }
 
-      // Se a senha foi alterada, criptografar com SHA-512
+      // Se a senha foi alterada, usar o novo sistema com authKey
       if (dadosAtualizados.senha) {
-        console.log('🔐 Criptografando senha...');
+        console.log('🔐 Configurando senha no novo sistema authKey...');
+        
+        // 🔑 SISTEMA NOVO: Definir authKey baseado no nível do usuário
+        const nivelUsuario = dadosAtualizados.nivel !== undefined ? dadosAtualizados.nivel : usuarioAlvo?.nivel;
+        const novoAuthKey = nivelUsuario === NIVEIS_PERMISSAO.ADMIN ? 'admin2024' : 'workflow2024';
+        
+        // COMPATIBILIDADE: Manter também a criptografia SHA-512 para fallback
         const { hash, salt, version, algorithm } = encryptPassword(dadosAtualizados.senha);
         
         dadosAtualizados = {
           ...dadosAtualizados,
-          senhaHash: hash,
+          authKey: novoAuthKey, // 🔑 Campo principal para autenticação
+          authKeyUpdatedAt: new Date(),
+          senhaHash: hash, // Fallback para compatibilidade
           senhaSalt: salt,
           senhaVersion: version,
           senhaAlgorithm: algorithm,
@@ -990,7 +1004,8 @@ const AuthProvider = ({ children }) => {
         
         // Remove senha do objeto
         delete dadosAtualizados.senha;
-        console.log('✅ Senha do usuário atualizada para SHA-512');
+        console.log('✅ Senha atualizada com authKey:', novoAuthKey);
+        console.log('✅ SHA-512 salvo como fallback para compatibilidade');
       }
 
       console.log('💾 Salvando no Firebase Backup...', dadosAtualizados);
