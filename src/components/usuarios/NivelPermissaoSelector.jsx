@@ -14,8 +14,13 @@ const NivelPermissaoSelector = ({
   const getNiveisDisponiveis = () => {
     const niveis = [];
     
+    console.log('🔍 NivelPermissaoSelector - usuarioLogadoNivel:', usuarioLogadoNivel);
+    console.log('🔍 NIVEIS_PERMISSAO.ADMIN:', NIVEIS_PERMISSAO.ADMIN);
+    console.log('🔍 Comparação (===):', usuarioLogadoNivel === NIVEIS_PERMISSAO.ADMIN);
+    console.log('🔍 Tipo do usuarioLogadoNivel:', typeof usuarioLogadoNivel);
+    
     // Apenas administradores (nível 0) podem criar/editar outros usuários
-    if (usuarioLogadoNivel === NIVEIS_PERMISSAO.ADMIN) {
+    if (usuarioLogadoNivel === NIVEIS_PERMISSAO.ADMIN || usuarioLogadoNivel === 0) {
       // Admin pode criar todos os tipos
       Object.entries(NIVEIS_PERMISSAO).forEach(([key, value]) => {
         niveis.push({

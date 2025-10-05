@@ -793,11 +793,10 @@ const UsuariosTab = () => {
                     Nível de Acesso *
                   </label>
                   <NivelPermissaoSelector
-                    nivelAtual={formData.nivel}
+                    nivel={formData.nivel}
                     onChange={(nivel) => setFormData({ ...formData, nivel })}
                     disabled={carregando}
-                    usuarioPermissoes={usuarioLogado}
-                    podeAlterarAdmins={isAdmin(usuarioLogado.nivel)}
+                    usuarioLogadoNivel={usuarioLogado?.nivel}
                   />
                 </div>
 
