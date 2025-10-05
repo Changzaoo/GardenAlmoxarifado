@@ -2,7 +2,7 @@
 // Configuração do banco de dados principal para criação de novos usuários
 
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableIndexedDbPersistence } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
 
@@ -21,6 +21,17 @@ const firebaseConfig = {
 const appWorkflowBR1 = initializeApp(firebaseConfig, "workflowbr1");
 const dbWorkflowBR1 = getFirestore(appWorkflowBR1);
 const storage = getStorage(appWorkflowBR1);
+
+// Habilitar persistência com sincronização multi-tab
+enableIndexedDbPersistence(dbWorkflowBR1, {
+  synchronizeTabs: true // Permite múltiplas abas abertas
+}).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn('[WorkflowBR1] Multiple tabs open, persistence can only be enabled in one tab at a time.');
+  } else if (err.code === 'unimplemented') {
+    console.warn('[WorkflowBR1] The current browser does not support persistence.');
+  }
+});
 
 // Inicializar Analytics (apenas em produção)
 let analytics = null;

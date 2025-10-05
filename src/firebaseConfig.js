@@ -69,11 +69,13 @@ const initializeFirebase = () => {
 
 const app = initializeFirebase();
 
-// Inicializar Firestore com configurações otimizadas e persistência
+// Inicializar Firestore com configurações otimizadas
 export const db = getFirestore(app);
 
-// Habilitar persistência offline com tratamento de erro
-enableIndexedDbPersistence(db).catch((err) => {
+// Habilitar persistência offline com configuração de sincronização multi-tab
+enableIndexedDbPersistence(db, {
+  synchronizeTabs: true // Permite múltiplas abas abertas
+}).catch((err) => {
   if (err.code === 'failed-precondition') {
     console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
   } else if (err.code === 'unimplemented') {
