@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Instruções - Limpar Cache</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .problem {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .problem h2 {
+            color: #dc2626;
+            margin-bottom: 10px;
+            font-size: 20px;
+        }
+        
+        .problem p {
+            color: #991b1b;
+            line-height: 1.6;
+        }
+        
+        .solution {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .solution h2 {
+            color: #059669;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .method {
+            background: white;
+            border: 2px solid #e5e7eb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .method h3 {
+            color: #3b82f6;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .method ol, .method ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        
+        .method li {
+            margin-bottom: 8px;
+        }
+        
+        .kbd {
+            background: #374151;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 0 2px;
+        }
+        
+        .success-check {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .success-check h2 {
+            color: #1e40af;
+            margin-bottom: 15px;
+        }
+        
+        .success-check ul {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .success-check li {
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        
+        .success-check li:before {
+            content: '✅';
+            position: absolute;
+            left: 0;
+            font-size: 18px;
+        }
+        
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .warning strong {
+            color: #d97706;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #2563eb;
+        }
+        
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Problema de Cache Detectado</h1>
+            <p>A nova tela de carregamento não está aparecendo</p>
+        </div>
+        
+        <div class="content">
+            <div class="problem">
+                <h2>❌ O que está acontecendo?</h2>
+                <p>
+                    A tela de carregamento está mostrando <strong>"Sistema de Controle Seguro"</strong> 
+                    (texto que já foi removido do código). Isso acontece porque o navegador está 
+                    carregando uma <strong>versão antiga do cache</strong>.
+                </p>
+            </div>
+            
+            <div class="solution">
+                <h2>✅ Solução</h2>
+                <p>Escolha um dos métodos abaixo para limpar o cache:</p>
+            </div>
+            
+            <div class="method">
+                <h3>🚀 Método 1: Hard Refresh (Mais Rápido)</h3>
+                <p><strong>Pressione:</strong></p>
+                <ul>
+                    <li><strong>Chrome/Edge/Firefox:</strong> <span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">R</span></li>
+                    <li><strong>Alternativa:</strong> <span class="kbd">Ctrl</span> + <span class="kbd">F5</span></li>
+                    <li><strong>Mac Safari:</strong> <span class="kbd">Cmd</span> + <span class="kbd">Shift</span> + <span class="kbd">R</span></li>
+                </ul>
+                <div class="warning">
+                    <strong>⚡ Mais Rápido!</strong> Este método geralmente resolve em segundos.
+                </div>
+            </div>
+            
+            <div class="method">
+                <h3>🧹 Método 2: Limpar Cache do Navegador</h3>
+                <p><strong>Chrome/Edge:</strong></p>
+                <ol>
+                    <li>Pressione <span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">Delete</span></li>
+                    <li>Selecione <strong>"Todo o período"</strong></li>
+                    <li>Marque apenas:
+                        <ul>
+                            <li>✅ Imagens e arquivos em cache</li>
+                            <li>✅ Dados de aplicativos hospedados</li>
+                        </ul>
+                    </li>
+                    <li>Clique em <strong>"Limpar dados"</strong></li>
+                </ol>
+                
+                <p style="margin-top: 20px;"><strong>Firefox:</strong></p>
+                <ol>
+                    <li>Pressione <span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">Delete</span></li>
+                    <li>Selecione <strong>"Tudo"</strong></li>
+                    <li>Marque apenas: ✅ Cache</li>
+                    <li>Clique em <strong>"Limpar agora"</strong></li>
+                </ol>
+            </div>
+            
+            <div class="method">
+                <h3>⚙️ Método 3: Desregistrar Service Worker</h3>
+                <ol>
+                    <li>Pressione <span class="kbd">F12</span> para abrir DevTools</li>
+                    <li>Vá em <strong>Application</strong> (Chrome/Edge) ou <strong>Storage</strong> (Firefox)</li>
+                    <li>Clique em <strong>Service Workers</strong> no menu lateral</li>
+                    <li>Clique em <strong>Unregister</strong> ao lado de <code>localhost:3000</code></li>
+                    <li>Feche e reabra o navegador</li>
+                </ol>
+            </div>
+            
+            <div class="method">
+                <h3>🕵️ Método 4: Modo Anônimo (Teste Rápido)</h3>
+                <ol>
+                    <li>Pressione <span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">N</span></li>
+                    <li>Acesse: <code>http://localhost:3000</code></li>
+                    <li>A nova tela aparecerá sem cache!</li>
+                </ol>
+                <div class="warning">
+                    <strong>💡 Dica:</strong> Use este método para testar rapidamente se a nova versão está funcionando.
+                </div>
+            </div>
+            
+            <div class="success-check">
+                <h2>🎯 Como verificar se funcionou?</h2>
+                <p>Após limpar o cache, você deve ver:</p>
+                <ul>
+                    <li>Logo Workflow azul com 120x120px</li>
+                    <li>Título "WORKFLOW" em letras maiúsculas</li>
+                    <li><strong>SEM</strong> o texto "Sistema de Controle Seguro"</li>
+                    <li>Barra de progresso animada (0% → 100%)</li>
+                    <li>Tema escuro/claro funcionando corretamente</li>
+                    <li>Animação sofisticada quando atinge 100%</li>
+                    <li>Grid animado de fundo</li>
+                    <li>Partículas flutuantes</li>
+                </ul>
+            </div>
+            
+            <div class="warning" style="margin-top: 30px;">
+                <strong>🔍 Debug:</strong> Abra o Console (<span class="kbd">F12</span> > Console) 
+                e verifique se aparecem os logs:
+                <ul style="margin-top: 10px; margin-left: 20px;">
+                    <li><code>🎨 Tema detectado no localStorage: dark</code></li>
+                    <li><code>✅ Dark mode aplicado ao loading screen</code></li>
+                </ul>
+                Se aparecerem esses logs, a nova versão está carregando!
+            </div>
+            
+            <a href="http://localhost:3000" class="btn" target="_blank">
+                🚀 Abrir Sistema com Nova Tela
+            </a>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-refresh após 3 segundos se vier de localhost
+        if (document.referrer.includes('localhost:3000')) {
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3000';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

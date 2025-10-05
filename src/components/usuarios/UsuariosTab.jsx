@@ -5,6 +5,7 @@ import { twitterThemeConfig } from '../../styles/twitterThemeConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import NivelPermissaoSelector from './NivelPermissaoSelector';
+import DatabaseConfigSelector from './DatabaseConfigSelector';
 import { 
   UserCog,
   Plus, 
@@ -49,6 +50,7 @@ const UsuariosTab = () => {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [usuarioEditando, setUsuarioEditando] = useState(null);
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [senhasVisiveis, setSenhasVisiveis] = useState({}); // Estado para controlar visibilidade de cada senha
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
@@ -58,6 +60,9 @@ const UsuariosTab = () => {
   const [setores, setSetores] = useState([]);
   const [funcionarios, setFuncionarios] = useState([]);
   const [usuariosStats, setUsuariosStats] = useState({});
+  const [databaseConfig, setDatabaseConfig] = useState(
+    localStorage.getItem('preferred_users_database') || 'garden-c0b50'
+  );
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -420,7 +425,18 @@ const UsuariosTab = () => {
               </button>
             )}
           </div>
-          
+        </div>
+      </div>
+
+      {/* Configuração de Banco de Dados */}
+      <DatabaseConfigSelector 
+        currentDB={databaseConfig} 
+        onChangeDB={setDatabaseConfig}
+      />
+
+      {/* Barra de Busca */}
+      <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6`}>
+        <div className="space-y-4">
           {/* Campo de busca aprimorado */}
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -556,6 +572,62 @@ const UsuariosTab = () => {
                           <Mail className="w-3.5 h-3.5 text-gray-400" />
                           <p className={`text-sm ${colors.textSecondary} truncate`}>{usuario.email}</p>
                         </div>
+
+                        {/* Senha do Usuário */}
+                        {usuario.senha && (
+                          <div className="space-y-2 mb-2">
+                            <div className="flex items-center gap-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/30 rounded-lg p-2">
+                              <Lock className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" />
+                              <div className="flex-1 flex items-center gap-2">
+                                <p className={`text-sm font-mono ${colors.text}`}>
+                                  {senhasVisiveis[usuario.id] ? usuario.senha : '••••••••'}
+                                </p>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSenhasVisiveis(prev => ({
+                                      ...prev,
+                                      [usuario.id]: !prev[usuario.id]
+                                    }));
+                                  }}
+                                  className="p-1 hover:bg-yellow-100 dark:hover:bg-yellow-800/30 rounded transition-colors"
+                                  title={senhasVisiveis[usuario.id] ? 'Ocultar senha' : 'Mostrar senha'}
+                                >
+                                  {senhasVisiveis[usuario.id] ? (
+                                    <EyeOff className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" />
+                                  ) : (
+                                    <Eye className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {/* Informações do Banco de Dados */}
+                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/30 rounded-lg p-2">
+                              <div className="flex flex-col gap-1 text-xs">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-blue-700 dark:text-blue-400">📊 Banco:</span>
+                                  <span className={`font-mono ${colors.text}`}>garden-c0b50</span>
+                                  <span className="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-[10px] font-bold">
+                                    PRINCIPAL
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-blue-700 dark:text-blue-400">📁 Coleção:</span>
+                                  <span className={`font-mono ${colors.text}`}>usuarios</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-blue-700 dark:text-blue-400">🔑 Campo:</span>
+                                  <span className={`font-mono ${colors.text}`}>senha</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 pt-1 border-t border-blue-200 dark:border-blue-700/30">
+                                  <span className="font-semibold text-blue-700 dark:text-blue-400">🔄 Login tenta:</span>
+                                  <span className={`font-mono text-[10px] ${colors.text}`}>1º workflowbr1, 2º garden-c0b50</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Badge de Nível */}
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full shadow-sm ${

@@ -1,5 +1,6 @@
 import React from 'react';
 import { NIVEIS_PERMISSAO, NIVEIS_LABELS, NIVEIS_ICONE } from '../../constants/permissoes';
+import { Crown, User, UserCheck, Users, Briefcase, Building2, Award, Info } from 'lucide-react';
 
 const NivelPermissaoSelector = ({ 
   nivel, 
@@ -38,16 +39,30 @@ const NivelPermissaoSelector = ({
 
   const niveisDisponiveis = getNiveisDisponiveis();
 
+  // Função para obter ícone do nível
+  const getIconeNivel = (nivelValue) => {
+    const icones = {
+      [NIVEIS_PERMISSAO.ADMIN]: Crown,
+      [NIVEIS_PERMISSAO.FUNCIONARIO]: User,
+      [NIVEIS_PERMISSAO.SUPERVISOR]: UserCheck,
+      [NIVEIS_PERMISSAO.GERENTE_SETOR]: Users,
+      [NIVEIS_PERMISSAO.GERENTE_GERAL]: Building2,
+      [NIVEIS_PERMISSAO.RH]: Briefcase,
+      [NIVEIS_PERMISSAO.CEO]: Award
+    };
+    return icones[nivelValue] || User;
+  };
+
   // Função para obter descrição do nível
   const getDescricaoNivel = (nivelValue) => {
     const descricoes = {
-      [NIVEIS_PERMISSAO.ADMIN]: "👑 Acesso total ao sistema - Todas as permissões",
-      [NIVEIS_PERMISSAO.FUNCIONARIO]: "👤 Acesso básico - Operações do dia a dia",
-      [NIVEIS_PERMISSAO.SUPERVISOR]: "👔 Supervisiona equipe - Gerencia operações do setor",
-      [NIVEIS_PERMISSAO.GERENTE_SETOR]: "📊 Gerencia setor - Controle de funcionários e processos",
-      [NIVEIS_PERMISSAO.GERENTE_GERAL]: "🎯 Gerencia múltiplos setores - Visão estratégica",
-      [NIVEIS_PERMISSAO.RH]: "💼 Recursos Humanos - Gestão de pessoal",
-      [NIVEIS_PERMISSAO.CEO]: "🏆 Diretor Executivo - Liderança organizacional"
+      [NIVEIS_PERMISSAO.ADMIN]: "Acesso total ao sistema - Todas as permissões",
+      [NIVEIS_PERMISSAO.FUNCIONARIO]: "Acesso básico - Operações do dia a dia",
+      [NIVEIS_PERMISSAO.SUPERVISOR]: "Supervisiona equipe - Gerencia operações do setor",
+      [NIVEIS_PERMISSAO.GERENTE_SETOR]: "Gerencia setor - Controle de funcionários e processos",
+      [NIVEIS_PERMISSAO.GERENTE_GERAL]: "Gerencia múltiplos setores - Visão estratégica",
+      [NIVEIS_PERMISSAO.RH]: "Recursos Humanos - Gestão de pessoal",
+      [NIVEIS_PERMISSAO.CEO]: "Diretor Executivo - Liderança organizacional"
     };
     return descricoes[nivelValue] || "Nível desconhecido";
   };
@@ -55,8 +70,9 @@ const NivelPermissaoSelector = ({
   if (niveisDisponiveis.length === 0) {
     return (
       <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-        <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-          ⚠️ Você não tem permissão para gerenciar níveis de usuário.
+        <p className="text-yellow-800 dark:text-yellow-200 text-sm flex items-center gap-2">
+          <Info className="w-4 h-4" />
+          Você não tem permissão para gerenciar níveis de usuário.
         </p>
       </div>
     );
@@ -92,7 +108,8 @@ const NivelPermissaoSelector = ({
 
       {showDescription && nivel !== null && nivel !== undefined && (
         <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
+          <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
+            {React.createElement(getIconeNivel(nivel), { className: "w-4 h-4" })}
             {getDescricaoNivel(nivel)}
           </p>
         </div>
@@ -113,8 +130,12 @@ const NivelPermissaoSelector = ({
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             `}
           >
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl">{nivelOption.icone}</span>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                {React.createElement(getIconeNivel(nivelOption.valor), { 
+                  className: "w-5 h-5 text-blue-600 dark:text-blue-400" 
+                })}
+              </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white text-sm">
                   {nivelOption.label}
@@ -130,9 +151,12 @@ const NivelPermissaoSelector = ({
 
       {/* Informação sobre sistema reversivo */}
       <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-        <p className="text-xs text-gray-600 dark:text-gray-400">
-          💡 <strong>Sistema Reversivo:</strong> Números menores = Maior permissão. 
-          Nível 0 (Administrador) tem máxima permissão, Nível 6 (CEO) tem permissões específicas.
+        <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
+          <Info className="w-4 h-4 flex-shrink-0" />
+          <span>
+            <strong>Sistema Reversivo:</strong> Números menores = Maior permissão. 
+            Nível 0 (Administrador) tem máxima permissão, Nível 6 (CEO) tem permissões específicas.
+          </span>
         </p>
       </div>
     </div>

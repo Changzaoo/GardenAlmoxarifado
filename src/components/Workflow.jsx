@@ -31,11 +31,9 @@ import AppUpdateModal from './AppUpdateModal';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { Menu as MenuIcon, X, Scale, BarChart3 } from 'lucide-react';
 import RankingPontos from './Rankings/RankingPontos';
-import InventarioTab from './Inventario/InventarioTab';
-import MeuInventarioTab from './Inventario/MeuInventarioTab';
+import GerenciamentoInventario from './Inventario/GerenciamentoInventario';
 import { inventarioInicial } from '../data/inventarioInicial';
-import EmprestimosTab from './Emprestimos/EmprestimosTab';
-import FuncionariosTab from './Funcionarios/FuncionariosTab';
+import GerenciamentoFuncionarios from './Funcionarios/GerenciamentoFuncionarios';
 import UsuariosTab from './usuarios/UsuariosTab';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import { MessageNotificationProvider } from './Chat/MessageNotificationContext';
@@ -43,14 +41,12 @@ import { NotificationProvider, useNotification } from './NotificationProvider';
 import MensagensMain from './Mensagens/MensagensMain';
 import { useMensagens } from '../hooks/useMensagens';
 import HistoricoTransferenciasTab from './Transferencias/HistoricoTransferenciasTab';
-import TarefasTab from './Tarefas/TarefasTab';
 import { AuthContext, useAuth } from '../hooks/useAuth';
 import AnalyticsTab from './Analytics/AnalyticsTab';
 import AnalyticsProvider from './Analytics/AnalyticsProvider';
 import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
-import EscalaPage from '../pages/Escala/EscalaPage';
 import SystemAdminPage from '../pages/SystemAdminPage';
 import { notifyNewLoan } from '../utils/notificationHelpers';
 import CadastroEmpresas from './Empresas/CadastroEmpresas';
@@ -2996,52 +2992,10 @@ const AlmoxarifadoSistema = () => {
       permissao: () => true // Todos os usuários autenticados
     },
     { 
-      id: 'tarefas', 
-      nome: 'Tarefas', 
-      icone: ClipboardCheck,
-      permissao: () => true // Todos os usuários autenticados
-    },
-    { 
-      id: 'escala', 
-      nome: 'Escala', 
-      icone: Calendar,
-      permissao: () => {
-        // ADMIN sempre tem acesso TOTAL
-        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
-        // Funcionários (nível 1) NÃO podem ver a escala
-        if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
-        return usuario?.nivel <= NIVEIS_PERMISSAO.SUPERVISOR;
-      }
-    },
-    { 
-      id: 'inventario', 
-      nome: 'Inventário', 
+      id: 'gerenciamento-inventario', 
+      nome: 'Inventário & Empréstimos', 
       icone: Package,
-      permissao: () => {
-        // ADMIN sempre tem acesso TOTAL
-        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
-        // Funcionários (nível 1) NÃO podem ver o inventário geral
-        if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
-        return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_SETOR;
-      }
-    },
-    { 
-      id: 'meu-inventario', 
-      nome: 'Meu Inventário', 
-      icone: Package,
-      permissao: () => true // Todos os usuários autenticados
-    },
-    { 
-      id: 'emprestimos', 
-      nome: 'Empréstimos', 
-      icone: ClipboardList,
-      permissao: () => {
-        // ADMIN sempre tem acesso TOTAL
-        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
-        // Funcionários (nível 1) NÃO podem ver a página de empréstimos
-        if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
-        return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_SETOR;
-      }
+      permissao: () => true // Todos os usuários autenticados (abas internas controlam permissões)
     },
     { 
       id: 'funcionarios', 
@@ -3102,7 +3056,7 @@ const AlmoxarifadoSistema = () => {
     
     // Se não encontrar, usar fallback baseado no nível do usuário
     if (!favorita) {
-      const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+      const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'gerenciamento-inventario';
       favorita = abas.find(aba => aba.id === fallbackPadrao);
     }
     
@@ -3111,13 +3065,11 @@ const AlmoxarifadoSistema = () => {
       if (!favorita.permissao()) {
         console.log(`⚠️ Usuário sem permissão para página favorita: ${favorita.id}`);
         
-        // Buscar primeira aba com permissão, priorizando páginas mais importantes
-        // Para funcionários, priorizar Meu Perfil
-        const abaasPriorizadas = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO 
-          ? ['meu-perfil', 'meu-inventario', 'tarefas', 'mensagens']
-          : ['meu-perfil', 'emprestimos', 'inventario', 'funcionarios'];
-        
-        for (const abaId of abaasPriorizadas) {
+      // Buscar primeira aba com permissão, priorizando páginas mais importantes
+      // Para funcionários, priorizar Meu Perfil
+      const abaasPriorizadas = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO 
+        ? ['meu-perfil', 'gerenciamento-inventario', 'tarefas', 'mensagens']
+        : ['meu-perfil', 'gerenciamento-inventario', 'funcionarios'];        for (const abaId of abaasPriorizadas) {
           const aba = abas.find(a => a.id === abaId);
           if (aba && (!aba.permissao || aba.permissao())) {
             console.log(`✅ Usando fallback priorizado: ${abaId}`);
@@ -3176,7 +3128,7 @@ const AlmoxarifadoSistema = () => {
     
     // Se não houver estado válido, usar página favorita como inicial
     const abaFavorita = getAbaFavorita();
-    const paginaInicial = abaFavorita ? abaFavorita.id : 'meu-perfil';
+    const paginaInicial = abaFavorita ? abaFavorita.id : 'gerenciamento-inventario';
     console.log('⭐ Iniciando com página favorita:', paginaInicial);
     setAbaAtiva(paginaInicial);
     
@@ -4175,14 +4127,9 @@ const AlmoxarifadoSistema = () => {
               )
             )}
 
-            {abaAtiva === 'meu-inventario' && (
-              <MeuInventarioTab
-                emprestimos={emprestimosCarregados ? emprestimos : null}
-              />
-            )}
-
-            {abaAtiva === 'inventario' && (
-              <InventarioTab
+            {abaAtiva === 'gerenciamento-inventario' && (
+              <GerenciamentoInventario
+                // Props de Inventário
                 inventario={inventario}
                 emprestimos={emprestimos}
                 adicionarItem={adicionarItem}
@@ -4193,54 +4140,37 @@ const AlmoxarifadoSistema = () => {
                 obterDetalhesEmprestimos={obterDetalhesEmprestimos}
                 // Props de Compras
                 compras={compras}
-                funcionarios={funcionarios}
                 adicionarCompra={adicionarCompra}
                 removerCompra={removerCompra}
                 atualizarCompra={atualizarCompra}
-                // Props de Danificadas
+                // Props de Ferramentas Danificadas
                 ferramentasDanificadas={ferramentasDanificadas}
                 adicionarFerramentaDanificada={adicionarFerramentaDanificada}
                 atualizarFerramentaDanificada={atualizarFerramentaDanificada}
                 removerFerramentaDanificada={removerFerramentaDanificada}
-                // Props de Perdidas
+                // Props de Ferramentas Perdidas
                 ferramentasPerdidas={ferramentasPerdidas}
                 adicionarFerramentaPerdida={adicionarFerramentaPerdida}
                 atualizarFerramentaPerdida={atualizarFerramentaPerdida}
                 removerFerramentaPerdida={removerFerramentaPerdida}
+                // Props de Empréstimos
+                funcionarios={funcionarios}
+                adicionarEmprestimo={adicionarEmprestimo}
+                removerEmprestimo={removerEmprestimo}
+                atualizarEmprestimo={atualizarEmprestimo}
+                devolverFerramentas={devolverFerramentas}
+                emprestimosCarregados={emprestimosCarregados}
               />
             )}
             
-            {abaAtiva === 'emprestimos' && (
-              PermissionChecker.canView(usuario?.nivel) ? (
-                <FuncionariosProvider>
-                  <EmprestimosTab
-                    emprestimos={emprestimos}
-                    inventario={inventario}
-                    funcionarios={funcionarios}
-                    adicionarEmprestimo={adicionarEmprestimo}
-                    removerEmprestimo={removerEmprestimo}
-                    atualizarEmprestimo={atualizarEmprestimo}
-                    devolverFerramentas={devolverFerramentas}
-                    readonly={!PermissionChecker.canManageOperational(usuario?.nivel)}
-                  />
-                </FuncionariosProvider>
-              ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar os empréstimos." />
-              )
-            )}
-            
             {abaAtiva === 'funcionarios' && (
-              PermissionChecker.canView(usuario?.nivel) ? (
-                <FuncionariosTab
-                  funcionarios={funcionarios}
-                  adicionarFuncionario={adicionarFuncionario}
-                  removerFuncionario={removerFuncionario}
-                  atualizarFuncionario={atualizarFuncionario}
-                  readonly={!PermissionChecker.canManageEmployees(usuario?.nivel)}
-                />
-              ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar os funcionários." />
-              )
+              <GerenciamentoFuncionarios
+                funcionarios={funcionarios}
+                adicionarFuncionario={adicionarFuncionario}
+                removerFuncionario={removerFuncionario}
+                atualizarFuncionario={atualizarFuncionario}
+                readonly={!PermissionChecker.canManageEmployees(usuario?.nivel)}
+              />
             )}
 
             {abaAtiva === 'empresas-setores' && (
@@ -4286,24 +4216,6 @@ const AlmoxarifadoSistema = () => {
                 <HistoricoTransferenciasTab />
               ) : (
                 <PermissionDenied message="Apenas administradores podem visualizar o histórico de transferências." />
-              )
-            )}
-
-            {abaAtiva === 'tarefas' && (
-              PermissionChecker.canView(usuario?.nivel) ? (
-                <TarefasTab 
-                  showOnlyUserTasks={usuario?.nivel === 1}
-                />
-              ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar as tarefas." />
-              )
-            )}
-
-            {abaAtiva === 'escala' && (
-              hasSupervisionPermission(usuario?.nivel) ? (
-                <EscalaPage usuarioAtual={usuario} />
-              ) : (
-                <PermissionDenied message="Você não tem permissão para visualizar a escala de trabalho." />
               )
             )}
 

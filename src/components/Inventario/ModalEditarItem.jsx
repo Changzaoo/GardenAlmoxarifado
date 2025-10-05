@@ -87,13 +87,13 @@ const ModalEditarItem = ({ item, onSalvar, onFechar }) => {
               <option value="">Selecione uma categoria</option>
               <option value="Plantas & Mudas">🌱 Plantas & Mudas</option>
               <option value="Sementes">🌾 Sementes</option>
-              <option value="Fertilizantes & Adubos">🧪 Fertilizantes & Adubos</option>
-              <option value="Terra & Substratos">🪴 Terra & Substratos</option>
-              <option value="Vasos & Recipientes">🏺 Vasos & Recipientes</option>
-              <option value="Ferramentas">🔧 Ferramentas</option>
-              <option value="Equipamentos">⚙️ Equipamentos</option>
-              <option value="Insumos">📦 Insumos</option>
-              <option value="EPI">🦺 EPI</option>
+              <option value="Fertilizantes & Adubos">Fertilizantes & Adubos</option>
+              <option value="Terra & Substratos">Terra & Substratos</option>
+              <option value="Vasos & Recipientes">Vasos & Recipientes</option>
+              <option value="Ferramentas">Ferramentas</option>
+              <option value="Equipamentos">Equipamentos</option>
+              <option value="Insumos">Insumos</option>
+              <option value="EPI">EPI</option>
             </select>
           </div>
 

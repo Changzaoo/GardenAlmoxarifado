@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✅ Rebranding Completo - Workflow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #333;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section h2 {
+            color: #3b82f6;
+            font-size: 24px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3b82f6;
+        }
+        
+        .change-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #f8fafc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .change-table th {
+            background: #3b82f6;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .change-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .change-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .change-table tr:hover {
+            background: #f1f5f9;
+        }
+        
+        .before {
+            color: #dc2626;
+            font-family: 'Courier New', monospace;
+            background: #fee2e2;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .after {
+            color: #059669;
+            font-family: 'Courier New', monospace;
+            background: #d1fae5;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .success-box {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .success-box h3 {
+            color: #059669;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .success-box ul {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .success-box li {
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+            line-height: 1.6;
+        }
+        
+        .success-box li:before {
+            content: '✅';
+            position: absolute;
+            left: 0;
+            font-size: 18px;
+        }
+        
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .warning-box h3 {
+            color: #d97706;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .info-box {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .info-box h3 {
+            color: #1e40af;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        .code-block code {
+            color: #10b981;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 10px 10px 10px 0;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-success {
+            background: #10b981;
+        }
+        
+        .btn-success:hover {
+            background: #059669;
+        }
+        
+        .footer {
+            background: #f8fafc;
+            padding: 30px;
+            text-align: center;
+            color: #64748b;
+        }
+        
+        .emoji {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="emoji">✅</span> Rebranding Completo <span class="emoji">🎉</span></h1>
+            <p>Garden/Almoxarifado → Workflow</p>
+        </div>
+        
+        <div class="content">
+            <!-- Problema Resolvido -->
+            <div class="section">
+                <h2>🎯 Problema Resolvido</h2>
+                <div class="warning-box">
+                    <h3>Antes (Problema):</h3>
+                    <p>Mensagens do sistema apareciam como:</p>
+                    <ul style="list-style: none; margin-left: 0; margin-top: 10px;">
+                        <li style="padding-left: 0;">❌ <strong>"gardenz.vercel.app diz: Sua conta foi removida..."</strong></li>
+                        <li style="padding-left: 0;">❌ Nome do app: "Almoxarifado"</li>
+                        <li style="padding-left: 0;">❌ Referências antigas em cookies e cache</li>
+                    </ul>
+                </div>
+                
+                <div class="success-box">
+                    <h3>Depois (Solução):</h3>
+                    <ul>
+                        <li><strong>Workflow diz:</strong> Mensagens agora aparecem com o nome correto</li>
+                        <li>Nome do app atualizado para <strong>"Workflow"</strong></li>
+                        <li>Todos cookies e cache renomeados</li>
+                        <li>Migração automática de dados de usuários logados</li>
+                        <li>Branding consistente em todo o sistema</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Arquivos Alterados -->
+            <div class="section">
+                <h2>📝 Arquivos Alterados (5 arquivos)</h2>
+                
+                <table class="change-table">
+                    <thead>
+                        <tr>
+                            <th>Arquivo</th>
+                            <th>Alteração</th>
+                            <th>Impacto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>public/index.html</strong></td>
+                            <td>
+                                <div><span class="before">Almoxarifado</span> → <span class="after">Workflow</span></div>
+                            </td>
+                            <td>Meta tags, título da aba do navegador</td>
+                        </tr>
+                        <tr>
+                            <td><strong>capacitor.config.ts</strong></td>
+                            <td>
+                                <div><span class="before">br.jardim.almoxarifado</span></div>
+                                <div><span class="after">br.workflow.app</span></div>
+                            </td>
+                            <td>Package ID do app Android/iOS</td>
+                        </tr>
+                        <tr>
+                            <td><strong>src/components/Workflow.jsx</strong></td>
+                            <td>
+                                <div><span class="before">almoxarifado_usuario</span></div>
+                                <div><span class="after">workflow_usuario</span></div>
+                            </td>
+                            <td>Cookies de autenticação + migração automática</td>
+                        </tr>
+                        <tr>
+                            <td><strong>service-worker.js</strong></td>
+                            <td>
+                                <div><span class="before">garden-almoxarifado-v1</span></div>
+                                <div><span class="after">workflow-v2-loading-screen</span></div>
+                            </td>
+                            <td>Cache do PWA (força atualização)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>package.json</strong></td>
+                            <td>
+                                <div><span class="after">workflow-control</span> ✅ (já correto)</div>
+                                <div>+ <span class="after">build:win</span> script</div>
+                            </td>
+                            <td>Nome do projeto + build Windows</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Migração Automática -->
+            <div class="section">
+                <h2>🔄 Migração Automática de Cookies</h2>
+                
+                <div class="info-box">
+                    <h3>✨ Implementado com sucesso!</h3>
+                    <p>Os usuários <strong>NÃO precisarão fazer login novamente</strong>. O sistema detecta cookies antigos e migra automaticamente:</p>
+                </div>
+                
+                <div class="code-block">
+// Migração automática adicionada no Workflow.jsx<br>
+<code>almoxarifado_usuario</code>  → <code>workflow_usuario</code>  ✅<br>
+<code>almoxarifado_lembrar</code> → <code>workflow_lembrar</code> ✅<br>
+<code>almoxarifado_expira</code>  → <code>workflow_expira</code>  ✅<br>
+                </div>
+                
+                <p style="margin-top: 15px;"><strong>Como funciona:</strong></p>
+                <ol style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                    <li>Ao carregar o sistema, verifica se existem cookies antigos</li>
+                    <li>Copia os dados para os novos cookies</li>
+                    <li>Remove os cookies antigos</li>
+                    <li>Usuário permanece logado sem perceber a mudança</li>
+                </ol>
+            </div>
+
+            <!-- Próximos Passos -->
+            <div class="section">
+                <h2>🚀 Próximos Passos</h2>
+                
+                <div class="success-box">
+                    <h3>Para Web (Vercel):</h3>
+                    <ul>
+                        <li>Fazer commit das alterações: <code>git add . && git commit -m "feat: rebranding completo"</code></li>
+                        <li>Push para o repositório: <code>git push origin main</code></li>
+                        <li>Vercel fará deploy automático</li>
+                        <li>Nova versão estará online em ~2 minutos</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <h3>Para App Mobile (Android/iOS):</h3>
+                    <p><strong>Atenção:</strong> O Package ID mudou de <span class="before">br.jardim.almoxarifado</span> para <span class="after">br.workflow.app</span></p>
+                    <ul style="list-style: disc; margin-left: 25px; margin-top: 10px;">
+                        <li>Executar: <code>npm run build</code></li>
+                        <li>Executar: <code>npx cap sync android</code></li>
+                        <li>Recompilar o app no Android Studio</li>
+                        <li>Incrementar versão no <code>android/app/build.gradle</code></li>
+                        <li>Usuários precisarão desinstalar versão antiga e instalar nova (ou atualizar via Play Store)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Teste Local -->
+            <div class="section">
+                <h2>🧪 Testar Localmente</h2>
+                
+                <div class="code-block">
+# Iniciar servidor de desenvolvimento<br>
+npm start<br><br>
+
+# Verificar no navegador:<br>
+http://localhost:3000<br><br>
+
+# Verificar no Console (F12):<br>
+<code>🔄 Migrando cookies de almoxarifado → workflow...</code><br>
+<code>✅ Cookies migrados com sucesso!</code>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <a href="http://localhost:3000" class="btn" target="_blank">
+                        🌐 Abrir Sistema Local
+                    </a>
+                    <a href="http://localhost:3000/limpar-cache.html" class="btn">
+                        🧹 Instruções de Cache
+                    </a>
+                </div>
+            </div>
+
+            <!-- Checklist Final -->
+            <div class="section">
+                <h2>✅ Checklist Final</h2>
+                
+                <div class="success-box">
+                    <h3>Todas as alterações foram aplicadas:</h3>
+                    <ul>
+                        <li>Meta tags atualizadas (index.html)</li>
+                        <li>App name: "Workflow" (capacitor.config.ts)</li>
+                        <li>Package ID: br.workflow.app</li>
+                        <li>Cookies renomeados: workflow_*</li>
+                        <li>Cache atualizado: workflow-v2-loading-screen</li>
+                        <li>Migração automática implementada</li>
+                        <li>Build configurado para Windows (cross-env)</li>
+                        <li>Documentação completa criada</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Deploy -->
+            <div class="section">
+                <h2>🎉 Pronto para Deploy!</h2>
+                
+                <div class="code-block">
+# 1. Commit das mudanças<br>
+git add .<br>
+git commit -m "feat: rebranding completo - Garden/Almoxarifado → Workflow"<br><br>
+
+# 2. Push para o repositório<br>
+git push origin main<br><br>
+
+# 3. Vercel fará deploy automático ✅
+                </div>
+                
+                <div style="margin-top: 30px; text-align: center;">
+                    <a href="#" class="btn btn-success" style="font-size: 18px; padding: 20px 40px;">
+                        🚀 Fazer Deploy Agora
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>✨ Rebranding Completo: Garden/Almoxarifado → Workflow ✨</strong></p>
+            <p style="margin-top: 10px; font-size: 14px;">
+                Todas as referências foram atualizadas • Migração automática implementada • Pronto para produção
+            </p>
+        </div>
+    </div>
+</body>
+</html>

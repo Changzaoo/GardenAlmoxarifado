@@ -262,13 +262,13 @@ const NovoItem = ({ adicionarItem }) => {
           <option value="" className="bg-white dark:bg-gray-800">Selecione a categoria</option>
           <option value="Plantas & Mudas" className="bg-white dark:bg-gray-800">🌱 Plantas & Mudas</option>
           <option value="Sementes" className="bg-white dark:bg-gray-800">🌾 Sementes</option>
-          <option value="Fertilizantes & Adubos" className="bg-white dark:bg-gray-800">🧪 Fertilizantes & Adubos</option>
-          <option value="Terra & Substratos" className="bg-white dark:bg-gray-800">🪴 Terra & Substratos</option>
-          <option value="Vasos & Recipientes" className="bg-white dark:bg-gray-800">🏺 Vasos & Recipientes</option>
-          <option value="Ferramentas" className="bg-white dark:bg-gray-800">🔧 Ferramentas</option>
-          <option value="Equipamentos" className="bg-white dark:bg-gray-800">⚙️ Equipamentos</option>
-          <option value="Insumos" className="bg-white dark:bg-gray-800">📦 Insumos</option>
-          <option value="EPI" className="bg-white dark:bg-gray-800">🦺 EPI</option>
+          <option value="Fertilizantes & Adubos" className="bg-white dark:bg-gray-800">Fertilizantes & Adubos</option>
+          <option value="Terra & Substratos" className="bg-white dark:bg-gray-800">Terra & Substratos</option>
+          <option value="Vasos & Recipientes" className="bg-white dark:bg-gray-800">Vasos & Recipientes</option>
+          <option value="Ferramentas" className="bg-white dark:bg-gray-800">Ferramentas</option>
+          <option value="Equipamentos" className="bg-white dark:bg-gray-800">Equipamentos</option>
+          <option value="Insumos" className="bg-white dark:bg-gray-800">Insumos</option>
+          <option value="EPI" className="bg-white dark:bg-gray-800">EPI</option>
         </select>
         <button
           onClick={handleSubmit}
