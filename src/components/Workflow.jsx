@@ -988,6 +988,9 @@ const AuthProvider = ({ children }) => {
         // COMPATIBILIDADE: Manter também a criptografia SHA-512 para fallback
         const { hash, salt, version, algorithm } = encryptPassword(dadosAtualizados.senha);
         
+        // Guardar senha original para exibição local
+        const senhaOriginal = dadosAtualizados.senha;
+        
         dadosAtualizados = {
           ...dadosAtualizados,
           authKey: novoAuthKey, // 🔑 Campo principal para autenticação
@@ -996,19 +999,36 @@ const AuthProvider = ({ children }) => {
           senhaSalt: salt,
           senhaVersion: version,
           senhaAlgorithm: algorithm,
-          senha: null // Remove senha em texto plano
+          senha: senhaOriginal // Manter senha em texto plano para exibição
         };
         
-        // Remove senha do objeto
-        delete dadosAtualizados.senha;
         console.log('✅ Senha atualizada com authKey:', novoAuthKey);
         console.log('✅ SHA-512 salvo como fallback para compatibilidade');
+        console.log('✅ Senha mantida para exibição local');
       }
 
-      console.log('💾 Salvando no Firebase Backup...', dadosAtualizados);
-      await updateDoc(doc(backupDb, 'usuarios', id), dadosAtualizados);
+      // Preparar dados para salvar no Firebase (sem senha em texto plano)
+      const dadosParaFirebase = { ...dadosAtualizados };
+      if (dadosParaFirebase.senha) {
+        delete dadosParaFirebase.senha; // Remove senha em texto plano do Firebase
+      }
+
+      console.log('💾 Salvando no Firebase Backup...', dadosParaFirebase);
+      await updateDoc(doc(backupDb, 'usuarios', id), dadosParaFirebase);
       console.log('✅ Dados salvos no Firebase Backup com sucesso!');
       
+      // Atualizar lista local de usuários
+      setUsuarios(prevUsuarios => {
+        return prevUsuarios.map(u => {
+          if (u.id === id) {
+            return { ...u, ...dadosAtualizados };
+          }
+          return u;
+        });
+      });
+      console.log('✅ Lista local de usuários atualizada');
+      
+      // Se for o usuário logado, atualizar também o estado do usuário atual
       if (usuario && usuario.id === id) {
         const usuarioAtualizado = { ...usuario, ...dadosAtualizados };
         setUsuario(usuarioAtualizado);
