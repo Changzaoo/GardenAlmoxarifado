@@ -13,10 +13,11 @@ import {
   Hammer,
   UserX,
   Users,
-  Zap
+  Zap,
+  Merge
 } from 'lucide-react';
 
-const BarraBuscaModerna = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, onManageGroups, showGroupsButton = true }) => {
+const BarraBuscaModerna = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchTerm, onManageGroups, onUnificar, showGroupsButton = true }) => {
   const [showHelp, setShowHelp] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -142,6 +143,20 @@ const BarraBuscaModerna = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchT
           >
             <UsersRound className="w-4 h-4" />
             <span className="hidden sm:inline">Grupos</span>
+          </motion.button>
+        )}
+
+        {/* Botão de Unificar Duplicados */}
+        {showGroupsButton && onUnificar && (
+          <motion.button
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onUnificar}
+            className="flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+            title="Unificar funcionários duplicados"
+          >
+            <Merge className="w-4 h-4" />
+            <span className="hidden sm:inline">Unificar</span>
           </motion.button>
         )}
 

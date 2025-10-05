@@ -27,6 +27,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import GruposModal from './components/GruposModal';
+import ModalUnificarDuplicados from './components/ModalUnificarDuplicados';
 
 // Importando os componentes refatorados
 import FormularioAdicao from './components/FormularioAdicao';
@@ -48,6 +49,7 @@ const formatarTelefone = (telefone) => {
 const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
   const [showGruposModal, setShowGruposModal] = useState(false);
+  const [showUnificarModal, setShowUnificarModal] = useState(false);
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -669,6 +671,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               onManageGroups={() => setShowGruposModal(true)}
+              onUnificar={() => setShowUnificarModal(true)}
               showGroupsButton={!readonly && usuario?.nivel >= 2}
             />
           </motion.div>
@@ -802,6 +805,16 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
         isOpen={showGruposModal}
         onClose={() => setShowGruposModal(false)}
         funcionarios={funcionarios}
+      />
+
+      {/* Modal de Unificar Duplicados */}
+      <ModalUnificarDuplicados
+        isOpen={showUnificarModal}
+        onClose={() => setShowUnificarModal(false)}
+        onUnificado={() => {
+          // Recarregar lista de funcionários
+          showToast('Funcionários unificados com sucesso!', 'success');
+        }}
       />
 
       {/* Modal de Edição */}
