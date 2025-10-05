@@ -48,6 +48,17 @@ import AnalyticsProvider from './Analytics/AnalyticsProvider';
 import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
+// ✅ Novos serviços de autenticação e senha
+import { 
+  authenticateUser, 
+  saveUserSession, 
+  clearUserSession, 
+  getStoredSession 
+} from '../services/authService';
+import { 
+  updateUserPassword, 
+  createUserWithPassword 
+} from '../services/passwordService';
 import SystemAdminPage from '../pages/SystemAdminPage';
 import { notifyNewLoan } from '../utils/notificationHelpers';
 import CadastroEmpresas from './Empresas/CadastroEmpresas';
@@ -750,169 +761,29 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, senha, lembrarLogin = false) => {
     try {
-      console.log('🔐 Tentativa de login:', { email, senhaLength: senha.length });
-      console.log('�️ Buscando usuário no Firebase Backup (garden-backup)...');
+      // ✅ REFATORADO: Usar authService
+      console.log('🔐 [AuthService] Iniciando autenticação:', { email, senhaLength: senha.length });
       
-      // Buscar usuário diretamente do Firebase Backup usando o campo email
-      let usuarioEncontrado = null;
+      const resultado = await authenticateUser(email, senha);
       
-      try {
-        const usuariosRef = collection(backupDb, 'usuarios');
-        const q = query(usuariosRef, where('email', '==', email));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-          const userDoc = querySnapshot.docs[0];
-          usuarioEncontrado = {
-            id: userDoc.id,
-            ...userDoc.data()
-          };
-          console.log('✅ Usuário encontrado no Firebase Backup:', {
-            id: usuarioEncontrado.id,
-            email: usuarioEncontrado.email,
-            nivel: usuarioEncontrado.nivel,
-            ativo: usuarioEncontrado.ativo
-          });
-        } else {
-          console.log('❌ Nenhum usuário encontrado com o email:', email);
-        }
-      } catch (firebaseError) {
-        console.error('❌ Erro ao buscar usuário no Firebase Backup:', firebaseError);
-        // Fallback: tentar buscar nos usuários carregados em memória
-        console.log('⚠️ Tentando fallback com usuários em memória...');
-        if (usuarios.length === 0) {
-          console.log('⚠️ Nenhum usuário carregado, inicializando usuários locais...');
-          await initUsuariosLocais();
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        usuarioEncontrado = usuarios.find(u => u.email === email && u.ativo);
+      if (!resultado.success) {
+        console.log('❌ [AuthService] Autenticação falhou:', resultado.error);
+        return { success: false, message: resultado.error };
       }
       
-      // Verificar se o usuário foi encontrado e está ativo
-      if (!usuarioEncontrado || !usuarioEncontrado.ativo) {
-        console.log('❌ Usuário não encontrado ou inativo');
-        if (usuarios.length > 0) {
-          console.log('Usuários disponíveis:', usuarios.map(u => ({ email: u.email, ativo: u.ativo })));
-        }
-        console.log('');
-        console.log('💡 Para testar, crie um usuário na coleção "usuarios" do Firebase Backup com:');
-        console.log('   - Campo "email": seu email');
-        console.log('   - Campo "senha": sua senha');
-        console.log('   - Campo "ativo": true');
-        console.log('   - Campo "nivel": 1-4 (1=Funcionário, 2=Supervisor, 3=Gerente, 4=Admin)');
-        return { success: false, message: 'Email ou senha incorretos' };
-      }
-
-      console.log('✅ Usuário encontrado:', {
-        email: usuarioEncontrado.email,
-        nivel: usuarioEncontrado.nivel,
-        temAuthKey: !!usuarioEncontrado.authKey,
-        temSenhaHash: !!usuarioEncontrado.senhaHash,
-        temSenhaSalt: !!usuarioEncontrado.senhaSalt,
-        temSenhaTexto: !!usuarioEncontrado.senha,
-        senhaVersion: usuarioEncontrado.senhaVersion
-      });
-
-      // ==============================================================================
-      // 🔑 NOVO SISTEMA DE AUTENTICAÇÃO COM CAMPO authKey
-      // ==============================================================================
+      console.log('✅ [AuthService] Autenticação bem-sucedida!');
+      const usuarioAutenticado = resultado.user;
       
-      let senhaValida = false;
-
-      // PRIORIDADE 1: Verificar se o usuário tem o campo authKey (NOVO SISTEMA)
-      if (usuarioEncontrado.authKey) {
-        console.log('🔑 Verificando autenticação com campo authKey...');
-        console.log('Senha recebida:', senha);
-        console.log('Campo authKey do usuário:', usuarioEncontrado.authKey);
-        
-        // Verificação direta com authKey
-        senhaValida = usuarioEncontrado.authKey === senha;
-        console.log('✅ Resultado da verificação authKey:', senhaValida);
-        
-        if (senhaValida) {
-          console.log('🎉 Autenticação aprovada com novo sistema authKey!');
-        }
-      } 
-      // FALLBACK: Sistema antigo para usuários não migrados
-      else {
-        console.log('⚠️ Usuário sem campo authKey, usando sistema legado...');
-        console.log('📋 Status: Este usuário ainda não foi migrado para o novo sistema');
-        
-        // Verificar senha com criptografia SHA-512
-        if (usuarioEncontrado.senhaHash && usuarioEncontrado.senhaSalt) {
-          console.log('🔒 Verificando senha criptografada SHA-512...');
-          senhaValida = verifyPassword(
-            senha, 
-            usuarioEncontrado.senhaHash, 
-            usuarioEncontrado.senhaSalt,
-            usuarioEncontrado.senhaVersion || 2
-          );
-          console.log('Resultado da verificação SHA-512:', senhaValida);
-        } else if (usuarioEncontrado.senha) {
-          // Senha em texto plano (sistema legado) - comparação direta
-          console.log('📝 Verificando senha em texto plano...');
-          senhaValida = usuarioEncontrado.senha === senha;
-          console.log('Resultado da comparação:', senhaValida);
-          
-          // Se válida, NÃO migrar automaticamente - deixar para ferramenta específica
-          if (senhaValida) {
-            console.log('⚠️ ATENÇÃO: Usuário autenticado com sistema legado. Execute a migração authKey!');
-          }
-        }
-        
-        console.log('Resultado da verificação de fallback:', senhaValida);
-      }
-
-      if (!senhaValida) {
-        console.log('❌ Autenticação inválida!');
-        console.log('💡 NOVO SISTEMA: Para administradores use "admin2024", para outros use "workflow2024"');
-        console.log('� SISTEMA LEGADO: Se não migrado, use as senhas antigas');
-        return { success: false, message: 'Email ou senha incorretos' };
-      }
-
-      console.log('✅ Autenticação válida! Prosseguindo com login...');
-
-      // Verificar se o usuário tem setor e empresa definidos
-      // EXCEÇÃO: Administradores (nivel 0) não precisam ter setor, empresa ou cargo
-      const isAdmin = usuarioEncontrado.nivel === NIVEIS_PERMISSAO.ADMIN;
+      // Salvar sessão
+      saveUserSession(usuarioAutenticado, lembrarLogin);
+      salvarDadosLogin(usuarioAutenticado, true);
+      setUsuario(usuarioAutenticado);
       
-      if (!isAdmin) {
-        if (!usuarioEncontrado.setorId || !usuarioEncontrado.setorId.trim()) {
-          return { 
-            success: false, 
-            message: 'Usuário sem setor atribuído. Entre em contato com o administrador.' 
-          };
-        }
-
-        if (!usuarioEncontrado.empresaId || !usuarioEncontrado.empresaId.trim()) {
-          return { 
-            success: false, 
-            message: 'Usuário sem empresa atribuída. Entre em contato com o administrador.' 
-          };
-        }
-      }
-
-      const usuarioAtualizado = {
-        ...usuarioEncontrado,
-        ultimoLogin: new Date().toISOString()
-      };
-      
-      // Atualizar no Firebase Backup
-      try {
-        await updateDoc(doc(backupDb, 'usuarios', usuarioEncontrado.id), {
-          ultimoLogin: usuarioAtualizado.ultimoLogin
-        });
-        console.log('✅ Último login atualizado no Firebase Backup');
-      } catch (firebaseError) {
-        console.warn('⚠️ Erro ao atualizar último login no Firebase Backup:', firebaseError);
-      }
-      
-      // Sempre salvar dados de login para persistência em localhost
-      salvarDadosLogin(usuarioAtualizado, true);
-      setUsuario(usuarioAtualizado);
+      console.log('✅ [AuthService] Sessão salva com sucesso');
       return { success: true };
+      
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('❌ [AuthService] Erro no login:', error);
       return { success: false, message: 'Erro interno do sistema' };
     }
   };
@@ -929,37 +800,30 @@ const AuthProvider = ({ children }) => {
         return { success: false, message: 'Sem permissão para criar usuário deste nível' };
       }
 
-      // 🔑 SISTEMA NOVO: Definir authKey baseado no nível do usuário
-      const novoAuthKey = dadosUsuario.nivel === NIVEIS_PERMISSAO.ADMIN ? 'admin2024' : 'workflow2024';
+      // ✅ REFATORADO: Usar passwordService para criar usuário
+      console.log('💾 [PasswordService] Criando novo usuário...');
       
-      // COMPATIBILIDADE: Manter também a criptografia SHA-512 para fallback
-      const { hash, salt, version, algorithm } = encryptPassword(dadosUsuario.senha);
-
-      const novoUsuario = {
+      const userData = {
         ...dadosUsuario,
-        authKey: novoAuthKey, // 🔑 Campo principal para autenticação
-        authKeyUpdatedAt: new Date(),
-        senhaHash: hash, // Fallback para compatibilidade
-        senhaSalt: salt,
-        senhaVersion: version,
-        senhaAlgorithm: algorithm,
-        senha: null, // Não armazena senha em texto plano
         ativo: true,
-        dataCriacao: new Date().toISOString(),
         ultimoLogin: null
       };
 
-      // Remove senha do objeto antes de salvar
-      delete novoUsuario.senha;
+      const senha = dadosUsuario.senha;
+      delete userData.senha; // Remove senha temporária do objeto
 
-      // Tentar salvar no Firebase Backup
-      console.log('💾 Salvando novo usuário no Firebase Backup...');
-      console.log('🔑 AuthKey definido como:', novoAuthKey);
-      const docRef = await addDoc(collection(backupDb, 'usuarios'), novoUsuario);
-      const usuarioComId = { id: docRef.id, ...novoUsuario };
-      
-      console.log('✅ Usuário criado com authKey e SHA-512 no Firebase Backup');
-      return { success: true, usuario: usuarioComId };
+      try {
+        const userId = await createUserWithPassword(userData, senha);
+        console.log('✅ [PasswordService] Usuário criado com sucesso:', userId);
+        
+        // Buscar usuário criado para retornar
+        const usuarioComId = { id: userId, ...userData };
+        return { success: true, usuario: usuarioComId };
+        
+      } catch (error) {
+        console.error('❌ [PasswordService] Erro ao criar usuário:', error);
+        throw error;
+      }
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
       return { success: false, message: 'Erro ao criar usuário' };
@@ -968,7 +832,7 @@ const AuthProvider = ({ children }) => {
 
   const atualizarUsuario = async (id, dadosAtualizados) => {
     try {
-      console.log('🔄 Iniciando atualização de usuário:', { id, dadosAtualizados });
+      console.log('🔄 [PasswordService] Iniciando atualização de usuário:', { id, dadosAtualizados });
       
       // Verificar permissão para editar usuário
       const usuarioAlvo = usuarios.find(u => u.id === id);
@@ -977,34 +841,30 @@ const AuthProvider = ({ children }) => {
         return { success: false, message: 'Sem permissão para editar este usuário' };
       }
 
-      // Se a senha foi alterada, usar o novo sistema com authKey
+      // ✅ REFATORADO: Se a senha foi alterada, usar passwordService
       if (dadosAtualizados.senha) {
-        console.log('🔐 Configurando senha no novo sistema authKey...');
+        console.log('🔐 [PasswordService] Atualizando senha com novo sistema...');
         
-        // 🔑 SISTEMA NOVO: Definir authKey baseado no nível do usuário
-        const nivelUsuario = dadosAtualizados.nivel !== undefined ? dadosAtualizados.nivel : usuarioAlvo?.nivel;
-        const novoAuthKey = nivelUsuario === NIVEIS_PERMISSAO.ADMIN ? 'admin2024' : 'workflow2024';
-        
-        // COMPATIBILIDADE: Manter também a criptografia SHA-512 para fallback
-        const { hash, salt, version, algorithm } = encryptPassword(dadosAtualizados.senha);
-        
-        // Guardar senha original para exibição local
-        const senhaOriginal = dadosAtualizados.senha;
-        
-        dadosAtualizados = {
-          ...dadosAtualizados,
-          authKey: novoAuthKey, // 🔑 Campo principal para autenticação
-          authKeyUpdatedAt: new Date(),
-          senhaHash: hash, // Fallback para compatibilidade
-          senhaSalt: salt,
-          senhaVersion: version,
-          senhaAlgorithm: algorithm,
-          senha: senhaOriginal // Manter senha em texto plano para exibição
-        };
-        
-        console.log('✅ Senha atualizada com authKey:', novoAuthKey);
-        console.log('✅ SHA-512 salvo como fallback para compatibilidade');
-        console.log('✅ Senha mantida para exibição local');
+        try {
+          // Atualizar senha usando passwordService
+          // Isso cria authKey + senhaHash + senhaSalt automaticamente
+          const passwordObj = await updateUserPassword(id, dadosAtualizados.senha);
+          
+          // Manter senha em texto plano para exibição local
+          dadosAtualizados = {
+            ...dadosAtualizados,
+            ...passwordObj, // Contém authKey, senhaHash, senhaSalt
+            senha: dadosAtualizados.senha // Manter para exibição
+          };
+          
+          console.log('✅ [PasswordService] Senha atualizada com sucesso!');
+          console.log('   - authKey: definido para login');
+          console.log('   - senhaHash: hash SHA-512 criado');
+          console.log('   - senhaSalt: salt gerado');
+        } catch (error) {
+          console.error('❌ [PasswordService] Erro ao atualizar senha:', error);
+          return { success: false, message: 'Erro ao atualizar senha: ' + error.message };
+        }
       }
 
       // Preparar dados para salvar no Firebase (sem senha em texto plano)
@@ -1013,7 +873,7 @@ const AuthProvider = ({ children }) => {
         delete dadosParaFirebase.senha; // Remove senha em texto plano do Firebase
       }
 
-      console.log('💾 Salvando no Firebase Backup...', dadosParaFirebase);
+      console.log('💾 Salvando alterações no Firebase Backup...');
       await updateDoc(doc(backupDb, 'usuarios', id), dadosParaFirebase);
       console.log('✅ Dados salvos no Firebase Backup com sucesso!');
       

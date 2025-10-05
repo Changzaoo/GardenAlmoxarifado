@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { encryptData, encryptPassword, verifyPassword } from '../utils/crypto';
+import { encryptPassword, verifyPassword } from '../utils/crypto';
+import { encryptData } from '../utils/cryptoUtils';
 import { dbWorkflowBR1 } from '../config/firebaseWorkflowBR1';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
