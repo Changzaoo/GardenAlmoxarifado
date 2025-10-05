@@ -35,6 +35,7 @@ import GerenciamentoInventario from './Inventario/GerenciamentoInventario';
 import { inventarioInicial } from '../data/inventarioInicial';
 import GerenciamentoFuncionarios from './Funcionarios/GerenciamentoFuncionarios';
 import UsuariosTab from './usuarios/UsuariosTab';
+import DatabaseSyncManager from './Admin/DatabaseSyncManager';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
 import { MessageNotificationProvider } from './Chat/MessageNotificationContext';
 import { NotificationProvider, useNotification } from './NotificationProvider';
@@ -3666,22 +3667,41 @@ const AlmoxarifadoSistema = () => {
                 </button>
 
                 {temPermissao(NIVEIS_PERMISSAO.ADMIN) && (
-                  <button
-                    onClick={() => {
-                      setAbaAtiva('usuarios');
-                      setMenuOpen(false);
-                    }}
-                    className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
-                      abaAtiva === 'usuarios'
-                        ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <Users className="w-6 h-6 mb-1" />
-                    <span className="text-xs font-medium text-center leading-tight">
-                      Usuários
-                    </span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setAbaAtiva('usuarios');
+                        setMenuOpen(false);
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                        abaAtiva === 'usuarios'
+                          ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <Users className="w-6 h-6 mb-1" />
+                      <span className="text-xs font-medium text-center leading-tight">
+                        Usuários
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setAbaAtiva('sync-database');
+                        setMenuOpen(false);
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
+                        abaAtiva === 'sync-database'
+                          ? 'bg-purple-500 dark:bg-purple-600 text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <RefreshCw className="w-6 h-6 mb-1" />
+                      <span className="text-xs font-medium text-center leading-tight">
+                        Sync DB
+                      </span>
+                    </button>
+                  </>
                 )}
 
                 {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
@@ -3834,17 +3854,31 @@ const AlmoxarifadoSistema = () => {
               </button>
               
               {temPermissao(NIVEIS_PERMISSAO.ADMIN) && (
-                <button
-                  onClick={() => setAbaAtiva('usuarios')}
-                  className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
-                    abaAtiva === 'usuarios'
-                      ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
-                      : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
-                  }`}
-                  title="Usuários"
-                >
-                  <Users className="w-5 h-5" />
-                </button>
+                <>
+                  <button
+                    onClick={() => setAbaAtiva('usuarios')}
+                    className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                      abaAtiva === 'usuarios'
+                        ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
+                        : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
+                    }`}
+                    title="Usuários"
+                  >
+                    <Users className="w-5 h-5" />
+                  </button>
+                  
+                  <button
+                    onClick={() => setAbaAtiva('sync-database')}
+                    className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                      abaAtiva === 'sync-database'
+                        ? 'bg-purple-500 text-white'
+                        : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
+                    }`}
+                    title="Sincronização de Banco de Dados"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                  </button>
+                </>
               )}
               
               {usuario?.nivel > NIVEIS_PERMISSAO.FUNCIONARIO && (
@@ -4208,6 +4242,14 @@ const AlmoxarifadoSistema = () => {
                 <UsuariosTab />
               ) : (
                 <PermissionDenied message="Apenas administradores podem gerenciar usuários do sistema." />
+              )
+            )}
+
+            {abaAtiva === 'sync-database' && (
+              temPermissao(NIVEIS_PERMISSAO.ADMIN) ? (
+                <DatabaseSyncManager />
+              ) : (
+                <PermissionDenied message="Apenas administradores podem sincronizar bancos de dados." />
               )
             )}
 
