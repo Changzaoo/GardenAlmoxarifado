@@ -42,6 +42,8 @@ const WorkPontoTab = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [imageUrl, setImageUrl] = useState('');
   const [savingUrl, setSavingUrl] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [userPreference, setUserPreference] = useState(null); // 'camera' ou 'url'
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -69,6 +71,15 @@ const WorkPontoTab = () => {
     loadModels();
   }, []);
 
+  // Atualizar relógio em tempo real
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   // Monitorar status online/offline
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -82,6 +93,14 @@ const WorkPontoTab = () => {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Carregar preferência do usuário
+  useEffect(() => {
+    const savedPreference = localStorage.getItem(`workponto_preference_${usuario?.id}`);
+    if (savedPreference) {
+      setUserPreference(savedPreference);
+    }
+  }, [usuario]);
 
   // Verificar se usuário tem foto de referência
   useEffect(() => {
@@ -169,6 +188,18 @@ const WorkPontoTab = () => {
         resolve(null);
       }
     });
+  };
+
+  // Registrar ponto usando preferência do usuário
+  const registrarPontoComPreferencia = async (tipo) => {
+    // Salvar preferência como 'camera' (usuário preferiu usar câmera)
+    if (usuario?.id) {
+      localStorage.setItem(`workponto_preference_${usuario.id}`, 'camera');
+      setUserPreference('camera');
+    }
+    
+    // Iniciar câmera normalmente
+    await startCamera(tipo);
   };
 
   // Iniciar câmera
@@ -487,6 +518,13 @@ const WorkPontoTab = () => {
 
       setHasReferencePhoto(true);
       setImageUrl('');
+      
+      // Salvar preferência como 'url' (usuário preferiu usar URL)
+      if (usuario?.id) {
+        localStorage.setItem(`workponto_preference_${usuario.id}`, 'url');
+        setUserPreference('url');
+      }
+      
       console.log('✅ URL da foto de referência salva!');
 
     } catch (err) {
@@ -539,121 +577,94 @@ const WorkPontoTab = () => {
 
         {/* Data e Hora Atual */}
         <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
-              <span className="font-medium">
-                {format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+              <span className="font-medium text-sm sm:text-base">
+                {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
               </span>
             </div>
-            <div className="text-2xl font-bold">
-              {format(new Date(), 'HH:mm:ss')}
+            <div className="text-2xl sm:text-3xl font-bold">
+              {format(currentTime, 'HH:mm:ss')}
             </div>
           </div>
         </div>
 
-        {/* Status do Dia */}
+        {/* Status do Dia com Indicador de Preferência */}
         <div className={`bg-${statusDia.color}-500/20 border border-${statusDia.color}-400/30 rounded-xl p-4`}>
-          <div className="flex items-center gap-3">
-            {statusDia.status === 'working' && <PlayCircle className="w-6 h-6" />}
-            {statusDia.status === 'completed' && <CheckCircle className="w-6 h-6" />}
-            {statusDia.status === 'pending' && <AlertTriangle className="w-6 h-6" />}
-            <div>
-              <p className="font-semibold text-lg">{statusDia.text}</p>
-              {pontoHoje?.timestamp && (
-                <p className="text-sm text-white/80">
-                  Último registro: {format(pontoHoje.timestamp.toDate(), 'HH:mm')}
-                </p>
-              )}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {statusDia.status === 'working' && <PlayCircle className="w-6 h-6" />}
+              {statusDia.status === 'completed' && <CheckCircle className="w-6 h-6" />}
+              {statusDia.status === 'pending' && <AlertTriangle className="w-6 h-6" />}
+              <div>
+                <p className="font-semibold text-lg">{statusDia.text}</p>
+                {pontoHoje?.timestamp && (
+                  <p className="text-sm text-white/80">
+                    Último registro: {format(pontoHoje.timestamp.toDate(), 'HH:mm')}
+                  </p>
+                )}
+              </div>
             </div>
+            
+            {/* Indicador de Preferência */}
+            {userPreference && hasReferencePhoto && (
+              <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-lg px-2.5 py-1.5">
+                {userPreference === 'camera' ? (
+                  <Camera className="w-4 h-4" />
+                ) : (
+                  <ImageIcon className="w-4 h-4" />
+                )}
+                <span className="text-xs font-medium">
+                  {userPreference === 'camera' ? 'Câmera' : 'URL'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Foto de Referência */}
       {!hasReferencePhoto && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-700 rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-1" />
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-700 rounded-xl p-4 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-1" />
             <div className="flex-1">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-2">
+              <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-sm sm:text-base">
                 Cadastre sua Foto de Referência
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Para usar o sistema de ponto com reconhecimento facial, você precisa cadastrar uma foto sua de referência.
               </p>
               
-              {/* Opção 1: Upload de arquivo */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Opção 1: Fazer upload de uma foto
-                </label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleReferenceUpload}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingReference || savingUrl}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  {uploadingReference ? (
-                    <>
-                      <Loader className="w-4 h-4 animate-spin" />
-                      Processando...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4" />
-                      Enviar Foto
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Divisor */}
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-yellow-50 dark:bg-yellow-900/20 text-gray-500 dark:text-gray-400">
-                    OU
-                  </span>
-                </div>
-              </div>
-
-              {/* Opção 2: URL da imagem */}
+              {/* Campo de URL */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Opção 2: Inserir link da imagem
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Inserir link da imagem
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="url"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
                     placeholder="https://exemplo.com/minha-foto.jpg"
-                    disabled={uploadingReference || savingUrl}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                    disabled={savingUrl}
+                    className="flex-1 px-3 sm:px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
                   />
                   <button
                     onClick={handleSaveImageUrl}
-                    disabled={uploadingReference || savingUrl || !imageUrl.trim()}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={savingUrl || !imageUrl.trim()}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
                   >
                     {savingUrl ? (
                       <>
                         <Loader className="w-4 h-4 animate-spin" />
-                        Salvando...
+                        <span className="hidden sm:inline">Salvando...</span>
                       </>
                     ) : (
                       <>
                         <ImageIcon className="w-4 h-4" />
-                        Salvar Link
+                        <span>Salvar</span>
                       </>
                     )}
                   </button>
@@ -667,53 +678,65 @@ const WorkPontoTab = () => {
         </div>
       )}
 
-      {/* Botões de Ponto */}
+      {/* Botões de Ponto - Otimizado para Mobile */}
       {hasReferencePhoto && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <button
-            onClick={() => startCamera('entrada')}
+            onClick={() => registrarPontoComPreferencia('entrada')}
             disabled={!modelsLoaded || (pontoHoje?.tipo === 'entrada' && !pontoHoje?.horasTrabalhadas)}
-            className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-6 hover:shadow-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-4 sm:p-6 hover:shadow-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <PlayCircle className="w-8 h-8 mx-auto mb-2" />
-            <p className="font-bold text-lg">Entrada</p>
-            <p className="text-sm text-white/80">Iniciar jornada</p>
+            <div className="flex items-center gap-3 sm:flex-col sm:gap-2">
+              <PlayCircle className="w-8 h-8 sm:mx-auto flex-shrink-0" />
+              <div className="text-left sm:text-center flex-1">
+                <p className="font-bold text-base sm:text-lg">Registrar Entrada</p>
+                <p className="text-xs sm:text-sm text-white/80">
+                  {pontoHoje?.tipo === 'entrada' ? 'Já registrou hoje' : 'Iniciar jornada'}
+                </p>
+              </div>
+            </div>
           </button>
 
           <button
-            onClick={() => startCamera('saida')}
+            onClick={() => registrarPontoComPreferencia('saida')}
             disabled={!modelsLoaded || !pontoHoje || pontoHoje?.tipo === 'saida'}
-            className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl p-6 hover:shadow-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl p-4 sm:p-6 hover:shadow-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <StopCircle className="w-8 h-8 mx-auto mb-2" />
-            <p className="font-bold text-lg">Saída</p>
-            <p className="text-sm text-white/80">Finalizar jornada</p>
+            <div className="flex items-center gap-3 sm:flex-col sm:gap-2">
+              <StopCircle className="w-8 h-8 sm:mx-auto flex-shrink-0" />
+              <div className="text-left sm:text-center flex-1">
+                <p className="font-bold text-base sm:text-lg">Registrar Saída</p>
+                <p className="text-xs sm:text-sm text-white/80">
+                  {!pontoHoje ? 'Registre entrada primeiro' : pontoHoje?.tipo === 'saida' ? 'Já registrou hoje' : 'Finalizar jornada'}
+                </p>
+              </div>
+            </div>
           </button>
         </div>
       )}
 
-      {/* Modal da Câmera */}
+      {/* Modal da Câmera - Responsivo */}
       {showCamera && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 flex items-center justify-between">
-              <h3 className="text-white font-bold text-lg">
-                Reconhecimento Facial - {tipoPonto === 'entrada' ? 'Entrada' : 'Saída'}
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl max-w-2xl w-full overflow-hidden max-h-screen">
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-3 sm:p-4 flex items-center justify-between">
+              <h3 className="text-white font-bold text-sm sm:text-lg">
+                {tipoPonto === 'entrada' ? 'Entrada' : 'Saída'}
               </h3>
-              <button onClick={stopCamera} className="text-white hover:bg-white/20 rounded-lg p-2">
+              <button onClick={stopCamera} className="text-white hover:bg-white/20 rounded-lg p-1.5 sm:p-2">
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6">
-              <div className="relative mb-4">
+            <div className="p-3 sm:p-6">
+              <div className="relative mb-3 sm:mb-4">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  className="w-full rounded-xl bg-black"
-                  style={{ maxHeight: '400px' }}
+                  className="w-full rounded-lg sm:rounded-xl bg-black"
+                  style={{ maxHeight: '60vh' }}
                 />
                 <canvas
                   ref={canvasRef}
@@ -721,49 +744,49 @@ const WorkPontoTab = () => {
                 />
                 
                 {/* Indicador de rosto detectado */}
-                <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
+                <div className="absolute top-2 left-2 sm:top-4 sm:left-4 flex items-center gap-1.5 sm:gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1.5 sm:px-3 sm:py-2">
                   {faceDetected ? (
                     <>
-                      <CheckCircle className="w-5 h-5 text-green-400" />
-                      <span className="text-white text-sm font-medium">Rosto Detectado</span>
+                      <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                      <span className="text-white text-xs sm:text-sm font-medium">Rosto OK</span>
                     </>
                   ) : (
                     <>
-                      <Loader className="w-5 h-5 text-yellow-400 animate-spin" />
-                      <span className="text-white text-sm font-medium">Procurando rosto...</span>
+                      <Loader className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 animate-spin" />
+                      <span className="text-white text-xs sm:text-sm font-medium">Procurando...</span>
                     </>
                   )}
                 </div>
 
                 {location && (
-                  <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2">
-                    <MapPin className="w-4 h-4 text-green-400" />
-                    <span className="text-white text-xs">Localização obtida</span>
+                  <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex items-center gap-1 sm:gap-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1.5 sm:px-3 sm:py-2">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+                    <span className="text-white text-xs hidden sm:inline">GPS</span>
                   </div>
                 )}
               </div>
 
               {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-4 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">{error}</p>
                 </div>
               )}
 
               <button
                 onClick={capturarPonto}
                 disabled={!faceDetected || matching}
-                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {matching ? (
                   <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    Verificando identidade...
+                    <Loader className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                    <span className="text-sm sm:text-base">Verificando...</span>
                   </>
                 ) : (
                   <>
-                    <Camera className="w-5 h-5" />
-                    Registrar Ponto
+                    <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="text-sm sm:text-base">Registrar Ponto</span>
                   </>
                 )}
               </button>
@@ -772,65 +795,63 @@ const WorkPontoTab = () => {
         </div>
       )}
 
-      {/* Histórico de Pontos */}
+      {/* Histórico de Pontos - Otimizado para Mobile */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4">
-          <h3 className="text-white font-bold text-lg">Histórico de Pontos</h3>
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-3 sm:p-4">
+          <h3 className="text-white font-bold text-base sm:text-lg">Histórico de Pontos</h3>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
           {pontos.length === 0 ? (
-            <div className="text-center py-12">
-              <Clock className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Nenhum ponto registrado ainda</p>
+            <div className="text-center py-8 sm:py-12">
+              <Clock className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">Nenhum ponto registrado ainda</p>
             </div>
           ) : (
             pontos.map((ponto) => (
               <div
                 key={ponto.id}
-                className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600"
+                className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-600"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex gap-3">
-                    {ponto.photoURL && (
-                      <img
-                        src={ponto.photoURL}
-                        alt="Foto do ponto"
-                        className="w-16 h-16 rounded-lg object-cover"
-                      />
-                    )}
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          ponto.tipo === 'entrada' 
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        }`}>
-                          {ponto.tipo.toUpperCase()}
+                <div className="flex items-start gap-2 sm:gap-3">
+                  {ponto.photoURL && (
+                    <img
+                      src={ponto.photoURL}
+                      alt="Foto do ponto"
+                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                      <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-bold whitespace-nowrap ${
+                        ponto.tipo === 'entrada' 
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      }`}>
+                        {ponto.tipo.toUpperCase()}
+                      </span>
+                      {ponto.faceMatchScore && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {(parseFloat(ponto.faceMatchScore) * 100).toFixed(0)}%
                         </span>
-                        {ponto.faceMatchScore && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Confiança: {(parseFloat(ponto.faceMatchScore) * 100).toFixed(1)}%
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {format(ponto.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
-                      </p>
-                      {ponto.horasTrabalhadas && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          ⏱️ {ponto.horasTrabalhadas}h {ponto.minutosTrabalhados % 60}min trabalhados
-                        </p>
-                      )}
-                      {ponto.location && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <MapPin className="w-3 h-3 text-gray-400" />
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Lat: {ponto.location.latitude.toFixed(4)}, Long: {ponto.location.longitude.toFixed(4)}
-                          </p>
-                        </div>
                       )}
                     </div>
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {format(ponto.timestamp.toDate(), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                    {ponto.horasTrabalhadas && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 sm:mt-1">
+                        ⏱️ {ponto.horasTrabalhadas}h {ponto.minutosTrabalhados % 60}min
+                      </p>
+                    )}
+                    {ponto.location && (
+                      <div className="flex items-center gap-1 mt-0.5 sm:mt-1">
+                        <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {ponto.location.latitude.toFixed(2)}, {ponto.location.longitude.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
