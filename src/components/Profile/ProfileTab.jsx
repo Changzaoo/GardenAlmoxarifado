@@ -18,6 +18,9 @@ import MeuInventarioTab from '../Inventario/MeuInventarioTab';
 import TarefasTab from '../Tarefas/TarefasTab';
 import CronogramaSemanalCard from '../Tarefas/CronogramaSemanalCard';
 import AvaliacaoPerfilModal from './AvaliacaoPerfilModal';
+import DetalhesFerramentasModal from './DetalhesFerramentasModal';
+import DetalhesTarefasModal from './DetalhesTarefasModal';
+import DetalhesAvaliacoesModal from './DetalhesAvaliacoesModal';
 import AvaliacoesList from './AvaliacoesList';
 import { collection, query, where, getDocs, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
@@ -48,6 +51,7 @@ const ProfileTab = () => {
   const isMobile = useIsMobile();
   const { funcionarios } = useFuncionarios();
   const [dadosFuncionario, setDadosFuncionario] = useState(null);
+  const [modalDetalhes, setModalDetalhes] = useState(null); // 'ferramentas', 'tarefas', 'avaliacoes'
   
   // Buscar funcionarioInfo da lista carregada (MESMA FONTE que página de Tarefas e Funcionários)
   // Garante que photoURL e cargo são exatamente os mesmos em todo o sistema
@@ -667,7 +671,10 @@ const ProfileTab = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <button 
+              onClick={() => setModalDetalhes('ferramentas')}
+              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-200 cursor-pointer transform hover:scale-105"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <Package className="w-4 h-4 text-white" />
                 <span className="text-xs text-white/80 font-medium">Ferramentas Devolvidas</span>
@@ -676,9 +683,13 @@ const ProfileTab = () => {
                 <span className="text-2xl font-bold text-white">{stats.pontos.detalhes.ferramentas}</span>
                 <span className="text-sm text-white/60">pts</span>
               </div>
-            </div>
+              <div className="mt-2 text-xs text-white/60">Clique para detalhes</div>
+            </button>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <button 
+              onClick={() => setModalDetalhes('tarefas')}
+              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-200 cursor-pointer transform hover:scale-105"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="w-4 h-4 text-white" />
                 <span className="text-xs text-white/80 font-medium">Tarefas Concluídas</span>
@@ -687,9 +698,13 @@ const ProfileTab = () => {
                 <span className="text-2xl font-bold text-white">{stats.pontos.detalhes.tarefas}</span>
                 <span className="text-sm text-white/60">pts</span>
               </div>
-            </div>
+              <div className="mt-2 text-xs text-white/60">Clique para detalhes</div>
+            </button>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <button 
+              onClick={() => setModalDetalhes('avaliacoes')}
+              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-200 cursor-pointer transform hover:scale-105"
+            >
               <div className="flex items-center gap-2 mb-2">
                 <Star className="w-4 h-4 text-white" />
                 <span className="text-xs text-white/80 font-medium">Avaliações</span>
@@ -698,7 +713,8 @@ const ProfileTab = () => {
                 <span className="text-2xl font-bold text-white">{stats.pontos.detalhes.avaliacao}</span>
                 <span className="text-sm text-white/60">pts</span>
               </div>
-            </div>
+              <div className="mt-2 text-xs text-white/60">Clique para detalhes</div>
+            </button>
           </div>
         </div>
       </div>
@@ -826,6 +842,28 @@ const ProfileTab = () => {
           </div>
         )}     
       </div>
+
+      {/* Modais de Detalhes */}
+      <DetalhesFerramentasModal
+        isOpen={modalDetalhes === 'ferramentas'}
+        onClose={() => setModalDetalhes(null)}
+        emprestimos={emprestimos}
+        pontos={stats.pontos.detalhes.ferramentas}
+      />
+
+      <DetalhesTarefasModal
+        isOpen={modalDetalhes === 'tarefas'}
+        onClose={() => setModalDetalhes(null)}
+        funcionarioId={usuario?.id}
+        pontos={stats.pontos.detalhes.tarefas}
+      />
+
+      <DetalhesAvaliacoesModal
+        isOpen={modalDetalhes === 'avaliacoes'}
+        onClose={() => setModalDetalhes(null)}
+        funcionarioId={usuario?.id}
+        pontos={stats.pontos.detalhes.avaliacao}
+      />
     </div>
   );
 };

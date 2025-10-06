@@ -46,15 +46,37 @@ export const gerarComprovantePDF = (tipo, dados) => {
   pdf.setFillColor(59, 130, 246); // blue-500
   pdf.rect(0, 0, pageWidth, 50, 'F');
 
-  // Logo WorkFlow (círculo branco)
-  pdf.setFillColor(255, 255, 255);
-  pdf.circle(25, 18, 8, 'F');
-  
-  // Ícone dentro do logo (simulado com texto)
-  pdf.setFontSize(10);
-  pdf.setTextColor(59, 130, 246);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('W', 25, 20, { align: 'center' });
+  // Adicionar logo do WorkFlow
+  try {
+    const logoImg = new Image();
+    logoImg.src = '/logo.png';
+    
+    // Esperar a imagem carregar (ou usar sincrono se já estiver no cache)
+    if (logoImg.complete) {
+      // Círculo branco de fundo
+      pdf.setFillColor(255, 255, 255);
+      pdf.circle(25, 18, 8, 'F');
+      
+      // Adicionar a imagem do logo
+      pdf.addImage(logoImg, 'PNG', 18, 11, 14, 14);
+    } else {
+      // Fallback: círculo branco com W
+      pdf.setFillColor(255, 255, 255);
+      pdf.circle(25, 18, 8, 'F');
+      pdf.setFontSize(10);
+      pdf.setTextColor(59, 130, 246);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('W', 25, 20, { align: 'center' });
+    }
+  } catch (error) {
+    // Fallback caso haja erro ao carregar imagem
+    pdf.setFillColor(255, 255, 255);
+    pdf.circle(25, 18, 8, 'F');
+    pdf.setFontSize(10);
+    pdf.setTextColor(59, 130, 246);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('W', 25, 20, { align: 'center' });
+  }
 
   // Título WorkFlow
   pdf.setTextColor(255, 255, 255);
