@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
+import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 
 export const FuncionariosContext = createContext();
 
@@ -130,8 +131,30 @@ export const FuncionariosProvider = ({ children }) => {
     usuariosLista.forEach(user => adicionarFuncionario(user.id, user, 'usuarios'));
     usuariosSingularLista.forEach(user => adicionarFuncionario(user.id, user, 'usuario'));
 
-    // Converter para array e filtrar apenas ativos
-    const resultado = Array.from(todosUsuarios.values()).filter(f => f.ativo);
+    // Converter para array e filtrar apenas ativos E não-administradores
+    const resultado = Array.from(todosUsuarios.values()).filter(f => {
+      // Filtrar apenas ativos
+      if (!f.ativo) return false;
+      
+      // Filtrar administradores
+      // Verifica por nível numérico (0 = ADMIN) ou string ('admin', 'administrador')
+      const nivelNumerico = typeof f.nivel === 'number' ? f.nivel : null;
+      const nivelString = typeof f.nivel === 'string' ? f.nivel.toLowerCase() : '';
+      const cargoNormalizado = (f.cargo || '').toLowerCase();
+      
+      const isAdmin = nivelNumerico === NIVEIS_PERMISSAO.ADMIN || 
+                      nivelString === 'admin' || 
+                      nivelString === 'administrador' ||
+                      cargoNormalizado.includes('admin') ||
+                      cargoNormalizado.includes('administrador');
+      
+      if (isAdmin) {
+        console.log(`🚫 Administrador "${f.nome}" (nível: ${f.nivel}) excluído da lista de funcionários`);
+        return false;
+      }
+      
+      return true;
+    });
     
     console.log(`✅ Total de funcionários únicos unificados: ${resultado.length}`);
     console.log(`   📋 Todos com empresa: ${EMPRESA_PADRAO.nome}`);
