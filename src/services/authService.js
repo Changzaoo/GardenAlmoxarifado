@@ -9,7 +9,7 @@
  * 
  * DATABASE: garden-backup (backupDb)
  * COLLECTION: usuarios
- * SEARCH FIELD: email
+ * SEARCH FIELD: usuario
  * AUTH FIELDS: authKey (1º), senhaHash+senhaSalt (2º), senha (3º)
  */
 
@@ -28,15 +28,15 @@ import { verifyPassword } from '../utils/crypto';
 /**
  * Autentica usuário no sistema
  * 
- * @param {string} email - Email do usuário (campo de busca)
+ * @param {string} usuario - Nome de usuário (campo de busca)
  * @param {string} senha - Senha fornecida pelo usuário
  * @returns {Object} { success: boolean, user?: Object, error?: string }
  */
-export const authenticateUser = async (email, senha) => {
+export const authenticateUser = async (usuario, senha) => {
   try {
-    // 1. BUSCA: Query por email na coleção usuarios
+    // 1. BUSCA: Query por usuario na coleção usuarios
     const usuariosRef = collection(backupDb, 'usuarios');
-    const q = query(usuariosRef, where('email', '==', email));
+    const q = query(usuariosRef, where('usuario', '==', usuario));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
@@ -149,7 +149,7 @@ const verificarSenha = async (senhaFornecida, userData) => {
   }
 
   // Nenhum campo de senha encontrado
-  console.warn('Usuário sem campo de senha válido:', userData.email);
+  console.warn('Usuário sem campo de senha válido:', userData.usuario);
   return false;
 };
 
@@ -169,7 +169,7 @@ export const saveUserSession = (user, lembrar = false) => {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 30); // 30 dias
     
-    document.cookie = `email=${user.email}; expires=${expiryDate.toUTCString()}; path=/`;
+    document.cookie = `usuario=${user.usuario}; expires=${expiryDate.toUTCString()}; path=/`;
     document.cookie = `lembrar=true; expires=${expiryDate.toUTCString()}; path=/`;
   }
 };
@@ -183,7 +183,7 @@ export const clearUserSession = () => {
   localStorage.removeItem('nivel');
 
   // Remove cookies
-  document.cookie = 'email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  document.cookie = 'usuario=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   document.cookie = 'lembrar=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 };
 
@@ -205,16 +205,16 @@ export const getStoredSession = () => {
 };
 
 /**
- * Recupera email salvo nos cookies
+ * Recupera usuario salvo nos cookies
  * 
- * @returns {string|null} Email ou null
+ * @returns {string|null} Usuario ou null
  */
-export const getStoredEmail = () => {
+export const getStoredUsuario = () => {
   const cookies = document.cookie.split(';');
-  const emailCookie = cookies.find(c => c.trim().startsWith('email='));
+  const usuarioCookie = cookies.find(c => c.trim().startsWith('usuario='));
   
-  if (emailCookie) {
-    return emailCookie.split('=')[1];
+  if (usuarioCookie) {
+    return usuarioCookie.split('=')[1];
   }
   
   return null;
@@ -231,14 +231,13 @@ export const isRememberMeActive = () => {
 };
 
 /**
- * Valida formato de email
+ * Valida formato de usuario (pode ser alfanumérico)
  * 
- * @param {string} email
+ * @param {string} usuario
  * @returns {boolean}
  */
-export const isValidEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+export const isValidUsuario = (usuario) => {
+  return usuario && usuario.length >= 3;
 };
 
 /**
@@ -277,8 +276,8 @@ export default {
   saveUserSession,
   clearUserSession,
   getStoredSession,
-  getStoredEmail,
+  getStoredUsuario,
   isRememberMeActive,
-  isValidEmail,
+  isValidUsuario,
   validatePasswordStrength
 };

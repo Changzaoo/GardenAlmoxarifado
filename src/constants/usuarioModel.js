@@ -38,7 +38,7 @@ export const STATUS_USUARIO = {
 
 /**
  * Cria um modelo padrão de usuário com todos os campos necessários
- * @param {Object} dadosBasicos - Dados básicos do usuário (nome, email, senha, etc)
+ * @param {Object} dadosBasicos - Dados básicos do usuário (nome, usuario, senha, etc)
  * @returns {Object} Usuário completo com todos os campos do modelo
  */
 export const criarModeloUsuarioPadrao = (dadosBasicos = {}) => {
@@ -47,7 +47,7 @@ export const criarModeloUsuarioPadrao = (dadosBasicos = {}) => {
   return {
     // Dados básicos obrigatórios
     nome: dadosBasicos.nome || '',
-    email: dadosBasicos.email || '',
+    usuario: dadosBasicos.usuario || '',
     nivel: dadosBasicos.nivel || NIVEIS_PERMISSAO.FUNCIONARIO,
     ativo: dadosBasicos.ativo !== undefined ? dadosBasicos.ativo : true,
     
@@ -97,7 +97,7 @@ export const criarModeloUsuarioPadrao = (dadosBasicos = {}) => {
 export const validarModeloUsuario = (usuario) => {
   const camposObrigatorios = [
     'nome',
-    'email',
+    'usuario',
     'nivel',
     'ativo',
     'senhaHash',
@@ -161,7 +161,7 @@ export const compararUsuarios = (usuarioAntigo, usuarioNovo) => {
   const mudancas = {};
   
   const camposParaComparar = [
-    'nome', 'email', 'nivel', 'ativo', 'cargo',
+    'nome', 'usuario', 'nivel', 'ativo', 'cargo',
     'empresaId', 'empresaNome', 'setorId', 'setorNome',
     'telefone', 'whatsapp', 'photoURL', 'status', 'itemFavorito'
   ];

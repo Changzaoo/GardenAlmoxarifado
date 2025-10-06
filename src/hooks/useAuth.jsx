@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
     // 1. Primeiro tenta buscar no workflowbr1
     try {
       const usuariosRef = collection(dbWorkflowBR1, 'usuarios');
-      const q = query(usuariosRef, where('email', '==', username), where('ativo', '==', true));
+      const q = query(usuariosRef, where('usuario', '==', username), where('ativo', '==', true));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
