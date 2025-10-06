@@ -22,7 +22,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../firebaseConfig';
 import { format, differenceInMinutes, differenceInHours, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import * as faceapi from 'face-api.js';
+import * as faceapi from '@vladmandic/face-api';
 
 const WorkPontoTab = () => {
   const { usuario } = useAuth();
