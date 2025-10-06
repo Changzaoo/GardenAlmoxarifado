@@ -330,20 +330,22 @@ const MensagensTab = () => {
       {/* Sidebar - Lista de Conversas */}
       <div className={`${conversaSelecionada ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-96 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full`}>
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <MessageCircle className="w-6 h-6" />
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+              <div className="p-2 bg-blue-500 rounded-lg">
+                <MessageCircle className="w-6 h-6 text-white" />
+              </div>
               Mensagens
               {totalUnread > 0 && (
-                <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg animate-pulse">
                   {totalUnread}
                 </span>
               )}
             </h2>
             <button
               onClick={() => setShowNovaConversa(true)}
-              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+              className="p-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               title="Nova conversa"
             >
               <Plus className="w-5 h-5" />
@@ -351,14 +353,17 @@ const MensagensTab = () => {
           </div>
 
           {/* Busca */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <Search className="w-4 h-4" />
+              <span className="text-sm font-medium">Buscar conversas...</span>
+            </div>
             <input
               type="text"
-              placeholder="Buscar conversas..."
+              placeholder="Digite o nome da conversa ou pessoa"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm hover:shadow-md"
             />
           </div>
         </div>
@@ -399,13 +404,18 @@ const MensagensTab = () => {
             onVoltar={() => setConversaSelecionada(null)}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center">
-            <MessageCircle className="w-24 h-24 text-gray-300 dark:text-gray-600 mb-4" />
-            <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="flex flex-col items-center justify-center h-full w-full p-8 text-center bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-600 rounded-full blur-2xl opacity-20 animate-pulse"></div>
+              <div className="relative p-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl shadow-2xl">
+                <MessageCircle className="w-24 h-24 text-white" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
               Selecione uma conversa
             </h3>
-            <p className="text-gray-500 dark:text-gray-400">
-              Escolha uma conversa da lista ou inicie uma nova
+            <p className="text-gray-600 dark:text-gray-400 text-lg max-w-md">
+              Escolha uma conversa da lista ao lado ou clique em <span className="font-bold text-blue-500">+</span> para iniciar uma nova
             </p>
           </div>
         )}

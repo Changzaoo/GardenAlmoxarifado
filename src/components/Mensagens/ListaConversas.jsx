@@ -128,14 +128,9 @@ const ListaConversas = ({
               {busca ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
             </div>
             {!busca && (
-              <>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">
-                  Clique no botão <span className="text-blue-500 font-semibold">+</span> para iniciar uma conversa
-                </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  💡 Dica: Abra o console (F12) para ver logs de debug
-                </p>
-              </>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">
+                Clique no botão <span className="text-blue-500 font-semibold">+</span> para iniciar uma conversa
+              </p>
             )}
           </div>
         ) : (
@@ -147,13 +142,19 @@ const ListaConversas = ({
               <div
                 key={conversa.id}
                 onClick={() => onSelectConversa(conversa)}
-                className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700 ${
-                  isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                className={`flex items-center gap-4 p-4 mx-2 my-1 rounded-xl cursor-pointer transition-all duration-200 ${
+                  isSelected 
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg scale-[1.02] text-white' 
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-md'
                 }`}
               >
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg overflow-hidden">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-lg overflow-hidden shadow-lg ${
+                    isSelected 
+                      ? 'bg-white/20 ring-2 ring-white' 
+                      : 'bg-gradient-to-br from-blue-400 to-indigo-600'
+                  }`}>
                     {conversa.photoURL ? (
                       <img 
                         src={conversa.photoURL} 
@@ -170,7 +171,7 @@ const ListaConversas = ({
                     )}
                   </div>
                   {naoLidas > 0 && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-red-500 to-pink-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg animate-pulse ring-2 ring-white dark:ring-gray-800">
                       {naoLidas > 9 ? '9+' : naoLidas}
                     </div>
                   )}
@@ -179,21 +180,29 @@ const ListaConversas = ({
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className={`font-semibold truncate ${
-                      naoLidas > 0 
-                        ? 'text-gray-900 dark:text-gray-100' 
-                        : 'text-gray-700 dark:text-gray-300'
+                    <h3 className={`font-bold truncate ${
+                      isSelected
+                        ? 'text-white'
+                        : naoLidas > 0 
+                          ? 'text-gray-900 dark:text-gray-100' 
+                          : 'text-gray-700 dark:text-gray-300'
                     }`}>
                       {conversa.nome || 'Conversa'}
                     </h3>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
+                    <span className={`text-xs flex-shrink-0 ml-2 ${
+                      isSelected
+                        ? 'text-white/80'
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}>
                       {formatarTimestamp(conversa.ultimaMensagem?.timestamp)}
                     </span>
                   </div>
                   <p className={`text-sm truncate ${
-                    naoLidas > 0 
-                      ? 'text-gray-900 dark:text-gray-100 font-medium' 
-                      : 'text-gray-500 dark:text-gray-400'
+                    isSelected
+                      ? 'text-white/90'
+                      : naoLidas > 0 
+                        ? 'text-gray-900 dark:text-gray-100 font-medium' 
+                        : 'text-gray-500 dark:text-gray-400'
                   }`}>
                     {conversa.ultimaMensagem?.texto || 'Sem mensagens'}
                   </p>
@@ -202,10 +211,10 @@ const ListaConversas = ({
                 {/* Badges */}
                 <div className="flex flex-col items-end gap-1">
                   {conversa.fixado && (
-                    <Pin className="w-4 h-4 text-gray-400" />
+                    <Pin className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
                   )}
                   {conversa.arquivado && (
-                    <Archive className="w-4 h-4 text-gray-400" />
+                    <Archive className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
                   )}
                 </div>
               </div>

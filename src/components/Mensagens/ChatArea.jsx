@@ -237,27 +237,27 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b-2 border-gray-200 dark:border-gray-700 p-5 flex items-center gap-4 flex-shrink-0 shadow-sm">
         <button
           onClick={onVoltar}
-          className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+          className="md:hidden p-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
         >
           <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
         </button>
 
         {/* Avatar */}
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ring-2 ${
           conversa.tipo === 'grupo' 
-            ? 'bg-purple-500' 
-            : 'bg-gradient-to-br from-blue-500 to-blue-600'
-        } text-white font-semibold`}>
+            ? 'bg-gradient-to-br from-purple-500 to-pink-600 ring-purple-200 dark:ring-purple-900' 
+            : 'bg-gradient-to-br from-blue-500 to-indigo-600 ring-blue-200 dark:ring-blue-900'
+        } text-white font-bold text-lg overflow-hidden`}>
           {conversa.tipo === 'grupo' ? (
             conversa.nome?.charAt(0).toUpperCase()
           ) : conversa.participantesInfo?.[0]?.avatar ? (
             <img 
               src={conversa.participantesInfo[0].avatar} 
               alt={getNomeConversa()}
-              className="w-full h-full rounded-full object-cover"
+              className="w-full h-full object-cover"
             />
           ) : (
             getNomeConversa().charAt(0).toUpperCase()
@@ -266,22 +266,22 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+          <h3 className="font-bold text-gray-900 dark:text-white truncate text-lg">
             {getNomeConversa()}
           </h3>
           {conversa.tipo === 'grupo' && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
               {conversa.participantes.length} participantes
             </p>
           )}
           {digitando.length > 0 && (
-            <p className="text-sm text-blue-500">
+            <p className="text-sm text-blue-500 font-medium animate-pulse">
               digitando...
             </p>
           )}
         </div>
 
-        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+        <button className="p-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md">
           <MoreVertical className="w-5 h-5 text-gray-700 dark:text-gray-300" />
         </button>
       </div>
