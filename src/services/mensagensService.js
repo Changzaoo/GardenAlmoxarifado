@@ -150,7 +150,7 @@ class MensagensService {
   }
 
   /**
-   * Busca conversas de um usuário
+   * Busca conversas de um usuário (limitado para otimização de memória)
    */
   listenToConversations(userId, callback) {
     console.log('🔍 Buscando conversas para usuário:', userId);
@@ -158,7 +158,8 @@ class MensagensService {
     const q = query(
       this.conversasRef,
       where('participantes', 'array-contains', userId),
-      orderBy('atualizadaEm', 'desc')
+      orderBy('atualizadaEm', 'desc'),
+      limit(30) // Limitar a 30 conversas mais recentes
     );
 
     return onSnapshot(q, 

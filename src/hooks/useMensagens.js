@@ -11,6 +11,7 @@ import {
 import { toast } from 'react-toastify';
 import { db } from '../firebaseConfig';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { listenerManager, QUERY_LIMITS } from '../utils/memoryOptimization';
 
 /**
  * Hook customizado para gerenciar mensagens em tempo real
