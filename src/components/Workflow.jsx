@@ -2663,9 +2663,75 @@ const AlmoxarifadoSistema = () => {
       throw new Error('Sem permissão para remover funcionários');
     }
     try {
-      return await deleteDoc(doc(db, 'funcionarios', id));
+      console.log('🗑️ Removendo funcionário:', id);
+      
+      // Buscar funcionário para ver de qual(is) coleção(ões) ele veio
+      const funcionario = funcionarios.find(f => f.id === id);
+      const origens = funcionario?.origens || [];
+      const idsRelacionados = funcionario?.idsRelacionados || [id];
+      
+      console.log('📋 Funcionário tem origens:', origens);
+      console.log('🔗 IDs relacionados:', idsRelacionados);
+      
+      // Deletar de todas as coleções de origem
+      const promises = [];
+      
+      // 1️⃣ Deletar da coleção 'funcionarios'
+      if (origens.includes('funcionarios') || !origens.length) {
+        console.log('🗑️ Deletando de "funcionarios"...');
+        promises.push(
+          deleteDoc(doc(db, 'funcionarios', id))
+            .then(() => console.log('✅ Deletado de "funcionarios"'))
+            .catch(error => console.warn('⚠️ Erro ao deletar de "funcionarios":', error))
+        );
+      }
+      
+      // 2️⃣ Deletar da coleção 'usuarios' (PLURAL)
+      if (origens.includes('usuarios')) {
+        console.log('🗑️ Deletando de "usuarios" (plural)...');
+        // Buscar o ID correto nesta coleção
+        const usuarioId = idsRelacionados.find(idRel => idRel !== id) || id;
+        promises.push(
+          deleteDoc(doc(db, 'usuarios', usuarioId))
+            .then(() => console.log('✅ Deletado de "usuarios"'))
+            .catch(error => console.warn('⚠️ Erro ao deletar de "usuarios":', error))
+        );
+      }
+      
+      // 3️⃣ Deletar da coleção 'usuario' (SINGULAR - legado)
+      if (origens.includes('usuario')) {
+        console.log('🗑️ Deletando de "usuario" (singular)...');
+        const usuarioId = idsRelacionados.find(idRel => idRel !== id) || id;
+        promises.push(
+          deleteDoc(doc(db, 'usuario', usuarioId))
+            .then(() => console.log('✅ Deletado de "usuario"'))
+            .catch(error => console.warn('⚠️ Erro ao deletar de "usuario":', error))
+        );
+      }
+      
+      // 4️⃣ Fallback: tentar deletar de todas se não tiver origens definidas
+      if (!origens.length) {
+        console.log('⚠️ Sem origens definidas, tentando deletar de todas as coleções como fallback...');
+        idsRelacionados.forEach(idRel => {
+          promises.push(
+            deleteDoc(doc(db, 'usuarios', idRel))
+              .then(() => console.log('✅ Deletado de "usuarios" (fallback)'))
+              .catch(() => {}) // Silenciar erro
+          );
+          promises.push(
+            deleteDoc(doc(db, 'usuario', idRel))
+              .then(() => console.log('✅ Deletado de "usuario" (fallback)'))
+              .catch(() => {}) // Silenciar erro
+          );
+        });
+      }
+      
+      // Executar todas as deleções
+      await Promise.allSettled(promises);
+      console.log('✅ Funcionário removido de todas as coleções');
+      
     } catch (error) {
-      console.error('Erro ao remover funcionário:', error);
+      console.error('❌ Erro ao remover funcionário:', error);
       throw error;
     }
   };

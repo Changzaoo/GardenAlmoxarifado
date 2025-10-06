@@ -237,14 +237,53 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Cargo *
             </label>
-            <input
-              type="text"
-              placeholder="Ex: Analista"
-              value={dados.cargo}
-              onChange={e => setDados({ ...dados, cargo: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            <select
+              value={dados.cargo || ''}
+              onChange={e => {
+                const value = e.target.value;
+                if (value === 'outro') {
+                  setDados({ ...dados, cargo: '', cargoPersonalizado: true });
+                } else {
+                  setDados({ ...dados, cargo: value, cargoPersonalizado: false });
+                }
+              }}
+              className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               required
-            />
+            >
+              <option value="">Selecione um cargo...</option>
+              <optgroup label="Operacionais">
+                <option value="Jardineiro">Jardineiro</option>
+                <option value="Auxiliar de Jardinagem">Auxiliar de Jardinagem</option>
+                <option value="Podador">Podador</option>
+                <option value="Operador de Máquinas">Operador de Máquinas</option>
+                <option value="Técnico em Paisagismo">Técnico em Paisagismo</option>
+              </optgroup>
+              <optgroup label="Administrativos">
+                <option value="Gerente">Gerente</option>
+                <option value="Supervisor">Supervisor</option>
+                <option value="Coordenador">Coordenador</option>
+                <option value="Assistente Administrativo">Assistente Administrativo</option>
+                <option value="Almoxarife">Almoxarife</option>
+              </optgroup>
+              <optgroup label="Especializados">
+                <option value="Engenheiro Agrônomo">Engenheiro Agrônomo</option>
+                <option value="Arquiteto Paisagista">Arquiteto Paisagista</option>
+                <option value="Designer de Jardins">Designer de Jardins</option>
+                <option value="Técnico em Irrigação">Técnico em Irrigação</option>
+              </optgroup>
+              <option value="outro">✏️ Outro (personalizar)</option>
+            </select>
+            {dados.cargoPersonalizado && (
+              <input
+                type="text"
+                placeholder="Digite o cargo personalizado..."
+                value={dados.cargo}
+                onChange={e => setDados({ ...dados, cargo: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all mt-2"
+                required
+                autoFocus
+              />
+            )}
           </div>
         
           {/* Telefone */}
