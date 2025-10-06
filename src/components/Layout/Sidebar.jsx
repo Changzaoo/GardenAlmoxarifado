@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import OfflineLogo from '../common/OfflineLogo';
-import { Menu as MenuIcon, Home, Package, Users, Clock, AlertTriangle, Settings, LogOut } from 'lucide-react';
+import { Menu as MenuIcon, Home, Package, Users, Clock, AlertTriangle, Settings, LogOut, FileText } from 'lucide-react';
 
 const Sidebar = ({ onProfileClick }) => {
   const navigate = useNavigate();
@@ -32,6 +32,12 @@ const Sidebar = ({ onProfileClick }) => {
       name: 'Empréstimos',
       path: '/emprestimos',
       icon: <Clock className="w-5 h-5" />,
+      requiredLevel: 1
+    },
+    {
+      name: 'Comprovantes',
+      path: '/comprovantes',
+      icon: <FileText className="w-5 h-5" />,
       requiredLevel: 1
     },
     {

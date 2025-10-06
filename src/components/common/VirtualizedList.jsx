@@ -1,5 +1,5 @@
 import React, { forwardRef } from 'react';
-import { FixedSizeList } from 'react-window';
+import { List } from 'react-window';
 
 /**
  * Lista virtualizada para grandes conjuntos de dados
@@ -35,7 +35,7 @@ const VirtualizedList = forwardRef(({
   };
 
   return (
-    <FixedSizeList
+    <List
       ref={ref}
       className={className}
       height={height}
@@ -46,7 +46,7 @@ const VirtualizedList = forwardRef(({
       {...props}
     >
       {Row}
-    </FixedSizeList>
+    </List>
   );
 });
 

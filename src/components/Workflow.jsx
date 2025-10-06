@@ -37,6 +37,7 @@ import GerenciamentoFuncionarios from './Funcionarios/GerenciamentoFuncionarios'
 import UsuariosTab from './usuarios/UsuariosTab';
 import DatabaseSyncManager from './Admin/DatabaseSyncManager';
 import HistoricoEmprestimosTab from './Emprestimos/HistoricoEmprestimosTab';
+import ComprovantesTab from './Comprovantes/ComprovantesTab';
 import { MessageNotificationProvider } from './Chat/MessageNotificationContext';
 import { NotificationProvider, useNotification } from './NotificationProvider';
 import MensagensMain from './Mensagens/MensagensMain';
@@ -113,7 +114,8 @@ import {
   Save,
   Database,
   Key,
-  MousePointer
+  MousePointer,
+  FileText
 } from 'lucide-react';
 
 // Função para bloquear teclas de atalho e menu de contexto
@@ -2879,6 +2881,12 @@ const AlmoxarifadoSistema = () => {
       permissao: () => true // Todos os usuários autenticados (abas internas controlam permissões)
     },
     { 
+      id: 'comprovantes', 
+      nome: 'Comprovantes', 
+      icone: FileText,
+      permissao: () => true // Todos os usuários autenticados podem visualizar comprovantes
+    },
+    { 
       id: 'funcionarios', 
       nome: 'Funcionários', 
       icone: Users,
@@ -4085,6 +4093,10 @@ const AlmoxarifadoSistema = () => {
                 atualizarFuncionario={atualizarFuncionario}
                 readonly={!PermissionChecker.canManageEmployees(usuario?.nivel)}
               />
+            )}
+
+            {abaAtiva === 'comprovantes' && (
+              <ComprovantesTab />
             )}
 
             {abaAtiva === 'empresas-setores' && (
