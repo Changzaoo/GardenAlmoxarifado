@@ -183,8 +183,15 @@ class MensagensService {
             const outroParticipanteId = data.participantes.find(id => id !== userId);
             if (outroParticipanteId) {
               const outroUsuario = await this.getUserInfo(outroParticipanteId);
-              nome = outroUsuario?.nome || 'Usuário';
-              photoURL = outroUsuario?.photoURL || null;
+              
+              // Tentar pegar nome de várias fontes
+              nome = outroUsuario?.nome || 
+                     outroUsuario?.displayName || 
+                     outroUsuario?.email?.split('@')[0] || 
+                     `Usuário ${outroParticipanteId.substring(0, 8)}`;
+              
+              photoURL = outroUsuario?.photoURL || outroUsuario?.avatar || null;
+              
               console.log('👤 Participante buscado:', { 
                 nome, 
                 photoURL, 
@@ -957,57 +964,147 @@ class MensagensService {
   }
 
   /**
-   * Busca informações de um usuário
-   * Prioriza a coleção funcionarios (que tem photoURL) antes de usuarios
+   * Busca informações de um usuário com unificação inteligente
+   * Busca em múltiplas coleções e mescla dados duplicados
    */
   async getUserInfo(userId) {
     try {
-      // Primeiro tentar buscar na coleção funcionarios (tem photoURL garantido)
-      const funcionariosRef = collection(db, 'funcionarios');
-      const qFunc = query(funcionariosRef, where('userId', '==', userId));
-      const funcionariosSnap = await getDocs(qFunc);
+      console.log('🔍 getUserInfo: Buscando informações para userId:', userId);
       
-      if (!funcionariosSnap.empty) {
-        const funcionarioData = funcionariosSnap.docs[0].data();
-        console.log('✅ Funcionário encontrado com foto:', funcionarioData.photoURL);
-        return {
-          id: funcionariosSnap.docs[0].id,
-          ...funcionarioData
-        };
-      }
+      let dadosUnificados = null;
+      const fontesEncontradas = [];
       
-      // Se não encontrou por userId, tentar por email na coleção usuarios
-      const userRef = doc(this.usuariosRef, userId);
-      const userDoc = await getDoc(userRef);
-      
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+      // 1️⃣ Buscar na coleção "usuarios" (PLURAL) pelo ID do documento
+      try {
+        const userRef = doc(this.usuariosRef, userId);
+        const userDoc = await getDoc(userRef);
         
-        // Tentar buscar funcionário pelo email
-        const qFuncEmail = query(funcionariosRef, where('email', '==', userData.email));
-        const funcionariosSnapEmail = await getDocs(qFuncEmail);
-        
-        if (!funcionariosSnapEmail.empty) {
-          const funcionarioData = funcionariosSnapEmail.docs[0].data();
-          console.log('✅ Funcionário encontrado pelo email com foto:', funcionarioData.photoURL);
-          return {
-            id: funcionariosSnapEmail.docs[0].id,
-            ...funcionarioData
+        if (userDoc.exists()) {
+          dadosUnificados = {
+            id: userDoc.id,
+            ...userDoc.data()
           };
+          fontesEncontradas.push('usuarios');
+          console.log('✅ Usuário encontrado na coleção "usuarios":', dadosUnificados.nome || dadosUnificados.email);
         }
-        
-        // Se não encontrou funcionário, retornar dados do usuario
-        console.log('⚠️ Usuário encontrado mas sem funcionário vinculado');
-        return {
-          id: userDoc.id,
-          ...userData
-        };
+      } catch (error) {
+        console.error('⚠️ Erro ao buscar em "usuarios":', error);
       }
       
-      console.warn('❌ Usuário não encontrado:', userId);
+      // 2️⃣ Buscar na coleção "funcionarios" pelo campo userId
+      try {
+        const funcionariosRef = collection(db, 'funcionarios');
+        const qFunc = query(funcionariosRef, where('userId', '==', userId));
+        const funcionariosSnap = await getDocs(qFunc);
+        
+        if (!funcionariosSnap.empty) {
+          const funcionarioData = {
+            id: funcionariosSnap.docs[0].id,
+            userId: userId,
+            ...funcionariosSnap.docs[0].data()
+          };
+          
+          if (dadosUnificados) {
+            // Mesclar dados, priorizando valores não vazios
+            dadosUnificados = {
+              ...dadosUnificados,
+              nome: funcionarioData.nome || dadosUnificados.nome,
+              email: funcionarioData.email || dadosUnificados.email,
+              cargo: funcionarioData.cargo || funcionarioData.nivel || dadosUnificados.cargo,
+              photoURL: funcionarioData.photoURL || funcionarioData.avatar || dadosUnificados.photoURL,
+              displayName: funcionarioData.displayName || dadosUnificados.displayName,
+              // Manter ambos os IDs
+              funcionarioId: funcionarioData.id,
+              ...funcionarioData
+            };
+          } else {
+            dadosUnificados = funcionarioData;
+          }
+          
+          fontesEncontradas.push('funcionarios(userId)');
+          console.log('✅ Funcionário encontrado pelo userId:', funcionarioData.nome);
+        }
+      } catch (error) {
+        console.error('⚠️ Erro ao buscar em "funcionarios" por userId:', error);
+      }
+      
+      // 3️⃣ Buscar funcionário diretamente pelo ID do documento
+      try {
+        const funcionariosRef = collection(db, 'funcionarios');
+        const funcDocRef = doc(funcionariosRef, userId);
+        const funcDoc = await getDoc(funcDocRef);
+        
+        if (funcDoc.exists()) {
+          const funcionarioData = {
+            id: funcDoc.id,
+            userId: userId,
+            ...funcDoc.data()
+          };
+          
+          if (dadosUnificados) {
+            // Mesclar dados
+            dadosUnificados = {
+              ...dadosUnificados,
+              nome: funcionarioData.nome || dadosUnificados.nome,
+              email: funcionarioData.email || dadosUnificados.email,
+              cargo: funcionarioData.cargo || funcionarioData.nivel || dadosUnificados.cargo,
+              photoURL: funcionarioData.photoURL || funcionarioData.avatar || dadosUnificados.photoURL,
+              displayName: funcionarioData.displayName || dadosUnificados.displayName,
+              ...funcionarioData
+            };
+          } else {
+            dadosUnificados = funcionarioData;
+          }
+          
+          fontesEncontradas.push('funcionarios(id)');
+          console.log('✅ Funcionário encontrado diretamente pelo ID:', funcionarioData.nome);
+        }
+      } catch (error) {
+        console.error('⚠️ Erro ao buscar em "funcionarios" por ID:', error);
+      }
+      
+      // 4️⃣ Buscar na coleção "usuario" (SINGULAR - legado)
+      try {
+        const usuarioSingularRef = doc(db, 'usuario', userId);
+        const usuarioSingularDoc = await getDoc(usuarioSingularRef);
+        
+        if (usuarioSingularDoc.exists()) {
+          const usuarioData = {
+            id: usuarioSingularDoc.id,
+            ...usuarioSingularDoc.data()
+          };
+          
+          if (dadosUnificados) {
+            // Mesclar dados
+            dadosUnificados = {
+              ...dadosUnificados,
+              nome: usuarioData.nome || dadosUnificados.nome,
+              email: usuarioData.email || dadosUnificados.email,
+              cargo: usuarioData.cargo || usuarioData.nivel || dadosUnificados.cargo,
+              photoURL: usuarioData.photoURL || usuarioData.avatar || dadosUnificados.photoURL,
+              displayName: usuarioData.displayName || dadosUnificados.displayName,
+              ...usuarioData
+            };
+          } else {
+            dadosUnificados = usuarioData;
+          }
+          
+          fontesEncontradas.push('usuario');
+          console.log('✅ Usuário encontrado na coleção "usuario" (singular):', usuarioData.nome || usuarioData.email);
+        }
+      } catch (error) {
+        console.error('⚠️ Erro ao buscar em "usuario":', error);
+      }
+      
+      if (dadosUnificados) {
+        console.log(`✅ Dados unificados de ${fontesEncontradas.length} fonte(s): ${fontesEncontradas.join(', ')}`);
+        return dadosUnificados;
+      }
+      
+      console.warn('❌ Usuário não encontrado em nenhuma coleção:', userId);
       return null;
     } catch (error) {
-      console.error('Erro ao buscar informações do usuário:', error);
+      console.error('❌ Erro ao buscar informações do usuário:', error);
       return null;
     }
   }

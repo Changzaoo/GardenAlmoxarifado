@@ -22,18 +22,167 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
   const carregarUsuarios = async () => {
     try {
       setLoading(true);
-      const usuariosRef = collection(db, 'usuarios');
-      const q = query(usuariosRef, where('id', '!=', usuarioAtual?.id || ''));
-      const snapshot = await getDocs(q);
+      console.log('🔄 Carregando usuários para Nova Conversa...');
       
-      const usuariosData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const todosUsuarios = new Map(); // Chave: userId principal
+      const emailIndex = new Map(); // Índice: email -> userId principal
+      const nomeIndex = new Map(); // Índice: nome normalizado -> userId principal
       
-      setUsuarios(usuariosData);
+      // Função auxiliar para normalizar nome (remove acentos, espaços extras, lowercase)
+      const normalizarNome = (nome) => {
+        if (!nome) return '';
+        return nome
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+          .replace(/\s+/g, ' ') // Remove espaços extras
+          .trim();
+      };
+      
+      // Função auxiliar para encontrar userId principal baseado em email ou nome
+      const encontrarUserIdPrincipal = (email, nome) => {
+        // Prioridade 1: Buscar por email
+        if (email) {
+          const emailNormalizado = email.toLowerCase().trim();
+          if (emailIndex.has(emailNormalizado)) {
+            return emailIndex.get(emailNormalizado);
+          }
+        }
+        
+        // Prioridade 2: Buscar por nome normalizado
+        if (nome) {
+          const nomeNormalizado = normalizarNome(nome);
+          if (nomeNormalizado && nomeIndex.has(nomeNormalizado)) {
+            return nomeIndex.get(nomeNormalizado);
+          }
+        }
+        
+        return null;
+      };
+      
+      // Função auxiliar para adicionar/mesclar usuário
+      const adicionarUsuario = (docId, data, origem) => {
+        const email = (data.email || '').toLowerCase().trim();
+        const nome = data.nome || data.displayName || '';
+        const userId = data.userId || docId;
+        
+        // Verificar se já existe usuário com mesmo email ou nome
+        const userIdExistente = encontrarUserIdPrincipal(email, nome);
+        const userIdFinal = userIdExistente || userId;
+        
+        // Se já existe, fazer merge dos dados
+        if (todosUsuarios.has(userIdFinal)) {
+          const usuarioExistente = todosUsuarios.get(userIdFinal);
+          
+          todosUsuarios.set(userIdFinal, {
+            ...usuarioExistente,
+            // Mesclar dados, priorizando valores não vazios
+            nome: data.nome || usuarioExistente.nome,
+            email: email || usuarioExistente.email,
+            cargo: data.cargo || data.nivel || usuarioExistente.cargo,
+            photoURL: data.photoURL || data.avatar || usuarioExistente.photoURL,
+            displayName: data.displayName || usuarioExistente.displayName,
+            // Manter registro de todas as origens
+            origens: [...(usuarioExistente.origens || [origem]), origem],
+            // Manter todos os IDs relacionados
+            idsRelacionados: Array.from(new Set([
+              ...(usuarioExistente.idsRelacionados || [usuarioExistente.id]),
+              docId,
+              userId
+            ]))
+          });
+          
+          console.log(`🔗 Mesclando usuário "${nome || email}" (${origem}) com ID existente ${userIdFinal}`);
+        } else {
+          // Novo usuário
+          todosUsuarios.set(userIdFinal, {
+            id: userIdFinal,
+            nome: nome || email?.split('@')[0] || 'Sem nome',
+            email: email,
+            cargo: data.cargo || data.nivel || '',
+            photoURL: data.photoURL || data.avatar || null,
+            displayName: data.displayName || nome,
+            origens: [origem],
+            idsRelacionados: Array.from(new Set([docId, userId])),
+            ...data
+          });
+          
+          // Indexar por email
+          if (email) {
+            emailIndex.set(email, userIdFinal);
+          }
+          
+          // Indexar por nome normalizado
+          if (nome) {
+            const nomeNormalizado = normalizarNome(nome);
+            if (nomeNormalizado) {
+              nomeIndex.set(nomeNormalizado, userIdFinal);
+            }
+          }
+          
+          console.log(`➕ Novo usuário "${nome || email}" (${origem}) com ID ${userIdFinal}`);
+        }
+      };
+      
+      // 1️⃣ Buscar na coleção "usuarios" (PLURAL)
+      try {
+        const usuariosRef = collection(db, 'usuarios');
+        const usuariosSnapshot = await getDocs(usuariosRef);
+        console.log(`✅ Encontrados ${usuariosSnapshot.size} documentos na coleção "usuarios"`);
+        
+        usuariosSnapshot.docs.forEach(doc => {
+          if (doc.id !== usuarioAtual?.id) {
+            adicionarUsuario(doc.id, doc.data(), 'usuarios');
+          }
+        });
+      } catch (error) {
+        console.error('❌ Erro ao buscar na coleção "usuarios":', error);
+      }
+      
+      // 2️⃣ Buscar na coleção "funcionarios"
+      try {
+        const funcionariosRef = collection(db, 'funcionarios');
+        const funcionariosSnapshot = await getDocs(funcionariosRef);
+        console.log(`✅ Encontrados ${funcionariosSnapshot.size} documentos na coleção "funcionarios"`);
+        
+        funcionariosSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          const userId = data.userId || doc.id;
+          if (userId !== usuarioAtual?.id) {
+            adicionarUsuario(doc.id, data, 'funcionarios');
+          }
+        });
+      } catch (error) {
+        console.error('❌ Erro ao buscar na coleção "funcionarios":', error);
+      }
+      
+      // 3️⃣ Buscar na coleção "usuario" (SINGULAR - legado)
+      try {
+        const usuarioRef = collection(db, 'usuario');
+        const usuarioSnapshot = await getDocs(usuarioRef);
+        console.log(`✅ Encontrados ${usuarioSnapshot.size} documentos na coleção "usuario" (singular)`);
+        
+        usuarioSnapshot.docs.forEach(doc => {
+          if (doc.id !== usuarioAtual?.id) {
+            adicionarUsuario(doc.id, doc.data(), 'usuario');
+          }
+        });
+      } catch (error) {
+        console.error('❌ Erro ao buscar na coleção "usuario":', error);
+      }
+      
+      const usuariosArray = Array.from(todosUsuarios.values());
+      console.log(`✅ Total de usuários únicos carregados: ${usuariosArray.length}`);
+      console.log('👥 Usuários unificados:', usuariosArray.map(u => ({
+        nome: u.nome,
+        email: u.email,
+        origens: u.origens,
+        ids: u.idsRelacionados
+      })));
+      
+      setUsuarios(usuariosArray);
     } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
+      console.error('❌ Erro geral ao carregar usuários:', error);
     } finally {
       setLoading(false);
     }
@@ -76,6 +225,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
     (tipo === 'individual' && selecionados.length === 1) ||
     (tipo === 'grupo' && nomeGrupo.trim() && selecionados.length >= 2);
 
+  // ⚠️ RENDERIZAÇÃO CONDICIONAL - DEPOIS de todos os hooks para evitar erro "fewer hooks than expected"
   if (!isOpen) return null;
 
   return (
@@ -207,25 +357,25 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       isSelecionado ? 'bg-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-600'
                     } text-white font-semibold flex-shrink-0`}>
-                      {usuario.avatar ? (
+                      {usuario.photoURL ? (
                         <img 
-                          src={usuario.avatar} 
+                          src={usuario.photoURL} 
                           alt={usuario.nome}
                           className="w-full h-full rounded-full object-cover"
                         />
                       ) : (
-                        usuario.nome?.charAt(0).toUpperCase() || '?'
+                        usuario.nome?.charAt(0).toUpperCase() || usuario.email?.charAt(0).toUpperCase() || '?'
                       )}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 text-left min-w-0">
                       <h4 className="font-semibold text-gray-900 dark:text-white truncate">
-                        {usuario.nome}
+                        {usuario.nome || usuario.email || `Usuário ${usuario.id.substring(0, 8)}`}
                       </h4>
-                      {usuario.cargo && (
+                      {(usuario.cargo || usuario.email) && (
                         <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                          {usuario.cargo}
+                          {usuario.cargo || usuario.email}
                         </p>
                       )}
                     </div>

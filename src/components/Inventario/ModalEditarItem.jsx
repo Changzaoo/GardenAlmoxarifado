@@ -32,8 +32,8 @@ const ModalEditarItem = ({ item, onSalvar, onFechar }) => {
     : 'R$ 0,00';
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-      <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full border-2 border-gray-200 dark:border-gray-700 overflow-hidden animate-slideUp">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 pb-24 md:pb-4 animate-fadeIn">
+      <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full border-2 border-gray-200 dark:border-gray-700 overflow-hidden animate-slideUp max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-4rem)] overflow-y-auto">
         {/* Header com gradiente */}
         <div className="bg-gradient-to-r from-sky-500 to-sky-600 dark:from-sky-500 dark:to-sky-600 px-6 py-5 border-b border-sky-600 dark:border-sky-700">
           <div className="flex justify-between items-center">

@@ -317,8 +317,9 @@ const CardFuncionario = ({
                     <Trash2 className="w-4 h-4" />
                     <span>Excluir</span>
                   </button>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
@@ -507,7 +508,7 @@ const CardFuncionario = ({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

@@ -138,7 +138,7 @@ const MensagensMain = () => {
     <div className="h-full flex bg-gray-100 dark:bg-gray-900 overflow-hidden">
       {/* Lista de conversas - Desktop sempre visível, Mobile condicional */}
       <div className={`
-        w-full lg:w-96 border-r border-gray-200 dark:border-gray-700 h-full
+        w-full lg:w-80 xl:w-96 border-r border-gray-200 dark:border-gray-700 h-full flex-shrink-0
         ${showChat ? 'hidden lg:block' : 'block'}
       `}>
         <ListaConversas

@@ -3,6 +3,106 @@ import { Search, Plus, Archive, Pin, Bell, Trash2, UserX } from 'lucide-react';
 import ContextMenu, { useLongPress } from '../common/ContextMenu';
 import VirtualizedList from '../common/VirtualizedList';
 
+// ⚠️ COMPONENTE MOVIDO PARA FORA - Evita recriação e problemas com hooks
+const ConversaItem = React.memo(({ conversa, isSelected, onSelect, onLongPress, formatTimestamp }) => {
+  const naoLidas = conversa.naoLidas || 0;
+
+  const longPressHandlers = useLongPress((event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    onLongPress({
+      conversa,
+      position: {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      }
+    });
+  }, 500);
+
+  return (
+    <div
+      onClick={() => onSelect(conversa)}
+      {...longPressHandlers}
+      className={`flex items-center gap-4 p-4 mx-2 my-1 rounded-xl cursor-pointer transition-all duration-200 ${
+        isSelected 
+          ? 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg scale-[1.02] text-white' 
+          : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-md'
+      }`}
+    >
+      {/* Avatar */}
+      <div className="relative flex-shrink-0">
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-lg overflow-hidden shadow-lg ${
+          isSelected 
+            ? 'bg-white/20 ring-2 ring-white' 
+            : 'bg-gradient-to-br from-blue-400 to-indigo-600'
+        }`}>
+          {conversa.photoURL ? (
+            <img 
+              src={conversa.photoURL} 
+              alt={conversa.nome || 'Usuário'} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.parentElement.textContent = conversa.nome?.charAt(0).toUpperCase() || '?';
+              }}
+            />
+          ) : (
+            conversa.nome?.charAt(0).toUpperCase() || '?'
+          )}
+        </div>
+        {naoLidas > 0 && (
+          <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-red-500 to-pink-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg animate-pulse ring-2 ring-white dark:ring-gray-800">
+            {naoLidas > 9 ? '9+' : naoLidas}
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className={`font-bold truncate ${
+            isSelected
+              ? 'text-white'
+              : naoLidas > 0 
+                ? 'text-gray-900 dark:text-gray-100' 
+                : 'text-gray-700 dark:text-gray-300'
+          }`}>
+            {conversa.nome || 'Conversa'}
+          </h3>
+          <span className={`text-xs flex-shrink-0 ml-2 ${
+            isSelected
+              ? 'text-white/80'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}>
+            {formatTimestamp(conversa.ultimaMensagem?.timestamp)}
+          </span>
+        </div>
+        <p className={`text-sm truncate ${
+          isSelected
+            ? 'text-white/90'
+            : naoLidas > 0 
+              ? 'text-gray-900 dark:text-gray-100 font-medium' 
+              : 'text-gray-500 dark:text-gray-400'
+        }`}>
+          {conversa.ultimaMensagem?.texto || 'Sem mensagens'}
+        </p>
+      </div>
+
+      {/* Badges */}
+      <div className="flex flex-col items-end gap-1">
+        {conversa.fixado && (
+          <Pin className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
+        )}
+        {conversa.arquivado && (
+          <Archive className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
+        )}
+      </div>
+    </div>
+  );
+});
+
 const ListaConversas = ({ 
   onSelectConversa, 
   conversaSelecionada, 
@@ -48,6 +148,20 @@ const ListaConversas = ({
     });
   }, [conversas, busca, filtro]);
 
+  // Otimizar handlers com useCallback - DEVEM vir ANTES de qualquer return condicional
+  const handleBuscaChange = useCallback((e) => {
+    setBusca(e.target.value);
+  }, []);
+
+  const handleFiltroChange = useCallback((novoFiltro) => {
+    setFiltro(novoFiltro);
+  }, []);
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  // ⚠️ VERIFICAÇÃO DE LOADING - Deve vir DEPOIS de todos os hooks
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -71,118 +185,7 @@ const ListaConversas = ({
     busca
   });
 
-  // Otimizar handlers com useCallback
-  const handleBuscaChange = useCallback((e) => {
-    setBusca(e.target.value);
-  }, []);
-
-  const handleFiltroChange = useCallback((novoFiltro) => {
-    setFiltro(novoFiltro);
-  }, []);
-
-  const handleCloseContextMenu = useCallback(() => {
-    setContextMenu(null);
-  }, []);
-
-  // Renderizar item da lista (componente interno memoizado)
-  const ConversaItem = React.memo(({ conversa, isSelected, onSelect, onLongPress, formatTimestamp }) => {
-    const naoLidas = conversa.naoLidas || 0;
-
-    const longPressHandlers = useLongPress((event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      const rect = event.currentTarget.getBoundingClientRect();
-      onLongPress({
-        conversa,
-        position: {
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2,
-        }
-      });
-    }, 500);
-
-    return (
-      <div
-        onClick={() => onSelect(conversa)}
-        {...longPressHandlers}
-        className={`flex items-center gap-4 p-4 mx-2 my-1 rounded-xl cursor-pointer transition-all duration-200 ${
-          isSelected 
-            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg scale-[1.02] text-white' 
-            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-md'
-        }`}
-      >
-        {/* Avatar */}
-        <div className="relative flex-shrink-0">
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-lg overflow-hidden shadow-lg ${
-            isSelected 
-              ? 'bg-white/20 ring-2 ring-white' 
-              : 'bg-gradient-to-br from-blue-400 to-indigo-600'
-          }`}>
-            {conversa.photoURL ? (
-              <img 
-                src={conversa.photoURL} 
-                alt={conversa.nome || 'Usuário'} 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.parentElement.textContent = conversa.nome?.charAt(0).toUpperCase() || '?';
-                }}
-              />
-            ) : (
-              conversa.nome?.charAt(0).toUpperCase() || '?'
-            )}
-          </div>
-          {naoLidas > 0 && (
-            <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-red-500 to-pink-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg animate-pulse ring-2 ring-white dark:ring-gray-800">
-              {naoLidas > 9 ? '9+' : naoLidas}
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className={`font-bold truncate ${
-              isSelected
-                ? 'text-white'
-                : naoLidas > 0 
-                  ? 'text-gray-900 dark:text-gray-100' 
-                  : 'text-gray-700 dark:text-gray-300'
-            }`}>
-              {conversa.nome || 'Conversa'}
-            </h3>
-            <span className={`text-xs flex-shrink-0 ml-2 ${
-              isSelected
-                ? 'text-white/80'
-                : 'text-gray-500 dark:text-gray-400'
-            }`}>
-              {formatTimestamp(conversa.ultimaMensagem?.timestamp)}
-            </span>
-          </div>
-          <p className={`text-sm truncate ${
-            isSelected
-              ? 'text-white/90'
-              : naoLidas > 0 
-                ? 'text-gray-900 dark:text-gray-100 font-medium' 
-                : 'text-gray-500 dark:text-gray-400'
-          }`}>
-            {conversa.ultimaMensagem?.texto || 'Sem mensagens'}
-          </p>
-        </div>
-
-        {/* Badges */}
-        <div className="flex flex-col items-end gap-1">
-          {conversa.fixado && (
-            <Pin className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
-          )}
-          {conversa.arquivado && (
-            <Archive className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
-          )}
-        </div>
-      </div>
-    );
-  });
+  // ✅ ConversaItem agora está definido FORA do componente (no início do arquivo)
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-800 overflow-hidden">

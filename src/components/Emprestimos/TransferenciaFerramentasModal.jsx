@@ -20,8 +20,8 @@ const TransferenciaFerramentasModal = ({ onClose, onConfirm, emprestimo, funcion
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-gray-100 dark:bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4 pb-24 md:pb-4">
+      <div className="bg-gray-100 dark:bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6 max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-4rem)] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Transferir Ferramentas

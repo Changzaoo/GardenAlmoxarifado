@@ -18,7 +18,7 @@ const ComprovanteModal = ({ isOpen, onClose, tipo, dados }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pb-24 md:pb-4 overflow-y-auto">
       <div className="relative w-full max-w-2xl my-8">
         {/* Botão Fechar */}
         <button
@@ -29,7 +29,7 @@ const ComprovanteModal = ({ isOpen, onClose, tipo, dados }) => {
         </button>
 
         {/* Comprovante */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden max-h-[calc(100vh-12rem)] md:max-h-[calc(100vh-4rem)] overflow-y-auto">
           <ComprovanteVisual
             tipo={tipo}
             dados={dados}
