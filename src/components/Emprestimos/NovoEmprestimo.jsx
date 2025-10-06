@@ -5,7 +5,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import FerramentaSelector from './FerramentaSelector';
-import EmprestimoAnimation from './EmprestimoAnimation';
+import BoxLoanAnimation from './BoxLoanAnimation';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -155,10 +155,13 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
     <>
       {/* Animação de Empréstimo */}
       {showAnimation && emprestimoParaAnimar && (
-        <EmprestimoAnimation
-          ferramentas={emprestimoParaAnimar.ferramentas}
-          funcionarioNome={emprestimoParaAnimar.funcionarioNome}
-          funcionarioFoto={emprestimoParaAnimar.funcionarioFoto}
+        <BoxLoanAnimation
+          ferramentas={emprestimoParaAnimar.ferramentas.map(f => f.nome || f)}
+          remetenteNome="Almoxarifado"
+          remetenteFoto={null}
+          destinatarioNome={emprestimoParaAnimar.funcionarioNome}
+          destinatarioFoto={emprestimoParaAnimar.funcionarioFoto}
+          tipo="emprestimo"
           onComplete={finalizarEmprestimo}
         />
       )}

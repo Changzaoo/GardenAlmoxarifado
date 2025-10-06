@@ -6,11 +6,11 @@ import { doc, updateDoc, collection, getDocs, addDoc, arrayUnion } from 'firebas
 import { db } from '../../firebaseConfig';
 import { formatarDataHora } from '../../utils/formatters';
 import DevolucaoFerramentasModal from './DevolucaoFerramentasModal';
-import DevolucaoAnimation from './DevolucaoAnimation';
+import BoxLoanAnimation from './BoxLoanAnimation';
 import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
 import TransferenciaAnimation from './TransferenciaAnimation';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
-import ComprovanteEmprestimoModal from './ComprovanteEmprestimoModal';
+import ComprovanteUniversalModal from './ComprovanteUniversalModal';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 
 // Enum for sorting options
@@ -385,8 +385,15 @@ const ListaEmprestimos = ({
         // Devolução parcial - remove apenas as ferramentas selecionadas
         console.log('Devolução parcial - ferramentas:', ferramentasDevolvidas);
         
+        // Compara ferramentas de forma mais robusta (por nome ou referência)
         const ferramentasRestantes = emprestimoAtual.ferramentas.filter(
-          f => !ferramentasDevolvidas.includes(f)
+          ferramenta => {
+            const nomeFerramenta = typeof ferramenta === 'object' ? ferramenta.nome : ferramenta;
+            return !ferramentasDevolvidas.some(devolvida => {
+              const nomeDevolvida = typeof devolvida === 'object' ? devolvida.nome : devolvida;
+              return nomeFerramenta === nomeDevolvida;
+            });
+          }
         );
 
         // Adiciona as ferramentas devolvidas ao histórico
@@ -1272,10 +1279,13 @@ const ListaEmprestimos = ({
 
       {/* Animação de Devolução */}
       {showDevolucaoAnimation && dadosDevolucao && (
-        <DevolucaoAnimation
-          emprestimo={dadosDevolucao.emprestimo}
-          ferramentasDevolvidas={dadosDevolucao.ferramentasDevolvidas}
-          devolvidoPorTerceiros={dadosDevolucao.devolvidoPorTerceiros}
+        <BoxLoanAnimation
+          ferramentas={dadosDevolucao.ferramentasDevolvidas.map(f => f.nome || f)}
+          remetenteNome={dadosDevolucao.emprestimo.nomeFuncionario || funcionarios.find(func => func.id === dadosDevolucao.emprestimo.funcionarioId)?.nome || 'Funcionário'}
+          remetenteFoto={funcionarios.find(func => func.id === dadosDevolucao.emprestimo.funcionarioId)?.photoURL || null}
+          destinatarioNome="Almoxarifado"
+          destinatarioFoto={null}
+          tipo="devolucao"
           onComplete={finalizarDevolucao}
         />
       )}
@@ -1292,15 +1302,31 @@ const ListaEmprestimos = ({
 
       {/* Modal de Comprovante PDF */}
       {showComprovanteModal && emprestimoParaComprovante && (
-        <ComprovanteEmprestimoModal
-          emprestimo={emprestimoParaComprovante}
-          ferramenta={emprestimoParaComprovante.ferramentas?.[0] || {}}
-          funcionario={funcionarios.find(f => f.id === emprestimoParaComprovante.funcionarioId) || { nome: emprestimoParaComprovante.nomeFuncionario }}
-          empresa={{ nome: emprestimoParaComprovante.empresaNome || 'N/A' }}
-          setor={{ nome: emprestimoParaComprovante.setorNome || 'N/A' }}
+        <ComprovanteUniversalModal
+          isOpen={showComprovanteModal}
+          tipo={emprestimoParaComprovante.status === 'devolvido' ? 'devolucao' : 'emprestimo'}
+          dados={{
+            id: emprestimoParaComprovante.id,
+            data: emprestimoParaComprovante.dataEmprestimo,
+            quantidade: emprestimoParaComprovante.ferramentas?.length || 0,
+            ferramentas: emprestimoParaComprovante.ferramentas,
+            remetenteNome: emprestimoParaComprovante.empresaNome || 'Almoxarifado',
+            destinatarioNome: emprestimoParaComprovante.nomeFuncionario || funcionarios.find(f => f.id === emprestimoParaComprovante.funcionarioId)?.nome || 'N/A',
+            empresa: emprestimoParaComprovante.empresaNome || 'N/A',
+            setor: emprestimoParaComprovante.setorNome || 'N/A',
+            observacoes: emprestimoParaComprovante.observacoes
+          }}
           onClose={() => {
             setShowComprovanteModal(false);
             setEmprestimoParaComprovante(null);
+          }}
+          onDownload={() => {
+            // TODO: Implementar download PDF
+            console.log('Download PDF');
+          }}
+          onShare={() => {
+            // TODO: Implementar compartilhamento
+            console.log('Compartilhar');
           }}
         />
       )}
