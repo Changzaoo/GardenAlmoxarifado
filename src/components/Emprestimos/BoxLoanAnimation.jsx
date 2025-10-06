@@ -55,8 +55,8 @@ const BoxLoanAnimation = ({
   useEffect(() => {
     if (totalTools === 0) {
       console.warn('BoxLoanAnimation: Nenhuma ferramenta para animar');
-      setTimeout(() => onComplete?.(), 200);
-      return;
+      const timer = setTimeout(() => onComplete?.(), 200);
+      return () => clearTimeout(timer);
     }
 
     console.log(`🎬 Iniciando animação 60fps: ${totalTools} ferramentas do tipo ${tipo}`);
@@ -66,40 +66,55 @@ const BoxLoanAnimation = ({
     const boxTravelTime = 400; // 400ms para viagem
     const successTime = 250; // 250ms para celebração
 
+    const timers = [];
+
     // Passo 1: Ferramentas entram na caixa (rápido e fluido)
     setCurrentStep(1);
 
     normalizedFerramentas.forEach((ferramenta, index) => {
-      setTimeout(() => {
-        setToolsInBox(prev => {
-          const updated = [...prev, ferramenta];
-          console.log(`📦 Ferramenta ${index + 1}/${totalTools} na caixa:`, ferramenta);
-          return updated;
+      const timer = setTimeout(() => {
+        requestAnimationFrame(() => {
+          setToolsInBox(prev => {
+            const updated = [...prev, ferramenta];
+            console.log(`Ferramenta ${index + 1}/${totalTools} na caixa:`, ferramenta);
+            return updated;
+          });
         });
       }, index * toolAnimationTime);
+      timers.push(timer);
     });
 
     // Passo 2: Caixa viaja (suave e rápido)
-    setTimeout(() => {
-      console.log('🚚 Caixa começou a viajar');
-      setCurrentStep(2);
+    const timer2 = setTimeout(() => {
+      requestAnimationFrame(() => {
+        console.log('Caixa começou a viajar');
+        setCurrentStep(2);
+      });
     }, totalTools * toolAnimationTime);
+    timers.push(timer2);
 
     // Passo 3: Sucesso (explosão de partículas)
-    setTimeout(() => {
-      console.log('✅ Entrega concluída!');
-      setCurrentStep(3);
-      setShowSuccess(true);
-      generateParticles();
+    const timer3 = setTimeout(() => {
+      requestAnimationFrame(() => {
+        console.log('Entrega concluída!');
+        setCurrentStep(3);
+        setShowSuccess(true);
+        generateParticles();
+      });
     }, totalTools * toolAnimationTime + boxTravelTime);
+    timers.push(timer3);
 
     // Finaliza (exatamente 1 segundo)
-    setTimeout(() => {
-      console.log('🏁 Animação finalizada em 1s');
-      onComplete?.();
+    const timer4 = setTimeout(() => {
+      requestAnimationFrame(() => {
+        console.log('Animação finalizada em 1s');
+        onComplete?.();
+      });
     }, 1000); // Total fixo de 1 segundo
+    timers.push(timer4);
 
     return () => {
+      timers.forEach(timer => clearTimeout(timer));
       setToolsInBox([]);
       setParticles([]);
     };
@@ -137,7 +152,17 @@ const BoxLoanAnimation = ({
               }}
             >
               {remetenteFoto ? (
-                <img src={remetenteFoto} alt={remetenteNome} className="w-full h-full rounded-full object-cover" />
+                <img 
+                  src={remetenteFoto} 
+                  alt={remetenteNome} 
+                  className="w-full h-full rounded-full object-cover"
+                  loading="eager"
+                  decoding="async"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = `<span class="text-white text-xl md:text-3xl font-bold">${remetenteNome?.charAt(0) || 'R'}</span>`;
+                  }}
+                />
               ) : (
                 <span className="text-white text-xl md:text-3xl font-bold">{remetenteNome?.charAt(0) || 'R'}</span>
               )}
@@ -154,7 +179,7 @@ const BoxLoanAnimation = ({
                 {remetenteNome || 'Remetente'}
               </p>
               <p className="text-xs md:text-sm text-gray-300">
-                {tipo === 'emprestimo' ? '📤 Enviando' : '↩️ Devolvendo'}
+                {tipo === 'emprestimo' ? 'Enviando' : 'Devolvendo'}
               </p>
             </div>
           </div>
@@ -177,7 +202,17 @@ const BoxLoanAnimation = ({
               }}
             >
               {destinatarioFoto ? (
-                <img src={destinatarioFoto} alt={destinatarioNome} className="w-full h-full rounded-full object-cover" />
+                <img 
+                  src={destinatarioFoto} 
+                  alt={destinatarioNome} 
+                  className="w-full h-full rounded-full object-cover"
+                  loading="eager"
+                  decoding="async"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = `<span class="text-white text-xl md:text-3xl font-bold">${destinatarioNome?.charAt(0) || 'D'}</span>`;
+                  }}
+                />
               ) : (
                 <span className="text-white text-xl md:text-3xl font-bold">{destinatarioNome?.charAt(0) || 'D'}</span>
               )}
@@ -196,7 +231,7 @@ const BoxLoanAnimation = ({
                 {destinatarioNome || 'Destinatário'}
               </p>
               <p className="text-xs md:text-sm text-gray-300">
-                {tipo === 'emprestimo' ? '📥 Recebendo' : '✅ Almoxarifado'}
+                {tipo === 'emprestimo' ? 'Recebendo' : 'Almoxarifado'}
               </p>
             </div>
           </div>
@@ -343,7 +378,7 @@ const BoxLoanAnimation = ({
                   transition={{ delay: 0.2, duration: 0.25, ease: "easeOut" }}
                   style={{ willChange: 'transform, opacity' }}
                 >
-                  {tipo === 'emprestimo' ? '📦 Empréstimo' : '↩️ Devolução'}
+                  {tipo === 'emprestimo' ? 'Empréstimo' : 'Devolução'}
                 </motion.div>
 
                 {/* Brilho */}
@@ -442,7 +477,7 @@ const BoxLoanAnimation = ({
             <p className="text-white text-xs md:text-sm font-medium">
               {currentStep === 1 && `Preparando ${totalTools} ${totalTools === 1 ? 'ferramenta' : 'ferramentas'}...`}
               {currentStep === 2 && 'Enviando...'}
-              {currentStep === 3 && '✅ Concluído!'}
+              {currentStep === 3 && 'Concluído!'}
             </p>
           </div>
         </motion.div>

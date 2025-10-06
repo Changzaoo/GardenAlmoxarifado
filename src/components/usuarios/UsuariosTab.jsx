@@ -63,6 +63,16 @@ const UsuariosTab = () => {
   const [databaseConfig, setDatabaseConfig] = useState(
     localStorage.getItem('preferred_users_database') || 'garden-c0b50'
   );
+  
+  // Estados para seleção múltipla e ações em lote
+  const [usuariosSelecionados, setUsuariosSelecionados] = useState([]);
+  const [modoSelecao, setModoSelecao] = useState(false);
+  const [mostrarModalAcaoLote, setMostrarModalAcaoLote] = useState(false);
+  const [acaoLoteSelecionada, setAcaoLoteSelecionada] = useState(null);
+  const [formAcaoLote, setFormAcaoLote] = useState({
+    empresaId: '',
+    setorId: ''
+  });
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -372,6 +382,128 @@ const UsuariosTab = () => {
     }
   };
 
+  // ============ FUNÇÕES DE SELEÇÃO MÚLTIPLA ============
+
+  // Alternar modo de seleção
+  const toggleModoSelecao = () => {
+    setModoSelecao(!modoSelecao);
+    setUsuariosSelecionados([]);
+  };
+
+  // Selecionar/desselecionar um usuário
+  const toggleSelecaoUsuario = (usuarioId) => {
+    setUsuariosSelecionados(prev => {
+      if (prev.includes(usuarioId)) {
+        return prev.filter(id => id !== usuarioId);
+      } else {
+        return [...prev, usuarioId];
+      }
+    });
+  };
+
+  // Selecionar todos os usuários visíveis
+  const selecionarTodos = () => {
+    const todosIds = usuariosVisiveis.map(u => u.id);
+    setUsuariosSelecionados(todosIds);
+  };
+
+  // Desselecionar todos
+  const desselecionarTodos = () => {
+    setUsuariosSelecionados([]);
+  };
+
+  // Abrir modal de ação em lote
+  const abrirModalAcaoLote = (acao) => {
+    if (usuariosSelecionados.length === 0) {
+      setErro('Selecione pelo menos um usuário');
+      setTimeout(() => setErro(''), 3000);
+      return;
+    }
+    setAcaoLoteSelecionada(acao);
+    setFormAcaoLote({ empresaId: '', setorId: '' });
+    setMostrarModalAcaoLote(true);
+  };
+
+  // Executar ação em lote
+  const executarAcaoLote = async () => {
+    setCarregando(true);
+    setErro('');
+    setSucesso('');
+
+    try {
+      let sucessos = 0;
+      let erros = 0;
+
+      for (const usuarioId of usuariosSelecionados) {
+        const usuario = usuarios.find(u => u.id === usuarioId);
+        if (!usuario) continue;
+
+        try {
+          if (acaoLoteSelecionada === 'transferir') {
+            // Transferir para empresa/setor
+            if (!formAcaoLote.empresaId || !formAcaoLote.setorId) {
+              erros++;
+              continue;
+            }
+            await atualizarUsuario(usuarioId, {
+              empresaId: formAcaoLote.empresaId,
+              setorId: formAcaoLote.setorId
+            });
+            sucessos++;
+          } else if (acaoLoteSelecionada === 'incluir') {
+            // Incluir em empresa/setor (sem remover o atual)
+            if (!formAcaoLote.empresaId || !formAcaoLote.setorId) {
+              erros++;
+              continue;
+            }
+            await atualizarUsuario(usuarioId, {
+              empresaId: formAcaoLote.empresaId,
+              setorId: formAcaoLote.setorId
+            });
+            sucessos++;
+          } else if (acaoLoteSelecionada === 'excluir') {
+            // Excluir usuário
+            if (!PermissionChecker.canEditUser(usuarioLogado.nivel, usuarioLogado.id, usuarioId, usuario.nivel)) {
+              erros++;
+              continue;
+            }
+            const resultado = await removerUsuario(usuarioId);
+            if (resultado.success) {
+              sucessos++;
+            } else {
+              erros++;
+            }
+          }
+        } catch (error) {
+          console.error(`Erro ao processar usuário ${usuarioId}:`, error);
+          erros++;
+        }
+      }
+
+      if (sucessos > 0) {
+        setSucesso(`${sucessos} usuário(s) processado(s) com sucesso!`);
+      }
+      if (erros > 0) {
+        setErro(`${erros} usuário(s) não puderam ser processados`);
+      }
+
+      // Limpar seleção e fechar modal
+      setUsuariosSelecionados([]);
+      setModoSelecao(false);
+      setMostrarModalAcaoLote(false);
+      setAcaoLoteSelecionada(null);
+
+      setTimeout(() => {
+        setSucesso('');
+        setErro('');
+      }, 5000);
+    } catch (error) {
+      setErro('Erro ao executar ação em lote: ' + error.message);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
   // Filtrar usuários visíveis e ordenar alfabeticamente
   const usuariosVisiveis = usuarios
     .filter(usuario => {
@@ -433,6 +565,80 @@ const UsuariosTab = () => {
         currentDB={databaseConfig} 
         onChangeDB={setDatabaseConfig}
       />
+
+      {/* Barra de Seleção Múltipla e Ações em Lote */}
+      <div className={`bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-2 ${
+        modoSelecao ? 'border-purple-400 dark:border-purple-500' : 'border-gray-200 dark:border-gray-700'
+      } rounded-xl shadow-lg p-6 transition-all duration-300`}>
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          {/* Toggle Modo Seleção */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleModoSelecao}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                modoSelecao
+                  ? 'bg-purple-500 text-white shadow-lg'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+              }`}
+            >
+              <CheckCircle className="w-5 h-5" />
+              {modoSelecao ? 'Modo Seleção Ativo' : 'Ativar Seleção Múltipla'}
+            </button>
+
+            {modoSelecao && (
+              <>
+                <button
+                  onClick={selecionarTodos}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all"
+                >
+                  <Check className="w-4 h-4" />
+                  Selecionar Todos
+                </button>
+                <button
+                  onClick={desselecionarTodos}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all"
+                >
+                  <X className="w-4 h-4" />
+                  Limpar
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Contador e Ações */}
+          {modoSelecao && usuariosSelecionados.length > 0 && (
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="px-4 py-2 bg-purple-500 text-white rounded-full font-bold shadow-md">
+                {usuariosSelecionados.length} selecionado(s)
+              </span>
+              
+              <button
+                onClick={() => abrirModalAcaoLote('transferir')}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-all shadow-md"
+              >
+                <Building2 className="w-4 h-4" />
+                Transferir Empresa/Setor
+              </button>
+
+              <button
+                onClick={() => abrirModalAcaoLote('incluir')}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-all shadow-md"
+              >
+                <Plus className="w-4 h-4" />
+                Incluir em Empresa/Setor
+              </button>
+
+              <button
+                onClick={() => abrirModalAcaoLote('excluir')}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all shadow-md"
+              >
+                <Trash2 className="w-4 h-4" />
+                Excluir Selecionados
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Barra de Busca */}
       <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6`}>
@@ -507,8 +713,35 @@ const UsuariosTab = () => {
             return (
               <div
                 key={usuario.id}
-                className="group relative overflow-hidden bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 rounded-2xl border border-white/20 dark:border-gray-700/50 hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/25 dark:hover:shadow-blue-500/10"
+                className={`group relative overflow-hidden bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 rounded-2xl border transition-all duration-500 hover:shadow-2xl ${
+                  usuariosSelecionados.includes(usuario.id)
+                    ? 'border-purple-500 dark:border-purple-400 shadow-lg shadow-purple-500/30'
+                    : 'border-white/20 dark:border-gray-700/50 hover:border-blue-400/50 dark:hover:border-blue-500/50 hover:shadow-blue-500/25 dark:hover:shadow-blue-500/10'
+                }`}
               >
+                {/* Checkbox de seleção - canto superior direito */}
+                {modoSelecao && (
+                  <div className="absolute top-4 right-4 z-20">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSelecaoUsuario(usuario.id);
+                      }}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-lg ${
+                        usuariosSelecionados.includes(usuario.id)
+                          ? 'bg-purple-500 text-white scale-110'
+                          : 'bg-white dark:bg-gray-700 text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                      }`}
+                    >
+                      {usuariosSelecionados.includes(usuario.id) ? (
+                        <Check className="w-5 h-5" />
+                      ) : (
+                        <div className="w-5 h-5 border-2 border-current rounded" />
+                      )}
+                    </button>
+                  </div>
+                )}
+
                 {/* Background decorativo */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white/50 to-purple-50/50 dark:from-blue-900/10 dark:via-gray-800/50 dark:to-purple-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
@@ -1036,6 +1269,207 @@ const UsuariosTab = () => {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Ação em Lote */}
+      {mostrarModalAcaoLote && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden`}>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                    {acaoLoteSelecionada === 'transferir' && (
+                      <>
+                        <Building2 className="w-6 h-6" />
+                        Transferir Usuários
+                      </>
+                    )}
+                    {acaoLoteSelecionada === 'incluir' && (
+                      <>
+                        <Plus className="w-6 h-6" />
+                        Incluir em Empresa/Setor
+                      </>
+                    )}
+                    {acaoLoteSelecionada === 'excluir' && (
+                      <>
+                        <Trash2 className="w-6 h-6" />
+                        Excluir Usuários
+                      </>
+                    )}
+                  </h3>
+                  <p className="text-purple-100 mt-1">
+                    {usuariosSelecionados.length} usuário(s) selecionado(s)
+                  </p>
+                </div>
+                <button
+                  onClick={() => setMostrarModalAcaoLote(false)}
+                  className="text-white hover:bg-white/20 p-2 rounded-full transition-all"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {acaoLoteSelecionada === 'excluir' ? (
+                <div className="space-y-4">
+                  <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-1" />
+                      <div>
+                        <h4 className="font-bold text-red-800 dark:text-red-300 mb-2">
+                          ⚠️ ATENÇÃO: Esta ação é irreversível!
+                        </h4>
+                        <p className="text-sm text-red-700 dark:text-red-400">
+                          Você está prestes a excluir <strong>{usuariosSelecionados.length} usuário(s)</strong> do sistema.
+                          Todos os dados serão permanentemente removidos.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-xl p-4 max-h-64 overflow-y-auto">
+                    <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Usuários que serão excluídos:
+                    </h4>
+                    <div className="space-y-2">
+                      {usuariosSelecionados.map(id => {
+                        const usuario = usuarios.find(u => u.id === id);
+                        return usuario ? (
+                          <div key={id} className="flex items-center gap-3 bg-white dark:bg-gray-600 p-3 rounded-lg">
+                            <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center text-white font-bold">
+                              {usuario.nome.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800 dark:text-white">{usuario.nome}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{usuario.email}</p>
+                            </div>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-xl p-4">
+                    <p className="text-sm text-blue-800 dark:text-blue-300">
+                      {acaoLoteSelecionada === 'transferir' 
+                        ? 'Os usuários selecionados serão transferidos para a empresa/setor escolhido.'
+                        : 'Os usuários selecionados serão incluídos na empresa/setor escolhido.'}
+                    </p>
+                  </div>
+
+                  {/* Seletor de Empresa */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Building2 className="w-4 h-4 inline mr-2" />
+                      Empresa *
+                    </label>
+                    <select
+                      value={formAcaoLote.empresaId}
+                      onChange={(e) => setFormAcaoLote(prev => ({ ...prev, empresaId: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Selecione uma empresa</option>
+                      {empresas.map(empresa => (
+                        <option key={empresa.id} value={empresa.id}>
+                          {empresa.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Seletor de Setor */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <Briefcase className="w-4 h-4 inline mr-2" />
+                      Setor *
+                    </label>
+                    <select
+                      value={formAcaoLote.setorId}
+                      onChange={(e) => setFormAcaoLote(prev => ({ ...prev, setorId: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      disabled={!formAcaoLote.empresaId}
+                    >
+                      <option value="">Selecione um setor</option>
+                      {setores
+                        .filter(setor => setor.empresaId === formAcaoLote.empresaId)
+                        .map(setor => (
+                          <option key={setor.id} value={setor.id}>
+                            {setor.nome}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {/* Lista de usuários */}
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-xl p-4 max-h-48 overflow-y-auto">
+                    <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Usuários selecionados ({usuariosSelecionados.length}):
+                    </h4>
+                    <div className="space-y-2">
+                      {usuariosSelecionados.slice(0, 5).map(id => {
+                        const usuario = usuarios.find(u => u.id === id);
+                        return usuario ? (
+                          <div key={id} className="flex items-center gap-3 bg-white dark:bg-gray-600 p-2 rounded-lg">
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                              {usuario.nome.charAt(0)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-800 dark:text-white text-sm truncate">{usuario.nome}</p>
+                            </div>
+                          </div>
+                        ) : null;
+                      })}
+                      {usuariosSelecionados.length > 5 && (
+                        <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-2">
+                          +{usuariosSelecionados.length - 5} mais...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <button
+                onClick={() => setMostrarModalAcaoLote(false)}
+                disabled={carregando}
+                className="px-6 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-all disabled:opacity-50 font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executarAcaoLote}
+                disabled={carregando || (acaoLoteSelecionada !== 'excluir' && (!formAcaoLote.empresaId || !formAcaoLote.setorId))}
+                className={`px-6 py-2.5 text-white rounded-full transition-all disabled:opacity-50 font-medium shadow-lg ${
+                  acaoLoteSelecionada === 'excluir'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+                    : 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600'
+                }`}
+              >
+                {carregando ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Processando...</span>
+                  </div>
+                ) : (
+                  <>
+                    {acaoLoteSelecionada === 'transferir' && 'Transferir Usuários'}
+                    {acaoLoteSelecionada === 'incluir' && 'Incluir Usuários'}
+                    {acaoLoteSelecionada === 'excluir' && 'Confirmar Exclusão'}
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
