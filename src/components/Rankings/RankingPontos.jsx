@@ -634,15 +634,54 @@ const RankingPontos = () => {
         }))
       });
 
-      // Contar ferramentas devolvidas apenas para não terceirizados
+      // Contar ferramentas devolvidas - CORRIGIDO para buscar por ID E nome
+      let emprestimosSemMatch = [];
       emprestimosSnap.forEach(doc => {
         const emprestimo = doc.data();
-        if (emprestimo.status === 'devolvido' && emprestimo.funcionarioId && dadosFuncionarios[emprestimo.funcionarioId]) {
-          // Só conta se o funcionário estiver na lista (não terceirizado)
-          dadosFuncionarios[emprestimo.funcionarioId].ferramentasDevolvidas += 
-            (emprestimo.ferramentas?.length || 0);
+        
+        if (emprestimo.status === 'devolvido') {
+          let funcionarioEncontrado = null;
+          
+          // 1. Tentar por funcionarioId direto
+          if (emprestimo.funcionarioId && dadosFuncionarios[emprestimo.funcionarioId]) {
+            funcionarioEncontrado = dadosFuncionarios[emprestimo.funcionarioId];
+          }
+          
+          // 2. Tentar por colaboradorId (campo alternativo)
+          if (!funcionarioEncontrado && emprestimo.colaboradorId && dadosFuncionarios[emprestimo.colaboradorId]) {
+            funcionarioEncontrado = dadosFuncionarios[emprestimo.colaboradorId];
+          }
+          
+          // 3. Tentar por nome (funcionarioNome, colaborador, nomeFuncionario)
+          if (!funcionarioEncontrado) {
+            const nomeEmprestimo = (emprestimo.funcionarioNome || emprestimo.colaborador || emprestimo.nomeFuncionario || '').toLowerCase();
+            if (nomeEmprestimo) {
+              const idPorNome = nomesParaIds[nomeEmprestimo];
+              if (idPorNome && dadosFuncionarios[idPorNome]) {
+                funcionarioEncontrado = dadosFuncionarios[idPorNome];
+              }
+            }
+          }
+          
+          // 4. Se encontrou, contabilizar ferramentas devolvidas
+          if (funcionarioEncontrado) {
+            funcionarioEncontrado.ferramentasDevolvidas += (emprestimo.ferramentas?.length || 0);
+          } else {
+            // Debug: registrar empréstimos sem match para análise
+            emprestimosSemMatch.push({
+              id: doc.id,
+              funcionarioId: emprestimo.funcionarioId,
+              colaborador: emprestimo.colaborador,
+              funcionarioNome: emprestimo.funcionarioNome,
+              nomeFuncionario: emprestimo.nomeFuncionario
+            });
+          }
         }
       });
+      
+      if (emprestimosSemMatch.length > 0) {
+        console.warn(`⚠️ ${emprestimosSemMatch.length} empréstimos devolvidos não foram contabilizados:`, emprestimosSemMatch.slice(0, 5));
+      }
 
       // Contar tarefas concluídas - CORRIGIDO para buscar por nome E ID
       tarefasSnap.forEach(doc => {
@@ -787,15 +826,36 @@ const RankingPontos = () => {
           const tarefas = [];
           const avaliacoes = [];
 
-          // Coletar empréstimos com datas
+          // Coletar empréstimos com datas - CORRIGIDO para buscar por ID E nome
           emprestimosSnap.forEach(doc => {
             const emp = doc.data();
-            if (emp.status === 'devolvido' && emp.funcionarioId === funcionario.id) {
-              emprestimos.push({
-                dataDevolucao: emp.dataDevolucao,
-                quantidade: emp.ferramentas?.length || 0,
-                ferramentas: emp.ferramentas || []
-              });
+            
+            if (emp.status === 'devolvido') {
+              let pertenceAoFuncionario = false;
+              
+              // 1. Verificar por IDs diretos
+              pertenceAoFuncionario = 
+                emp.funcionarioId === funcionario.id || 
+                emp.colaboradorId === funcionario.id;
+              
+              // 2. Verificar por nome (case-insensitive)
+              if (!pertenceAoFuncionario) {
+                const nomeEmprestimo = (emp.funcionarioNome || emp.colaborador || emp.nomeFuncionario || '').toLowerCase();
+                const nomeFuncionario = (funcionario.nome || '').toLowerCase();
+                
+                if (nomeEmprestimo && nomeFuncionario && nomeEmprestimo === nomeFuncionario) {
+                  pertenceAoFuncionario = true;
+                }
+              }
+              
+              if (pertenceAoFuncionario) {
+                emprestimos.push({
+                  dataDevolucao: emp.dataDevolucao,
+                  dataRetirada: emp.dataRetirada || emp.dataEmprestimo || emp.dataCriacao,
+                  quantidade: emp.ferramentas?.length || 0,
+                  ferramentas: emp.ferramentas || []
+                });
+              }
             }
           });
 

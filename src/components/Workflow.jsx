@@ -2606,7 +2606,11 @@ const AlmoxarifadoSistema = () => {
           status: 'devolvido',
           dataDevolucao: new Date().toISOString(),
           devolvidoPorTerceiros,
-          dataUltimaAtualizacao: new Date().toISOString()
+          dataUltimaAtualizacao: new Date().toISOString(),
+          // ✅ CORREÇÃO: Preservar funcionarioId e funcionarioNome para contabilizar no ranking
+          // Garantir que temos os campos necessários mesmo se não foram salvos originalmente
+          funcionarioId: emprestimo.funcionarioId || emprestimo.colaboradorId || null,
+          funcionarioNome: emprestimo.funcionarioNome || emprestimo.colaborador || emprestimo.nomeFuncionario || null
         };
         
         console.log('Atualizando empréstimo para:', atualizacao);
