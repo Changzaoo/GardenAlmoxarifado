@@ -601,7 +601,7 @@ export const criarUsuarioComCodigoCriacao = async (codigo, nomeCompleto, email, 
         empresaId: validacao.empresaId,
         setorId: validacao.setorId,
         nivel: parseInt(validacao.nivelUsuario) || 1,
-        authKey: validacao.nivelUsuario === '0' ? 'admin2024' : 'workflow2024',
+        authKey: senha, // 🔑 authKey é a senha digitada (PRIORIDADE 1 NO LOGIN)
         primeiroAcesso: false, // Como está criando com senha, não é primeiro acesso
         criadoEm: new Date().toISOString(),
         criadoComCodigo: true

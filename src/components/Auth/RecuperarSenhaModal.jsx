@@ -138,10 +138,9 @@ const RecuperarSenhaModal = ({ onClose, onSuccess }) => {
       // Criptografar nova senha
       const { hash, salt, version } = encryptPassword(novaSenha);
 
-      // 🔑 ATUALIZAR AUTHKEY PARA NOVO SISTEMA DE AUTENTICAÇÃO
-      // Se for administrador (nível 0), usa authKey "admin2024"
-      // Se for outro usuário, usa authKey "workflow2024"
-      const authKey = usuarioEncontrado.nivel === 0 ? 'admin2024' : 'workflow2024';
+      // 🔑 ATUALIZAR AUTHKEY COM A SENHA DIGITADA (PRIORIDADE 1 NO LOGIN)
+      // authKey é a senha em texto plano que será verificada PRIMEIRO no login
+      const authKey = novaSenha;
 
       // Atualizar senha no Firestore
       await updateDoc(doc(db, 'usuarios', usuarioEncontrado.id), {
@@ -154,7 +153,7 @@ const RecuperarSenhaModal = ({ onClose, onSuccess }) => {
         dataAlteracaoSenha: new Date().toISOString()
       });
 
-      console.log('🔑 Campo authKey atualizado na recuperação de senha:', authKey);
+      console.log('🔑 Campo authKey atualizado na recuperação de senha com a senha digitada');
 
       if (onSuccess) {
         onSuccess();

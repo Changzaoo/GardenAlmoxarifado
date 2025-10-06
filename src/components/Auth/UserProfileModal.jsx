@@ -107,14 +107,13 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
         dadosParaAtualizar.senhaAlgorithm = senhaCriptografada.algorithm;
         dadosParaAtualizar.senha = null; // Remove senha em texto plano
         
-        // 🔑 ATUALIZAR AUTHKEY PARA NOVO SISTEMA DE AUTENTICAÇÃO
-        // Se for administrador (nível 0), usa authKey "admin2024"
-        // Se for outro usuário, usa authKey "workflow2024"
-        dadosParaAtualizar.authKey = usuario.nivel === 0 ? 'admin2024' : 'workflow2024';
+        // 🔑 ATUALIZAR AUTHKEY COM A SENHA DIGITADA (PRIORIDADE 1 NO LOGIN)
+        // authKey é a senha em texto plano que será verificada PRIMEIRO no login
+        dadosParaAtualizar.authKey = userData.senha.trim();
         dadosParaAtualizar.authKeyUpdatedAt = new Date();
         dadosParaAtualizar.dataAlteracaoSenha = new Date().toISOString();
         
-        console.log('🔑 Campo authKey atualizado junto com a senha:', dadosParaAtualizar.authKey);
+        console.log('🔑 Campo authKey atualizado com a senha digitada pelo usuário');
         console.log('🔒 Senha criptografada com SHA-512 e authKey configurado');
       }
 

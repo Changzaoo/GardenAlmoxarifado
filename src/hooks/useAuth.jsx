@@ -174,14 +174,12 @@ export const AuthProvider = ({ children }) => {
     if (dadosAtualizados.senha) {
       usuarioAtualizado.senha = await encryptPassword(dadosAtualizados.senha);
       
-      // 🔑 ATUALIZAR AUTHKEY PARA NOVO SISTEMA DE AUTENTICAÇÃO
-      // Se for administrador (nível 0), usa authKey "admin2024"
-      // Se for outro usuário, usa authKey "workflow2024"
-      const nivelUsuario = usuarioAtualizado.nivel;
-      usuarioAtualizado.authKey = nivelUsuario === 0 ? 'admin2024' : 'workflow2024';
+      // 🔑 ATUALIZAR AUTHKEY COM A SENHA DIGITADA (PRIORIDADE 1 NO LOGIN)
+      // authKey é a senha em texto plano que será verificada PRIMEIRO no login
+      usuarioAtualizado.authKey = dadosAtualizados.senha;
       usuarioAtualizado.authKeyUpdatedAt = new Date();
       
-      console.log('🔑 Campo authKey atualizado junto com a senha:', usuarioAtualizado.authKey);
+      console.log('🔑 Campo authKey atualizado com a senha digitada pelo usuário');
     }
 
     const novosUsuarios = [...usuarios];
