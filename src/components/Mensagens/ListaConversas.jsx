@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Archive, Pin, Bell } from 'lucide-react';
+import { Search, Plus, Archive, Pin, Bell, Trash2, UserX } from 'lucide-react';
+import ContextMenu, { useLongPress } from '../common/ContextMenu';
 
 const ListaConversas = ({ 
   onSelectConversa, 
   conversaSelecionada, 
   onNovaConversa,
   onOpenNotificationSettings,
+  onDeleteConversa,
   conversas = [],
   loading = false,
   formatarTimestamp = () => ''
 }) => {
+  const [contextMenu, setContextMenu] = useState(null);
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState('todas'); // todas, nao-lidas, arquivadas
 
@@ -138,10 +141,25 @@ const ListaConversas = ({
             const naoLidas = conversa.naoLidas || 0;
             const isSelected = conversaSelecionada?.id === conversa.id;
 
+            const longPressHandlers = useLongPress((event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              
+              const rect = event.currentTarget.getBoundingClientRect();
+              setContextMenu({
+                conversa,
+                position: {
+                  x: rect.left + rect.width / 2,
+                  y: rect.top + rect.height / 2,
+                }
+              });
+            }, 500);
+
             return (
               <div
                 key={conversa.id}
                 onClick={() => onSelectConversa(conversa)}
+                {...longPressHandlers}
                 className={`flex items-center gap-4 p-4 mx-2 my-1 rounded-xl cursor-pointer transition-all duration-200 ${
                   isSelected 
                     ? 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg scale-[1.02] text-white' 
@@ -222,6 +240,33 @@ const ListaConversas = ({
           })
         )}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          title="Opções da Conversa"
+          position={contextMenu.position}
+          onClose={() => setContextMenu(null)}
+          options={[
+            {
+              icon: Trash2,
+              label: 'Apagar para mim',
+              description: 'Remove a conversa apenas para você',
+              onClick: () => onDeleteConversa(contextMenu.conversa.id, 'self')
+            },
+            {
+              type: 'separator'
+            },
+            ...(contextMenu.conversa.tipo === 'individual' ? [{
+              icon: UserX,
+              label: 'Apagar para ambos',
+              description: 'Remove a conversa para todos os participantes',
+              danger: true,
+              onClick: () => onDeleteConversa(contextMenu.conversa.id, 'all')
+            }] : [])
+          ]}
+        />
+      )}
     </div>
   );
 };

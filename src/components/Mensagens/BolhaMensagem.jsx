@@ -10,10 +10,12 @@ import {
   File,
   Image as ImageIcon,
   Film,
-  Mic
+  Mic,
+  UserX
 } from 'lucide-react';
 import { MESSAGE_STATUS, MESSAGE_TYPE } from '../../constants/mensagensConstants';
 import DeleteMessageModal from './DeleteMessageModal';
+import ContextMenu, { useLongPress } from '../common/ContextMenu';
 
 /**
  * BolhaMensagem - Componente individual de mensagem
@@ -37,6 +39,7 @@ const BolhaMensagem = ({
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [showMobileDeleteModal, setShowMobileDeleteModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
 
   // Detectar se é mobile
   useEffect(() => {
@@ -187,38 +190,26 @@ const BolhaMensagem = ({
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Handlers para long press (mobile)
-  const handleTouchStart = (e) => {
-    if (!isMobile || mensagem.deletada) return;
+  // Handlers para long press (mobile) - usando hook
+  const longPressHandlers = useLongPress((event) => {
+    if (mensagem.deletada) return;
     
-    setIsLongPressing(true);
-    const timer = setTimeout(() => {
-      setShowMobileDeleteModal(true);
-      setIsLongPressing(false);
-      // Vibração háptica se disponível
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    setContextMenu({
+      position: {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
       }
-    }, 500); // 500ms para considerar long press
-    setLongPressTimer(timer);
-  };
+    });
 
-  const handleTouchEnd = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
+    // Vibração háptica se disponível
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
     }
-    setIsLongPressing(false);
-  };
-
-  const handleTouchMove = () => {
-    // Cancela long press se o dedo se mover
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-    setIsLongPressing(false);
-  };
+  }, 500);
 
   // Extrair prévia do texto para o modal
   const getMessagePreview = () => {
@@ -354,14 +345,12 @@ const BolhaMensagem = ({
 
         {/* Conteúdo - Responsivo */}
         <div
+          {...longPressHandlers}
           className={`rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2 shadow-sm text-sm sm:text-base ${
             isPropriaMsg
               ? 'bg-blue-500 text-white rounded-br-none'
               : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-bl-none'
           } ${groupWithPrevious ? 'rounded-tl-xl sm:rounded-tl-2xl rounded-tr-xl sm:rounded-tr-2xl' : ''}`}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onTouchMove={handleTouchMove}
         >
           {/* Nome do remetente - SEMPRE mostrar se disponível */}
           {mensagem.remetente?.nome && !groupWithPrevious && (
@@ -400,6 +389,43 @@ const BolhaMensagem = ({
         isOwnMessage={isPropriaMsg}
         messagePreview={getMessagePreview()}
       />
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          title="Opções da Mensagem"
+          position={contextMenu.position}
+          onClose={() => setContextMenu(null)}
+          options={[
+            ...(isPropriaMsg && mensagem.tipo === MESSAGE_TYPE.TEXTO ? [{
+              icon: Edit2,
+              label: 'Editar mensagem',
+              onClick: () => onEdit?.(mensagem)
+            }] : []),
+            {
+              icon: Trash2,
+              label: 'Apagar para mim',
+              description: 'A mensagem será removida apenas para você',
+              onClick: () => onDeleteForMe?.(mensagem)
+            },
+            ...(isPropriaMsg && canDeleteForEveryone() ? [{
+              icon: UserX,
+              label: 'Apagar para todos',
+              description: 'Remove a mensagem para todos (até 30min)',
+              danger: true,
+              badge: '30min',
+              onClick: () => onDeleteForEveryone?.(mensagem)
+            }] : []),
+            ...(isPropriaMsg && !canDeleteForEveryone() ? [{
+              icon: Clock,
+              label: 'Prazo esgotado',
+              description: 'Só é possível apagar para todos em até 30 minutos',
+              disabled: true,
+              onClick: () => {}
+            }] : [])
+          ]}
+        />
+      )}
     </div>
   );
 };

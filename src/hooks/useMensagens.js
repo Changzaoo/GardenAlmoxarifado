@@ -389,13 +389,22 @@ export const useMensagens = () => {
           }
         }
         
-        console.log('Chamando setConversas com', novasConversas.length, 'conversas');
+        // Filtrar conversas deletadas para o usuário atual
+        const conversasFiltradas = novasConversas.filter(conversa => {
+          // Se a conversa foi deletada para este usuário, não mostrar
+          if (conversa.deletadaPara && conversa.deletadaPara[usuario.id]) {
+            return false;
+          }
+          return true;
+        });
+        
+        console.log('Chamando setConversas com', conversasFiltradas.length, 'conversas (filtradas de', novasConversas.length, ')');
         console.trace('Stack trace do callback');
         console.log('=================================================');
         
-        setConversas(novasConversas);
+        setConversas(conversasFiltradas);
         setLoading(false);
-        atualizarTotalNaoLidas(novasConversas);
+        atualizarTotalNaoLidas(conversasFiltradas);
         
         // Configurar listeners globais para todas as conversas
         setupGlobalMessageListeners(novasConversas);

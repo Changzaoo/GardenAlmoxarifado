@@ -102,6 +102,38 @@ const MensagensMain = () => {
     }
   };
 
+  const handleDeleteConversa = async (conversaId, tipo) => {
+    if (!usuario?.id) return;
+
+    try {
+      const { doc, updateDoc, arrayUnion, deleteDoc } = await import('firebase/firestore');
+      const { db } = await import('../../firebaseConfig');
+
+      const conversaRef = doc(db, 'conversas', conversaId);
+
+      if (tipo === 'self') {
+        // Apagar apenas para o usuário atual
+        await updateDoc(conversaRef, {
+          [`deletadaPara.${usuario.id}`]: true
+        });
+        console.log(`✅ Conversa ${conversaId} apagada para ${usuario.id}`);
+      } else if (tipo === 'all') {
+        // Apagar para todos (apenas conversas individuais)
+        await deleteDoc(conversaRef);
+        console.log(`✅ Conversa ${conversaId} deletada completamente`);
+      }
+
+      // Se era a conversa ativa, limpar
+      if (conversaAtiva?.id === conversaId) {
+        selecionarConversa(null);
+        setShowChat(false);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao deletar conversa:', error);
+      alert('Erro ao deletar conversa. Tente novamente.');
+    }
+  };
+
   return (
     <div className="h-full flex bg-gray-100 dark:bg-gray-900 overflow-hidden">
       {/* Lista de conversas - Desktop sempre visível, Mobile condicional */}
@@ -114,6 +146,7 @@ const MensagensMain = () => {
           conversaSelecionada={conversaAtiva}
           onNovaConversa={() => setShowNovaConversa(true)}
           onOpenNotificationSettings={() => setShowNotificationSettings(true)}
+          onDeleteConversa={handleDeleteConversa}
           conversas={conversas}
           loading={loading}
           formatarTimestamp={formatarTimestamp}
