@@ -40,6 +40,8 @@ const WorkPontoTab = () => {
   const [hasReferencePhoto, setHasReferencePhoto] = useState(false);
   const [location, setLocation] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [imageUrl, setImageUrl] = useState('');
+  const [savingUrl, setSavingUrl] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -443,6 +445,58 @@ const WorkPontoTab = () => {
     }
   };
 
+  // Salvar URL da imagem diretamente
+  const handleSaveImageUrl = async () => {
+    if (!imageUrl.trim()) {
+      setError('Por favor, insira uma URL válida');
+      return;
+    }
+
+    setSavingUrl(true);
+    setError(null);
+
+    try {
+      // Verificar se a URL é válida e contém um rosto
+      const img = await faceapi.fetchImage(imageUrl);
+      const detection = await faceapi
+        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (!detection) {
+        setError('Nenhum rosto detectado na imagem. Verifique a URL e tente novamente.');
+        setSavingUrl(false);
+        return;
+      }
+
+      // Atualizar funcionário com a URL da foto de referência
+      const q = query(
+        collection(db, 'funcionarios'),
+        where('id', '==', usuario.id),
+        limit(1)
+      );
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        const docRef = doc(db, 'funcionarios', snapshot.docs[0].id);
+        await updateDoc(docRef, {
+          faceReferenceURL: imageUrl,
+          faceReferenceUpdated: new Date()
+        });
+      }
+
+      setHasReferencePhoto(true);
+      setImageUrl('');
+      console.log('✅ URL da foto de referência salva!');
+
+    } catch (err) {
+      console.error('Erro ao processar URL da imagem:', err);
+      setError('Erro ao processar a imagem. Verifique se a URL está correta e acessível.');
+    } finally {
+      setSavingUrl(false);
+    }
+  };
+
   // Calcular status do dia
   const getStatusDia = () => {
     if (!pontoHoje) return { status: 'pending', text: 'Não bateu ponto hoje', color: 'gray' };
@@ -528,30 +582,86 @@ const WorkPontoTab = () => {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Para usar o sistema de ponto com reconhecimento facial, você precisa cadastrar uma foto sua de referência.
               </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleReferenceUpload}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingReference}
-                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                {uploadingReference ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Enviar Foto
-                  </>
-                )}
-              </button>
+              
+              {/* Opção 1: Upload de arquivo */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Opção 1: Fazer upload de uma foto
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleReferenceUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingReference || savingUrl}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {uploadingReference ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Enviar Foto
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Divisor */}
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-yellow-50 dark:bg-yellow-900/20 text-gray-500 dark:text-gray-400">
+                    OU
+                  </span>
+                </div>
+              </div>
+
+              {/* Opção 2: URL da imagem */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Opção 2: Inserir link da imagem
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https://exemplo.com/minha-foto.jpg"
+                    disabled={uploadingReference || savingUrl}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleSaveImageUrl}
+                    disabled={uploadingReference || savingUrl || !imageUrl.trim()}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingUrl ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-4 h-4" />
+                        Salvar Link
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Cole o link direto da sua foto (deve ser acessível publicamente)
+                </p>
+              </div>
             </div>
           </div>
         </div>
