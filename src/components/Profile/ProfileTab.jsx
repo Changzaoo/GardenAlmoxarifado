@@ -12,7 +12,8 @@ import {
   MessageSquarePlus,
   Users,
   Building2,
-  Briefcase
+  Briefcase,
+  Clock
 } from 'lucide-react';
 import MeuInventarioTab from '../Inventario/MeuInventarioTab';
 import TarefasTab from '../Tarefas/TarefasTab';
@@ -22,6 +23,7 @@ import DetalhesFerramentasModal from './DetalhesFerramentasModal';
 import DetalhesTarefasModal from './DetalhesTarefasModal';
 import DetalhesAvaliacoesModal from './DetalhesAvaliacoesModal';
 import AvaliacoesList from './AvaliacoesList';
+import WorkPontoTab from './WorkPontoTab';
 import { collection, query, where, getDocs, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -666,7 +668,7 @@ const ProfileTab = () => {
 
       {/* Tabs - Redesenhado com cards modernos */}
       <div className="mt-6 px-6">
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <button 
             className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 transform hover:scale-105 ${
               activeTab === 'inventario' 
@@ -752,6 +754,49 @@ const ProfileTab = () => {
               </div>
             </div>
           </button>
+
+          <button 
+            className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 transform hover:scale-105 ${
+              activeTab === 'workponto' 
+                ? 'shadow-xl' 
+                : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700'
+            }`}
+            style={activeTab === 'workponto' ? { backgroundColor: '#1988d3', boxShadow: '0 20px 25px -5px rgba(25, 136, 211, 0.5), 0 8px 10px -6px rgba(25, 136, 211, 0.5)' } : {}}
+            onClick={() => setActiveTab('workponto')}
+          >
+            {activeTab === 'workponto' && (
+              <div className="absolute inset-0 bg-white/10"></div>
+            )}
+            <div className="relative flex items-center gap-3">
+              <div className={`p-3 rounded-xl ${
+                activeTab === 'workponto' 
+                  ? 'bg-white/20 backdrop-blur-sm' 
+                  : 'bg-purple-100 dark:bg-purple-900/30'
+              }`}>
+                <Clock className={`w-6 h-6 ${
+                  activeTab === 'workponto' 
+                    ? 'text-white' 
+                    : 'text-purple-600 dark:text-purple-400'
+                }`} />
+              </div>
+              <div className="text-left">
+                <h3 className={`font-bold text-lg ${
+                  activeTab === 'workponto' 
+                    ? 'text-white' 
+                    : 'text-gray-900 dark:text-white'
+                }`}>
+                  WorkPonto
+                </h3>
+                <p className={`text-sm ${
+                  activeTab === 'workponto' 
+                    ? 'text-white/80' 
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  Registro de ponto
+                </p>
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -785,7 +830,10 @@ const ProfileTab = () => {
               />
             </div>
           </div>
-        )}     
+        )}
+        {activeTab === 'workponto' && (
+          <WorkPontoTab />
+        )}
       </div>
 
       {/* Modais de Detalhes */}
