@@ -13,10 +13,10 @@ const DevolucaoAnimation = ({
 
   useEffect(() => {
     const timeline = [
-      { phase: 'start', duration: 500 },
-      { phase: 'returning', duration: 2000 },
-      { phase: 'storing', duration: 1200 },
-      { phase: 'complete', duration: 800 }
+      { phase: 'start', duration: 90 },
+      { phase: 'returning', duration: 355 },
+      { phase: 'storing', duration: 215 },
+      { phase: 'complete', duration: 140 }
     ];
 
     let currentIndex = 0;

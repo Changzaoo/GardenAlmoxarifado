@@ -19,13 +19,13 @@ const EmprestimoAnimation = ({ ferramentas, funcionarioNome, funcionarioFoto, on
     }));
     setParticles(newParticles);
 
-    // Sequência de animação
+    // Sequência de animação - Total: 800ms
     const timeline = [
-      { step: 0, duration: 800 },   // Preparação
-      { step: 1, duration: 1500 },  // Ferramenta sai do almoxarifado
-      { step: 2, duration: 1200 },  // Voa pelo meio
-      { step: 3, duration: 1000 },  // Chega no funcionário
-      { step: 4, duration: 800 }    // Confirmação
+      { step: 0, duration: 120 },   // Preparação
+      { step: 1, duration: 230 },  // Ferramenta sai do almoxarifado
+      { step: 2, duration: 180 },  // Voa pelo meio
+      { step: 3, duration: 150 },  // Chega no funcionário
+      { step: 4, duration: 120 }    // Confirmação
     ];
 
     let totalDuration = 0;
