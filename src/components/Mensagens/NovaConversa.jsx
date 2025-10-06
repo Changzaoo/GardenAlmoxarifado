@@ -11,6 +11,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
   const [selecionados, setSelecionados] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [perfilSelecionado, setPerfilSelecionado] = useState(null); // Para modal de perfil
 
   // Carregar lista de usuários
   useEffect(() => {
@@ -188,11 +189,18 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
     }
   };
 
-  const usuariosFiltrados = usuarios.filter(u =>
-    u.nome?.toLowerCase().includes(busca.toLowerCase()) ||
-    u.cargo?.toLowerCase().includes(busca.toLowerCase()) ||
-    u.email?.toLowerCase().includes(busca.toLowerCase())
-  );
+  // Filtrar e ordenar alfabeticamente
+  const usuariosFiltrados = usuarios
+    .filter(u =>
+      u.nome?.toLowerCase().includes(busca.toLowerCase()) ||
+      u.cargo?.toLowerCase().includes(busca.toLowerCase()) ||
+      u.email?.toLowerCase().includes(busca.toLowerCase())
+    )
+    .sort((a, b) => {
+      const nomeA = (a.nome || a.email || '').toLowerCase();
+      const nomeB = (b.nome || b.email || '').toLowerCase();
+      return nomeA.localeCompare(nomeB);
+    });
 
   const toggleSelecionado = (userId) => {
     setSelecionados(prev =>
@@ -218,7 +226,32 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
     setNomeGrupo('');
     setDescricaoGrupo('');
     setSelecionados([]);
+    setPerfilSelecionado(null);
     onClose();
+  };
+
+  // Formatar data de entrada no sistema
+  const formatarDataEntrada = (timestamp) => {
+    if (!timestamp) return 'Data não disponível';
+    
+    try {
+      let data;
+      if (timestamp.toDate) {
+        data = timestamp.toDate();
+      } else if (timestamp.seconds) {
+        data = new Date(timestamp.seconds * 1000);
+      } else {
+        data = new Date(timestamp);
+      }
+      
+      const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+      const mes = meses[data.getMonth()];
+      const ano = data.getFullYear();
+      
+      return `${mes}/${ano}`;
+    } catch (error) {
+      return 'Data não disponível';
+    }
   };
 
   const podeConfirmar = 
@@ -343,20 +376,25 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
                 const podeSelecionar = tipo === 'grupo' || selecionados.length === 0 || isSelecionado;
 
                 return (
-                  <button
+                  <div
                     key={usuario.id}
-                    onClick={() => podeSelecionar && toggleSelecionado(usuario.id)}
-                    disabled={!podeSelecionar}
                     className={`w-full p-3 rounded-lg flex items-center gap-3 transition-colors ${
                       isSelecionado
                         ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500'
                         : 'bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:bg-gray-100 dark:hover:bg-gray-600'
-                    } ${!podeSelecionar ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    } ${!podeSelecionar ? 'opacity-50' : ''}`}
                   >
-                    {/* Avatar */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      isSelecionado ? 'bg-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-600'
-                    } text-white font-semibold flex-shrink-0`}>
+                    {/* Avatar - CLICÁVEL para ver perfil */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPerfilSelecionado(usuario);
+                      }}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        isSelecionado ? 'bg-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-600'
+                      } text-white font-semibold flex-shrink-0 hover:ring-2 hover:ring-blue-400 transition-all cursor-pointer`}
+                      title="Ver perfil"
+                    >
                       {usuario.photoURL ? (
                         <img 
                           src={usuario.photoURL} 
@@ -366,10 +404,14 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
                       ) : (
                         usuario.nome?.charAt(0).toUpperCase() || usuario.email?.charAt(0).toUpperCase() || '?'
                       )}
-                    </div>
+                    </button>
 
-                    {/* Info */}
-                    <div className="flex-1 text-left min-w-0">
+                    {/* Info - CLICÁVEL para selecionar */}
+                    <button
+                      onClick={() => podeSelecionar && toggleSelecionado(usuario.id)}
+                      disabled={!podeSelecionar}
+                      className="flex-1 text-left min-w-0"
+                    >
                       <h4 className="font-semibold text-gray-900 dark:text-white truncate">
                         {usuario.nome || usuario.email || `Usuário ${usuario.id.substring(0, 8)}`}
                       </h4>
@@ -378,23 +420,26 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
                           {usuario.cargo || usuario.email}
                         </p>
                       )}
-                    </div>
+                    </button>
 
                     {/* Checkbox */}
                     {podeSelecionar && (
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        isSelecionado
-                          ? 'bg-blue-500 border-blue-500'
-                          : 'border-gray-300 dark:border-gray-600'
-                      }`}>
+                      <button
+                        onClick={() => toggleSelecionado(usuario.id)}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                          isSelecionado
+                            ? 'bg-blue-500 border-blue-500'
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                      >
                         {isSelecionado && (
                           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
-                      </div>
+                      </button>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -418,6 +463,170 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
           </button>
         </div>
       </div>
+
+      {/* Modal de Perfil do Usuário */}
+      {perfilSelecionado && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
+          onClick={() => setPerfilSelecionado(null)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header com botão fechar */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                Perfil do Usuário
+              </h3>
+              <button
+                onClick={() => setPerfilSelecionado(null)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+
+            {/* Conteúdo do Perfil */}
+            <div className="p-6">
+              {/* Foto de Perfil Grande */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg mb-3">
+                  {perfilSelecionado.photoURL ? (
+                    <img 
+                      src={perfilSelecionado.photoURL} 
+                      alt={perfilSelecionado.nome}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    perfilSelecionado.nome?.charAt(0).toUpperCase() || 
+                    perfilSelecionado.email?.charAt(0).toUpperCase() || 
+                    '?'
+                  )}
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">
+                  {perfilSelecionado.nome || perfilSelecionado.email || 'Usuário'}
+                </h2>
+              </div>
+
+              {/* Informações do Perfil */}
+              <div className="space-y-4">
+                {/* Cargo */}
+                {perfilSelecionado.cargo && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                      <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">
+                        Cargo
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {perfilSelecionado.cargo}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Empresa/Setor */}
+                {(perfilSelecionado.empresa || perfilSelecionado.setor) && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center flex-shrink-0">
+                      <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">
+                        {perfilSelecionado.empresa && perfilSelecionado.setor ? 'Empresa / Setor' : perfilSelecionado.empresa ? 'Empresa' : 'Setor'}
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {perfilSelecionado.empresa && perfilSelecionado.setor 
+                          ? `${perfilSelecionado.empresa} / ${perfilSelecionado.setor}`
+                          : perfilSelecionado.empresa || perfilSelecionado.setor}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Email */}
+                {perfilSelecionado.email && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">
+                        Email
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {perfilSelecionado.email}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Data de Entrada */}
+                {(perfilSelecionado.dataCriacao || perfilSelecionado.createdAt || perfilSelecionado.dataEntrada) && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">
+                        No sistema desde
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {formatarDataEntrada(perfilSelecionado.dataCriacao || perfilSelecionado.createdAt || perfilSelecionado.dataEntrada)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Nível/Permissão */}
+                {perfilSelecionado.nivel && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">
+                        Nível de Acesso
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">
+                        {perfilSelecionado.nivel}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer com botão de ação */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setPerfilSelecionado(null);
+                  if (!selecionados.includes(perfilSelecionado.id) && tipo === 'individual') {
+                    toggleSelecionado(perfilSelecionado.id);
+                  }
+                }}
+                className="w-full py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition-colors"
+              >
+                {selecionados.includes(perfilSelecionado.id) 
+                  ? 'Usuário Selecionado' 
+                  : tipo === 'individual' 
+                    ? 'Iniciar Conversa' 
+                    : 'Adicionar ao Grupo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
