@@ -140,7 +140,14 @@ export const FuncionariosProvider = ({ children }) => {
       // Verifica por nível numérico (0 = ADMIN) ou string ('admin', 'administrador')
       const nivelNumerico = typeof f.nivel === 'number' ? f.nivel : null;
       const nivelString = typeof f.nivel === 'string' ? f.nivel.toLowerCase() : '';
-      const cargoNormalizado = (f.cargo || '').toLowerCase();
+      
+      // Cargo pode ser string ou objeto, então precisamos tratar ambos os casos
+      let cargoNormalizado = '';
+      if (typeof f.cargo === 'string') {
+        cargoNormalizado = f.cargo.toLowerCase();
+      } else if (f.cargo && typeof f.cargo === 'object' && f.cargo.nome) {
+        cargoNormalizado = f.cargo.nome.toLowerCase();
+      }
       
       const isAdmin = nivelNumerico === NIVEIS_PERMISSAO.ADMIN || 
                       nivelString === 'admin' || 
