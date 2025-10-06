@@ -3,7 +3,7 @@ import { X, Star, Calendar, Award, User, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db } from '../../firebaseConfig';
 
 const DetalhesAvaliacoesModal = ({ isOpen, onClose, funcionarioId, pontos }) => {
   const [avaliacoes, setAvaliacoes] = useState([]);

@@ -3,7 +3,7 @@ import { X, CheckCircle, Calendar, Clock, Award, AlertCircle, Star } from 'lucid
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db } from '../../firebaseConfig';
 
 const DetalhesTarefasModal = ({ isOpen, onClose, funcionarioId, pontos }) => {
   const [tarefas, setTarefas] = useState([]);

@@ -3,11 +3,11 @@ import { Package, CheckCircle, Sparkles, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * BoxLoanAnimation - Animação sofisticada e fluida de caixa para empréstimos/devoluções
+ * BoxLoanAnimation - Animação ultra fluida a 60fps para empréstimos/devoluções
  * ✨ Responsiva para mobile e desktop
  * ✨ Partículas e efeitos visuais sofisticados
  * ✨ Contagem precisa de ferramentas
- * ✨ Duração: ~800ms total
+ * ✨ Duração: 1000ms (1 segundo) total - 60fps
  */
 const BoxLoanAnimation = ({ 
   ferramentas = [], 
@@ -40,14 +40,14 @@ const BoxLoanAnimation = ({
 
   // Gera partículas ao completar
   const generateParticles = () => {
-    const newParticles = Array.from({ length: 30 }, (_, i) => ({
+    const newParticles = Array.from({ length: 40 }, (_, i) => ({
       id: i,
-      x: (Math.random() - 0.5) * 200,
-      y: (Math.random() - 0.5) * 200,
-      scale: Math.random() * 0.8 + 0.4,
+      x: (Math.random() - 0.5) * 250,
+      y: (Math.random() - 0.5) * 250,
+      scale: Math.random() * 1 + 0.5,
       rotation: Math.random() * 360,
-      duration: Math.random() * 0.6 + 0.4,
-      delay: Math.random() * 0.1
+      duration: Math.random() * 0.5 + 0.3,
+      delay: Math.random() * 0.08
     }));
     setParticles(newParticles);
   };
@@ -55,17 +55,18 @@ const BoxLoanAnimation = ({
   useEffect(() => {
     if (totalTools === 0) {
       console.warn('BoxLoanAnimation: Nenhuma ferramenta para animar');
-      setTimeout(() => onComplete?.(), 300);
+      setTimeout(() => onComplete?.(), 200);
       return;
     }
 
-    console.log(`🎬 Iniciando animação: ${totalTools} ferramentas do tipo ${tipo}`);
+    console.log(`🎬 Iniciando animação 60fps: ${totalTools} ferramentas do tipo ${tipo}`);
 
-    const toolAnimationTime = Math.min(100, 400 / totalTools);
-    const boxTravelTime = 300;
-    const successTime = 100;
+    // Timing otimizado para 1 segundo total a 60fps
+    const toolAnimationTime = Math.min(60, 350 / totalTools); // Máximo 60ms por item
+    const boxTravelTime = 400; // 400ms para viagem
+    const successTime = 250; // 250ms para celebração
 
-    // Passo 1: Ferramentas entram na caixa
+    // Passo 1: Ferramentas entram na caixa (rápido e fluido)
     setCurrentStep(1);
 
     normalizedFerramentas.forEach((ferramenta, index) => {
@@ -78,13 +79,13 @@ const BoxLoanAnimation = ({
       }, index * toolAnimationTime);
     });
 
-    // Passo 2: Caixa viaja
+    // Passo 2: Caixa viaja (suave e rápido)
     setTimeout(() => {
       console.log('🚚 Caixa começou a viajar');
       setCurrentStep(2);
     }, totalTools * toolAnimationTime);
 
-    // Passo 3: Sucesso
+    // Passo 3: Sucesso (explosão de partículas)
     setTimeout(() => {
       console.log('✅ Entrega concluída!');
       setCurrentStep(3);
@@ -92,11 +93,11 @@ const BoxLoanAnimation = ({
       generateParticles();
     }, totalTools * toolAnimationTime + boxTravelTime);
 
-    // Finaliza
+    // Finaliza (exatamente 1 segundo)
     setTimeout(() => {
-      console.log('🏁 Animação finalizada');
+      console.log('🏁 Animação finalizada em 1s');
       onComplete?.();
-    }, totalTools * toolAnimationTime + boxTravelTime + successTime);
+    }, 1000); // Total fixo de 1 segundo
 
     return () => {
       setToolsInBox([]);
@@ -124,7 +125,8 @@ const BoxLoanAnimation = ({
           className="absolute left-0 md:left-[5%] top-1/2 -translate-y-1/2 z-10"
           initial={{ scale: 0, x: -100, opacity: 0 }}
           animate={{ scale: 1, x: 0, opacity: 1 }}
-          transition={{ type: "spring", damping: 15, stiffness: 100 }}
+          transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
+          style={{ willChange: 'transform, opacity' }}
         >
           <div className="flex flex-col items-center gap-2 md:gap-3">
             <motion.div 
@@ -163,7 +165,8 @@ const BoxLoanAnimation = ({
           className="absolute right-0 md:right-[5%] top-1/2 -translate-y-1/2 z-10"
           initial={{ scale: 0, x: 100, opacity: 0 }}
           animate={{ scale: 1, x: 0, opacity: 1 }}
-          transition={{ type: "spring", damping: 15, stiffness: 100, delay: 0.1 }}
+          transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1], delay: 0.08 }}
+          style={{ willChange: 'transform, opacity' }}
         >
           <div className="flex flex-col items-center gap-2 md:gap-3">
             <motion.div 
@@ -216,34 +219,33 @@ const BoxLoanAnimation = ({
                   animate={{ x: 0, y: 0, scale: 1, opacity: 1, rotate: 0 }}
                   exit={{ scale: 0, y: 20, opacity: 0, rotate: 180 }}
                   transition={{ 
-                    duration: 0.2, 
-                    type: "spring",
-                    damping: 12,
-                    stiffness: 150
+                    duration: 0.15,
+                    ease: [0.25, 0.46, 0.45, 0.94] // Easing otimizado para 60fps
                   }}
-                  style={{ zIndex: 20 + index }}
+                  style={{ zIndex: 20 + index, willChange: 'transform, opacity' }}
                 >
                   <motion.div 
                     className="bg-gradient-to-br from-orange-500 to-red-600 text-white p-2 md:p-3 rounded-xl shadow-2xl relative"
-                    whileHover={{ scale: 1.1 }}
                     animate={{ 
-                      rotate: [0, 5, -5, 0],
-                      y: [0, -5, 0]
+                      rotate: [0, 3, -3, 0],
+                      y: [0, -3, 0]
                     }}
                     transition={{ 
-                      rotate: { duration: 0.5, repeat: Infinity },
-                      y: { duration: 1, repeat: Infinity }
+                      duration: 0.8,
+                      repeat: Infinity,
+                      ease: "easeInOut"
                     }}
+                    style={{ willChange: 'transform' }}
                   >
                     <Package className="w-5 h-5 md:w-6 md:h-6" />
                     {/* Sparkle effect */}
                     <motion.div
                       className="absolute -top-1 -right-1"
                       animate={{ 
-                        scale: [1, 1.3, 1],
+                        scale: [1, 1.2, 1],
                         opacity: [0.8, 1, 0.8]
                       }}
-                      transition={{ duration: 0.6, repeat: Infinity }}
+                      transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
                     >
                       <Sparkles className="w-3 h-3 md:w-4 md:h-4 text-yellow-300" />
                     </motion.div>
@@ -265,12 +267,13 @@ const BoxLoanAnimation = ({
               rotate: currentStep === 2 ? 5 : 0
             }}
             transition={{
-              scale: { type: "spring", damping: 15, stiffness: 200 },
-              opacity: { duration: 0.2 },
-              x: { duration: 0.3, ease: [0.43, 0.13, 0.23, 0.96] },
-              y: { duration: 0.3, ease: "easeInOut" },
-              rotate: { duration: 0.3 }
+              scale: { duration: 0.2, ease: [0.34, 1.56, 0.64, 1] },
+              opacity: { duration: 0.15 },
+              x: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }, // Cubic-bezier otimizado
+              y: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+              rotate: { duration: 0.4, ease: "easeOut" }
             }}
+            style={{ willChange: 'transform, opacity' }}
           >
             {/* Sombra dinâmica */}
             <motion.div
@@ -280,7 +283,8 @@ const BoxLoanAnimation = ({
                 opacity: currentStep === 2 ? 0.1 : 0.25,
                 x: currentStep === 2 ? 30 : 0
               }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              style={{ willChange: 'transform, opacity' }}
             />
 
             {/* Caixa 3D */}
@@ -293,11 +297,12 @@ const BoxLoanAnimation = ({
                   y: toolsInBox.length === totalTools ? 0 : -25,
                   z: toolsInBox.length === totalTools ? 0 : 20
                 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
+                transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
                 style={{
                   transformOrigin: 'bottom',
                   transformStyle: 'preserve-3d',
-                  backfaceVisibility: 'hidden'
+                  backfaceVisibility: 'hidden',
+                  willChange: 'transform'
                 }}
               >
                 {/* Detalhe da tampa */}
@@ -316,14 +321,15 @@ const BoxLoanAnimation = ({
                   className="relative bg-white dark:bg-gray-900 rounded-full w-12 h-12 md:w-16 md:h-16 flex items-center justify-center shadow-xl z-10 ring-2 ring-amber-300"
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
-                  transition={{ delay: 0.2, type: "spring", damping: 10 }}
+                  transition={{ delay: 0.15, duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+                  style={{ willChange: 'transform' }}
                 >
                   <motion.span
                     className="text-lg md:text-2xl font-bold bg-gradient-to-br from-amber-600 to-amber-800 bg-clip-text text-transparent"
                     key={`${toolsInBox.length}-${totalTools}`}
-                    initial={{ scale: 1.5, opacity: 0 }}
+                    initial={{ scale: 1.4, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.15 }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
                   >
                     {toolsInBox.length}/{totalTools}
                   </motion.span>
@@ -334,7 +340,8 @@ const BoxLoanAnimation = ({
                   className="absolute bottom-1 md:bottom-2 left-1/2 -translate-x-1/2 bg-white dark:bg-gray-900 px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-bold text-amber-700 shadow-lg ring-1 ring-amber-200"
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
+                  transition={{ delay: 0.2, duration: 0.25, ease: "easeOut" }}
+                  style={{ willChange: 'transform, opacity' }}
                 >
                   {tipo === 'emprestimo' ? '📦 Empréstimo' : '↩️ Devolução'}
                 </motion.div>
@@ -346,10 +353,12 @@ const BoxLoanAnimation = ({
                     x: [-100, 100],
                   }}
                   transition={{
-                    duration: 2,
+                    duration: 1.8,
                     repeat: Infinity,
-                    repeatDelay: 1
+                    repeatDelay: 0.8,
+                    ease: "linear"
                   }}
+                  style={{ willChange: 'transform' }}
                 />
               </div>
             </div>
@@ -360,7 +369,8 @@ const BoxLoanAnimation = ({
                 className="absolute left-full ml-2 md:ml-4 top-1/2 -translate-y-1/2"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: [0, 1, 0], x: [0, 20, 40] }}
-                transition={{ duration: 0.6, repeat: Infinity }}
+                transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
+                style={{ willChange: 'transform, opacity' }}
               >
                 <ArrowRight className="w-6 h-6 md:w-8 md:h-8 text-purple-400" />
               </motion.div>
@@ -376,7 +386,8 @@ const BoxLoanAnimation = ({
                   initial={{ scale: 0, rotate: -180, opacity: 0 }}
                   animate={{ scale: 1, rotate: 0, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
-                  transition={{ type: "spring", damping: 10, stiffness: 200 }}
+                  transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
+                  style={{ willChange: 'transform, opacity' }}
                 >
                   <motion.div 
                     className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-full p-4 md:p-6 shadow-2xl ring-4 ring-white/30"
@@ -387,7 +398,7 @@ const BoxLoanAnimation = ({
                         "0 0 0 0 rgba(34, 197, 94, 0)"
                       ]
                     }}
-                    transition={{ duration: 1, repeat: Infinity }}
+                    transition={{ duration: 0.8, repeat: Infinity, ease: "easeOut" }}
                   >
                     <CheckCircle className="w-8 h-8 md:w-12 md:h-12 text-white" />
                   </motion.div>
@@ -409,8 +420,9 @@ const BoxLoanAnimation = ({
                     transition={{
                       duration: particle.duration,
                       delay: particle.delay,
-                      ease: "easeOut"
+                      ease: [0.25, 0.46, 0.45, 0.94]
                     }}
+                    style={{ willChange: 'transform, opacity' }}
                   />
                 ))}
               </>
@@ -423,7 +435,8 @@ const BoxLoanAnimation = ({
           className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.3, duration: 0.3, ease: "easeOut" }}
+          style={{ willChange: 'transform, opacity' }}
         >
           <div className="bg-white/10 backdrop-blur-md px-4 md:px-6 py-2 md:py-3 rounded-full shadow-xl border border-white/20">
             <p className="text-white text-xs md:text-sm font-medium">
@@ -439,7 +452,8 @@ const BoxLoanAnimation = ({
           className="absolute top-4 md:top-8 left-1/2 -translate-x-1/2 w-48 md:w-64"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.2, duration: 0.25, ease: "easeOut" }}
+          style={{ willChange: 'transform, opacity' }}
         >
           <div className="bg-white/10 backdrop-blur-sm rounded-full h-2 md:h-3 overflow-hidden border border-white/20">
             <motion.div
@@ -452,7 +466,8 @@ const BoxLoanAnimation = ({
                     ? '100%'
                     : '100%'
               }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+              transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+              style={{ willChange: 'width' }}
             />
           </div>
         </motion.div>
