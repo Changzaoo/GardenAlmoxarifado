@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, query, orderBy, onSnapshot, updateDoc, doc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
@@ -103,7 +103,7 @@ const TarefasTab = ({
     return tempoTotal;
   };
 
-  const handleIniciarTarefa = async (tarefaId) => {
+  const handleIniciarTarefa = useCallback(async (tarefaId) => {
     try {
       await updateDoc(doc(db, 'tarefas', tarefaId), {
         status: 'em_andamento',
@@ -114,9 +114,9 @@ const TarefasTab = ({
       console.error('Erro ao iniciar tarefa:', error);
       showToast('Erro ao iniciar tarefa', 'error');
     }
-  };
+  }, [showToast]);
 
-  const handlePausarTarefa = async (tarefaId) => {
+  const handlePausarTarefa = useCallback(async (tarefaId) => {
     try {
       const tarefa = tarefas.find(t => t.id === tarefaId);
       const tempoPausadoAnterior = tarefa.tempoPausado || 0;
@@ -132,9 +132,9 @@ const TarefasTab = ({
       console.error('Erro ao pausar tarefa:', error);
       showToast('Erro ao pausar tarefa', 'error');
     }
-  };
+  }, [tarefas, showToast]);
 
-  const handleConcluirTarefa = async () => {
+  const handleConcluirTarefa = useCallback(async () => {
     if (!tarefaParaAvaliacao) return;
     
     try {
@@ -163,7 +163,7 @@ const TarefasTab = ({
       showToast('Erro ao concluir tarefa', 'error');
       setTarefaParaAvaliacao(null);
     }
-  };
+  }, [tarefaParaAvaliacao, usuario, showToast]);
 
   const handleAvaliacaoSubmit = async (avaliacao, comentario) => {
     if (!tarefaParaAvaliacao) return;
@@ -350,50 +350,53 @@ const TarefasTab = ({
     return PermissionChecker.filterBySector(tarefas, usuario);
   }, [tarefas, usuario, isAdmin]);
 
-  const tarefasFiltradas = tarefasPorSetor
-    .filter(tarefa => {
-      // Filtro de usuário
-      if (showOnlyUserTasks && !isUserAssigned(tarefa)) return false;
-      
-      // Filtro de status
-      if (filtroStatus !== 'todas' && tarefa.status !== filtroStatus) return false;
-      
-      // Filtro de período (baseado na data de criação)
-      if (filtroPeriodo !== 'todos' && !isWithinPeriod(tarefa.dataCriacao, filtroPeriodo)) return false;
-      
-      // Filtro de avaliação
-      if (filtroAvaliacao !== 'todas') {
-        const avaliacaoSupervisor = Number(tarefa.avaliacaoSupervisor);
-        switch (filtroAvaliacao) {
-          case 'excelente':
-            if (avaliacaoSupervisor < 5) return false;
-            break;
-          case 'boa':
-            if (avaliacaoSupervisor < 4 || avaliacaoSupervisor >= 5) return false;
-            break;
-          case 'regular':
-            if (avaliacaoSupervisor < 3 || avaliacaoSupervisor >= 4) return false;
-            break;
-          case 'ruim':
-            if (avaliacaoSupervisor >= 3) return false;
-            break;
-          case 'pendente':
-            if (tarefa.status === 'concluida' && avaliacaoSupervisor) return false;
-            break;
+  // Memoizar tarefas filtradas para evitar recalcular a cada render
+  const tarefasFiltradas = useMemo(() => {
+    return tarefasPorSetor
+      .filter(tarefa => {
+        // Filtro de usuário
+        if (showOnlyUserTasks && !isUserAssigned(tarefa)) return false;
+        
+        // Filtro de status
+        if (filtroStatus !== 'todas' && tarefa.status !== filtroStatus) return false;
+        
+        // Filtro de período (baseado na data de criação)
+        if (filtroPeriodo !== 'todos' && !isWithinPeriod(tarefa.dataCriacao, filtroPeriodo)) return false;
+        
+        // Filtro de avaliação
+        if (filtroAvaliacao !== 'todas') {
+          const avaliacaoSupervisor = Number(tarefa.avaliacaoSupervisor);
+          switch (filtroAvaliacao) {
+            case 'excelente':
+              if (avaliacaoSupervisor < 5) return false;
+              break;
+            case 'boa':
+              if (avaliacaoSupervisor < 4 || avaliacaoSupervisor >= 5) return false;
+              break;
+            case 'regular':
+              if (avaliacaoSupervisor < 3 || avaliacaoSupervisor >= 4) return false;
+              break;
+            case 'ruim':
+              if (avaliacaoSupervisor >= 3) return false;
+              break;
+            case 'pendente':
+              if (tarefa.status === 'concluida' && avaliacaoSupervisor) return false;
+              break;
+          }
         }
-      }
-      
-      // Filtro de pesquisa
-      if (searchTerm) {
-        const termLower = searchTerm.toLowerCase();
-        return tarefa.titulo.toLowerCase().includes(termLower) ||
-               tarefa.descricao?.toLowerCase().includes(termLower) ||
-               tarefa.funcionario?.toLowerCase().includes(termLower);
-      }
-      
-      return true;
-    })
-    .slice(0, quantidadeExibida);
+        
+        // Filtro de pesquisa
+        if (searchTerm) {
+          const termLower = searchTerm.toLowerCase();
+          return tarefa.titulo.toLowerCase().includes(termLower) ||
+                 tarefa.descricao?.toLowerCase().includes(termLower) ||
+                 tarefa.funcionario?.toLowerCase().includes(termLower);
+        }
+        
+        return true;
+      })
+      .slice(0, quantidadeExibida);
+  }, [tarefasPorSetor, showOnlyUserTasks, filtroStatus, filtroPeriodo, filtroAvaliacao, searchTerm, quantidadeExibida]);
 
   return (
     <div className="space-y-6">
@@ -779,5 +782,6 @@ const TarefasTab = ({
   );
 };
 
-export default TarefasTab;
+// Memoizar componente para evitar re-renders desnecessários
+export default React.memo(TarefasTab);
 
