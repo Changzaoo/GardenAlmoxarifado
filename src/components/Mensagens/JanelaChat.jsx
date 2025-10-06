@@ -108,9 +108,9 @@ const JanelaChat = ({
   const outroParticipante = getOutroParticipante(conversa);
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-full max-h-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Header - Responsivo */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 sm:p-4 flex items-center gap-2 sm:gap-3 flex-shrink-0 z-10">
         <button
           onClick={onBack}
           className="lg:hidden p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors active:scale-95"
@@ -147,7 +147,7 @@ const JanelaChat = ({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-1 overscroll-contain"
+        className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 space-y-1 overscroll-contain min-h-0"
         style={{ 
           WebkitOverflowScrolling: 'touch', // Scroll suave no iOS
           scrollBehavior: 'smooth'

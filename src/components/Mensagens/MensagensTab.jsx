@@ -324,9 +324,9 @@ const MensagensTab = () => {
   }
 
   return (
-    <div className="flex h-screen w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="flex h-full w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Sidebar - Lista de Conversas */}
-      <div className={`${conversaSelecionada ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-96 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full`}>
+      <div className={`${conversaSelecionada ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-96 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-full overflow-hidden`}>
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
           <div className="flex items-center justify-between mb-6">

@@ -254,9 +254,9 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden">
+    <div className="flex flex-col h-full w-full max-h-full overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b-2 border-gray-200 dark:border-gray-700 p-5 flex items-center gap-4 flex-shrink-0 shadow-sm">
+      <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-b-2 border-gray-200 dark:border-gray-700 p-5 flex items-center gap-4 flex-shrink-0 shadow-sm min-h-0">
         <button
           onClick={onVoltar}
           className="md:hidden p-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
@@ -308,7 +308,7 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
       {/* Área de Mensagens */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900"
+        className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 min-h-0"
         style={{
           backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
         }}

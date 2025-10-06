@@ -103,10 +103,10 @@ const MensagensMain = () => {
   };
 
   return (
-    <div className="h-screen flex bg-gray-100 dark:bg-gray-900">
+    <div className="h-full flex bg-gray-100 dark:bg-gray-900 overflow-hidden">
       {/* Lista de conversas - Desktop sempre visível, Mobile condicional */}
       <div className={`
-        w-full lg:w-96 border-r border-gray-200 dark:border-gray-700
+        w-full lg:w-96 border-r border-gray-200 dark:border-gray-700 h-full
         ${showChat ? 'hidden lg:block' : 'block'}
       `}>
         <ListaConversas
@@ -138,7 +138,7 @@ const MensagensMain = () => {
 
       {/* Janela de chat - Desktop sempre visível, Mobile condicional */}
       <div className={`
-        flex-1 
+        flex-1 h-full
         ${!showChat ? 'hidden lg:flex' : 'flex'}
       `}>
         {conversaAtiva ? (
