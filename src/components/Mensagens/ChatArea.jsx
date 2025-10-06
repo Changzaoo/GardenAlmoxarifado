@@ -18,6 +18,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
+import { notificarNovaMensagem } from '../../services/notificationService';
 
 const ChatArea = ({ conversa, usuario, onVoltar }) => {
   const [mensagens, setMensagens] = useState([]);
@@ -158,7 +159,8 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
       };
 
       // Adicionar mensagem
-      await addDoc(collection(db, 'mensagens'), novaMensagem);
+      const mensagemDoc = await addDoc(collection(db, 'mensagens'), novaMensagem);
+      console.log('✅ Mensagem enviada:', mensagemDoc.id);
 
       // Atualizar última mensagem da conversa
       const conversaRef = doc(db, 'conversas', conversa.id);
@@ -181,6 +183,23 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
       });
 
       await updateDoc(conversaRef, updates);
+
+      // 🔔 ENVIAR NOTIFICAÇÃO PUSH para todos os participantes (exceto o remetente)
+      const nomeRemetente = usuario.nome || usuario.displayName || 'Alguém';
+      conversa.participantes.forEach(async (participanteId) => {
+        if (participanteId !== usuario.id) {
+          try {
+            await notificarNovaMensagem(
+              participanteId,
+              { id: mensagemDoc.id, texto: conteudo },
+              nomeRemetente
+            );
+            console.log(`🔔 Notificação enviada para ${participanteId}`);
+          } catch (error) {
+            console.error(`❌ Erro ao notificar ${participanteId}:`, error);
+          }
+        }
+      });
 
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);

@@ -21,89 +21,87 @@ const MensagensTab = () => {
     return total + (conversa.naoLidas || 0);
   }, 0);
 
-  // Carregar funcionários/usuários da mesma empresa/setor (ou todos se for admin)
+  // Carregar funcionários/usuários de TODAS as coleções
   useEffect(() => {
     if (!usuario?.id) {
       console.log('MensagensTab: Usuário não definido');
       return;
     }
 
-    // Administrador (nível 1) vê todos
-    const isAdmin = usuario.nivel === 1;
-
-    // Se não for admin e não tiver empresaId/setorId, não carrega
-    if (!isAdmin && (!usuario.empresaId || !usuario.setorId)) {
-      console.warn('MensagensTab: Usuário sem empresaId ou setorId', usuario);
-      setFuncionarios([]);
-      return;
-    }
-
-    const unsubscribers = [];
-
-    // Carregar da coleção 'usuarios' (sistema novo)
-    let qUsuarios;
-    if (isAdmin) {
-      qUsuarios = query(collection(db, 'usuarios'), where('ativo', '==', true));
-    } else {
-      qUsuarios = query(
-        collection(db, 'usuarios'),
-        where('empresaId', '==', usuario.empresaId),
-        where('setorId', '==', usuario.setorId),
-        where('ativo', '==', true)
-      );
-    }
-
-    const unsubUsuarios = onSnapshot(qUsuarios, (snapshot) => {
-      const usuarios = snapshot.docs
-        .map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          origem: 'usuarios'
-        }))
-        .filter(u => u.id !== usuario.id);
-
-      // Carregar da coleção 'funcionarios' (sistema legado)
-      let qFuncionarios;
-      if (isAdmin) {
-        qFuncionarios = query(collection(db, 'funcionarios'));
-      } else {
-        qFuncionarios = query(
-          collection(db, 'funcionarios'),
-          where('empresaId', '==', usuario.empresaId),
-          where('setorId', '==', usuario.setorId)
-        );
-      }
-
-      const unsubFuncionarios = onSnapshot(qFuncionarios, (snapshotFunc) => {
-        const funcionariosLegado = snapshotFunc.docs
-          .map(doc => ({ 
-            id: doc.id, 
-            ...doc.data(),
-            origem: 'funcionarios'
-          }))
-          .filter(f => f.id !== usuario.id && !f.demitido);
-
-        // Mesclar ambas as coleções, evitando duplicatas
-        const todosUsuarios = [...usuarios];
-        funcionariosLegado.forEach(func => {
-          if (!todosUsuarios.find(u => u.id === func.id)) {
-            todosUsuarios.push(func);
-          }
-        });
-
-        setFuncionarios(todosUsuarios);
-      }, (error) => {
-        console.error('Erro ao carregar funcionários:', error);
-        setFuncionarios(usuarios); // Usar apenas usuários se falhar
-      });
-
-      unsubscribers.push(unsubFuncionarios);
-    }, (error) => {
-      console.error('Erro ao carregar usuários:', error);
-      setFuncionarios([]);
+    console.log('🔍 MensagensTab: Carregando usuários para mensagens...', { 
+      usuarioId: usuario.id, 
+      nivel: usuario.nivel 
     });
 
+    const unsubscribers = [];
+    const todosUsuariosMap = new Map(); // Usar Map para evitar duplicatas
+
+    // 1️⃣ Carregar da coleção 'usuarios' (sistema novo - PLURAL)
+    const qUsuarios = query(collection(db, 'usuarios'));
+    const unsubUsuarios = onSnapshot(qUsuarios, (snapshot) => {
+      console.log(`📦 Carregados ${snapshot.docs.length} usuários da coleção 'usuarios'`);
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (doc.id !== usuario.id && data.ativo !== false) {
+          todosUsuariosMap.set(doc.id, { 
+            id: doc.id, 
+            ...data,
+            origem: 'usuarios'
+          });
+        }
+      });
+      atualizarListaFinal();
+    }, (error) => {
+      console.error('❌ Erro ao carregar coleção usuarios:', error);
+    });
     unsubscribers.push(unsubUsuarios);
+
+    // 2️⃣ Carregar da coleção 'usuario' (sistema legado - SINGULAR)
+    const qUsuario = query(collection(db, 'usuario'));
+    const unsubUsuario = onSnapshot(qUsuario, (snapshot) => {
+      console.log(`📦 Carregados ${snapshot.docs.length} usuários da coleção 'usuario'`);
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (doc.id !== usuario.id && data.ativo !== false && !todosUsuariosMap.has(doc.id)) {
+          todosUsuariosMap.set(doc.id, { 
+            id: doc.id, 
+            ...data,
+            origem: 'usuario'
+          });
+        }
+      });
+      atualizarListaFinal();
+    }, (error) => {
+      console.error('❌ Erro ao carregar coleção usuario:', error);
+    });
+    unsubscribers.push(unsubUsuario);
+
+    // 3️⃣ Carregar da coleção 'funcionarios'
+    const qFuncionarios = query(collection(db, 'funcionarios'));
+    const unsubFuncionarios = onSnapshot(qFuncionarios, (snapshot) => {
+      console.log(`📦 Carregados ${snapshot.docs.length} usuários da coleção 'funcionarios'`);
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (doc.id !== usuario.id && !data.demitido && !todosUsuariosMap.has(doc.id)) {
+          todosUsuariosMap.set(doc.id, { 
+            id: doc.id, 
+            ...data,
+            origem: 'funcionarios'
+          });
+        }
+      });
+      atualizarListaFinal();
+    }, (error) => {
+      console.error('❌ Erro ao carregar coleção funcionarios:', error);
+    });
+    unsubscribers.push(unsubFuncionarios);
+
+    // Função para atualizar a lista final
+    const atualizarListaFinal = () => {
+      const listaFinal = Array.from(todosUsuariosMap.values());
+      console.log(`✅ Total de usuários disponíveis para mensagens: ${listaFinal.length}`);
+      setFuncionarios(listaFinal);
+    };
 
     return () => {
       unsubscribers.forEach(unsub => unsub());

@@ -97,21 +97,26 @@ const NovaConversaModal = ({ funcionarios, onClose, onCriarIndividual, onCriarGr
 
         {/* Busca */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="space-y-2">
+            {/* Ícone e label acima do campo */}
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <Search className="w-4 h-4" />
+              <span className="text-sm font-medium">Buscar usuários...</span>
+            </div>
+            
             <input
               type="text"
-              placeholder="Buscar funcionários..."
+              placeholder="Digite o nome ou cargo"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
 
           {/* Contador de selecionados */}
           {selecionados.length > 0 && (
-            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              {selecionados.length} {tipo === 'grupo' ? 'participante(s)' : 'funcionário'} selecionado(s)
+            <div className="mt-3 text-sm text-blue-600 dark:text-blue-400 font-medium">
+              {selecionados.length} {tipo === 'grupo' ? 'participante(s)' : 'usuário'} selecionado(s)
             </div>
           )}
         </div>
