@@ -3,12 +3,34 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 /**
+ * Gera código de assinatura único com prefixo
+ */
+const gerarCodigoAssinatura = (tipo, id) => {
+  const prefixos = {
+    emprestimo: 'WF-EMP',
+    devolucao: 'WF-DEV',
+    tarefa: 'WF-TAR',
+    avaliacao: 'WF-AVL'
+  };
+  
+  const prefixo = prefixos[tipo] || 'WF-DOC';
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const idCurto = id ? id.substring(0, 8).toUpperCase() : Math.random().toString(36).substring(2, 10).toUpperCase();
+  
+  return `${prefixo}-${timestamp}-${idCurto}`;
+};
+
+/**
  * Gera PDF de comprovante universal (empréstimo, devolução, tarefa, avaliação)
+ * Formato otimizado para tela de celular (210mm x 297mm - A4, mas design mobile)
  */
 export const gerarComprovantePDF = (tipo, dados) => {
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
   let yPosition = 20;
+
+  // Gerar código de assinatura
+  const codigoAssinatura = dados.codigoAssinatura || gerarCodigoAssinatura(tipo, dados.id);
 
   // Cores baseadas no tipo
   const cores = {
@@ -20,14 +42,29 @@ export const gerarComprovantePDF = (tipo, dados) => {
 
   const cor = cores[tipo] || cores.emprestimo;
 
-  // Header com fundo colorido
-  pdf.setFillColor(cor.r, cor.g, cor.b);
-  pdf.rect(0, 0, pageWidth, 45, 'F');
+  // Header com fundo azul gradiente
+  pdf.setFillColor(59, 130, 246); // blue-500
+  pdf.rect(0, 0, pageWidth, 50, 'F');
 
-  // Logo e título (texto branco)
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(24);
+  // Logo WorkFlow (círculo branco)
+  pdf.setFillColor(255, 255, 255);
+  pdf.circle(25, 18, 8, 'F');
+  
+  // Ícone dentro do logo (simulado com texto)
+  pdf.setFontSize(10);
+  pdf.setTextColor(59, 130, 246);
   pdf.setFont('helvetica', 'bold');
+  pdf.text('W', 25, 20, { align: 'center' });
+
+  // Título WorkFlow
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(20);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('WorkFlow', 38, 19);
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Sistema de Gestão', 38, 24);
   
   const titulos = {
     emprestimo: 'Comprovante de Empréstimo',
@@ -36,20 +73,18 @@ export const gerarComprovantePDF = (tipo, dados) => {
     avaliacao: 'Comprovante de Avaliação'
   };
   
-  pdf.text(titulos[tipo] || 'Comprovante', pageWidth / 2, 20, { align: 'center' });
+  // Título do comprovante
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(titulos[tipo] || 'Comprovante', pageWidth / 2, 38, { align: 'center' });
 
   // Data e hora
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   const dataFormatada = format(new Date(dados.data || Date.now()), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR });
-  pdf.text(dataFormatada, pageWidth / 2, 32, { align: 'center' });
+  pdf.text(dataFormatada, pageWidth / 2, 45, { align: 'center' });
 
-  // Linha decorativa
-  pdf.setDrawColor(255, 255, 255);
-  pdf.setLineWidth(0.5);
-  pdf.line(40, 38, pageWidth - 40, 38);
-
-  yPosition = 55;
+  yPosition = 58;
 
   // Volta para texto preto
   pdf.setTextColor(0, 0, 0);
@@ -99,19 +134,45 @@ export const gerarComprovantePDF = (tipo, dados) => {
     yPosition += 12;
   };
 
+  // Responsável/Colaborador (destaque especial)
+  if (dados.colaborador || dados.funcionario || dados.para) {
+    pdf.setFillColor(239, 246, 255); // blue-50
+    pdf.setDrawColor(191, 219, 254); // blue-200
+    pdf.roundedRect(25, yPosition, pageWidth - 50, 18, 3, 3, 'FD');
+    
+    pdf.setFontSize(7);
+    pdf.setTextColor(30, 64, 175); // blue-900
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('RESPONSÁVEL', 28, yPosition + 5);
+    
+    pdf.setFontSize(12);
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(dados.colaborador || dados.funcionario || dados.para, 28, yPosition + 11);
+    
+    if (dados.paraCPF || dados.colaboradorCPF) {
+      pdf.setFontSize(8);
+      pdf.setTextColor(75, 85, 99);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`CPF: ${dados.paraCPF || dados.colaboradorCPF}`, 28, yPosition + 16);
+    }
+    
+    yPosition += 22;
+  }
+
   // De (remetente)
-  if (dados.remetenteNome) {
-    addSection('De', dados.remetenteNome);
-    if (dados.remetenteCPF) {
+  if (dados.remetenteNome || dados.de) {
+    addSection('De', dados.remetenteNome || dados.de);
+    if (dados.remetenteCPF || dados.deCPF) {
       pdf.setFontSize(8);
       pdf.setTextColor(107, 114, 128);
-      pdf.text(`CPF: ${dados.remetenteCPF}`, 25, yPosition);
+      pdf.text(`CPF: ${dados.remetenteCPF || dados.deCPF}`, 25, yPosition);
       yPosition += 8;
     }
   }
 
-  // Para (destinatário)
-  if (dados.destinatarioNome) {
+  // Para (destinatário) - só se não foi usado como responsável
+  if (dados.destinatarioNome && !dados.colaborador && !dados.funcionario && !dados.para) {
     addSection('Para', dados.destinatarioNome);
     if (dados.destinatarioCPF) {
       pdf.setFontSize(8);
@@ -221,7 +282,7 @@ export const gerarComprovantePDF = (tipo, dados) => {
   // Observações
   if (dados.observacoes) {
     // Verifica se precisa de nova página
-    if (yPosition > pdf.internal.pageSize.getHeight() - 40) {
+    if (yPosition > pdf.internal.pageSize.getHeight() - 60) {
       pdf.addPage();
       yPosition = 20;
     }
@@ -246,18 +307,59 @@ export const gerarComprovantePDF = (tipo, dados) => {
     yPosition += 25;
   }
 
-  // Footer
-  yPosition = pdf.internal.pageSize.getHeight() - 25;
-  pdf.setFillColor(249, 250, 251);
+  // Verifica se precisa de nova página para assinatura e footer
+  if (yPosition > pdf.internal.pageSize.getHeight() - 55) {
+    pdf.addPage();
+    yPosition = 20;
+  }
+
+  // Código de Assinatura Digital
+  pdf.setFillColor(238, 242, 255); // indigo-50
+  pdf.setDrawColor(165, 180, 252); // indigo-300
+  pdf.setLineWidth(1.5);
+  pdf.roundedRect(25, yPosition, pageWidth - 50, 22, 3, 3, 'FD');
+
+  pdf.setFontSize(7);
+  pdf.setTextColor(49, 46, 129); // indigo-900
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('✓ ASSINATURA DIGITAL', 28, yPosition + 5);
+
+  pdf.setFontSize(14);
+  pdf.setFont('courier', 'bold');
+  pdf.setTextColor(67, 56, 202); // indigo-700
+  pdf.text(codigoAssinatura, pageWidth / 2, yPosition + 13, { align: 'center' });
+
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(79, 70, 229); // indigo-600
+  pdf.text('Use este código para buscar o comprovante', pageWidth / 2, yPosition + 18, { align: 'center' });
+
+  yPosition += 25;
+
+  // Footer com selo de garantia
+  yPosition = pdf.internal.pageSize.getHeight() - 28;
+  pdf.setFillColor(239, 246, 255); // blue-50
   pdf.rect(0, yPosition, pageWidth, 30, 'F');
 
-  pdf.setFontSize(8);
-  pdf.setTextColor(107, 114, 128);
+  // Selo de garantia
+  pdf.setFillColor(59, 130, 246); // blue-500
+  pdf.circle(pageWidth / 2, yPosition + 8, 3, 'F');
+  
+  pdf.setFontSize(9);
+  pdf.setTextColor(30, 64, 175); // blue-900
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('DOCUMENTO GARANTIDO', pageWidth / 2, yPosition + 8, { align: 'center' });
+
+  pdf.setFontSize(7);
+  pdf.setTextColor(37, 99, 235); // blue-600
   pdf.setFont('helvetica', 'normal');
-  pdf.text('GardenFlow - Sistema de Controle de Almoxarifado', pageWidth / 2, yPosition + 8, { align: 'center' });
-  pdf.text('Este comprovante é um documento oficial', pageWidth / 2, yPosition + 13, { align: 'center' });
+  pdf.text('Este comprovante é válido e confiável, certificado pela equipe WorkFlow.', pageWidth / 2, yPosition + 13, { align: 'center' });
+  pdf.text('Documento gerado automaticamente com segurança e rastreabilidade.', pageWidth / 2, yPosition + 17, { align: 'center' });
+  
+  pdf.setFontSize(6);
+  pdf.setTextColor(107, 114, 128);
   pdf.setFont('courier', 'normal');
-  pdf.text(format(new Date(), 'dd/MM/yyyy HH:mm:ss'), pageWidth / 2, yPosition + 18, { align: 'center' });
+  pdf.text(format(new Date(), 'dd/MM/yyyy HH:mm:ss'), pageWidth / 2, yPosition + 23, { align: 'center' });
 
   // Gera o nome do arquivo
   const nomeArquivo = `${tipo}_${dados.id?.substring(0, 8) || 'comprovante'}_${format(new Date(), 'yyyyMMdd_HHmmss')}.pdf`;

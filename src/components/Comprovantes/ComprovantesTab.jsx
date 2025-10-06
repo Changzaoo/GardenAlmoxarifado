@@ -165,7 +165,7 @@ const ComprovantesTab = () => {
         }
       }
 
-      // Filtro por busca
+      // Filtro por busca (incluindo código de assinatura)
       if (busca) {
         const buscaLower = busca.toLowerCase();
         return (
@@ -173,6 +173,7 @@ const ComprovantesTab = () => {
           comp.para?.toLowerCase().includes(buscaLower) ||
           comp.descricao?.toLowerCase().includes(buscaLower) ||
           comp.transacaoId?.toLowerCase().includes(buscaLower) ||
+          comp.codigoAssinatura?.toLowerCase().includes(buscaLower) ||
           comp.ferramentas?.some(f => f.toLowerCase().includes(buscaLower))
         );
       }
@@ -301,7 +302,7 @@ const ComprovantesTab = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar por nome, descrição ou ID..."
+                placeholder="Buscar por nome, código de assinatura, ID ou ferramenta..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
