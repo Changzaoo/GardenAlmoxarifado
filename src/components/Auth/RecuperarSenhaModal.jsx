@@ -12,8 +12,8 @@ import { encryptPassword, verifyPassword } from '../../utils/crypto';
  */
 
 const RecuperarSenhaModal = ({ onClose, onSuccess }) => {
-  const [etapa, setEtapa] = useState(1); // 1: email, 2: resposta secreta, 3: nova senha
-  const [email, setEmail] = useState('');
+  const [etapa, setEtapa] = useState(1); // 1: usuario, 2: resposta secreta, 3: nova senha
+  const [usuario, setUsuario] = useState('');
   const [usuarioEncontrado, setUsuarioEncontrado] = useState(null);
   const [respostaUsuario, setRespostaUsuario] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -40,18 +40,18 @@ const RecuperarSenhaModal = ({ onClose, onSuccess }) => {
     return `${inicio} ${meioOculto} ${fim}`;
   };
 
-  // Buscar usuário por email
+  // Buscar usuário por nome de usuário
   const buscarUsuario = async () => {
     setCarregando(true);
     setErros({});
 
     try {
       const usuariosRef = collection(db, 'usuario');
-      const q = query(usuariosRef, where('email', '==', email.toLowerCase().trim()));
+      const q = query(usuariosRef, where('usuario', '==', usuario.toLowerCase().trim()));
       const snapshot = await getDocs(q);
 
       if (snapshot.empty) {
-        setErros({ email: 'Email não encontrado no sistema' });
+        setErros({ usuario: 'Nome de usuário não encontrado no sistema' });
         setCarregando(false);
         return;
       }
@@ -60,7 +60,7 @@ const RecuperarSenhaModal = ({ onClose, onSuccess }) => {
       const usuarioData = { id: usuarioDoc.id, ...usuarioDoc.data() };
 
       if (!usuarioData.fraseSecreta) {
-        setErros({ email: 'Este usuário não possui pergunta de segurança configurada. Entre em contato com o administrador.' });
+        setErros({ usuario: 'Este usuário não possui pergunta de segurança configurada. Entre em contato com o administrador.' });
         setCarregando(false);
         return;
       }
@@ -182,7 +182,7 @@ const RecuperarSenhaModal = ({ onClose, onSuccess }) => {
                   Recuperar Senha
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {etapa === 1 && 'Digite seu email'}
+                  {etapa === 1 && 'Digite seu nome de usuário'}
                   {etapa === 2 && 'Responda a pergunta secreta'}
                   {etapa === 3 && 'Crie uma nova senha'}
                 </p>
@@ -210,20 +210,20 @@ const RecuperarSenhaModal = ({ onClose, onSuccess }) => {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email
+                  Nome de Usuário
                 </label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  value={usuario}
+                  onChange={(e) => setUsuario(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && buscarUsuario()}
                   className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                    erros.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    erros.usuario ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                   } focus:ring-2 focus:ring-orange-500`}
-                  placeholder="seu.email@exemplo.com"
+                  placeholder="Digite seu nome de usuário"
                 />
-                {erros.email && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{erros.email}</p>
+                {erros.usuario && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{erros.usuario}</p>
                 )}
               </div>
             </>

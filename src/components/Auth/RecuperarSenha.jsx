@@ -2,10 +2,10 @@
  * Componente de Recuperação de Senha
  * 
  * Fluxo:
- * 1. Usuário informa email
+ * 1. Usuário informa nome de usuário
  * 2. Sistema gera código de 6 dígitos
  * 3. Código é salvo no Firebase com expiração de 30 minutos
- * 4. Código é exibido na tela (simulação de envio de email)
+ * 4. Código é exibido na tela (simulação de envio)
  * 5. Usuário informa código + nova senha
  * 6. Sistema valida e atualiza senha
  */
@@ -18,14 +18,13 @@ import {
   generateRecoveryCode, 
   saveRecoveryCode, 
   validateRecoveryCode, 
-  resetPasswordWithCode,
-  isValidEmail 
+  resetPasswordWithCode
 } from '../../services/passwordService';
 import { validatePasswordStrength } from '../../services/authService';
 
 const RecuperarSenha = ({ onVoltar }) => {
-  const [etapa, setEtapa] = useState('email'); // 'email' | 'codigo' | 'sucesso'
-  const [email, setEmail] = useState('');
+  const [etapa, setEtapa] = useState('usuario'); // 'usuario' | 'codigo' | 'sucesso'
+  const [usuario, setUsuario] = useState('');
   const [codigo, setCodigo] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
@@ -35,31 +34,31 @@ const RecuperarSenha = ({ onVoltar }) => {
   const [erro, setErro] = useState('');
   const [senhaVisivel, setSenhaVisivel] = useState(false);
 
-  // Validar email e gerar código
+  // Validar nome de usuário e gerar código
   const handleEnviarCodigo = async () => {
     setErro('');
 
-    // Validar email
-    if (!email) {
-      setErro('Por favor, informe seu email');
+    // Validar nome de usuário
+    if (!usuario) {
+      setErro('Por favor, informe seu nome de usuário');
       return;
     }
 
-    if (!isValidEmail(email)) {
-      setErro('Email inválido');
+    if (usuario.trim().length < 3) {
+      setErro('Nome de usuário deve ter pelo menos 3 caracteres');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Buscar usuário por email
+      // Buscar usuário por nome de usuário
       const usuariosRef = collection(backupDb, 'usuarios');
-      const q = query(usuariosRef, where('email', '==', email));
+      const q = query(usuariosRef, where('usuario', '==', usuario.toLowerCase().trim()));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        setErro('Email não encontrado');
+        setErro('Nome de usuário não encontrado');
         setLoading(false);
         return;
       }
@@ -125,7 +124,7 @@ const RecuperarSenha = ({ onVoltar }) => {
     try {
       // Buscar dados do usuário para validar código
       const usuariosRef = collection(backupDb, 'usuarios');
-      const q = query(usuariosRef, where('email', '==', email));
+      const q = query(usuariosRef, where('usuario', '==', usuario.toLowerCase().trim()));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
@@ -164,8 +163,8 @@ const RecuperarSenha = ({ onVoltar }) => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
         
-        {/* Etapa 1: Email */}
-        {etapa === 'email' && (
+        {/* Etapa 1: Nome de Usuário */}
+        {etapa === 'usuario' && (
           <>
             <div className="flex items-center mb-6">
               <button
@@ -180,22 +179,22 @@ const RecuperarSenha = ({ onVoltar }) => {
             </div>
 
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Informe seu email para receber um código de recuperação.
+              Informe seu nome de usuário para receber um código de recuperação.
             </p>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email
+                  Nome de Usuário
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    value={usuario}
+                    onChange={(e) => setUsuario(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="seu@email.com"
+                    placeholder="Digite seu nome de usuário"
                     disabled={loading}
                   />
                 </div>
@@ -224,7 +223,7 @@ const RecuperarSenha = ({ onVoltar }) => {
           <>
             <div className="flex items-center mb-6">
               <button
-                onClick={() => setEtapa('email')}
+                onClick={() => setEtapa('usuario')}
                 className="mr-4 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
               >
                 <ArrowLeft size={24} />

@@ -109,7 +109,7 @@ const ModalDadosUsuario = ({ usuario, onClose }) => {
     // Verificar em workflowbr1
     try {
       const usuariosRef = collection(dbWorkflowBR1, 'usuarios');
-      const q = query(usuariosRef, where('email', '==', usuario.email));
+      const q = query(usuariosRef, where('usuario', '==', usuario.usuario));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         querySnapshot.forEach(doc => {

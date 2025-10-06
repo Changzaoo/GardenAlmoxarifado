@@ -19,7 +19,7 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
   
   const [userData, setUserData] = useState({
     nome: usuario?.nome || '',
-    email: usuario?.email || '',
+    usuario: usuario?.usuario || '',
     senha: '',
     telefone: usuario?.telefone || '',
     nivel: usuario?.nivel || NIVEIS_PERMISSAO.FUNCIONARIO,
@@ -30,7 +30,7 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
     if (isOpen && usuario) {
       setUserData({
         nome: usuario.nome || '',
-        email: usuario.email || '',
+        usuario: usuario.usuario || '',
         senha: '',
         telefone: usuario.telefone || '',
         nivel: usuario.nivel || NIVEIS_PERMISSAO.FUNCIONARIO,
@@ -55,11 +55,10 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
         return;
       }
 
-      // Validar email se foi alterado
-      if (userData.email?.trim() && userData.email !== usuario.email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(userData.email.trim())) {
-          showToast('Email inválido', 'error');
+      // Validar usuario se foi alterado
+      if (userData.usuario?.trim() && userData.usuario !== usuario.usuario) {
+        if (userData.usuario.trim().length < 3) {
+          showToast('Nome de usuário deve ter pelo menos 3 caracteres', 'error');
           setLoading(false);
           return;
         }
@@ -81,9 +80,9 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
         ativo: userData.ativo
       };
 
-      // Adiciona email se foi alterado
-      if (userData.email?.trim() && userData.email !== usuario.email) {
-        dadosParaAtualizar.email = userData.email.trim().toLowerCase();
+      // Adiciona usuario se foi alterado
+      if (userData.usuario?.trim() && userData.usuario !== usuario.usuario) {
+        dadosParaAtualizar.usuario = userData.usuario.trim().toLowerCase();
       }
 
       // Adiciona telefone se foi fornecido
@@ -181,17 +180,17 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
               />
             </div>
 
-            {/* Email/Login */}
+            {/* Usuário/Login */}
             <div>
               <label className="block text-sm font-medium text-gray-900 dark:text-[#FFFFFF] mb-2">
-                Email (Login)
+                Usuário (Login)
               </label>
               <input
-                type="email"
+                type="text"
                 className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#1d9bf0] focus:border-transparent"
-                placeholder="seu.email@exemplo.com"
-                value={userData.email || ''}
-                onChange={(e) => setUserData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Digite seu nome de usuário"
+                value={userData.usuario || ''}
+                onChange={(e) => setUserData(prev => ({ ...prev, usuario: e.target.value }))}
                 disabled={!canEdit}
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">

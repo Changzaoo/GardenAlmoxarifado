@@ -57,20 +57,20 @@ const ProfileTab = () => {
   // Garante que photoURL e cargo são exatamente os mesmos em todo o sistema
   const funcionarioInfo = funcionarios.find(f => {
     // Debug: mostrar tentativas de match
-    const emailMatch = f.email && usuario?.email && f.email.toLowerCase() === usuario.email.toLowerCase();
+    const usuarioMatch = f.usuario && usuario?.usuario && f.usuario.toLowerCase() === usuario.usuario.toLowerCase();
     const idMatch = f.id === usuario?.id;
     const uidMatch = f.id === usuario?.uid;
     const stringIdMatch = String(f.id) === String(usuario?.id);
-    const stringEmailMatch = String(f.email)?.toLowerCase() === String(usuario?.email)?.toLowerCase();
+    const stringUsuarioMatch = String(f.usuario)?.toLowerCase() === String(usuario?.usuario)?.toLowerCase();
     const nomeMatch = f.nome && usuario?.nome && f.nome.toLowerCase() === usuario.nome.toLowerCase();
     
-    if (emailMatch || idMatch || uidMatch || stringIdMatch || stringEmailMatch || nomeMatch) {
+    if (usuarioMatch || idMatch || uidMatch || stringIdMatch || stringUsuarioMatch || nomeMatch) {
       console.log('🎯 Match encontrado para funcionário:', {
         funcionario: f.nome,
-        email: f.email,
+        usuario: f.usuario,
         id: f.id,
         photoURL: f.photoURL,
-        matchType: emailMatch ? 'email' : idMatch ? 'id' : uidMatch ? 'uid' : stringIdMatch ? 'stringId' : stringEmailMatch ? 'stringEmail' : 'nome'
+        matchType: usuarioMatch ? 'usuario' : idMatch ? 'id' : uidMatch ? 'uid' : stringIdMatch ? 'stringId' : stringUsuarioMatch ? 'stringUsuario' : 'nome'
       });
       return true;
     }
@@ -85,16 +85,16 @@ const ProfileTab = () => {
       return;
     }
     
-    if (!usuario?.email) return;
+    if (!usuario?.usuario) return;
     
     console.log('⚠️ funcionarioInfo não encontrado no contexto, buscando diretamente do Firestore...');
-    console.log('Buscando por email:', usuario.email, 'ID:', usuario.id);
+    console.log('Buscando por usuario:', usuario.usuario, 'ID:', usuario.id);
     
     // Tentar primeiro na coleção 'funcionarios'
     const unsubscribeFuncionarios = onSnapshot(
       query(
         collection(db, 'funcionarios'),
-        where('email', '==', usuario.email)
+        where('usuario', '==', usuario.usuario)
       ),
       (snapshot) => {
         if (!snapshot.empty) {
@@ -128,7 +128,7 @@ const ProfileTab = () => {
     };
     
     return () => unsubscribe();
-  }, [usuario?.email, funcionarioInfo]);
+  }, [usuario?.usuario, funcionarioInfo]);
   
   // PRIORIZAR funcionarioInfo (do contexto) para garantir sincronização
   // Isso garante que cargo, foto e setor sejam os mesmos em todo o sistema
@@ -140,7 +140,7 @@ const ProfileTab = () => {
     console.log('👤 USUÁRIO LOGADO (ProfileTab):', {
       id: usuario?.id,
       nome: usuario?.nome,
-      email: usuario?.email,
+      usuario: usuario?.usuario,
       funcionarioInfo: funcionarioInfo,
       dadosFuncionario: dadosFuncionario,
       dadosExibicao: dadosExibicao,
@@ -224,12 +224,12 @@ const ProfileTab = () => {
         // Dados do funcionário avaliado
         funcionarioId: String(usuario.id),
         funcionarioNome: usuario.nome || '',
-        funcionarioEmail: usuario.email || '',
+        funcionarioUsuario: usuario.usuario || '',
         
         // Dados do avaliador
         avaliadorId: String(usuario.id),
         avaliadorNome: usuario.nome || '',
-        avaliadorEmail: usuario.email || '',
+        avaliadorUsuario: usuario.usuario || '',
         avaliadorCargo: cargoFuncionario || 'Supervisor',
         
         // Dados da avaliação
@@ -298,7 +298,7 @@ const ProfileTab = () => {
         await updateDoc(avaliacaoRef, {
           status: 'inativa',
           dataExclusao: new Date().toISOString(),
-          usuarioExclusao: usuario.email
+          usuarioExclusao: usuario.usuario
         });
 
         console.log('Avaliação marcada como inativa');

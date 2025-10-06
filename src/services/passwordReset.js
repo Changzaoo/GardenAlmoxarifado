@@ -148,12 +148,12 @@ export const validarCodigoRedefinicao = async (codigo, usuarioEmail) => {
 };
 
 // Redefinir senha usando código
-export const redefinirSenhaComCodigo = async (usuarioEmail, novaSenha, codigo) => {
+export const redefinirSenhaComCodigo = async (usuarioUsername, novaSenha, codigo) => {
   try {
-    console.log('🔄 Iniciando redefinição de senha para:', usuarioEmail);
+    console.log('🔄 Iniciando redefinição de senha para:', usuarioUsername);
     
     // 1. Validar código
-    const validacao = await validarCodigoRedefinicao(codigo, usuarioEmail);
+    const validacao = await validarCodigoRedefinicao(codigo, usuarioUsername);
     
     if (!validacao.valido) {
       return {
@@ -164,7 +164,7 @@ export const redefinirSenhaComCodigo = async (usuarioEmail, novaSenha, codigo) =
     
     // 2. Buscar usuário no Firebase Backup
     const usuariosRef = collection(backupDb, 'usuarios');
-    const q = query(usuariosRef, where('email', '==', usuarioEmail));
+    const q = query(usuariosRef, where('usuario', '==', usuarioUsername.toLowerCase().trim()));
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
