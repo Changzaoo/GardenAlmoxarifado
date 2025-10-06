@@ -16,6 +16,7 @@ import {
 import { MESSAGE_STATUS, MESSAGE_TYPE } from '../../constants/mensagensConstants';
 import DeleteMessageModal from './DeleteMessageModal';
 import ContextMenu, { useLongPress } from '../common/ContextMenu';
+import OptimizedImage from '../common/OptimizedImage';
 
 /**
  * BolhaMensagem - Componente individual de mensagem
@@ -244,14 +245,12 @@ const BolhaMensagem = ({
       {showAvatar && !groupWithPrevious && (
         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold flex-shrink-0 overflow-hidden">
           {mensagem.remetente?.photoURL ? (
-            <img 
+            <OptimizedImage
               src={mensagem.remetente.photoURL} 
               alt={mensagem.remetente?.nome || 'Usuário'} 
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.parentElement.textContent = mensagem.remetente?.nome?.charAt(0).toUpperCase() || '?';
-              }}
+              className="w-full h-full object-cover rounded-full"
+              width={32}
+              height={32}
             />
           ) : (
             mensagem.remetente?.nome?.charAt(0).toUpperCase() || '?'
@@ -430,4 +429,5 @@ const BolhaMensagem = ({
   );
 };
 
-export default BolhaMensagem;
+// Memoizar componente para evitar re-renders desnecessários
+export default React.memo(BolhaMensagem);

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import AvaliacoesCard from './AvaliacoesCard';
 import InformacoesContato from './InformacoesContato';
+import OptimizedImage from '../../common/OptimizedImage';
 
 const CardFuncionario = ({
   funcionario: func,
@@ -138,10 +139,12 @@ const CardFuncionario = ({
             >
               {func.photoURL ? (
                 <div className="relative">
-                  <img 
+                  <OptimizedImage
                     src={func.photoURL} 
                     alt={func.nome} 
                     className="w-16 h-16 rounded-2xl object-cover ring-4 ring-white/50 dark:ring-gray-700/50 shadow-xl"
+                    width={64}
+                    height={64}
                   />
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/20 via-transparent to-white/20" />
                 </div>
@@ -508,7 +511,8 @@ const CardFuncionario = ({
   );
 };
 
-export default CardFuncionario;
+// Memoizar componente para evitar re-renders desnecessários
+export default React.memo(CardFuncionario);
 
 
 
