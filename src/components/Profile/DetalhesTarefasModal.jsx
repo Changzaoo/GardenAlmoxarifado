@@ -101,8 +101,8 @@ const DetalhesTarefasModal = ({ isOpen, onClose, funcionarioId, pontos }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -126,13 +126,13 @@ const DetalhesTarefasModal = ({ isOpen, onClose, funcionarioId, pontos }) => {
         <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
-              <p className="text-gray-500 mt-4">Carregando tarefas...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 dark:border-green-400 mx-auto"></div>
+              <p className="text-gray-500 dark:text-gray-400 mt-4">Carregando tarefas...</p>
             </div>
           ) : tarefas.length === 0 ? (
             <div className="text-center py-12">
-              <CheckCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Nenhuma tarefa concluída</p>
+              <CheckCircle className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Nenhuma tarefa concluída</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -141,36 +141,36 @@ const DetalhesTarefasModal = ({ isOpen, onClose, funcionarioId, pontos }) => {
                 const dataConclusao = tarefa.dataConclusao?.toDate?.() || new Date(tarefa.dataConclusao);
                 
                 return (
-                  <div key={tarefa.id} className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4 border border-green-200 hover:shadow-md transition-shadow">
+                  <div key={tarefa.id} className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-4 border border-green-200 dark:border-green-700 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-800 mb-2">{tarefa.titulo || 'Sem título'}</h3>
+                        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">{tarefa.titulo || 'Sem título'}</h3>
                         <div className="flex flex-wrap items-center gap-2 mb-2">
                           <span className={`text-xs px-2 py-1 rounded-full border ${getPrioridadeColor(tarefa.prioridade)} flex items-center gap-1`}>
                             {getPrioridadeIcon(tarefa.prioridade)}
                             {tarefa.prioridade || 'Padrão'}
                           </span>
                           {tarefa.tempoEstimado && (
-                            <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
+                            <span className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded-full border border-gray-200 dark:border-gray-600">
                               <Clock className="w-3 h-3 inline mr-1" />
                               {tarefa.tempoEstimado}h
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <Calendar className="w-4 h-4" />
                           <span>{format(dataConclusao, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-green-300">
-                        <Award className="w-4 h-4 text-green-600" />
-                        <span className="font-bold text-green-600">+{pontosTarefa} pts</span>
+                      <div className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg px-3 py-2 border border-green-300 dark:border-green-600">
+                        <Award className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        <span className="font-bold text-green-600 dark:text-green-400">+{pontosTarefa} pts</span>
                       </div>
                     </div>
 
                     {tarefa.descricao && (
-                      <div className="bg-white rounded-lg p-3 mb-2">
-                        <p className="text-sm text-gray-700">{tarefa.descricao}</p>
+                      <div className="bg-white dark:bg-gray-700 rounded-lg p-3 mb-2">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">{tarefa.descricao}</p>
                       </div>
                     )}
 

@@ -69,8 +69,8 @@ const DetalhesAvaliacoesModal = ({ isOpen, onClose, funcionarioId, pontos }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in">
         {/* Header */}
         <div className="bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -94,13 +94,13 @@ const DetalhesAvaliacoesModal = ({ isOpen, onClose, funcionarioId, pontos }) => 
         <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-              <p className="text-gray-500 mt-4">Carregando avaliações...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 dark:border-yellow-400 mx-auto"></div>
+              <p className="text-gray-500 dark:text-gray-400 mt-4">Carregando avaliações...</p>
             </div>
           ) : avaliacoes.length === 0 ? (
             <div className="text-center py-12">
-              <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Nenhuma avaliação recebida</p>
+              <Star className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Nenhuma avaliação recebida</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -111,50 +111,50 @@ const DetalhesAvaliacoesModal = ({ isOpen, onClose, funcionarioId, pontos }) => 
                 const estrelas = avaliacao.nota || avaliacao.estrelas || 0;
                 
                 return (
-                  <div key={avaliacao.id} className="bg-gradient-to-br from-yellow-50 to-orange-100/50 rounded-xl p-4 border border-yellow-200 hover:shadow-md transition-shadow">
+                  <div key={avaliacao.id} className="bg-gradient-to-br from-yellow-50 to-orange-100/50 dark:from-yellow-900/20 dark:to-orange-800/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-700 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           {renderStars(estrelas)}
-                          <span className="text-sm font-semibold text-gray-700">
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                             {estrelas.toFixed(1)} / 5.0
                           </span>
                         </div>
                         
                         {avaliacao.avaliadorNome && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
                             <User className="w-4 h-4" />
                             <span>Avaliado por: <strong>{avaliacao.avaliadorNome}</strong></span>
                           </div>
                         )}
                         
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                           <Calendar className="w-4 h-4" />
                           <span>{format(dataAvaliacao, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-yellow-300">
-                        <Award className="w-4 h-4 text-yellow-600" />
-                        <span className="font-bold text-yellow-600">+{pontosAvaliacao} pts</span>
+                      <div className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg px-3 py-2 border border-yellow-300 dark:border-yellow-600">
+                        <Award className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                        <span className="font-bold text-yellow-600 dark:text-yellow-400">+{pontosAvaliacao} pts</span>
                       </div>
                     </div>
 
                     {/* Comentário */}
                     {avaliacao.comentario && (
-                      <div className="bg-white rounded-lg p-3 mb-2 border border-gray-200">
+                      <div className="bg-white dark:bg-gray-700 rounded-lg p-3 mb-2 border border-gray-200 dark:border-gray-600">
                         <div className="flex items-start gap-2">
-                          <MessageSquare className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-gray-700 italic">{avaliacao.comentario}</p>
+                          <MessageSquare className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-gray-700 dark:text-gray-300 italic">{avaliacao.comentario}</p>
                         </div>
                       </div>
                     )}
 
                     {/* Contexto da avaliação */}
                     {(avaliacao.tipo || avaliacao.referencia) && (
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                         {avaliacao.tipo && (
-                          <span className="bg-white px-2 py-1 rounded-full border border-gray-200">
+                          <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-full border border-gray-200 dark:border-gray-600">
                             {avaliacao.tipo}
                           </span>
                         )}
