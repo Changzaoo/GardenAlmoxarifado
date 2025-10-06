@@ -401,27 +401,33 @@ const RankingPontos = () => {
     try {
       console.log('🔄 RankingPontos: Iniciando carregamento de dados...');
       
-      // Buscar empréstimos, tarefas, avaliações E usuarios
-      // Funcionários vêm do contexto (FuncionariosProvider) mas usuarios pode ter dados adicionais
+      // Buscar empréstimos, tarefas, avaliações E todas as coleções de usuários
+      // Funcionários vêm do contexto (FuncionariosProvider) que já unifica as 3 coleções
       const emprestimosRef = collection(db, 'emprestimos');
       const tarefasRef = collection(db, 'tarefas');
       const avaliacoesRef = collection(db, 'avaliacoes');
-      const usuariosRef = collection(db, 'usuario');
+      const autoavaliacoesRef = collection(db, 'autoavaliacoes');
+      const usuariosRef = collection(db, 'usuarios'); // PLURAL
+      const usuarioRef = collection(db, 'usuario'); // SINGULAR (legado)
 
-      // Buscar dados necessários
-      const [emprestimosSnap, tarefasSnap, avaliacoesSnap, usuariosSnap] = await Promise.all([
+      // Buscar dados necessários de TODAS as fontes
+      const [emprestimosSnap, tarefasSnap, avaliacoesSnap, autoavaliacoesSnap, usuariosSnap, usuarioSnap] = await Promise.all([
         getDocs(emprestimosRef),
         getDocs(tarefasRef),
         getDocs(avaliacoesRef),
-        getDocs(usuariosRef)
+        getDocs(autoavaliacoesRef),
+        getDocs(usuariosRef),
+        getDocs(usuarioRef)
       ]);
       
-      console.log('📦 RankingPontos: Dados carregados:', {
+      console.log('📦 RankingPontos: Dados carregados de TODAS as fontes:', {
         funcionariosContext: funcionariosContext?.length || 0,
-        usuarios: usuariosSnap.size,
+        usuarios_plural: usuariosSnap.size,
+        usuario_singular: usuarioSnap.size,
         emprestimos: emprestimosSnap.size,
         tarefas: tarefasSnap.size,
-        avaliacoes: avaliacoesSnap.size
+        avaliacoes: avaliacoesSnap.size,
+        autoavaliacoes: autoavaliacoesSnap.size
       });
 
       // Processar funcionários - USAR APENAS O CONTEXTO (fonte única de verdade)
@@ -671,6 +677,7 @@ const RankingPontos = () => {
       });
 
       // Calcular média das avaliações - CORRIGIDO para buscar por ID E nome
+      let avaliacoesProcessadas = 0;
       avaliacoesSnap.forEach(doc => {
         const avaliacao = doc.data();
         if (avaliacao.estrelas) {
@@ -692,11 +699,47 @@ const RankingPontos = () => {
           // 3. Adicionar avaliação se encontrou o funcionário
           if (funcionarioEncontrado) {
             funcionarioEncontrado.avaliacoes.push(avaliacao.estrelas);
+            avaliacoesProcessadas++;
           }
         }
       });
       
-      console.log('RankingPontos: Avaliações processadas');
+      console.log(`✅ Avaliações processadas: ${avaliacoesProcessadas}`);
+
+      // Processar autoavaliações - MESMO padrão das avaliações
+      let autoavaliacoesProcessadas = 0;
+      autoavaliacoesSnap.forEach(doc => {
+        const autoavaliacao = doc.data();
+        if (autoavaliacao.estrelas) {
+          let funcionarioEncontrado = null;
+          
+          // 1. Tentar por funcionarioId direto
+          if (autoavaliacao.funcionarioId && dadosFuncionarios[autoavaliacao.funcionarioId]) {
+            funcionarioEncontrado = dadosFuncionarios[autoavaliacao.funcionarioId];
+          }
+          
+          // 2. Tentar por userId (autoavaliações podem usar userId)
+          if (!funcionarioEncontrado && autoavaliacao.userId && dadosFuncionarios[autoavaliacao.userId]) {
+            funcionarioEncontrado = dadosFuncionarios[autoavaliacao.userId];
+          }
+          
+          // 3. Tentar por nome do funcionário
+          if (!funcionarioEncontrado && autoavaliacao.funcionarioNome) {
+            const idPorNome = nomesParaIds[autoavaliacao.funcionarioNome.toLowerCase()];
+            if (idPorNome && dadosFuncionarios[idPorNome]) {
+              funcionarioEncontrado = dadosFuncionarios[idPorNome];
+            }
+          }
+          
+          // 4. Adicionar autoavaliação se encontrou o funcionário
+          if (funcionarioEncontrado) {
+            funcionarioEncontrado.avaliacoes.push(autoavaliacao.estrelas);
+            autoavaliacoesProcessadas++;
+          }
+        }
+      });
+      
+      console.log(`✅ Autoavaliações processadas: ${autoavaliacoesProcessadas}`);
 
       // Calcular média das avaliações
       Object.values(dadosFuncionarios).forEach(funcionario => {
@@ -839,6 +882,51 @@ const RankingPontos = () => {
                 estrelas: Number(avaliacao.estrelas) // Garantir que estrelas seja número
               };
               avaliacoes.push(avaliacaoComData);
+            }
+          });
+
+          // Coletar autoavaliações com datas - MESMO padrão das avaliações
+          autoavaliacoesSnap.forEach(doc => {
+            const autoavaliacao = doc.data();
+            let matchFuncionario = false;
+            
+            // 1. Verificar por IDs diretos
+            matchFuncionario = 
+              autoavaliacao.funcionarioId === funcionario.id || 
+              autoavaliacao.userId === funcionario.id ||
+              autoavaliacao.idFuncionario === funcionario.id ||
+              (autoavaliacao.funcionario && autoavaliacao.funcionario.id === funcionario.id);
+            
+            // 2. Verificar por nome
+            if (!matchFuncionario) {
+              if (autoavaliacao.funcionarioNome && autoavaliacao.funcionarioNome.toLowerCase() === funcionario.nome.toLowerCase()) {
+                matchFuncionario = true;
+              } else if (autoavaliacao.funcionario === funcionario.nome) {
+                matchFuncionario = true;
+              } else if (typeof autoavaliacao.funcionario === 'object' && autoavaliacao.funcionario.nome === funcionario.nome) {
+                matchFuncionario = true;
+              }
+            }
+
+            if (matchFuncionario && autoavaliacao.estrelas) {
+              // Garantir que temos uma data válida
+              let dataAutoavaliacao = autoavaliacao.data || autoavaliacao.dataAvaliacao || autoavaliacao.timestamp;
+              
+              // Se ainda não temos data, usar a data de criação do documento
+              if (!dataAutoavaliacao) {
+                dataAutoavaliacao = doc.metadata?.fromCache ? new Date() : (doc.createTime || new Date());
+              }
+              
+              // Converter para Date se for string
+              if (typeof dataAutoavaliacao === 'string') {
+                dataAutoavaliacao = new Date(dataAutoavaliacao);
+              }
+
+              const autoavaliacaoComData = {
+                data: dataAutoavaliacao,
+                estrelas: Number(autoavaliacao.estrelas) // Garantir que estrelas seja número
+              };
+              avaliacoes.push(autoavaliacaoComData);
             }
           });
 
