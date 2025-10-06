@@ -600,61 +600,6 @@ const ProfileTab = () => {
         </div>
       </div>
 
-      {/* Stats - Redesenhado */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 px-6">
-        {/* Card Tarefas */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-gradient-to-br from-green-400 to-emerald-500 p-3 rounded-xl shadow-lg">
-              <CheckCircle className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats.tarefasConcluidas}</span>
-          </div>
-          <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Tarefas Concluídas</p>
-          <div className="mt-2 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full" style={{ width: '75%' }}></div>
-          </div>
-        </div>
-
-        {/* Card Ferramentas */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-gradient-to-br from-blue-400 to-sky-500 p-3 rounded-xl shadow-lg">
-              <Package className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-3xl font-bold text-gray-900 dark:text-white">{stats.ferramentasEmprestadas}</span>
-          </div>
-          <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">Ferramentas Emprestadas</p>
-          <div className="mt-2 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-400 to-sky-500 rounded-full" style={{ width: '60%' }}></div>
-          </div>
-        </div>
-
-        {/* Card Avaliações */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-gradient-to-br from-yellow-400 to-orange-500 p-3 rounded-xl shadow-lg">
-              <Star className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-3xl font-bold text-gray-900 dark:text-white">
-              {stats.mediaEstrelas.toFixed(1)}
-            </span>
-          </div>
-          <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-            {stats.totalAvaliacoes} {stats.totalAvaliacoes === 1 ? 'Avaliação' : 'Avaliações'}
-          </p>
-          <div className="mt-2 flex gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star 
-                key={star}
-                className={`w-3 h-3 ${star <= Math.round(stats.mediaEstrelas) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
-              />
-            ))}
-          </div>
-        </div>
-
-      </div>
-
       {/* Points Breakdown - Card grande */}
       <div className="mt-6 px-6">
         <div className="rounded-2xl p-6 shadow-2xl border border-blue-400/50" style={{ backgroundColor: '#1988d3' }}>
