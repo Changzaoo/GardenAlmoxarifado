@@ -1,416 +1,370 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Clock, Calendar, PlayCircle, Coffee, CornerDownLeft, StopCircle, CheckCircle, AlertTriangle, Loader } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { collection, addDoc, query, where, getDocs, limit, updateDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../../firebaseConfig';
-import { differenceInMinutes, differenceInHours } from 'date-fns';
-import * as faceapi from '@vladmandic/face-api';
-
-// Hooks customizados
-import { useWorkPontoData } from '../../hooks/workponto/useWorkPontoData';
-import { useSystemStatus } from '../../hooks/workponto/useSystemStatus';
-import { useUserPreference } from '../../hooks/workponto/useUserPreference';
-
-// Utilitários
-import { getStatusDia, getLocation } from '../../utils/workponto/helpers';
-
-// Componentes otimizados (carregamento imediato)
-import WorkPontoHeader from './WorkPonto/WorkPontoHeader';
-import WorkPontoReferencePhoto from './WorkPonto/WorkPontoReferencePhoto';
-import WorkPontoTestSection from './WorkPonto/WorkPontoTestSection';
-import WorkPontoButtons from './WorkPonto/WorkPontoButtons';
-import WorkPontoSuccessMessage from './WorkPonto/WorkPontoSuccessMessage';
-import WorkPontoHistory from './WorkPonto/WorkPontoHistory';
-
-// Lazy loading do modal da câmera (só carrega quando necessário)
-const WorkPontoCameraModal = lazy(() => import('./WorkPonto/WorkPontoCameraModal'));
+import { collection, addDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '../../firebaseConfig';
+import { format, differenceInMinutes, differenceInHours } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const WorkPontoTab = () => {
   const { usuario } = useAuth();
-  
-  // Hooks customizados
-  const { loading, pontos, pontoHoje, hasReferencePhoto, setHasReferencePhoto } = useWorkPontoData(usuario);
-  const { currentTime, isOnline } = useSystemStatus();
-  const { userPreference, savePreference } = useUserPreference(usuario?.id);
-  
-  // Estados locais
-  const [showCamera, setShowCamera] = useState(false);
-  const [videoStream, setVideoStream] = useState(null);
-  const [modelsLoaded, setModelsLoaded] = useState(false);
-  const [faceDetected, setFaceDetected] = useState(false);
-  const [matching, setMatching] = useState(false);
-  const [error, setError] = useState(null);
-  const [tipoPonto, setTipoPonto] = useState(null);
-  const [location, setLocation] = useState(null);
-  const [imageUrl, setImageUrl] = useState('');
-  const [savingUrl, setSavingUrl] = useState(false);
-  const [testSuccess, setTestSuccess] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [pontos, setPontos] = useState([]);
+  const [pontosHoje, setPontosHoje] = useState([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [registering, setRegistering] = useState(null);
 
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-
-  // Carregar modelos do face-api.js (lazy)
+  // Atualizar relógio em tempo real
   useEffect(() => {
-    let mounted = true;
-    
-    const loadModels = async () => {
-      try {
-        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-          faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL)
-        ]);
-        if (mounted) {
-          setModelsLoaded(true);
-          console.log('✅ Modelos de reconhecimento facial carregados');
-        }
-      } catch (err) {
-        console.error('❌ Erro ao carregar modelos:', err);
-        if (mounted) {
-          setError('Erro ao carregar sistema de reconhecimento facial');
-        }
-      }
-    };
-
-    loadModels();
-    
-    return () => {
-      mounted = false;
-    };
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  // Registrar ponto usando preferência
-  const registrarPontoComPreferencia = async (tipo) => {
-    savePreference('camera');
-    await startCamera(tipo);
-  };
+  // Carregar pontos
+  useEffect(() => {
+    if (!usuario?.id) return;
 
-  // Iniciar câmera
-  const startCamera = async (tipo) => {
-    if (!modelsLoaded) {
-      setError('Sistema de reconhecimento facial ainda carregando...');
-      return;
-    }
-
-    if (!hasReferencePhoto) {
-      setError('Você precisa cadastrar uma foto de referência primeiro');
-      return;
-    }
-
-    setTipoPonto(tipo);
-    setShowCamera(true);
-    setError(null);
-    setFaceDetected(false);
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'user'
-        } 
-      });
-      
-      setVideoStream(stream);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        detectFace();
-      }
-
-      const loc = await getLocation();
-      setLocation(loc);
-    } catch (err) {
-      console.error('Erro ao acessar câmera:', err);
-      setError('Não foi possível acessar a câmera');
-      setShowCamera(false);
-    }
-  };
-
-  // Parar câmera
-  const stopCamera = () => {
-    if (videoStream) {
-      videoStream.getTracks().forEach(track => track.stop());
-      setVideoStream(null);
-    }
-    setShowCamera(false);
-    setFaceDetected(false);
-    setError(null);
-  };
-
-  // Detectar rosto continuamente
-  const detectFace = async () => {
-    if (!videoRef.current || !showCamera) return;
-
-    const detections = await faceapi
-      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks()
-      .withFaceDescriptor();
-
-    if (detections) {
-      setFaceDetected(true);
-      
-      if (canvasRef.current) {
-        const displaySize = {
-          width: videoRef.current.videoWidth,
-          height: videoRef.current.videoHeight
-        };
-        faceapi.matchDimensions(canvasRef.current, displaySize);
+    const loadPontos = async () => {
+      setLoading(true);
+      try {
+        const pontosQuery = query(
+          collection(db, 'pontos'),
+          where('funcionarioId', '==', usuario.id),
+          orderBy('timestamp', 'desc')
+        );
+        const snapshot = await getDocs(pontosQuery);
+        const pontosData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
         
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        faceapi.draw.drawDetections(canvasRef.current, resizedDetections);
-        faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections);
+        setPontos(pontosData);
+
+        // Filtrar pontos de hoje
+        const hoje = new Date();
+        const pontosHojeData = pontosData.filter(p => {
+          const pontoDate = p.timestamp.toDate();
+          return pontoDate.toDateString() === hoje.toDateString();
+        });
+        setPontosHoje(pontosHojeData);
+      } catch (err) {
+        console.error('Erro ao carregar pontos:', err);
+      } finally {
+        setLoading(false);
       }
-    } else {
-      setFaceDetected(false);
-    }
+    };
 
-    setTimeout(() => detectFace(), 100);
-  };
+    loadPontos();
+  }, [usuario?.id]);
 
-  // Capturar foto e comparar
-  const capturarPonto = async () => {
-    if (!faceDetected) {
-      setError('Nenhum rosto detectado. Posicione seu rosto na câmera.');
-      return;
-    }
-
-    setMatching(true);
-    setError(null);
-
+  // Registrar ponto
+  const registrarPonto = async (tipo) => {
+    setRegistering(tipo);
+    
     try {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
-      const currentPhoto = canvas.toDataURL('image/jpeg', 0.8);
-
-      const currentDetection = await faceapi
-        .detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
-        .withFaceDescriptor();
-
-      if (!currentDetection) {
-        setError('Não foi possível detectar seu rosto claramente. Tente novamente.');
-        setMatching(false);
-        return;
-      }
-
-      const q = query(
-        collection(db, 'funcionarios'),
-        where('id', '==', usuario.id),
-        limit(1)
-      );
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty || !snapshot.docs[0].data().faceReferenceURL) {
-        setError('Foto de referência não encontrada');
-        setMatching(false);
-        return;
-      }
-
-      const faceReferenceURL = snapshot.docs[0].data().faceReferenceURL;
-
-      const referenceImg = await faceapi.fetchImage(faceReferenceURL);
-      const referenceDetection = await faceapi
-        .detectSingleFace(referenceImg, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
-        .withFaceDescriptor();
-
-      if (!referenceDetection) {
-        setError('Erro ao processar foto de referência');
-        setMatching(false);
-        return;
-      }
-
-      const distance = faceapi.euclideanDistance(
-        currentDetection.descriptor,
-        referenceDetection.descriptor
-      );
-
-      const isMatch = distance < 0.6;
-      const matchPercentage = ((1 - distance) * 100).toFixed(1);
-
-      if (!isMatch) {
-        setError(`Rosto não reconhecido (${matchPercentage}% de similaridade). Certifique-se de que é você!`);
-        setMatching(false);
-        return;
-      }
-
-      if (tipoPonto === 'teste') {
-        setError(null);
-        setMatching(false);
-        setTestSuccess({ similarity: matchPercentage });
-        stopCamera();
-        setTimeout(() => setTestSuccess(null), 5000);
-        return;
-      }
-
-      const photoBlob = await fetch(currentPhoto).then(r => r.blob());
-      const storageRef = ref(storage, `pontos/${usuario.id}/${Date.now()}.jpg`);
-      await uploadBytes(storageRef, photoBlob);
-      const photoURL = await getDownloadURL(storageRef);
-
       const pontoData = {
         funcionarioId: usuario.id,
         funcionarioNome: usuario.nome,
         funcionarioUsuario: usuario.usuario,
-        tipo: tipoPonto,
+        tipo: tipo,
         timestamp: new Date(),
-        photoURL,
-        faceMatchScore: (1 - distance).toFixed(3),
-        location: location || null,
-        isOnline,
         deviceInfo: {
           userAgent: navigator.userAgent,
           platform: navigator.platform
         }
       };
 
-      if (tipoPonto === 'saida' && pontoHoje?.timestamp) {
-        const entrada = pontoHoje.timestamp.toDate();
-        const saida = new Date();
-        const minutos = differenceInMinutes(saida, entrada);
-        const horas = differenceInHours(saida, entrada);
+      // Se for saída, calcular tempo total trabalhado
+      if (tipo === 'saida') {
+        const entrada = pontosHoje.find(p => p.tipo === 'entrada');
+        const almoco = pontosHoje.find(p => p.tipo === 'almoco');
+        const retorno = pontosHoje.find(p => p.tipo === 'retorno');
         
-        pontoData.horasTrabalhadas = horas;
-        pontoData.minutosTrabalhados = minutos;
+        if (entrada && almoco && retorno) {
+          const tempoManha = differenceInMinutes(almoco.timestamp.toDate(), entrada.timestamp.toDate());
+          const tempoTarde = differenceInMinutes(new Date(), retorno.timestamp.toDate());
+          const totalMinutos = tempoManha + tempoTarde;
+          const totalHoras = Math.floor(totalMinutos / 60);
+          
+          pontoData.horasTrabalhadas = totalHoras;
+          pontoData.minutosTrabalhados = totalMinutos;
+        }
       }
 
       await addDoc(collection(db, 'pontos'), pontoData);
-      console.log('✅ Ponto registrado com sucesso!');
+      console.log(`✅ Ponto de ${tipo} registrado com sucesso!`);
       
-      stopCamera();
-      setTimeout(() => window.location.reload(), 2000);
+      // Recarregar pontos
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
 
     } catch (err) {
       console.error('Erro ao registrar ponto:', err);
-      setError('Erro ao registrar ponto. Tente novamente.');
+      alert('Erro ao registrar ponto. Tente novamente.');
     } finally {
-      setMatching(false);
+      setRegistering(null);
     }
   };
 
-  // Salvar URL da imagem
-  const handleSaveImageUrl = async () => {
-    if (!imageUrl.trim()) {
-      setError('Por favor, insira uma URL válida');
-      return;
-    }
-
-    setSavingUrl(true);
-    setError(null);
-
-    try {
-      const img = await faceapi.fetchImage(imageUrl);
-      const detection = await faceapi
-        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
-        .withFaceDescriptor();
-
-      if (!detection) {
-        setError('Nenhum rosto detectado na imagem. Verifique a URL e tente novamente.');
-        setSavingUrl(false);
-        return;
-      }
-
-      const q = query(
-        collection(db, 'funcionarios'),
-        where('id', '==', usuario.id),
-        limit(1)
-      );
-      const snapshot = await getDocs(q);
-      
-      if (!snapshot.empty) {
-        const docRef = doc(db, 'funcionarios', snapshot.docs[0].id);
-        await updateDoc(docRef, {
-          faceReferenceURL: imageUrl,
-          faceReferenceUpdated: new Date()
-        });
-      }
-
-      setHasReferencePhoto(true);
-      setImageUrl('');
-      savePreference('url');
-      console.log('✅ URL da foto de referência salva!');
-
-    } catch (err) {
-      console.error('Erro ao processar URL da imagem:', err);
-      setError('Erro ao processar a imagem. Verifique se a URL está correta e acessível.');
-    } finally {
-      setSavingUrl(false);
-    }
+  // Determinar qual é o próximo ponto válido
+  const getProximoPonto = () => {
+    if (pontosHoje.length === 0) return 'entrada';
+    if (pontosHoje.length === 1 && pontosHoje[0].tipo === 'entrada') return 'almoco';
+    if (pontosHoje.length === 2 && pontosHoje[1].tipo === 'almoco') return 'retorno';
+    if (pontosHoje.length === 3 && pontosHoje[2].tipo === 'retorno') return 'saida';
+    return null; // Todos os pontos já registrados
   };
 
-  const statusDia = getStatusDia(pontoHoje);
+  // Verificar status do dia
+  const getStatusDia = () => {
+    const proximoPonto = getProximoPonto();
+    
+    if (proximoPonto === 'entrada') {
+      return { status: 'pending', text: 'Registre sua entrada', color: 'yellow' };
+    }
+    if (proximoPonto === 'almoco') {
+      return { status: 'working', text: 'Trabalhando - Manhã', color: 'blue' };
+    }
+    if (proximoPonto === 'retorno') {
+      return { status: 'lunch', text: 'Intervalo de almoço', color: 'orange' };
+    }
+    if (proximoPonto === 'saida') {
+      return { status: 'working', text: 'Trabalhando - Tarde', color: 'blue' };
+    }
+    return { status: 'completed', text: 'Jornada concluída', color: 'green' };
+  };
+
+  const statusDia = getStatusDia();
+  const proximoPonto = getProximoPonto();
+
+  // Configuração dos botões de ponto
+  const botoesConfig = [
+    {
+      tipo: 'entrada',
+      label: 'Entrada',
+      sublabel: 'Início do trabalho',
+      icon: PlayCircle,
+      color: 'from-green-500 to-green-600',
+      ordem: 1
+    },
+    {
+      tipo: 'almoco',
+      label: 'Almoço',
+      sublabel: 'Saída para almoço',
+      icon: Coffee,
+      color: 'from-orange-500 to-orange-600',
+      ordem: 2
+    },
+    {
+      tipo: 'retorno',
+      label: 'Retorno',
+      sublabel: 'Volta do almoço',
+      icon: CornerDownLeft,
+      color: 'from-blue-500 to-blue-600',
+      ordem: 3
+    },
+    {
+      tipo: 'saida',
+      label: 'Saída',
+      sublabel: 'Fim do trabalho',
+      icon: StopCircle,
+      color: 'from-red-500 to-red-600',
+      ordem: 4
+    }
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header com Status */}
-      <WorkPontoHeader
-        currentTime={currentTime}
-        isOnline={isOnline}
-        statusDia={statusDia}
-        pontoHoje={pontoHoje}
-        userPreference={userPreference}
-        hasReferencePhoto={hasReferencePhoto}
-      />
+      <div className="bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 rounded-2xl p-6 text-white shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+              <Clock className="w-8 h-8" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">WorkPonto</h2>
+              <p className="text-white/80 text-sm">Sistema de Ponto Eletrônico</p>
+            </div>
+          </div>
+        </div>
 
-      {/* Foto de Referência */}
-      {!hasReferencePhoto && (
-        <WorkPontoReferencePhoto
-          imageUrl={imageUrl}
-          setImageUrl={setImageUrl}
-          savingUrl={savingUrl}
-          handleSaveImageUrl={handleSaveImageUrl}
-        />
-      )}
+        {/* Data e Hora Atual */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              <span className="font-medium text-sm sm:text-base">
+                {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+              </span>
+            </div>
+            <div className="text-2xl sm:text-3xl font-bold">
+              {format(currentTime, 'HH:mm:ss')}
+            </div>
+          </div>
+        </div>
 
-      {/* Testar Reconhecimento Facial */}
-      {hasReferencePhoto && (
-        <WorkPontoTestSection
-          modelsLoaded={modelsLoaded}
-          onTestClick={() => startCamera('teste')}
-        />
-      )}
-
-      {/* Mensagem de Sucesso do Teste */}
-      <WorkPontoSuccessMessage testSuccess={testSuccess} />
+        {/* Status do Dia */}
+        <div className={`bg-${statusDia.color}-500/20 border border-${statusDia.color}-400/30 rounded-xl p-4`}>
+          <div className="flex items-center gap-3">
+            {statusDia.status === 'working' && <PlayCircle className="w-6 h-6" />}
+            {statusDia.status === 'lunch' && <Coffee className="w-6 h-6" />}
+            {statusDia.status === 'completed' && <CheckCircle className="w-6 h-6" />}
+            {statusDia.status === 'pending' && <AlertTriangle className="w-6 h-6" />}
+            <div>
+              <p className="font-semibold text-lg">{statusDia.text}</p>
+              {pontosHoje.length > 0 && (
+                <p className="text-sm text-white/80">
+                  {pontosHoje.length} de 4 pontos registrados
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Botões de Ponto */}
-      {hasReferencePhoto && (
-        <WorkPontoButtons
-          modelsLoaded={modelsLoaded}
-          pontoHoje={pontoHoje}
-          onEntradaClick={() => registrarPontoComPreferencia('entrada')}
-          onSaidaClick={() => registrarPontoComPreferencia('saida')}
-        />
-      )}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        {botoesConfig.map((botao) => {
+          const Icon = botao.icon;
+          const jaRegistrado = pontosHoje.some(p => p.tipo === botao.tipo);
+          const isProximo = proximoPonto === botao.tipo;
+          const isDisabled = !isProximo || registering !== null;
 
-      {/* Modal da Câmera - Lazy Loaded */}
-      {showCamera && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"><div className="text-white">Carregando...</div></div>}>
-          <WorkPontoCameraModal
-            showCamera={showCamera}
-            videoRef={videoRef}
-            canvasRef={canvasRef}
-            faceDetected={faceDetected}
-            matching={matching}
-            error={error}
-            onClose={stopCamera}
-            onCapture={capturarPonto}
-            tipoPonto={tipoPonto}
-          />
-        </Suspense>
-      )}
+          return (
+            <button
+              key={botao.tipo}
+              onClick={() => registrarPonto(botao.tipo)}
+              disabled={isDisabled}
+              className={`bg-gradient-to-br ${botao.color} text-white rounded-xl p-4 hover:shadow-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden`}
+            >
+              {/* Badge de ordem */}
+              <div className="absolute top-2 right-2 bg-white/20 backdrop-blur-sm rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                {botao.ordem}
+              </div>
+
+              <div className="flex flex-col items-center gap-2 text-center">
+                <Icon className="w-8 h-8" />
+                <div>
+                  <p className="font-bold text-base">{botao.label}</p>
+                  <p className="text-xs text-white/80">{botao.sublabel}</p>
+                </div>
+
+                {/* Indicador de status */}
+                {jaRegistrado && (
+                  <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-1 mt-1">
+                    <CheckCircle className="w-3 h-3" />
+                    <span className="text-xs">Registrado</span>
+                  </div>
+                )}
+
+                {registering === botao.tipo && (
+                  <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-full px-2 py-1 mt-1">
+                    <Loader className="w-3 h-3 animate-spin" />
+                    <span className="text-xs">Salvando...</span>
+                  </div>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Histórico de Pontos */}
-      <WorkPontoHistory pontos={pontos} />
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4">
+          <h3 className="text-white font-bold text-lg">Histórico de Pontos - Hoje</h3>
+        </div>
+
+        <div className="p-4 space-y-3">
+          {pontosHoje.length === 0 ? (
+            <div className="text-center py-12">
+              <Clock className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">Nenhum ponto registrado hoje</p>
+            </div>
+          ) : (
+            pontosHoje.map((ponto) => {
+              const botaoConfig = botoesConfig.find(b => b.tipo === ponto.tipo);
+              const Icon = botaoConfig?.icon || Clock;
+              
+              return (
+                <div
+                  key={ponto.id}
+                  className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`bg-gradient-to-br ${botaoConfig?.color} text-white rounded-lg p-3`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-gray-900 dark:text-white">
+                          {botaoConfig?.label || ponto.tipo}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          ({botaoConfig?.ordem}º ponto)
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {format(ponto.timestamp.toDate(), "HH:mm:ss", { locale: ptBR })}
+                      </p>
+                      {ponto.horasTrabalhadas !== undefined && (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                          ⏱️ Total trabalhado: {ponto.horasTrabalhadas}h {ponto.minutosTrabalhados % 60}min
+                        </p>
+                      )}
+                    </div>
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Histórico Completo (últimos 30 dias) */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4">
+          <h3 className="text-white font-bold text-lg">Histórico Completo</h3>
+        </div>
+
+        <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+          {pontos.slice(0, 30).map((ponto) => {
+            const botaoConfig = botoesConfig.find(b => b.tipo === ponto.tipo);
+            const Icon = botaoConfig?.icon || Clock;
+            
+            return (
+              <div
+                key={ponto.id}
+                className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600 flex items-center gap-3"
+              >
+                <div className={`bg-gradient-to-br ${botaoConfig?.color} text-white rounded-lg p-2`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm text-gray-900 dark:text-white">
+                      {botaoConfig?.label || ponto.tipo}
+                    </span>
+                    {ponto.horasTrabalhadas !== undefined && (
+                      <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
+                        {ponto.horasTrabalhadas}h {ponto.minutosTrabalhados % 60}min
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {format(ponto.timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
