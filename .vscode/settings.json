@@ -1,4 +1,7 @@
 {
     "git.ignoreLimitWarning": true,
-    "chat.agent.maxRequests": 25000
+    "chat.agent.maxRequests": 25000,
+    "css.lint.unknownAtRules": "ignore",
+    "scss.lint.unknownAtRules": "ignore",
+    "less.lint.unknownAtRules": "ignore"
 }
