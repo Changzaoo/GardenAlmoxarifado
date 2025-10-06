@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy, startOfDay, endOfDay } from 'firebase/firestore';
-import { db } from '../../../firebaseConfig';
+import { db } from '../../firebaseConfig';
 
 export const useWorkPontoData = (usuario) => {
   const [loading, setLoading] = useState(false);
