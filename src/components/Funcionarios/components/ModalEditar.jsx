@@ -89,7 +89,9 @@ const ModalEditar = ({
           </div>
           
           <div className="space-y-2">
-            <p className="text-sm text-gray-500 dark:text-gray-400">URL da Imagem</p>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              URL da Imagem
+            </label>
             <input
               type="url"
               placeholder="https://exemplo.com/imagem.jpg"
@@ -101,31 +103,49 @@ const ModalEditar = ({
               }}
               className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400">ou</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">ou faça upload usando o botão da câmera</p>
           </div>
 
-          <input
-            type="text"
-            placeholder="Nome"
-            value={formEdit.nome}
-            onChange={e => setFormEdit({ ...formEdit, nome: e.target.value })}
-            className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
-          />
-          <input
-            type="text"
-            placeholder="Cargo"
-            value={formEdit.cargo}
-            onChange={e => setFormEdit({ ...formEdit, cargo: e.target.value })}
-            className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
-          />
-          <input
-            type="text"
-            placeholder="(00) 00000-0000"
-            value={formEdit.telefone ? formatarTelefone(formEdit.telefone) : ''}
-            onChange={e => setFormEdit({ ...formEdit, telefone: e.target.value.replace(/[^0-9]/g, '') })}
-            className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
-            maxLength={15}
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nome Completo <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: João da Silva"
+              value={formEdit.nome}
+              onChange={e => setFormEdit({ ...formEdit, nome: e.target.value })}
+              className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Cargo
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Jardineiro, Gerente, etc."
+              value={formEdit.cargo}
+              onChange={e => setFormEdit({ ...formEdit, cargo: e.target.value })}
+              className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Telefone/WhatsApp
+            </label>
+            <input
+              type="text"
+              placeholder="(00) 00000-0000"
+              value={formEdit.telefone ? formatarTelefone(formEdit.telefone) : ''}
+              onChange={e => setFormEdit({ ...formEdit, telefone: e.target.value.replace(/[^0-9]/g, '') })}
+              className="w-full px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0]"
+              maxLength={15}
+            />
+          </div>
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button

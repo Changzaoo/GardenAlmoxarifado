@@ -2675,9 +2675,78 @@ const AlmoxarifadoSistema = () => {
       throw new Error('Sem permissão para atualizar funcionários');
     }
     try {
-      return await updateDoc(doc(db, 'funcionarios', id), dados);
+      console.log('🔄 Atualizando funcionário:', id, dados);
+      
+      // Buscar funcionário para ver de qual(is) coleção(ões) ele veio
+      const funcionario = funcionarios.find(f => f.id === id);
+      const origens = funcionario?.origens || [];
+      const idsRelacionados = funcionario?.idsRelacionados || [id];
+      
+      console.log('📋 Funcionário tem origens:', origens);
+      console.log('🔗 IDs relacionados:', idsRelacionados);
+      
+      // Preparar dados para salvar (sem campos internos de controle)
+      const dadosParaSalvar = { ...dados };
+      delete dadosParaSalvar.origens;
+      delete dadosParaSalvar.idsRelacionados;
+      
+      // Atualizar em todas as coleções de origem
+      const promises = [];
+      
+      // 1️⃣ Tentar atualizar na coleção 'funcionarios'
+      if (origens.includes('funcionarios') || !origens.length) {
+        try {
+          console.log('💾 Salvando em "funcionarios"...');
+          promises.push(updateDoc(doc(db, 'funcionarios', id), dadosParaSalvar));
+        } catch (error) {
+          console.warn('⚠️ Erro ao salvar em "funcionarios":', error);
+        }
+      }
+      
+      // 2️⃣ Tentar atualizar na coleção 'usuarios' (PLURAL)
+      if (origens.includes('usuarios')) {
+        try {
+          console.log('💾 Salvando em "usuarios" (plural)...');
+          // Buscar o ID correto nesta coleção
+          const usuarioId = idsRelacionados.find(idRel => idRel !== id) || id;
+          promises.push(updateDoc(doc(db, 'usuarios', usuarioId), dadosParaSalvar));
+        } catch (error) {
+          console.warn('⚠️ Erro ao salvar em "usuarios":', error);
+        }
+      }
+      
+      // 3️⃣ Tentar atualizar na coleção 'usuario' (SINGULAR - legado)
+      if (origens.includes('usuario')) {
+        try {
+          console.log('💾 Salvando em "usuario" (singular)...');
+          // Buscar o ID correto nesta coleção
+          const usuarioId = idsRelacionados.find(idRel => idRel !== id) || id;
+          promises.push(updateDoc(doc(db, 'usuario', usuarioId), dadosParaSalvar));
+        } catch (error) {
+          console.warn('⚠️ Erro ao salvar em "usuario":', error);
+        }
+      }
+      
+      // Se não tem origens definidas, tentar em todas as 3 coleções
+      if (!origens.length) {
+        console.log('⚠️ Sem origens definidas, tentando todas as coleções...');
+        idsRelacionados.forEach(idRel => {
+          promises.push(
+            updateDoc(doc(db, 'usuarios', idRel), dadosParaSalvar).catch(e => console.log('Não existe em usuarios:', idRel))
+          );
+          promises.push(
+            updateDoc(doc(db, 'usuario', idRel), dadosParaSalvar).catch(e => console.log('Não existe em usuario:', idRel))
+          );
+        });
+      }
+      
+      // Executar todas as atualizações em paralelo
+      await Promise.allSettled(promises);
+      console.log('✅ Funcionário atualizado em todas as coleções disponíveis!');
+      
+      return true;
     } catch (error) {
-      console.error('Erro ao atualizar funcionário:', error);
+      console.error('❌ Erro ao atualizar funcionário:', error);
       throw error;
     }
   };
