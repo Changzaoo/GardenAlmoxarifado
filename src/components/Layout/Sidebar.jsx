@@ -35,12 +35,6 @@ const Sidebar = ({ onProfileClick }) => {
       requiredLevel: 1
     },
     {
-      name: 'Comprovantes',
-      path: '/comprovantes',
-      icon: <FileText className="w-5 h-5" />,
-      requiredLevel: 1
-    },
-    {
       name: 'Danificadas',
       path: '/danificadas',
       icon: <AlertTriangle className="w-5 h-5" />,

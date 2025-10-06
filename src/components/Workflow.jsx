@@ -2881,12 +2881,6 @@ const AlmoxarifadoSistema = () => {
       permissao: () => true // Todos os usuários autenticados (abas internas controlam permissões)
     },
     { 
-      id: 'comprovantes', 
-      nome: 'Comprovantes', 
-      icone: FileText,
-      permissao: () => true // Todos os usuários autenticados podem visualizar comprovantes
-    },
-    { 
       id: 'funcionarios', 
       nome: 'Funcionários', 
       icone: Users,
@@ -4093,10 +4087,6 @@ const AlmoxarifadoSistema = () => {
                 atualizarFuncionario={atualizarFuncionario}
                 readonly={!PermissionChecker.canManageEmployees(usuario?.nivel)}
               />
-            )}
-
-            {abaAtiva === 'comprovantes' && (
-              <ComprovantesTab />
             )}
 
             {abaAtiva === 'empresas-setores' && (

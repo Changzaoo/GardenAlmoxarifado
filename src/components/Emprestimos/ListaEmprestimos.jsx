@@ -10,7 +10,7 @@ import BoxLoanAnimation from './BoxLoanAnimation';
 import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
 import TransferenciaAnimation from './TransferenciaAnimation';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
-import ComprovanteUniversalModal from './ComprovanteUniversalModal';
+import ComprovanteModal from '../Comprovantes/ComprovanteModal';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 
 // Enum for sorting options
@@ -1302,31 +1302,24 @@ const ListaEmprestimos = ({
 
       {/* Modal de Comprovante PDF */}
       {showComprovanteModal && emprestimoParaComprovante && (
-        <ComprovanteUniversalModal
+        <ComprovanteModal
           isOpen={showComprovanteModal}
           tipo={emprestimoParaComprovante.status === 'devolvido' ? 'devolucao' : 'emprestimo'}
           dados={{
+            transacaoId: emprestimoParaComprovante.id?.substring(0, 13).toUpperCase() || 'N/A',
             id: emprestimoParaComprovante.id,
             data: emprestimoParaComprovante.dataEmprestimo,
             quantidade: emprestimoParaComprovante.ferramentas?.length || 0,
-            ferramentas: emprestimoParaComprovante.ferramentas,
-            remetenteNome: emprestimoParaComprovante.empresaNome || 'Almoxarifado',
-            destinatarioNome: emprestimoParaComprovante.nomeFuncionario || funcionarios.find(f => f.id === emprestimoParaComprovante.funcionarioId)?.nome || 'N/A',
-            empresa: emprestimoParaComprovante.empresaNome || 'N/A',
-            setor: emprestimoParaComprovante.setorNome || 'N/A',
+            ferramentas: emprestimoParaComprovante.ferramentas?.map(f => f.nome) || [],
+            de: emprestimoParaComprovante.empresaNome || 'Almoxarifado',
+            para: emprestimoParaComprovante.nomeFuncionario || funcionarios.find(f => f.id === emprestimoParaComprovante.funcionarioId)?.nome || 'N/A',
+            deInfo: emprestimoParaComprovante.empresaNome || 'Almoxarifado WorkFlow',
+            paraInfo: `${emprestimoParaComprovante.setorNome || 'N/A'} - ${emprestimoParaComprovante.empresaNome || 'N/A'}`,
             observacoes: emprestimoParaComprovante.observacoes
           }}
           onClose={() => {
             setShowComprovanteModal(false);
             setEmprestimoParaComprovante(null);
-          }}
-          onDownload={() => {
-            // TODO: Implementar download PDF
-            console.log('Download PDF');
-          }}
-          onShare={() => {
-            // TODO: Implementar compartilhamento
-            console.log('Compartilhar');
           }}
         />
       )}

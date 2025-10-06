@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Package, ClipboardList, User } from 'lucide-react';
+import { Package, ClipboardList, User, FileText } from 'lucide-react';
 import MeuInventarioTab from './MeuInventarioTab';
 import InventarioTab from './InventarioTab';
 import EmprestimosTab from '../Emprestimos/EmprestimosTab';
+import ComprovantesTab from '../Comprovantes/ComprovantesTab';
 import { FuncionariosProvider } from '../Funcionarios/FuncionariosProvider';
 import { useAuth } from '../../hooks/useAuth';
 import { NIVEIS_PERMISSAO, PermissionChecker } from '../../constants/permissoes';
@@ -81,6 +82,13 @@ const GerenciamentoInventario = ({
       }
     },
     {
+      id: 'comprovantes',
+      nome: 'Comprovantes',
+      icone: FileText,
+      descricao: 'Visualize e gere comprovantes de empréstimos e tarefas',
+      permissao: () => true // Todos podem ver comprovantes
+    },
+    {
       id: 'historico-emprestimos',
       nome: 'Histórico de Empréstimos',
       icone: ClipboardList,
@@ -142,6 +150,9 @@ const GerenciamentoInventario = ({
           </FuncionariosProvider>
         );
 
+      case 'comprovantes':
+        return <ComprovantesTab />;
+
       default:
         return null;
     }
@@ -171,7 +182,7 @@ const GerenciamentoInventario = ({
       {/* Navegação por abas */}
       <div className="max-w-7xl mx-auto mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
             {abas.map((aba) => {
               const IconeAba = aba.icone;
               const isAtiva = abaAtiva === aba.id;
