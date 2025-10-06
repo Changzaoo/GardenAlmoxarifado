@@ -365,7 +365,7 @@ const AuthProvider = ({ children }) => {
               return { 
                 id: doc.id,
                 nome: data.nome || '',
-                email: data.email || '',
+                usuario: data.usuario || '',
                 senha: data.senha || null,
                 senhaHash: data.senhaHash || null,
                 senhaSalt: data.senhaSalt || null,
@@ -469,13 +469,13 @@ const AuthProvider = ({ children }) => {
           return;
         }
         // Validar estrutura dos dados do usuário
-        if (usuarioSalvo && typeof usuarioSalvo === 'object' && usuarioSalvo.id && usuarioSalvo.email) {
+        if (usuarioSalvo && typeof usuarioSalvo === 'object' && usuarioSalvo.id && usuarioSalvo.usuario) {
           console.log('🔄 Usuário encontrado nos cookies, revalidando dados no Firebase...');
           
           // Revalidar dados no Firebase para garantir que estão atualizados
           try {
             const usuariosRef = collection(dbWorkflowBR1, 'usuarios');
-            const q = query(usuariosRef, where('email', '==', usuarioSalvo.email), where('ativo', '==', true));
+            const q = query(usuariosRef, where('usuario', '==', usuarioSalvo.usuario), where('ativo', '==', true));
             const querySnapshot = await getDocs(q);
 
             if (!querySnapshot.empty) {
@@ -493,7 +493,7 @@ const AuthProvider = ({ children }) => {
               });
               
               // CORREÇÃO TEMPORÁRIA: Se é o usuário admin e tem nível incorreto, corrigir
-              if (usuarioAtualizado.email === 'admin' && usuarioAtualizado.nivel !== NIVEIS_PERMISSAO.ADMIN) {
+              if (usuarioAtualizado.usuario === 'admin' && usuarioAtualizado.nivel !== NIVEIS_PERMISSAO.ADMIN) {
                 console.log('🔧 CORRIGINDO: Admin tem nível incorreto, ajustando para 0...');
                 usuarioAtualizado.nivel = NIVEIS_PERMISSAO.ADMIN;
                 
@@ -569,7 +569,7 @@ const AuthProvider = ({ children }) => {
         const dadosParaSalvar = {
           id: usuarioData.id,
           nome: usuarioData.nome,
-          email: usuarioData.email,
+          usuario: usuarioData.usuario,
           nivel: usuarioData.nivel,
           ativo: usuarioData.ativo,
           ultimoLogin: usuarioData.ultimoLogin,
@@ -611,7 +611,7 @@ const AuthProvider = ({ children }) => {
         return { 
           id: doc.id,
           nome: data.nome || '',
-          email: data.email || '',
+          usuario: data.usuario || '',
           senha: data.senha || null,
           senhaHash: data.senhaHash || null,
           senhaSalt: data.senhaSalt || null,
@@ -642,7 +642,7 @@ const AuthProvider = ({ children }) => {
       
       console.log(`✅ ${usuariosCarregados.length} usuários carregados do Firebase`);
       console.log('Usuários:', usuariosCarregados.map(u => ({ 
-        email: u.email, 
+        usuario: u.usuario, 
         nome: u.nome, 
         nivel: u.nivel,
         ativo: u.ativo,
@@ -671,7 +671,7 @@ const AuthProvider = ({ children }) => {
     
     const adminPadrao = {
       nome: 'Administrador',
-      email: 'admin',
+      usuario: 'admin',
       senhaHash: hash,
       senhaSalt: salt,
       senhaVersion: version,
@@ -703,7 +703,7 @@ const AuthProvider = ({ children }) => {
     try {
       const docRef = await addDoc(collection(db, 'usuarios'), adminPadrao);
       console.log('✅ Usuário admin criado no Firebase com ID:', docRef.id);
-      console.log('📧 Email: admin');
+      console.log('� Usuário: admin');
       console.log('🔑 Senha: admin@362*');
       
       // Recarregar usuários após criar admin
@@ -718,7 +718,7 @@ const AuthProvider = ({ children }) => {
       {
         id: '1',
         nome: 'Administrador',
-        email: 'admin',
+        usuario: 'admin',
         senha: 'admin@362*',
         nivel: NIVEIS_PERMISSAO.ADMIN,
         ativo: true,
@@ -728,7 +728,7 @@ const AuthProvider = ({ children }) => {
       {
         id: '2',
         nome: 'João Silva',
-        email: 'joao',
+        usuario: 'joao',
         senha: '123456',
         nivel: NIVEIS_PERMISSAO.GERENTE_SETOR,
         ativo: true,
@@ -738,7 +738,7 @@ const AuthProvider = ({ children }) => {
       {
         id: '3',
         nome: 'Maria Santos',
-        email: 'maria',
+        usuario: 'maria',
         senha: '123456',
         nivel: NIVEIS_PERMISSAO.SUPERVISOR,
         ativo: true,
@@ -748,7 +748,7 @@ const AuthProvider = ({ children }) => {
       {
         id: '4',
         nome: 'Pedro Lima',
-        email: 'pedro',
+        usuario: 'pedro',
         senha: '123456',
         nivel: NIVEIS_PERMISSAO.FUNCIONARIO,
         ativo: true,
@@ -761,12 +761,12 @@ const AuthProvider = ({ children }) => {
     console.log('Usuários locais carregados como fallback');
   };
 
-  const login = async (email, senha, lembrarLogin = false) => {
+  const login = async (usuario, senha, lembrarLogin = false) => {
     try {
       // ✅ REFATORADO: Usar authService
-      console.log('🔐 [AuthService] Iniciando autenticação:', { email, senhaLength: senha.length });
+      console.log('🔐 [AuthService] Iniciando autenticação:', { usuario, senhaLength: senha.length });
       
-      const resultado = await authenticateUser(email, senha);
+      const resultado = await authenticateUser(usuario, senha);
       
       if (!resultado.success) {
         console.log('❌ [AuthService] Autenticação falhou:', resultado.error);
@@ -1001,7 +1001,7 @@ const AuthProvider = ({ children }) => {
   const removerUsuario = async (id) => {
     // Não permitir remoção do admin principal
     const usuarioAlvo = usuarios.find(u => u.id === id);
-    if (usuarioAlvo?.email === 'admin') {
+    if (usuarioAlvo?.usuario === 'admin') {
       return { success: false, message: 'Não é possível remover o administrador principal' };
     }
 
@@ -1056,7 +1056,7 @@ const AuthProvider = ({ children }) => {
 
 // Componente de Login
 const LoginForm = () => {
-  const [formData, setFormData] = useState({ email: '', senha: '', lembrar: false });
+  const [formData, setFormData] = useState({ usuario: '', senha: '', lembrar: false });
   const [erro, setErro] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
@@ -1077,14 +1077,14 @@ const LoginForm = () => {
     setErro('');
     setCarregando(true);
 
-    if (!formData.email || !formData.senha) {
+    if (!formData.usuario || !formData.senha) {
       setErro('Por favor, preencha todos os campos');
       setCarregando(false);
       return;
     }
 
     try {
-      const resultado = await login(formData.email, formData.senha, formData.lembrar);
+      const resultado = await login(formData.usuario, formData.senha, formData.lembrar);
       if (!resultado.success) {
         setErro(resultado.message);
       } else {
@@ -1144,12 +1144,12 @@ const LoginForm = () => {
           <div>
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              Email/Usuário
+              Usuário
             </label>
             <input
               type="text"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              value={formData.usuario}
+              onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
               onKeyPress={handleKeyPress}
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
               placeholder="Digite seu usuário"
@@ -1354,7 +1354,7 @@ const ErrorScreen = ({ error, resetError }) => {
         browserInfo,
         usuarioId: usuario.id,
         usuarioNome: usuario.nome || 'Usuário Desconhecido',
-        usuarioEmail: usuario.email || '',
+        usuarioUsername: usuario.usuario || '',
         descricao: descricao || 'Sem descrição adicional',
         status: 'pendente',
         criadoEm: new Date().toISOString()
@@ -2645,7 +2645,7 @@ const AlmoxarifadoSistema = () => {
       // Criar um usuário básico para o funcionário
       const novoUsuario = {
         nome: funcionario.nome,
-        email: funcionario.nome.toLowerCase().replace(/\s+/g, '.'),
+        usuario: funcionario.nome.toLowerCase().replace(/\s+/g, '.'),
         senha: '1234',
         nivel: NIVEIS_PERMISSAO.FUNCIONARIO,
         ativo: true,

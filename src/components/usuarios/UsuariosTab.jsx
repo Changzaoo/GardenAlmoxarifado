@@ -75,7 +75,7 @@ const UsuariosTab = () => {
   });
   const [formData, setFormData] = useState({
     nome: '',
-    email: '',
+    usuario: '',
     senha: '',
     nivel: NIVEIS_PERMISSAO.FUNCIONARIO,
     ativo: true,
@@ -114,9 +114,9 @@ const UsuariosTab = () => {
       const stats = {};
 
       for (const usuario of usuarios) {
-        // Buscar funcionário correspondente pelo email ou nome
+        // Buscar funcionário correspondente pelo usuario ou nome
         const funcionario = funcionarios.find(
-          f => f.email?.toLowerCase() === usuario.email?.toLowerCase() || 
+          f => f.usuario?.toLowerCase() === usuario.usuario?.toLowerCase() || 
                f.nome?.toLowerCase() === usuario.nome?.toLowerCase()
         );
 
@@ -148,7 +148,7 @@ const UsuariosTab = () => {
               mediaAvaliacao: mediaAvaliacao
             };
           } catch (error) {
-            console.error(`Erro ao carregar estatísticas do usuário ${usuario.email}:`, error);
+            console.error(`Erro ao carregar estatísticas do usuário ${usuario.usuario}:`, error);
           }
         }
       }
@@ -197,7 +197,7 @@ const UsuariosTab = () => {
   const resetarForm = () => {
     setFormData({
       nome: '',
-      email: '',
+      usuario: '',
       senha: '',
       nivel: NIVEIS_PERMISSAO.FUNCIONARIO,
       ativo: true,
@@ -228,7 +228,7 @@ const UsuariosTab = () => {
 
     setFormData({
       nome: usuario.nome,
-      email: usuario.email,
+      usuario: usuario.usuario,
       senha: '', // Não mostrar senha por segurança
       nivel: usuario.nivel,
       ativo: usuario.ativo,
@@ -252,8 +252,8 @@ const UsuariosTab = () => {
     if (!formData.nome.trim()) {
       return 'Nome é obrigatório';
     }
-    if (!formData.email.trim()) {
-      return 'Email/usuário é obrigatório';
+    if (!formData.usuario.trim()) {
+      return 'Usuário é obrigatório';
     }
     if (!usuarioEditando && !formData.senha) {
       return 'Senha é obrigatória';
@@ -262,12 +262,12 @@ const UsuariosTab = () => {
       return 'Senha deve ter pelo menos 4 caracteres';
     }
     
-    // Verificar se email já existe (exceto o próprio usuário sendo editado)
-    const emailExiste = usuarios.find(u => 
-      u.email === formData.email && (!usuarioEditando || u.id !== usuarioEditando.id)
+    // Verificar se usuario já existe (exceto o próprio usuário sendo editado)
+    const usuarioExiste = usuarios.find(u => 
+      u.usuario === formData.usuario && (!usuarioEditando || u.id !== usuarioEditando.id)
     );
-    if (emailExiste) {
-      return 'Este email/usuário já está em uso';
+    if (usuarioExiste) {
+      return 'Este nome de usuário já está em uso';
     }
 
     // Validar empresa e setor para níveis que não são ADMIN
@@ -300,7 +300,7 @@ const UsuariosTab = () => {
     try {
       const dadosParaSalvar = {
         nome: formData.nome.trim(),
-        email: formData.email.trim(),
+        usuario: formData.usuario.trim(),
         nivel: formData.nivel,
         ativo: formData.ativo
       };
@@ -517,7 +517,7 @@ const UsuariosTab = () => {
       const termoBusca = searchTerm.toLowerCase();
       const matchBusca = !searchTerm || 
         usuario.nome.toLowerCase().includes(termoBusca) ||
-        usuario.email.toLowerCase().includes(termoBusca) ||
+        usuario.usuario.toLowerCase().includes(termoBusca) ||
         (usuario.empresaNome && usuario.empresaNome.toLowerCase().includes(termoBusca)) ||
         (usuario.setorNome && usuario.setorNome.toLowerCase().includes(termoBusca)) ||
         (usuario.cargo && usuario.cargo.toLowerCase().includes(termoBusca));
@@ -651,7 +651,7 @@ const UsuariosTab = () => {
             <div className="flex-1 relative">
               <input
                 type="text"
-                placeholder="Buscar por nome, email, empresa, setor ou função..."
+                placeholder="Buscar por nome, usuário, empresa, setor ou função..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className={`w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] focus:border-transparent transition-all shadow-sm`}
@@ -806,8 +806,8 @@ const UsuariosTab = () => {
                         </div>
                         
                         <div className="flex items-center gap-2 mb-2">
-                          <Mail className="w-3.5 h-3.5 text-gray-400" />
-                          <p className={`text-sm ${colors.textSecondary} truncate`}>{usuario.email}</p>
+                          <User className="w-3.5 h-3.5 text-gray-400" />
+                          <p className={`text-sm ${colors.textSecondary} truncate`}>{usuario.usuario}</p>
                         </div>
 
                         {/* Senha do Usuário */}
@@ -973,7 +973,7 @@ const UsuariosTab = () => {
                       </button>
                     )}
                     {usuarioLogado.nivel === NIVEIS_PERMISSAO.ADMIN &&
-                      usuario.email !== 'admin' && usuario.id !== usuarioLogado.id && (
+                      usuario.usuario !== 'admin' && usuario.id !== usuarioLogado.id && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1031,15 +1031,15 @@ const UsuariosTab = () => {
 
                 <div>
                   <label className={`flex items-center gap-2 text-sm font-medium ${colors.text} mb-2`}>
-                    <Mail className="w-4 h-4" />
-                    Email/Usuário *
+                    <User className="w-4 h-4" />
+                    Usuário *
                   </label>
                   <input
                     type="text"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    value={formData.usuario}
+                    onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
                     className={`w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D9BF0] focus:border-transparent`}
-                    placeholder="Digite o email ou nome de usuário"
+                    placeholder="Digite o nome de usuário"
                     disabled={carregando}
                   />
                 </div>
@@ -1352,7 +1352,7 @@ const UsuariosTab = () => {
                             </div>
                             <div>
                               <p className="font-medium text-gray-800 dark:text-white">{usuario.nome}</p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">{usuario.email}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{usuario.usuario}</p>
                             </div>
                           </div>
                         ) : null;
