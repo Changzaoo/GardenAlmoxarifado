@@ -189,5 +189,19 @@ service cloud.firestore {
                             exists(/databases/$(database)/documents/usuario/$(request.auth.uid)) &&
                             get(/databases/$(database)/documents/usuario/$(request.auth.uid)).data.nivel >= 3;
     }
+
+    // ⏰ Regras para registro de ponto (WorkPonto)
+    match /pontos/{pontoId} {
+      // Qualquer usuário autenticado pode ler registros
+      allow read: if isAuthenticated();
+      
+      // Qualquer usuário autenticado pode criar seu registro de ponto
+      allow create: if isAuthenticated() &&
+                       request.resource.data.keys().hasAll(['funcionarioId', 'funcionarioNome', 'tipo', 'data', 'timestamp']) &&
+                       request.resource.data.tipo in ['entrada', 'saida_almoco', 'retorno_almoco', 'saida'];
+      
+      // Apenas admin pode atualizar ou deletar
+      allow update, delete: if isAdmin();
+    }
   }
 }

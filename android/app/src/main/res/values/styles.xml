@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema Light -->
+    <style name="AppTheme.Light" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/colorPrimaryLight</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDarkLight</item>
+        <item name="colorAccent">@color/colorAccentLight</item>
+        <item name="android:windowBackground">@color/colorBackgroundLight</item>
+        <item name="android:statusBarColor">@color/statusBarLight</item>
+        <item name="android:navigationBarColor">@color/navigationBarLight</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+    
+    <!-- Tema Dark -->
+    <style name="AppTheme.Dark" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimaryDark</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDarkDark</item>
+        <item name="colorAccent">@color/colorAccentDark</item>
+        <item name="android:windowBackground">@color/colorBackgroundDark</item>
+        <item name="android:statusBarColor">@color/statusBarDark</item>
+        <item name="android:navigationBarColor">@color/navigationBarDark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+    
+    <!-- Tema principal com DayNight (segue o sistema) -->
+    <style name="AppTheme" parent="AppTheme.Dark">
+        <!-- Será Dark por padrão, mas pode mudar dinamicamente -->
+    </style>
+    
+    <!-- SplashScreen Theme Light -->
+    <style name="SplashTheme.Light" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_light</item>
+        <item name="android:statusBarColor">@color/splashBackgroundLight</item>
+        <item name="android:navigationBarColor">@color/splashBackgroundLight</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+    
+    <!-- SplashScreen Theme Dark -->
+    <style name="SplashTheme.Dark" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_dark</item>
+        <item name="android:statusBarColor">@color/splashBackgroundDark</item>
+        <item name="android:navigationBarColor">@color/splashBackgroundDark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+    
+    <!-- SplashScreen Theme padrão -->
+    <style name="SplashTheme" parent="SplashTheme.Dark">
+        <!-- Será Dark por padrão -->
+    </style>
+</resources>

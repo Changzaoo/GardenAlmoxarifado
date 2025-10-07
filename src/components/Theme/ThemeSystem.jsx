@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAndroidTheme } from '../../hooks/useAndroidTheme';
 
 // Definição completa dos temas
 export const THEMES = {
@@ -163,6 +164,9 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState('dark');
   
+  // Sincroniza o tema com o Android (barra de status e splash screen)
+  useAndroidTheme(currentTheme);
+  
   // Carrega o tema salvo no localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem('workflow-theme');
@@ -188,6 +192,10 @@ export const ThemeProvider = ({ children }) => {
     Object.entries(theme.colors).forEach(([key, value]) => {
       root.style.setProperty(`--color-${key}`, value);
     });
+    
+    // Atualiza a cor de fundo do body e html para transição suave
+    document.body.style.backgroundColor = theme.colors.background;
+    document.documentElement.style.backgroundColor = theme.colors.background;
     
     // Salva no localStorage
     localStorage.setItem('workflow-theme', currentTheme);

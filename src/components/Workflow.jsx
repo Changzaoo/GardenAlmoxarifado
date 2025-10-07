@@ -1294,6 +1294,8 @@ const ErrorScreen = ({ error, resetError }) => {
   const [relatorioEnviado, setRelatorioEnviado] = useState(false);
   const [showDescricaoModal, setShowDescricaoModal] = useState(false);
   const [descricao, setDescricao] = useState('');
+  const [nomeContato, setNomeContato] = useState('');
+  const [emailContato, setEmailContato] = useState('');
 
   // Função para detectar informações do navegador
   const getBrowserInfo = () => {
@@ -1329,15 +1331,28 @@ const ErrorScreen = ({ error, resetError }) => {
 
   // Função para enviar relatório de erro
   const enviarRelatorioErro = async () => {
-    if (!usuario?.id) {
-      alert('Você precisa estar logado para enviar um relatório de erro.');
-      return;
-    }
-
     setShowDescricaoModal(true);
   };
 
   const confirmarEnvioRelatorio = async () => {
+    // Validação para usuários não logados
+    if (!usuario?.id) {
+      if (!nomeContato.trim()) {
+        alert('Por favor, informe seu nome para enviar o relatório.');
+        return;
+      }
+      if (!emailContato.trim()) {
+        alert('Por favor, informe seu email para que possamos entrar em contato.');
+        return;
+      }
+      // Validação básica de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailContato)) {
+        alert('Por favor, informe um email válido.');
+        return;
+      }
+    }
+
     setEnviandoRelatorio(true);
     setShowDescricaoModal(false);
 
@@ -1352,9 +1367,16 @@ const ErrorScreen = ({ error, resetError }) => {
         timestamp: new Date().toISOString(),
         url: window.location.href,
         browserInfo,
-        usuarioId: usuario.id,
-        usuarioNome: usuario.nome || 'Usuário Desconhecido',
-        usuarioUsername: usuario.usuario || '',
+        // Informações do usuário (logado ou não)
+        usuarioId: usuario?.id || 'anonimo',
+        usuarioNome: usuario?.nome || nomeContato || 'Usuário Anônimo',
+        usuarioUsername: usuario?.usuario || '',
+        usuarioLogado: !!usuario?.id,
+        // Informações de contato para usuários não logados
+        ...((!usuario?.id) && {
+          contatoNome: nomeContato,
+          contatoEmail: emailContato,
+        }),
         descricao: descricao || 'Sem descrição adicional',
         status: 'pendente',
         criadoEm: new Date().toISOString()
@@ -1371,6 +1393,8 @@ const ErrorScreen = ({ error, resetError }) => {
       setTimeout(() => {
         setRelatorioEnviado(false);
         setDescricao('');
+        setNomeContato('');
+        setEmailContato('');
       }, 5000);
     } catch (err) {
       console.error('Erro ao enviar relatório:', err);
@@ -1384,24 +1408,72 @@ const ErrorScreen = ({ error, resetError }) => {
       {/* Modal de descrição */}
       {showDescricaoModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Descrever o Problema
+              Reportar Problema
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Conte-nos o que você estava fazendo quando o erro ocorreu. Isso nos ajudará a resolver o problema mais rapidamente.
-            </p>
-            <textarea
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Ex: Eu estava tentando adicionar uma nova ferramenta ao inventário quando a tela travou..."
-              className="w-full h-32 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <div className="flex gap-3 mt-4">
+            
+            {!usuario?.id && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Para que possamos entrar em contato sobre este erro, por favor preencha seus dados:
+                </p>
+              </div>
+            )}
+
+            {/* Campos de contato para usuários não logados */}
+            {!usuario?.id && (
+              <div className="space-y-3 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Seu Nome <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={nomeContato}
+                    onChange={(e) => setNomeContato(e.target.value)}
+                    placeholder="Digite seu nome completo"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Seu Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={emailContato}
+                    onChange={(e) => setEmailContato(e.target.value)}
+                    placeholder="seu.email@exemplo.com"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Descrição do problema */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Descrição do Problema
+              </label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                Conte-nos o que você estava fazendo quando o erro ocorreu.
+              </p>
+              <textarea
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                placeholder="Ex: Eu estava tentando adicionar uma nova ferramenta ao inventário quando a tela travou..."
+                className="w-full h-32 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowDescricaoModal(false);
                   setDescricao('');
+                  setNomeContato('');
+                  setEmailContato('');
                 }}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >

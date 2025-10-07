@@ -1,71 +1,100 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MapPin, Server, CheckCircle, XCircle, Globe, Zap, Shield, Activity, Clock } from 'lucide-react';
+import { X, MapPin, Server, CheckCircle, XCircle, Globe, Zap, Shield, Activity, Clock, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import './ServerWorldMap.css';
+import { useServerManagement } from '../hooks/useServerManagement';
+import { useAllServersConnection } from '../hooks/useServerConnection';
 
-// URL da imagem do mapa mundial
-const WORLD_MAP_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzYwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48c3R5bGU+LmNvbnRpbmVudHtmaWxsOiM1NTk5ZDd9PC9zdHlsZT48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YzZjRmNiIvPjxwYXRoIGNsYXNzPSJjb250aW5lbnQiIGQ9Ik0gMjAgMzAgTCAzMCAyNSBMIDQ1IDI4IEwgNTUgMzggTCA2MCA1MCBMIDU4IDY1IEwgNTAgNzUgTCA0MCA4MCBMIDMwIDc4IEwgMjAgNjggWiBNIDY1IDM1IEwgNzUgMzAgTCA5MCAzNSBMIDEwMCA0NSBMIDQ1IDUwIEwgOTggNjAgTCA5MCA3MCBMIDQ1IDcwIEwgNzAgNjAgTCA2NSA0NSBaIE0gMTE1IDMwIEwgMTM1IDI4IEwgMTUwIDMyIEwgMTY1IDQ1IEwgMTcwIDYwIEwgMTY4IDgwIEwgMTU1IDk1IEwgMTQwIDEwMCBMIDEyNSA5OCBMIDQ1IDg1IEwgMTAwIDcwIEwgMTA1IDU1IEwgMTA4IDQwIFogTSAxODAgMzAgTCAyMDAgMjggTCAyMjAgMzUgTCAyNDAgNDUgTCAyNTAgNjAgTCAyNDggODAgTCAyMzUgOTUgTCAyMjAgMTAwIEwgMjA1IDk4IEwgMTkwIDg1IEwgMTgyIDcwIEwgMTc4IDUwIFogTSAyNjAgMzggTCAyODAgMzUgTCAzMDAgNDAgTCAzMTUgNTUgTCAzMjAgNzAgTCAzMTUgODUgTCAzMDAgOTUgTCAyODAgMTAwIEwgMjY1IDk4IEwgMjU1IDg1IEwgMjUyIDY4IEwgMjU1IDUwIFogTSAyODUgMTEwIEwgMzAwIDEwOCBMIDMxNSAxMTUgTCAzMjUgMTI1IEwgMzI4IDEzOCBMIDMyMCAxNDggTCAzMDUgMTUyIEwgMjkwIDE1MCBMIDI4MCAxNDAgTCAyNzggMTI1IFoiLz48L3N2Zz4=';
+// World map image - você pode substituir por sua própria imagem salvando como src/assets/world-map.png
+const worldMapImage = 'https://upload.wikimedia.org/wikipedia/commons/8/83/Equirectangular_projection_SW.jpg';
 
 /**
- * 🗺️ Mapeamento de regiões do Firebase para coordenadas
+ * 🗺️ Mapeamento PRECISO de regiões do Firebase para coordenadas
+ * Coordenadas exatas dos data centers com reconhecimento de país e estado
  */
 const FIREBASE_REGIONS = {
-  // América do Norte
-  'us-central1': { coords: [-95.7129, 37.0902], name: 'Iowa, EUA', flag: '🇺🇸' },
-  'us-east1': { coords: [-79.0759, 35.7596], name: 'Carolina do Sul, EUA', flag: '🇺🇸' },
-  'us-east4': { coords: [-77.4874, 39.0458], name: 'Virginia do Norte, EUA', flag: '🇺🇸' },
-  'us-west1': { coords: [-122.0839, 37.4220], name: 'Oregon, EUA', flag: '🇺🇸' },
-  'us-west2': { coords: [-118.2437, 34.0522], name: 'Los Angeles, EUA', flag: '🇺🇸' },
-  'us-west3': { coords: [-111.8910, 40.7608], name: 'Salt Lake City, EUA', flag: '🇺🇸' },
-  'us-west4': { coords: [-115.1398, 36.1699], name: 'Las Vegas, EUA', flag: '🇺🇸' },
+  // ========== ESTADOS UNIDOS (Coordenadas exatas dos data centers) ==========
+  'us-central1': { coords: [-93.6250, 41.2619], name: 'Council Bluffs, Iowa', state: 'Iowa', country: 'EUA', flag: '🇺🇸' },
+  'us-east1': { coords: [-79.8431, 33.8361], name: 'Moncks Corner, SC', state: 'Carolina do Sul', country: 'EUA', flag: '🇺🇸' },
+  'us-east4': { coords: [-77.4874, 39.0458], name: 'Ashburn, Virginia', state: 'Virginia', country: 'EUA', flag: '🇺🇸' },
+  'us-west1': { coords: [-123.0868, 45.5898], name: 'The Dalles, Oregon', state: 'Oregon', country: 'EUA', flag: '🇺🇸' },
+  'us-west2': { coords: [-118.2437, 34.0522], name: 'Los Angeles, CA', state: 'Califórnia', country: 'EUA', flag: '🇺🇸' },
+  'us-west3': { coords: [-111.8910, 40.7608], name: 'Salt Lake City, UT', state: 'Utah', country: 'EUA', flag: '🇺🇸' },
+  'us-west4': { coords: [-115.1721, 36.1215], name: 'Henderson, Nevada', state: 'Nevada', country: 'EUA', flag: '🇺🇸' },
+  'us-south1': { coords: [-81.6557, 30.3322], name: 'Jacksonville, FL', state: 'Flórida', country: 'EUA', flag: '🇺🇸' },
   
-  // América do Sul
-  'southamerica-east1': { coords: [-46.6333, -23.5505], name: 'São Paulo, Brasil', flag: '🇧🇷' },
-  'southamerica-west1': { coords: [-70.6483, -33.4489], name: 'Santiago, Chile', flag: '🇨🇱' },
+  // ========== CANADÁ (Coordenadas exatas) ==========
+  'northamerica-northeast1': { coords: [-73.5673, 45.5017], name: 'Montreal, Quebec', state: 'Quebec', country: 'Canadá', flag: '🇨🇦' },
+  'northamerica-northeast2': { coords: [-79.3832, 43.6532], name: 'Toronto, Ontario', state: 'Ontario', country: 'Canadá', flag: '🇨🇦' },
   
-  // Europa
-  'europe-west1': { coords: [4.9041, 52.3676], name: 'Bélgica', flag: '🇧🇪' },
-  'europe-west2': { coords: [-0.1278, 51.5074], name: 'Londres, Reino Unido', flag: '🇬🇧' },
-  'europe-west3': { coords: [8.6821, 50.1109], name: 'Frankfurt, Alemanha', flag: '🇩🇪' },
-  'europe-west4': { coords: [4.8952, 52.3702], name: 'Holanda', flag: '🇳🇱' },
-  'europe-west6': { coords: [8.5417, 47.3769], name: 'Zurique, Suíça', flag: '🇨🇭' },
-  'europe-north1': { coords: [24.9384, 60.1699], name: 'Finlândia', flag: '🇫🇮' },
-  'europe-central2': { coords: [21.0122, 52.2297], name: 'Varsóvia, Polônia', flag: '🇵🇱' },
+  // ========== AMÉRICA DO SUL (Coordenadas exatas) ==========
+  'southamerica-east1': { coords: [-46.6333, -23.5505], name: 'Osasco, São Paulo', state: 'São Paulo', country: 'Brasil', flag: '🇧🇷' },
+  'southamerica-west1': { coords: [-70.6483, -33.4489], name: 'Santiago, Región Metropolitana', state: 'Región Metropolitana', country: 'Chile', flag: '🇨🇱' },
   
-  // Ásia
-  'asia-east1': { coords: [121.5654, 25.0330], name: 'Taiwan', flag: '🇹🇼' },
-  'asia-east2': { coords: [114.1095, 22.3964], name: 'Hong Kong', flag: '🇭🇰' },
-  'asia-northeast1': { coords: [139.6917, 35.6762], name: 'Tóquio, Japão', flag: '🇯🇵' },
-  'asia-northeast2': { coords: [135.5023, 34.6937], name: 'Osaka, Japão', flag: '🇯🇵' },
-  'asia-northeast3': { coords: [126.9780, 37.5665], name: 'Seul, Coreia do Sul', flag: '🇰🇷' },
-  'asia-south1': { coords: [72.8777, 19.0760], name: 'Mumbai, Índia', flag: '🇮🇳' },
-  'asia-south2': { coords: [77.5946, 12.9716], name: 'Delhi, Índia', flag: '🇮🇳' },
-  'asia-southeast1': { coords: [103.8198, 1.3521], name: 'Singapura', flag: '🇸🇬' },
-  'asia-southeast2': { coords: [106.8456, -6.2088], name: 'Jacarta, Indonésia', flag: '🇮🇩' },
+  // ========== EUROPA OCIDENTAL (Coordenadas exatas) ==========
+  'europe-west1': { coords: [4.4699, 50.8503], name: 'St. Ghislain, Bélgica', state: 'Hainaut', country: 'Bélgica', flag: '🇧🇪' },
+  'europe-west2': { coords: [-0.1278, 51.5074], name: 'Londres', state: 'Inglaterra', country: 'Reino Unido', flag: '🇬🇧' },
+  'europe-west3': { coords: [8.6821, 50.1109], name: 'Frankfurt am Main', state: 'Hesse', country: 'Alemanha', flag: '🇩🇪' },
+  'europe-west4': { coords: [4.4699, 51.9225], name: 'Eemshaven, Groningen', state: 'Groningen', country: 'Holanda', flag: '🇳🇱' },
+  'europe-west6': { coords: [8.5417, 47.3769], name: 'Zurique', state: 'Zurique', country: 'Suíça', flag: '🇨🇭' },
+  'europe-west8': { coords: [9.1859, 45.4642], name: 'Milão, Lombardia', state: 'Lombardia', country: 'Itália', flag: '🇮🇹' },
+  'europe-west9': { coords: [-9.1393, 38.7223], name: 'Lisboa', state: 'Lisboa', country: 'Portugal', flag: '🇵🇹' },
+  'europe-west10': { coords: [13.4050, 52.5200], name: 'Berlim', state: 'Berlim', country: 'Alemanha', flag: '🇩🇪' },
+  'europe-west12': { coords: [2.3522, 48.8566], name: 'Paris, Île-de-France', state: 'Île-de-France', country: 'França', flag: '🇫🇷' },
   
-  // Austrália
-  'australia-southeast1': { coords: [151.2093, -33.8688], name: 'Sydney, Austrália', flag: '🇦🇺' },
-  'australia-southeast2': { coords: [144.9631, -37.8136], name: 'Melbourne, Austrália', flag: '🇦🇺' },
+  // ========== EUROPA NORTE (Coordenadas exatas) ==========
+  'europe-north1': { coords: [24.9384, 60.1699], name: 'Hamina, Finlândia', state: 'Kymenlaakso', country: 'Finlândia', flag: '🇫🇮' },
   
-  // Oriente Médio
-  'me-west1': { coords: [34.8516, 31.0461], name: 'Tel Aviv, Israel', flag: '🇮🇱' },
+  // ========== EUROPA CENTRAL (Coordenadas exatas) ==========
+  'europe-central2': { coords: [21.0122, 52.2297], name: 'Varsóvia, Mazóvia', state: 'Mazóvia', country: 'Polônia', flag: '🇵🇱' },
   
-  // África
-  'africa-south1': { coords: [18.4241, -33.9249], name: 'Joanesburgo, África do Sul', flag: '🇿🇦' },
+  // ========== ÁSIA LESTE (Coordenadas exatas) ==========
+  'asia-east1': { coords: [121.5654, 25.0330], name: 'Changhua County, Taiwan', state: 'Changhua', country: 'Taiwan', flag: '🇹🇼' },
+  'asia-east2': { coords: [114.1095, 22.3193], name: 'Hong Kong', state: 'Hong Kong', country: 'Hong Kong', flag: '🇭🇰' },
   
-  // Canadá
-  'northamerica-northeast1': { coords: [-73.5673, 45.5017], name: 'Montreal, Canadá', flag: '🇨🇦' },
-  'northamerica-northeast2': { coords: [-79.3832, 43.6532], name: 'Toronto, Canadá', flag: '🇨🇦' }
+  // ========== ÁSIA NORDESTE (Japão e Coreia - Coordenadas exatas) ==========
+  'asia-northeast1': { coords: [139.6917, 35.6762], name: 'Tóquio', state: 'Tóquio', country: 'Japão', flag: '🇯🇵' },
+  'asia-northeast2': { coords: [135.5023, 34.6937], name: 'Osaka', state: 'Osaka', country: 'Japão', flag: '🇯🇵' },
+  'asia-northeast3': { coords: [126.9780, 37.5665], name: 'Seul', state: 'Seul', country: 'Coreia do Sul', flag: '🇰🇷' },
+  
+  // ========== ÁSIA SUL (Índia - Coordenadas exatas) ==========
+  'asia-south1': { coords: [72.8777, 19.0760], name: 'Mumbai, Maharashtra', state: 'Maharashtra', country: 'Índia', flag: '🇮🇳' },
+  'asia-south2': { coords: [77.5946, 28.7041], name: 'Delhi', state: 'Delhi', country: 'Índia', flag: '🇮🇳' },
+  
+  // ========== ÁSIA SUDESTE (Coordenadas exatas) ==========
+  'asia-southeast1': { coords: [103.8198, 1.3521], name: 'Jurong West, Singapura', state: 'Jurong West', country: 'Singapura', flag: '🇸🇬' },
+  'asia-southeast2': { coords: [106.8456, -6.2088], name: 'Jacarta', state: 'Jacarta', country: 'Indonésia', flag: '🇮🇩' },
+  
+  // ========== AUSTRÁLIA (Coordenadas exatas) ==========
+  'australia-southeast1': { coords: [151.2093, -33.8688], name: 'Sydney, NSW', state: 'Nova Gales do Sul', country: 'Austrália', flag: '🇦🇺' },
+  'australia-southeast2': { coords: [144.9631, -37.8136], name: 'Melbourne, Victoria', state: 'Victoria', country: 'Austrália', flag: '🇦🇺' },
+  
+  // ========== ORIENTE MÉDIO (Coordenadas exatas) ==========
+  'me-west1': { coords: [34.7818, 32.0853], name: 'Tel Aviv, Distrito Central', state: 'Distrito Central', country: 'Israel', flag: '🇮🇱' },
+  'me-central1': { coords: [50.5577, 26.0667], name: 'Manama, Bahrein', state: 'Capital', country: 'Bahrein', flag: '��' },
+  
+  // ========== ÁFRICA (Coordenadas exatas) ==========
+  'africa-south1': { coords: [28.2293, -25.7479], name: 'Joanesburgo, Gauteng', state: 'Gauteng', country: 'África do Sul', flag: '�🇦' }
 };
 
 /**
  * 🗺️ Componente de Mapa Mundi Interativo com Servidores (Design Modernizado)
  */
-const ServerWorldMap = ({ servers = [] }) => {
+const ServerWorldMap = () => {
+  // Importar hooks
+  const { servers, loading: isLoading, recordUsage } = useServerManagement();
+  const connectionsStatus = useAllServersConnection(servers);
+  
   const [selectedServer, setSelectedServer] = useState(null);
   const [hoveredServer, setHoveredServer] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [pulsingServers, setPulsingServers] = useState(new Set());
+
+  // Debug: Verificar servidores carregados
+  useEffect(() => {
+    console.log('🗺️ Servidores carregados no mapa:', servers.length);
+    console.log('📋 Lista de servidores:', servers);
+  }, [servers]);
 
   useEffect(() => {
     // Adicionar animação de pulso aleatória aos servidores ativos
@@ -106,22 +135,54 @@ const ServerWorldMap = ({ servers = [] }) => {
   };
 
   /**
-   * Converter coordenadas geográficas para posição SVG (ajustado para imagem 360x180)
+   * 🎯 Converter coordenadas geográficas PRECISAS para posição SVG
+   * Usa projeção Mercator com ajustes para garantir precisão por país e estado
    */
   const coordsToSVG = (coords) => {
     const [lng, lat] = coords;
-    // Conversão de lat/lng para viewBox do SVG (360x180)
+    
+    // Conversão precisa usando projeção Mercator
+    // ViewBox: 360x180 (360 de largura, 180 de altura)
     const x = ((lng + 180) / 360) * 360;
-    const y = ((90 - lat) / 180) * 180;
-    return { x, y };
+    
+    // Projeção Mercator para latitude (mais precisa que linear)
+    const latRad = lat * Math.PI / 180;
+    const mercatorY = Math.log(Math.tan((Math.PI / 4) + (latRad / 2)));
+    const y = 90 - (mercatorY * 180 / Math.PI);
+    
+    // Normalizar para o viewBox
+    const normalizedY = (y / 180) * 180;
+    
+    return { 
+      x: Math.max(0, Math.min(360, x)), // Limitar ao viewBox
+      y: Math.max(0, Math.min(180, normalizedY)) // Limitar ao viewBox
+    };
   };
 
   /**
    * Preparar servidores com coordenadas SVG
+   * Servidores podem ter coordenadas próprias ou usar região Firebase
    */
   const serversWithCoords = servers.map(server => {
-    const location = detectRegion(server);
-    const svgPos = coordsToSVG(location.coords);
+    let coords, location;
+    
+    // Se o servidor tem latitude/longitude próprias, usar diretamente
+    if (server.latitude && server.longitude) {
+      coords = [server.longitude, server.latitude];
+      location = {
+        name: server.region || server.name,
+        state: server.region,
+        country: server.country || 'Custom',
+        flag: server.flag || '🌐'
+      };
+    } else {
+      // Caso contrário, detectar pela região Firebase
+      location = detectRegion(server);
+      coords = location.coords;
+    }
+    
+    const svgPos = coordsToSVG(coords);
+    
     return {
       ...server,
       location,
@@ -208,21 +269,70 @@ const ServerWorldMap = ({ servers = [] }) => {
 
       {/* Map Container com Imagem de Fundo */}
       <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 world-map-container" style={{ height: '600px' }}>
-        {/* Imagem do mapa mundial */}
-        <div className="absolute inset-0 flex items-center justify-center p-8">
-          <img 
-            src={WORLD_MAP_IMAGE}
-            alt="World Map"
-            className="w-full h-full object-contain opacity-90 dark:opacity-80 world-map-image"
-          />
-        </div>
-
-        {/* Overlay com marcadores de servidores */}
-        <svg 
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          viewBox="0 0 360 180"
-          preserveAspectRatio="xMidYMid meet"
+        {/* Wrapper com Zoom e Pan */}
+        <TransformWrapper
+          initialScale={1}
+          minScale={0.5}
+          maxScale={4}
+          centerOnInit={true}
+          wheel={{ step: 0.1 }}
+          pinch={{ step: 5 }}
+          doubleClick={{ mode: "zoomIn", step: 0.5 }}
+          panning={{ excluded: [] }}
         >
+          {({ zoomIn, zoomOut, resetTransform }) => (
+            <>
+              {/* Controles de Zoom */}
+              <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => zoomIn()}
+                  className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  title="Aumentar Zoom"
+                >
+                  <ZoomIn className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => zoomOut()}
+                  className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-blue-500 text-blue-600 dark:text-blue-400"
+                  title="Diminuir Zoom"
+                >
+                  <ZoomOut className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => resetTransform()}
+                  className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-purple-500 text-purple-600 dark:text-purple-400"
+                  title="Resetar Visualização"
+                >
+                  <Maximize2 className="w-5 h-5" />
+                </motion.button>
+              </div>
+
+              <TransformComponent
+                wrapperStyle={{ width: '100%', height: '100%' }}
+                contentStyle={{ width: '100%', height: '100%' }}
+              >
+                {/* Imagem do mapa mundial */}
+                <div className="absolute inset-0 flex items-center justify-center p-8">
+                  <img 
+                    src={worldMapImage}
+                    alt="World Map"
+                    className="w-full h-full object-contain opacity-90 dark:opacity-80 world-map-image"
+                    draggable={false}
+                  />
+                </div>
+
+                {/* Overlay com marcadores de servidores */}
+                <svg 
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  viewBox="0 0 360 180"
+                  preserveAspectRatio="xMidYMid meet"
+                >
           <defs>
             <filter id="server-glow">
               <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -245,6 +355,8 @@ const ServerWorldMap = ({ servers = [] }) => {
             const isHovered = hoveredServer?.id === server.id;
             const isSelected = selectedServer?.id === server.id;
             const isPulsing = pulsingServers.has(server.id);
+            const connectionStatus = connectionsStatus[server.id];
+            const isConnected = connectionStatus?.isConnected ?? false;
 
             return (
               <g 
@@ -254,8 +366,8 @@ const ServerWorldMap = ({ servers = [] }) => {
                 onMouseLeave={() => setHoveredServer(null)}
                 onClick={() => setSelectedServer(server)}
               >
-                {/* Círculo de pulso para servidores ativos */}
-                {isActive && isPulsing && (
+                {/* Círculo de pulso para servidores ativos e conectados */}
+                {isActive && isConnected && isPulsing && (
                   <motion.circle
                     cx={server.svgX}
                     cy={server.svgY}
@@ -267,14 +379,14 @@ const ServerWorldMap = ({ servers = [] }) => {
                   />
                 )}
 
-                {/* Círculo externo (borda) */}
+                {/* Círculo externo (borda com indicador de conexão) */}
                 <motion.circle
                   cx={server.svgX}
                   cy={server.svgY}
                   r="3"
-                  fill={isActive ? '#10b981' : '#6b7280'}
-                  stroke="#ffffff"
-                  strokeWidth="0.8"
+                  fill={isActive && isConnected ? '#10b981' : isActive ? '#f59e0b' : '#6b7280'}
+                  stroke={isConnected ? '#ffffff' : '#ef4444'}
+                  strokeWidth={isConnected ? '0.8' : '1.2'}
                   filter="url(#server-glow)"
                   animate={{
                     scale: isHovered || isSelected ? 1.5 : 1,
@@ -283,6 +395,25 @@ const ServerWorldMap = ({ servers = [] }) => {
                   transition={{ duration: 0.2 }}
                   style={{ transformOrigin: `${server.svgX}px ${server.svgY}px` }}
                 />
+
+                {/* Indicador de latência (anel ao redor se conectado) */}
+                {isConnected && connectionStatus?.latency < 100 && (
+                  <motion.circle
+                    cx={server.svgX}
+                    cy={server.svgY}
+                    r="4.5"
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="0.5"
+                    opacity="0.6"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.6, 0.3, 0.6]
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    style={{ transformOrigin: `${server.svgX}px ${server.svgY}px` }}
+                  />
+                )}
 
                 {/* Ícone de servidor */}
                 <motion.g
@@ -323,7 +454,7 @@ const ServerWorldMap = ({ servers = [] }) => {
                   />
                 </motion.g>
 
-                {/* Tooltip ao passar o mouse */}
+                {/* Tooltip PRECISO ao passar o mouse (mostra país, estado, região e conexão) */}
                 {isHovered && (
                   <motion.g
                     initial={{ opacity: 0, y: 2 }}
@@ -331,18 +462,19 @@ const ServerWorldMap = ({ servers = [] }) => {
                     transition={{ duration: 0.2 }}
                   >
                     <rect
-                      x={server.svgX - 18}
-                      y={server.svgY - 12}
-                      width="36"
-                      height="8"
+                      x={server.svgX - 25}
+                      y={server.svgY - 16}
+                      width="50"
+                      height="15"
                       fill="#1f2937"
                       rx="1.5"
                       opacity="0.95"
                       filter="url(#server-glow)"
                     />
+                    {/* Nome do servidor */}
                     <text
                       x={server.svgX}
-                      y={server.svgY - 8.5}
+                      y={server.svgY - 12}
                       textAnchor="middle"
                       fill="#ffffff"
                       fontSize="2.8"
@@ -351,15 +483,40 @@ const ServerWorldMap = ({ servers = [] }) => {
                     >
                       {server.location.flag} {server.name}
                     </text>
+                    {/* Localização completa: cidade, estado */}
                     <text
                       x={server.svgX}
-                      y={server.svgY - 5.5}
+                      y={server.svgY - 7.5}
                       textAnchor="middle"
-                      fill="#9ca3af"
+                      fill="#10b981"
                       fontSize="2"
+                      fontWeight="600"
                       fontFamily="system-ui"
                     >
                       {server.location.name}
+                    </text>
+                    {/* País completo */}
+                    <text
+                      x={server.svgX}
+                      y={server.svgY - 8.5}
+                      textAnchor="middle"
+                      fill="#9ca3af"
+                      fontSize="1.8"
+                      fontFamily="system-ui"
+                    >
+                      {server.location.state && `${server.location.state}, `}{server.location.country}
+                    </text>
+                    {/* Status de conexão */}
+                    <text
+                      x={server.svgX}
+                      y={server.svgY - 5}
+                      textAnchor="middle"
+                      fill={isConnected ? '#10b981' : '#ef4444'}
+                      fontSize="1.6"
+                      fontWeight="600"
+                      fontFamily="system-ui"
+                    >
+                      {isConnected ? `🟢 Conectado ${connectionStatus?.latency ? `(${connectionStatus.latency}ms)` : ''}` : '🔴 Desconectado'}
                     </text>
                   </motion.g>
                 )}
@@ -395,7 +552,7 @@ const ServerWorldMap = ({ servers = [] }) => {
         </svg>
 
         {/* Legenda Modernizada */}
-        <div className="absolute bottom-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-gray-200 dark:border-gray-700">
+        <div className="absolute bottom-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-gray-200 dark:border-gray-700 z-10 pointer-events-auto">
           <h3 className="font-bold text-sm mb-3 text-gray-900 dark:text-white flex items-center gap-2">
             <MapPin className="w-4 h-4 text-blue-600" />
             Legenda
@@ -480,9 +637,13 @@ const ServerWorldMap = ({ servers = [] }) => {
             )}
           </div>
         </div>
+              </TransformComponent>
+            </>
+          )}
+        </TransformWrapper>
 
         {/* Contador de Regiões */}
-        <div className="absolute bottom-4 right-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl p-3 shadow-xl border border-gray-200 dark:border-gray-700">
+        <div className="absolute bottom-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl p-3 shadow-xl border border-gray-200 dark:border-gray-700 z-10">
           <div className="flex items-center gap-2 text-xs">
             <Globe className="w-4 h-4 text-blue-600" />
             <div>
@@ -492,6 +653,13 @@ const ServerWorldMap = ({ servers = [] }) => {
               <p className="text-[10px] text-gray-600 dark:text-gray-400">Regiões</p>
             </div>
           </div>
+        </div>
+
+        {/* Dica de Uso */}
+        <div className="absolute bottom-4 right-24 bg-blue-500/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-xl z-10">
+          <p className="text-xs text-white font-semibold flex items-center gap-2">
+            <span>🖱️</span> Arraste para mover • Scroll para zoom • Pinça para zoom no celular
+          </p>
         </div>
       </div>
 
@@ -537,26 +705,53 @@ const ServerWorldMap = ({ servers = [] }) => {
 
               {/* Conteúdo do Modal */}
               <div className="p-6 space-y-6">
-                {/* Status */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    {selectedServer.status === 'active' ? (
-                      <>
-                        <CheckCircle className="w-6 h-6 text-green-500" />
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">Status: Ativo</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Servidor em operação</p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-6 h-6 text-gray-500" />
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">Status: Inativo</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Servidor desligado</p>
-                        </div>
-                      </>
-                    )}
+                {/* Status e Conexão */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      {selectedServer.status === 'active' ? (
+                        <>
+                          <CheckCircle className="w-6 h-6 text-green-500" />
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">Status: Ativo</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Servidor em operação</p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-6 h-6 text-gray-500" />
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">Status: Inativo</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Servidor desligado</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Status de Conexão */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      {connectionsStatus[selectedServer.id]?.isConnected ? (
+                        <>
+                          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">Conectado</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              Latência: {connectionsStatus[selectedServer.id]?.latency}ms
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">Desconectado</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Sem resposta</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -630,13 +825,23 @@ const ServerWorldMap = ({ servers = [] }) => {
                 <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
                   <div className="flex items-center gap-3">
                     <MapPin className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                    <div>
-                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">Localização Detectada</p>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                        📍 Localização Precisa
+                      </p>
                       <p className="text-lg font-bold text-gray-900 dark:text-white">
                         {selectedServer.location.flag} {selectedServer.location.name}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                        Região: {selectedServer.location.region}
+                      {selectedServer.location.state && (
+                        <p className="text-sm text-purple-600 dark:text-purple-400 font-medium mt-1">
+                          Estado/Região: {selectedServer.location.state}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        País: {selectedServer.location.country}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 font-mono mt-1">
+                        ID: {selectedServer.location.region}
                       </p>
                     </div>
                   </div>

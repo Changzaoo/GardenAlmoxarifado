@@ -1155,6 +1155,16 @@
   resolved "https://registry.npmjs.org/@capacitor/push-notifications/-/push-notifications-7.0.3.tgz"
   integrity sha512-4qt5dRVBkHzq202NEoj3JC+S+zQCrZ1FJh7sjkICy/i1iEos+VaoB3bie8eWDQ2LTARktB4+k2xkdpu8pcVo/g==
 
+"@capacitor/splash-screen@^7.0.3":
+  version "7.0.3"
+  resolved "https://registry.npmjs.org/@capacitor/splash-screen/-/splash-screen-7.0.3.tgz"
+  integrity sha512-coAw2de3rRX0EfneK0/D9IZaDAUOtsPaE9ZNbSdCs2UtmXp0hdcr5Tsil01Kve707nQfLsd03pmvaesJYD60EA==
+
+"@capacitor/status-bar@^7.0.3":
+  version "7.0.3"
+  resolved "https://registry.npmjs.org/@capacitor/status-bar/-/status-bar-7.0.3.tgz"
+  integrity sha512-JyRpVnKwHij9hgPWolF6PK+HT3e2HSPjN11/h2OmKxq8GAdPGARFLv+97eZl0pvuvm0Kka/LpiLb5whXISBg7Q==
+
 "@craco/craco@^7.1.0":
   version "7.1.0"
   resolved "https://registry.npmjs.org/@craco/craco/-/craco-7.1.0.tgz"
@@ -9906,6 +9916,11 @@ react-window@^2.2.0:
   version "2.2.0"
   resolved "https://registry.npmjs.org/react-window/-/react-window-2.2.0.tgz"
   integrity sha512-Y2L7yonHq6K1pQA2P98wT5QdIsEcjBTB7T8o6Mub12hH9eYppXoYu6vgClmcjlh3zfNcW2UrXiJJJqDxUY7GVw==
+
+react-zoom-pan-pinch@^3.7.0:
+  version "3.7.0"
+  resolved "https://registry.npmjs.org/react-zoom-pan-pinch/-/react-zoom-pan-pinch-3.7.0.tgz"
+  integrity sha512-UmReVZ0TxlKzxSbYiAj+LeGRW8s8LraAFTXRAxzMYnNRgGPsxCudwZKVkjvGmjtx7SW/hZamt69NUmGf4xrkXA==
 
 react@^18.2.0:
   version "18.3.1"

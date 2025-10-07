@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cores do tema Light -->
+    <color name="colorPrimaryLight">#1D9BF0</color>
+    <color name="colorPrimaryDarkLight">#1A8CD8</color>
+    <color name="colorAccentLight">#1D9BF0</color>
+    <color name="colorBackgroundLight">#FFFFFF</color>
+    <color name="colorSurfaceLight">#F8FAFC</color>
+    <color name="colorOnPrimaryLight">#FFFFFF</color>
+    <color name="colorOnBackgroundLight">#111827</color>
+    
+    <!-- Cores do tema Dark -->
+    <color name="colorPrimaryDark">#1D9BF0</color>
+    <color name="colorPrimaryDarkDark">#1A8CD8</color>
+    <color name="colorAccentDark">#1D9BF0</color>
+    <color name="colorBackgroundDark">#000000</color>
+    <color name="colorSurfaceDark">#16181C</color>
+    <color name="colorOnPrimaryDark">#FFFFFF</color>
+    <color name="colorOnBackgroundDark">#E7E9EA</color>
+    
+    <!-- Cores padrão do sistema -->
+    <color name="colorPrimary">@color/colorPrimaryDark</color>
+    <color name="colorPrimaryDark">@color/colorPrimaryDarkDark</color>
+    <color name="colorAccent">@color/colorAccentDark</color>
+    
+    <!-- StatusBar -->
+    <color name="statusBarLight">#FFFFFF</color>
+    <color name="statusBarDark">#000000</color>
+    
+    <!-- NavigationBar -->
+    <color name="navigationBarLight">#FFFFFF</color>
+    <color name="navigationBarDark">#000000</color>
+    
+    <!-- SplashScreen -->
+    <color name="splashBackgroundLight">#FFFFFF</color>
+    <color name="splashBackgroundDark">#000000</color>
+    <color name="splashPrimary">#1D9BF0</color>
+</resources>

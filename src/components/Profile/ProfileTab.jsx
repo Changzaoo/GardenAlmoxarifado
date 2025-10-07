@@ -12,11 +12,13 @@ import {
   MessageSquarePlus,
   Users,
   Building2,
-  Briefcase
+  Briefcase,
+  Clock
 } from 'lucide-react';
 import MeuInventarioTab from '../Inventario/MeuInventarioTab';
 import TarefasTab from '../Tarefas/TarefasTab';
 import CronogramaSemanalCard from '../Tarefas/CronogramaSemanalCard';
+import WorkPontoTab from '../WorkPontoTab';
 import AvaliacaoPerfilModal from './AvaliacaoPerfilModal';
 import DetalhesFerramentasModal from './DetalhesFerramentasModal';
 import DetalhesTarefasModal from './DetalhesTarefasModal';
@@ -602,7 +604,7 @@ const ProfileTab = () => {
 
       {/* Tabs - Redesenhado com cards modernos - Otimizado para Mobile */}
       <div className="mt-6 px-6">
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
           <button 
             className={`relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-6 transition-all duration-300 ${
               activeTab === 'inventario' 
@@ -641,6 +643,49 @@ const ProfileTab = () => {
                     : 'text-gray-500 dark:text-gray-400'
                 }`}>
                   {emprestimos?.filter(e => e.status !== 'devolvido').length || 0} ativos
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <button 
+            className={`relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-6 transition-all duration-300 ${
+              activeTab === 'workponto' 
+                ? 'shadow-xl scale-105 sm:hover:scale-105' 
+                : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:scale-105'
+            }`}
+            style={activeTab === 'workponto' ? { backgroundColor: '#10b981', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4), 0 4px 6px -4px rgba(16, 185, 129, 0.4)' } : {}}
+            onClick={() => setActiveTab('workponto')}
+          >
+            {activeTab === 'workponto' && (
+              <div className="absolute inset-0 bg-white/10"></div>
+            )}
+            <div className="relative flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${
+                activeTab === 'workponto' 
+                  ? 'bg-white/20 backdrop-blur-sm' 
+                  : 'bg-green-100 dark:bg-green-900/30'
+              }`}>
+                <Clock className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                  activeTab === 'workponto' 
+                    ? 'text-white' 
+                    : 'text-green-600 dark:text-green-400'
+                }`} />
+              </div>
+              <div className="text-center sm:text-left">
+                <h3 className={`font-bold text-xs sm:text-lg ${
+                  activeTab === 'workponto' 
+                    ? 'text-white' 
+                    : 'text-gray-900 dark:text-white'
+                }`}>
+                  WorkPonto
+                </h3>
+                <p className={`text-[10px] sm:text-sm ${
+                  activeTab === 'workponto' 
+                    ? 'text-white/80' 
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>
+                  Registro
                 </p>
               </div>
             </div>
@@ -741,6 +786,11 @@ const ProfileTab = () => {
             <MeuInventarioTab
               emprestimos={emprestimos}
             />
+          </div>
+        )}
+        {activeTab === 'workponto' && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+            <WorkPontoTab />
           </div>
         )}
         {activeTab === 'tarefas' && (

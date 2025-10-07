@@ -14,18 +14,24 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert']
     },
     SplashScreen: {
-      launchShowDuration: 0,
+      launchShowDuration: 500,
       launchAutoHide: true,
-      backgroundColor: '#ffffff',
+      launchFadeOutDuration: 300,
+      backgroundColor: '#000000', // Será sobrescrito pelo tema
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
       androidSpinnerStyle: 'large',
       iosSpinnerStyle: 'small',
-      spinnerColor: '#3b82f6',
-      splashFullScreen: true,
-      splashImmersive: true,
+      spinnerColor: '#1D9BF0',
+      splashFullScreen: false,
+      splashImmersive: false,
       layoutName: 'launch_screen',
-      useDialog: true
+      useDialog: false
+    },
+    StatusBar: {
+      style: 'dark', // Será sobrescrito pelo tema
+      backgroundColor: '#000000', // Será sobrescrito pelo tema
+      overlaysWebView: false
     }
   },
   

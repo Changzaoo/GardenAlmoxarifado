@@ -8,6 +8,7 @@ import { RouteStateManager } from './RouteStateManager';
 import Seed from './Seed';
 import AlmoxarifadoJardim from './Seed';  // Assuming this is the correct import
 import RankingPontos from './Rankings/RankingPontos';
+import MeuPerfilPage from '../pages/MeuPerfilPage';
 // Componente para proteger rotas baseado no nível de acesso
 const PrivateRoute = ({ children, requiredLevel }) => {
   const { usuario } = useAuth();
@@ -61,6 +62,11 @@ const AppRoutes = () => {
         <Route path="/ranking" element={
           <PrivateRoute requiredLevel={NIVEIS_PERMISSAO.FUNCIONARIO}>
             <RankingPontos />
+          </PrivateRoute>
+        } />
+        <Route path="/meu-perfil" element={
+          <PrivateRoute requiredLevel={NIVEIS_PERMISSAO.FUNCIONARIO}>
+            <MeuPerfilPage />
           </PrivateRoute>
         } />
         {/* Rota de fallback */}
