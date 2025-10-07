@@ -279,20 +279,27 @@ const TransferenciaAnimation = ({
               Ferramentas em transferência:
             </h4>
             <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-              {ferramentas?.map((ferramenta, index) => (
-                <motion.div
-                  key={index}
-                  className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                >
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-                  <span className="text-gray-700 dark:text-gray-300 truncate">
-                    {typeof ferramenta === 'object' ? ferramenta.nome : ferramenta}
-                  </span>
-                </motion.div>
-              ))}
+              {ferramentas?.map((ferramenta, index) => {
+                // Normalizar ferramenta para string
+                const nomeFerramenta = typeof ferramenta === 'object' && ferramenta !== null
+                  ? (ferramenta.nome || ferramenta.descricao || ferramenta.ferramenta || 'Ferramenta')
+                  : String(ferramenta || 'Ferramenta');
+                  
+                return (
+                  <motion.div
+                    key={index}
+                    className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                  >
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                    <span className="text-gray-700 dark:text-gray-300 truncate">
+                      {nomeFerramenta}
+                    </span>
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
 

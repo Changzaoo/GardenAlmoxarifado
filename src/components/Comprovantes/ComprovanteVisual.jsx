@@ -145,28 +145,79 @@ const ComprovanteVisual = ({ tipo, dados, onDownload, onShare }) => {
 
       {/* Detalhes da transação */}
       <div className="px-6 space-y-3 mb-6">
-        {/* Funcionário/Colaborador */}
+        {/* Status do Empréstimo */}
+        {dados.status && (
+          <div className={`rounded-xl p-3 border-2 ${
+            dados.status === 'devolvido' ? 'bg-green-50 border-green-200' :
+            dados.status === 'emprestado' ? 'bg-blue-50 border-blue-200' :
+            'bg-yellow-50 border-yellow-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-600">SITUAÇÃO</span>
+              <span className={`text-sm font-bold uppercase ${
+                dados.status === 'devolvido' ? 'text-green-700' :
+                dados.status === 'emprestado' ? 'text-blue-700' :
+                'text-yellow-700'
+              }`}>
+                {dados.status}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Funcionário/Colaborador - Card Principal */}
         {(dados.colaborador || dados.funcionario || dados.para) && (
           <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
             <div className="flex items-center gap-2 mb-2">
               <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>
-              <div className="text-xs font-bold text-blue-900">RESPONSÁVEL</div>
+              <div className="text-xs font-bold text-blue-900">PARA</div>
             </div>
             <div className="font-bold text-lg text-gray-900">
               {dados.colaborador || dados.funcionario || dados.para}
             </div>
-            {(dados.paraCPF || dados.colaboradorCPF) && (
-              <div className="text-sm text-gray-600 mt-1">
-                CPF: {dados.paraCPF || dados.colaboradorCPF}
-              </div>
-            )}
-            {(dados.paraInfo || dados.setor) && (
-              <div className="text-sm text-blue-700 mt-1">
-                {dados.paraInfo || dados.setor}
-              </div>
-            )}
+            
+            {/* Informações do Funcionário */}
+            <div className="mt-3 space-y-1">
+              {dados.empresa && (
+                <div className="flex items-center gap-2 text-sm">
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-gray-700"><strong>Empresa:</strong> {dados.empresa}</span>
+                </div>
+              )}
+              
+              {dados.setor && (
+                <div className="flex items-center gap-2 text-sm">
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13 7H7v6h6V7z" />
+                    <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-gray-700"><strong>Setor:</strong> {dados.setor}</span>
+                </div>
+              )}
+              
+              {dados.cargo && (
+                <div className="flex items-center gap-2 text-sm">
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
+                    <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
+                  </svg>
+                  <span className="text-gray-700"><strong>Cargo:</strong> {dados.cargo}</span>
+                </div>
+              )}
+
+              {(dados.paraCPF || dados.colaboradorCPF) && (
+                <div className="flex items-center gap-2 text-sm">
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4h3a3 3 0 006 0h3a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm2.5 7a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45 4a2.5 2.5 0 10-4.9 0h4.9zM12 9a1 1 0 100 2h3a1 1 0 100-2h-3zm-1 4a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-gray-600">CPF: {dados.paraCPF || dados.colaboradorCPF}</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

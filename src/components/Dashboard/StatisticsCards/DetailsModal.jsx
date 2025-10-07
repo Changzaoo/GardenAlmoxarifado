@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { X, Clock, User, Wrench, ChevronLeft, FileText } from 'lucide-react';
-import ComprovanteEmprestimoModal from '../../Emprestimos/ComprovanteEmprestimoModal';
+import ComprovanteModal from '../../Comprovantes/ComprovanteModal';
 
 const EmprestimoCard = ({ emprestimo, onGerarComprovante }) => {
   const getFerramentaNome = (ferramenta) => {
@@ -189,11 +189,28 @@ const DetailsModal = ({ isOpen, onClose, details, title, dateRange }) => {
 
       {/* Modal de Comprovante */}
       {showComprovanteModal && emprestimoParaComprovante && (
-        <ComprovanteEmprestimoModal
-          emprestimo={emprestimoParaComprovante}
+        <ComprovanteModal
+          isOpen={showComprovanteModal}
           onClose={() => {
             setShowComprovanteModal(false);
             setEmprestimoParaComprovante(null);
+          }}
+          tipo={emprestimoParaComprovante.status === 'devolvido' ? 'devolucao' : 'emprestimo'}
+          dados={{
+            id: emprestimoParaComprovante.id,
+            para: emprestimoParaComprovante.nomeFuncionario,
+            funcionario: emprestimoParaComprovante.nomeFuncionario,
+            empresa: emprestimoParaComprovante.empresaNome || 'N/A',
+            setor: emprestimoParaComprovante.setorNome || 'N/A',
+            cargo: emprestimoParaComprovante.funcao || emprestimoParaComprovante.cargo || 'N/A',
+            status: emprestimoParaComprovante.status || 'emprestado',
+            quantidade: emprestimoParaComprovante.ferramentas?.length || 0,
+            ferramentas: emprestimoParaComprovante.ferramentas?.map(f => 
+              typeof f === 'object' ? (f.nome || f.descricao || f.ferramenta || 'Ferramenta') : String(f)
+            ) || [],
+            data: emprestimoParaComprovante.dataEmprestimo || emprestimoParaComprovante.dataCriacao,
+            descricao: emprestimoParaComprovante.observacao,
+            transacaoId: `WF-EMP-${emprestimoParaComprovante.id?.substring(0, 8).toUpperCase() || 'XXXXXXXX'}`
           }}
         />
       )}

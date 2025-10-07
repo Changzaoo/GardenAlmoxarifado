@@ -40,7 +40,8 @@
     "react-window": "^2.2.0",
     "react-zoom-pan-pinch": "^3.7.0",
     "tailwind-scrollbar": "^4.0.2",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -538,11 +538,17 @@ const ListaEmprestimos = ({
       // Fecha o modal e prepara os dados para animação
       setShowTransferenciaModal(false);
       
+      // Normaliza ferramentas para array de strings (apenas nomes)
+      const ferramentasNormalizadas = ferramentas.map(f => 
+        typeof f === 'object' && f !== null ? (f.nome || f.descricao || f.ferramenta || 'Ferramenta') : String(f || 'Ferramenta')
+      );
+      
       // Mostra a animação com os dados
       setDadosTransferencia({
         emprestimoOrigem: emprestimoParaTransferencia,
         funcionarioDestino,
-        ferramentas,
+        ferramentas: ferramentasNormalizadas, // Array de strings normalizadas
+        ferramentasOriginais: ferramentas, // Mantém os objetos originais para processamento posterior
         observacao
       });
       setShowTransferenciaAnimation(true);
@@ -559,15 +565,15 @@ const ListaEmprestimos = ({
     try {
       if (!dadosTransferencia) return;
 
-      const { emprestimoOrigem, funcionarioDestino, ferramentas, observacao } = dadosTransferencia;
+      const { emprestimoOrigem, funcionarioDestino, ferramentasOriginais, observacao } = dadosTransferencia;
 
-      console.log('Finalizando transferência de ferramentas:', { ferramentas, funcionarioDestino, observacao });
+      console.log('Finalizando transferência de ferramentas:', { ferramentas: ferramentasOriginais, funcionarioDestino, observacao });
 
       const dataTransferencia = new Date().toISOString();
       
       // Encontra e preserva os detalhes completos da ferramenta a ser transferida
       const ferramentaParaTransferir = emprestimoOrigem.ferramentas.find(
-        f => f.id === ferramentas[0].id
+        f => f.id === ferramentasOriginais[0].id
       );
 
       if (!ferramentaParaTransferir) {
@@ -576,7 +582,7 @@ const ListaEmprestimos = ({
 
       // Remove a ferramenta selecionada do empréstimo atual
       const ferramentasRestantes = emprestimoOrigem.ferramentas.filter(
-        f => f.id !== ferramentas[0].id
+        f => f.id !== ferramentasOriginais[0].id
       );
 
       // Atualiza o empréstimo original
@@ -1301,28 +1307,34 @@ const ListaEmprestimos = ({
       )}
 
       {/* Modal de Comprovante PDF */}
-      {showComprovanteModal && emprestimoParaComprovante && (
-        <ComprovanteModal
-          isOpen={showComprovanteModal}
-          tipo={emprestimoParaComprovante.status === 'devolvido' ? 'devolucao' : 'emprestimo'}
-          dados={{
-            transacaoId: emprestimoParaComprovante.id?.substring(0, 13).toUpperCase() || 'N/A',
-            id: emprestimoParaComprovante.id,
-            data: emprestimoParaComprovante.dataEmprestimo,
-            quantidade: emprestimoParaComprovante.ferramentas?.length || 0,
-            ferramentas: emprestimoParaComprovante.ferramentas?.map(f => f.nome) || [],
-            de: emprestimoParaComprovante.empresaNome || 'Almoxarifado',
-            para: emprestimoParaComprovante.nomeFuncionario || funcionarios.find(f => f.id === emprestimoParaComprovante.funcionarioId)?.nome || 'N/A',
-            deInfo: emprestimoParaComprovante.empresaNome || 'Almoxarifado WorkFlow',
-            paraInfo: `${emprestimoParaComprovante.setorNome || 'N/A'} - ${emprestimoParaComprovante.empresaNome || 'N/A'}`,
-            observacoes: emprestimoParaComprovante.observacoes
-          }}
-          onClose={() => {
-            setShowComprovanteModal(false);
-            setEmprestimoParaComprovante(null);
-          }}
-        />
-      )}
+      {showComprovanteModal && emprestimoParaComprovante && (() => {
+        const funcionario = funcionarios.find(f => f.id === emprestimoParaComprovante.funcionarioId) || {};
+        return (
+          <ComprovanteModal
+            isOpen={showComprovanteModal}
+            tipo={emprestimoParaComprovante.status === 'devolvido' ? 'devolucao' : 'emprestimo'}
+            dados={{
+              transacaoId: emprestimoParaComprovante.id?.substring(0, 13).toUpperCase() || 'N/A',
+              id: emprestimoParaComprovante.id,
+              data: emprestimoParaComprovante.dataEmprestimo,
+              quantidade: emprestimoParaComprovante.ferramentas?.length || 0,
+              ferramentas: emprestimoParaComprovante.ferramentas?.map(f => f.nome) || [],
+              de: emprestimoParaComprovante.empresaNome || 'Almoxarifado',
+              para: emprestimoParaComprovante.nomeFuncionario || funcionario.nome || 'N/A',
+              deInfo: emprestimoParaComprovante.empresaNome || 'Almoxarifado WorkFlow',
+              empresa: funcionario.empresa || emprestimoParaComprovante.empresaNome || 'N/A',
+              setor: funcionario.setor || emprestimoParaComprovante.setorNome || 'N/A',
+              cargo: funcionario.funcao || funcionario.cargo || 'N/A',
+              status: emprestimoParaComprovante.status || 'emprestado',
+              observacoes: emprestimoParaComprovante.observacoes
+            }}
+            onClose={() => {
+              setShowComprovanteModal(false);
+              setEmprestimoParaComprovante(null);
+            }}
+          />
+        );
+      })()}
 
       </div>
     </div>

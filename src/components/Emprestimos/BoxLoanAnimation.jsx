@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Package, CheckCircle, Sparkles, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
  * ✨ Movimento direto e suave de cima para baixo
  * ✨ Responsiva para mobile e desktop
  * ✨ Sem erros ou travamentos
- * ✨ Duração: 1400ms total
+ * ✨ Duração: 1400ms (empréstimo) | 800ms (devolução)
+ * ✨ Garantia de conclusão em 800ms independente de rede/quantidade
  */
 const BoxLoanAnimation = ({ 
   ferramentas = [], 
@@ -20,6 +21,8 @@ const BoxLoanAnimation = ({
 }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [particles, setParticles] = useState([]);
+  const hasCompletedRef = useRef(false);
+  const forceCompleteTimerRef = useRef(null);
 
   // Normaliza ferramentas para sempre trabalhar com array de strings
   const normalizedFerramentas = useMemo(() => {
@@ -51,39 +54,60 @@ const BoxLoanAnimation = ({
   };
 
   useEffect(() => {
+    // Reset flag de conclusão
+    hasCompletedRef.current = false;
+    
     if (totalTools === 0) {
       console.warn('BoxLoanAnimation: Nenhuma ferramenta para animar');
-      if (onComplete) {
+      if (onComplete && !hasCompletedRef.current) {
+        hasCompletedRef.current = true;
         const timer = setTimeout(() => onComplete(), 200);
         return () => clearTimeout(timer);
       }
       return;
     }
 
-    console.log(`🎬 Iniciando animação: ${totalTools} ferramentas do tipo ${tipo}`);
+    // Durações fixas - INDEPENDENTE da quantidade de ferramentas
+    const successDelay = tipo === 'devolucao' ? 500 : 1000;
+    const completeDelay = tipo === 'devolucao' ? 800 : 1400;
+
+    console.log(`🎬 Iniciando animação: ${totalTools} ferramentas do tipo ${tipo} (duração fixa: ${completeDelay}ms)`);
 
     // Timer para mostrar sucesso
     const successTimer = setTimeout(() => {
       setShowSuccess(true);
       generateParticles();
       console.log('✅ Animação de sucesso iniciada');
-    }, 1000);
+    }, successDelay);
 
-    // Timer para finalizar
-    const completeTimer = setTimeout(() => {
-      console.log('🏁 Animação finalizada');
-      if (onComplete) {
-        onComplete();
+    // ⚡ TIMER FORÇADO - Garante conclusão SEMPRE em 800ms (devolução) ou 1400ms (empréstimo)
+    // Mesmo com internet instável ou problemas no backend
+    forceCompleteTimerRef.current = setTimeout(() => {
+      console.log('🏁 Animação finalizada (GARANTIDO - timer forçado)');
+      
+      if (!hasCompletedRef.current) {
+        hasCompletedRef.current = true;
+        
+        if (onComplete) {
+          try {
+            onComplete();
+          } catch (error) {
+            console.error('❌ Erro em onComplete (ignorado - animação fecha mesmo assim):', error);
+            // Animação fecha independentemente de erros no callback
+          }
+        }
       }
-    }, 1400);
+    }, completeDelay);
 
     return () => {
       clearTimeout(successTimer);
-      clearTimeout(completeTimer);
+      if (forceCompleteTimerRef.current) {
+        clearTimeout(forceCompleteTimerRef.current);
+      }
       setShowSuccess(false);
       setParticles([]);
     };
-  }, [normalizedFerramentas, totalTools, tipo, onComplete]);
+  }, [tipo]); // ⚡ Removido normalizedFerramentas e totalTools das dependências
 
   // Detecta mobile
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -220,9 +244,9 @@ const BoxLoanAnimation = ({
               rotate: showSuccess ? 10 : 0
             }}
             transition={{
-              duration: 1,
+              duration: tipo === 'devolucao' ? 0.6 : 1,
               ease: [0.22, 1, 0.36, 1], // Easing suave e natural
-              y: { type: "spring", stiffness: 50, damping: 20 }
+              y: { type: "spring", stiffness: tipo === 'devolucao' ? 80 : 50, damping: tipo === 'devolucao' ? 15 : 20 }
             }}
           >
             {/* Caixa 3D Simplificada */}

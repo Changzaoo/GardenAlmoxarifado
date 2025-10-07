@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, LogIn, LogOut, Coffee, ArrowRightLeft, Clock, CheckCircle } from 'lucide-react';
-import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore';
+import { Calendar, LogIn, LogOut, Coffee, ArrowRightLeft, Clock, CheckCircle, AlertTriangle, TrendingUp, Award, FileText } from 'lucide-react';
+import { collection, addDoc, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from './ToastProvider';
+import { validarTolerancia, podeBaterPonto, calcularSaldoDia } from '../utils/pontoUtils';
+import { obterHorariosEsperados } from '../utils/escalaUtils';
+import ComprovantesPontoModal from './Comprovantes/ComprovantesPontoModal';
 
 // Utilitário para formatar hora
 function formatHora(date) {
@@ -45,6 +48,12 @@ const WorkPontoTab = () => {
   const [batendo, setBatendo] = useState(false);
   const [historico, setHistorico] = useState([]);
   const [horaAtual, setHoraAtual] = useState(new Date());
+  const [horariosEsperados, setHorariosEsperados] = useState(null);
+  const [tipoEscala, setTipoEscala] = useState(null);
+  const [saldoDia, setSaldoDia] = useState(null);
+  const [funcionarioData, setFuncionarioData] = useState(null);
+  const [showComprovanteModal, setShowComprovanteModal] = useState(false);
+  const [comprovanteData, setComprovanteData] = useState(null);
 
   // Relógio em tempo real
   useEffect(() => {
@@ -53,6 +62,54 @@ const WorkPontoTab = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Carregar dados do funcionário e horários esperados
+  useEffect(() => {
+    const carregarHorarios = async () => {
+      if (!usuario?.id && !usuario?.uid) return;
+
+      const userId = usuario.id || usuario.uid;
+      
+      try {
+        // Tentar buscar na collection de funcionarios
+        const funcionarioRef = doc(db, 'funcionarios', String(userId));
+        const funcionarioSnap = await getDoc(funcionarioRef);
+        
+        if (funcionarioSnap.exists()) {
+          const data = funcionarioSnap.data();
+          setFuncionarioData(data);
+          
+          // Verificar se tem tipoEscala configurado
+          if (data.tipoEscala) {
+            setTipoEscala(data.tipoEscala);
+            const horarios = obterHorariosEsperados(data.tipoEscala, new Date());
+            setHorariosEsperados(horarios);
+            console.log('✅ Horários esperados carregados:', horarios);
+          } else {
+            // Se não tem tipoEscala, usar padrão M (07:20-16:20)
+            console.log('⚠️ Funcionário sem tipoEscala, usando padrão M');
+            setTipoEscala('M');
+            const horarios = obterHorariosEsperados('M', new Date());
+            setHorariosEsperados(horarios);
+          }
+        } else {
+          // Se não encontrar na collection, usar escala padrão
+          console.log('⚠️ Funcionário não encontrado no Firestore, usando escala padrão M');
+          setTipoEscala('M');
+          const horarios = obterHorariosEsperados('M', new Date());
+          setHorariosEsperados(horarios);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar horários:', error);
+        // Em caso de erro, usar escala padrão
+        setTipoEscala('M');
+        const horarios = obterHorariosEsperados('M', new Date());
+        setHorariosEsperados(horarios);
+      }
+    };
+
+    carregarHorarios();
+  }, [usuario?.id, usuario?.uid]);
 
   // Carregar registros do dia atual
   useEffect(() => {
@@ -145,10 +202,24 @@ const WorkPontoTab = () => {
           };
         })
       );
+
+      // Calcular saldo do dia se tiver horários esperados
+      if (horariosEsperados && (pontosHoje.entrada || pontosHoje.saida_almoco || pontosHoje.retorno_almoco || pontosHoje.saida)) {
+        const registrosParaCalculo = [
+          { tipo: 'entrada', horario: pontosHoje.entrada },
+          { tipo: 'almoco', horario: pontosHoje.saida_almoco },
+          { tipo: 'retorno', horario: pontosHoje.retorno_almoco },
+          { tipo: 'saida', horario: pontosHoje.saida },
+        ];
+        
+        const saldo = calcularSaldoDia(registrosParaCalculo, horariosEsperados);
+        setSaldoDia(saldo);
+        console.log('💰 Saldo do dia calculado:', saldo);
+      }
     });
 
     return () => unsubscribe();
-  }, [usuario?.id, usuario?.uid]);
+  }, [usuario?.id, usuario?.uid, horariosEsperados]);
 
   // Carregar histórico dos últimos 30 dias
   useEffect(() => {
@@ -226,6 +297,45 @@ const WorkPontoTab = () => {
     return () => unsubscribe();
   }, [usuario?.id, usuario?.uid]);
 
+  // Função para gerar comprovante do dia
+  const gerarComprovante = () => {
+    if (!saldoDia) {
+      showToast('Nenhum ponto registrado hoje', 'error');
+      return;
+    }
+
+    const pontosHoje = {
+      entrada: registros.find(r => r.tipo === 'entrada')?.horario,
+      saida_almoco: registros.find(r => r.tipo === 'saida_almoco')?.horario,
+      retorno_almoco: registros.find(r => r.tipo === 'retorno_almoco')?.horario,
+      saida: registros.find(r => r.tipo === 'saida')?.horario
+    };
+
+    const dados = {
+      funcionarioNome: usuario.nome || usuario.usuario || 'Funcionário',
+      empresa: funcionarioData?.empresa || 'N/A',
+      setor: funcionarioData?.setor || 'N/A',
+      cargo: funcionarioData?.funcao || funcionarioData?.cargo || 'N/A',
+      cpf: funcionarioData?.cpf || 'N/A',
+      data: new Date(),
+      pontos: pontosHoje,
+      horasEsperadas,
+      horasTrabalhadas: {
+        formatado: saldoDia.horasTrabalhadasFormatado,
+        esperadasFormatado: saldoDia.horasEsperadasFormatado
+      },
+      saldo: {
+        saldoFormatado: saldoDia.saldoFormatado,
+        saldoMinutos: saldoDia.saldoMinutos
+      },
+      advertencias: saldoDia.advertencias || [],
+      codigoAssinatura: `WF-PONTO-${Date.now().toString(36).toUpperCase()}`
+    };
+
+    setComprovanteData(dados);
+    setShowComprovanteModal(true);
+  };
+
   // Função para bater ponto
   const baterPonto = async (tipo) => {
     if (!usuario?.id && !usuario?.uid) {
@@ -247,6 +357,37 @@ const WorkPontoTab = () => {
     setBatendo(true);
     try {
       const agora = new Date();
+
+      // Validar tolerância se tiver horários esperados
+      if (horariosEsperados) {
+        // Mapear tipos do componente para tipos do pontoUtils
+        const tipoMap = {
+          'entrada': 'entrada',
+          'saida_almoco': 'almoco',
+          'retorno_almoco': 'retorno',
+          'saida': 'saida'
+        };
+        
+        const tipoValidacao = tipoMap[tipo];
+        const horarioEsperado = horariosEsperados[tipoValidacao];
+        
+        if (horarioEsperado) {
+          const validacao = validarTolerancia(horarioEsperado, agora);
+          
+          // Se estiver fora da tolerância, avisar mas permitir
+          if (!validacao.dentroTolerancia) {
+            const msgTipo = validacao.tipo === 'adiantado' ? 'adiantado' : 'atrasado';
+            showToast(
+              `Atenção: Você está ${msgTipo} (${validacao.diferencaMinutos} min). ${validacao.mensagem}`,
+              'warning'
+            );
+            // Aguardar 2 segundos para o usuário ver o aviso
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          } else if (validacao.tipo === 'adiantado') {
+            showToast(`Hora positiva! Você chegou ${validacao.diferencaMinutos} min antes. ⏰`, 'success');
+          }
+        }
+      }
       
       // VALIDAÇÃO: Prevenir pontos às 10:10 (problema conhecido)
       const horaAtual = formatHora(agora);
@@ -309,6 +450,110 @@ const WorkPontoTab = () => {
           </div>
         </div>
       </div>
+
+      {/* Card de Horários Esperados */}
+      {horariosEsperados && (
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 rounded-xl p-6 mb-6 shadow-lg border border-indigo-200 dark:border-indigo-800">
+          <h3 className="font-bold text-indigo-900 dark:text-indigo-100 mb-4 flex items-center gap-2 text-lg">
+            <Clock className="w-5 h-5" />
+            Seu Horário Hoje {tipoEscala && <span className="text-sm bg-indigo-200 dark:bg-indigo-900 px-2 py-1 rounded">Escala {tipoEscala}</span>}
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-indigo-900/30 rounded-lg p-4 text-center shadow-sm">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Entrada</div>
+              <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100 font-mono">
+                {horariosEsperados.entrada || '--:--'}
+              </div>
+            </div>
+            <div className="bg-white dark:bg-purple-900/30 rounded-lg p-4 text-center shadow-sm">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Almoço</div>
+              <div className="text-2xl font-bold text-purple-900 dark:text-purple-100 font-mono">
+                {horariosEsperados.almoco || '--:--'}
+              </div>
+            </div>
+            <div className="bg-white dark:bg-purple-900/30 rounded-lg p-4 text-center shadow-sm">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Retorno</div>
+              <div className="text-2xl font-bold text-purple-900 dark:text-purple-100 font-mono">
+                {horariosEsperados.retorno || '--:--'}
+              </div>
+            </div>
+            <div className="bg-white dark:bg-indigo-900/30 rounded-lg p-4 text-center shadow-sm">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Saída</div>
+              <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100 font-mono">
+                {horariosEsperados.saida || '--:--'}
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg p-3">
+            <strong>⏰ Tolerância:</strong> Você pode bater ponto até 10 minutos antes ou depois do horário. 
+            Fora desse período, será registrado como hora positiva (crédito) ou hora negativa (débito).
+          </div>
+        </div>
+      )}
+
+      {/* Card de Saldo do Dia */}
+      {saldoDia && (
+        <div className={`rounded-xl p-6 mb-6 shadow-lg border ${
+          saldoDia.saldoMinutos >= 0 
+            ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800'
+            : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950 border-red-200 dark:border-red-800'
+        }`}>
+          <h3 className={`font-bold mb-4 flex items-center gap-2 text-lg ${
+            saldoDia.saldoMinutos >= 0 ? 'text-green-900 dark:text-green-100' : 'text-red-900 dark:text-red-100'
+          }`}>
+            <TrendingUp className="w-5 h-5" />
+            Saldo de Horas Hoje
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-gray-900/40 rounded-lg p-4 text-center shadow-sm">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Horas Trabalhadas</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white font-mono">
+                {saldoDia.horasTrabalhadasFormatado || '--:--'}
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-900/40 rounded-lg p-4 text-center shadow-sm">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Horas Esperadas</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white font-mono">
+                {saldoDia.horasEsperadasFormatado || '--:--'}
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-900/40 rounded-lg p-4 text-center shadow-sm">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Saldo</div>
+              <div className={`text-3xl font-bold font-mono ${
+                saldoDia.saldoMinutos >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              }`}>
+                {saldoDia.saldoFormatado || '--:--'}
+              </div>
+            </div>
+          </div>
+          {saldoDia.advertencias && saldoDia.advertencias.length > 0 && (
+            <div className="mt-4 bg-red-100 dark:bg-red-900/40 px-4 py-3 rounded-lg flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold text-red-900 dark:text-red-100 mb-1">
+                  {saldoDia.advertencias.length} Advertência{saldoDia.advertencias.length > 1 ? 's' : ''} Hoje
+                </div>
+                <ul className="text-sm text-red-800 dark:text-red-200 space-y-1">
+                  {saldoDia.advertencias.map((adv, idx) => (
+                    <li key={idx}>• {adv}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+          
+          {/* Botão para Gerar Comprovante */}
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={gerarComprovante}
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-all shadow-lg flex items-center gap-2"
+            >
+              <FileText className="w-5 h-5" />
+              Gerar Comprovante do Dia
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Registros de Hoje */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -347,9 +592,33 @@ const WorkPontoTab = () => {
       {/* Histórico */}
       {historico.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200 flex items-center gap-2">
-            <Calendar className="w-5 h-5" /> Histórico de Pontos
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <Calendar className="w-5 h-5" /> Histórico de Pontos
+            </h3>
+            <button
+              onClick={() => {
+                // Importar dinamicamente
+                import('../utils/exportarPontos').then(module => {
+                  const funcionarioData = {
+                    nome: usuario.nome || usuario.usuario || 'Funcionário',
+                    empresa: funcionarioData?.empresa || 'N/A',
+                    setor: funcionarioData?.setor || 'N/A',
+                    cargo: funcionarioData?.funcao || funcionarioData?.cargo || 'N/A'
+                  };
+                  module.exportarPontosParaExcel(historico, funcionarioData);
+                  showToast('Arquivo Excel gerado com sucesso!', 'success');
+                }).catch(error => {
+                  console.error('Erro ao exportar:', error);
+                  showToast('Erro ao exportar pontos', 'error');
+                });
+              }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all shadow-md flex items-center gap-2 text-sm"
+            >
+              <FileText className="w-4 h-4" />
+              Exportar Excel
+            </button>
+          </div>
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {(() => {
               // Agrupar pontos por dia
@@ -438,6 +707,15 @@ const WorkPontoTab = () => {
       <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
         <strong>ℹ️ Como funciona:</strong> Você pode bater até 4 pontos por dia: início do trabalho, saída para almoço, retorno do almoço e saída do trabalho. Cada ponto só pode ser registrado uma vez por dia.
       </div>
+
+      {/* Modal de Comprovante */}
+      {showComprovanteModal && comprovanteData && (
+        <ComprovantesPontoModal
+          isOpen={showComprovanteModal}
+          onClose={() => setShowComprovanteModal(false)}
+          dados={comprovanteData}
+        />
+      )}
     </div>
   );
 };

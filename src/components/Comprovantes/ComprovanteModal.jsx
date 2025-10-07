@@ -1,12 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import ComprovanteVisual from './ComprovanteVisual';
 import { gerarComprovantePDF, compartilharComprovantePDF } from '../../utils/comprovanteUtils';
+import { salvarComprovante } from '../../utils/comprovantesFirestore';
 
 /**
  * Modal para exibir comprovante em tela cheia
  */
 const ComprovanteModal = ({ isOpen, onClose, tipo, dados }) => {
+  // Salvar comprovante no Firestore quando abrir
+  useEffect(() => {
+    if (isOpen && dados?.id) {
+      salvarComprovante(tipo, dados).catch(err => {
+        console.warn('Erro ao salvar comprovante, mas continuando:', err);
+      });
+    }
+  }, [isOpen, tipo, dados]);
+
   if (!isOpen) return null;
 
   const handleDownload = () => {

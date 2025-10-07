@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { 
@@ -17,11 +17,13 @@ import {
 } from 'lucide-react';
 import ComprovanteVisual from './ComprovanteVisual';
 import { gerarComprovantePDF, compartilharComprovantePDF } from '../../utils/comprovanteUtils';
+import { buscarTodosComprovantes } from '../../utils/comprovantesFirestore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 /**
  * ComprovantesTab - Aba dedicada para visualizar histórico de comprovantes
+ * Agora conectada ao Firestore collection 'comprovantes'
  */
 const ComprovantesTab = () => {
   const { usuario } = useAuth();
@@ -33,16 +35,51 @@ const ComprovantesTab = () => {
   const [comprovanteVisualizado, setComprovanteVisualizado] = useState(null);
   const [showFiltros, setShowFiltros] = useState(false);
 
-  // Carregar comprovantes do Firebase
+  // Carregar comprovantes do Firebase em tempo real
   useEffect(() => {
-    carregarComprovantes();
+    if (!usuario) return;
+
+    setLoading(true);
+
+    // Listener em tempo real na collection comprovantes
+    const q = query(
+      collection(db, 'comprovantes'),
+      orderBy('dataCriacao', 'desc'),
+      limit(100)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const listaComprovantes = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setComprovantes(listaComprovantes);
+      setLoading(false);
+    }, (error) => {
+      console.error('Erro ao carregar comprovantes:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [usuario]);
 
+  // Fallback: carregar de empréstimos antigos se collection comprovantes estiver vazia
   const carregarComprovantes = async () => {
     if (!usuario) return;
 
     setLoading(true);
     try {
+      // Primeiro tentar buscar da collection comprovantes
+      const comprovantesFirestore = await buscarTodosComprovantes(100);
+      
+      if (comprovantesFirestore.length > 0) {
+        setComprovantes(comprovantesFirestore);
+        setLoading(false);
+        return;
+      }
+
+      // Se não houver na collection comprovantes, buscar dos empréstimos
       const listaComprovantes = [];
 
       // Carregar empréstimos e devoluções

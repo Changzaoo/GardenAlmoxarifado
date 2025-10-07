@@ -6,7 +6,7 @@ import { db } from '../../firebaseConfig';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import FerramentaSelector from './FerramentaSelector';
 import BoxLoanAnimation from './BoxLoanAnimation';
-import ComprovanteModal from '../Comprovantes/ComprovanteModal';
+import FerramentaFlyingAnimation from './FerramentaFlyingAnimation';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -14,8 +14,8 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
   const [showHelp, setShowHelp] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
   const [emprestimoParaAnimar, setEmprestimoParaAnimar] = useState(null);
-  const [showComprovanteModal, setShowComprovanteModal] = useState(false);
-  const [emprestimoParaComprovante, setEmprestimoParaComprovante] = useState(null);
+  const [showFlyingAnimation, setShowFlyingAnimation] = useState(false);
+  const [ferramentaVoando, setFerramentaVoando] = useState(null);
 
   // Carregar funcionários
   useEffect(() => {
@@ -49,14 +49,13 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
       quantidade = itemInventario.disponivel;
     }
 
-    setNovoEmprestimo(prev => ({
-      ...prev,
-      ferramentas: [...prev.ferramentas, {
-        nome: itemInventario.nome,
-        quantidade: quantidade,
-        disponivel: itemInventario.disponivel
-      }]
-    }));
+    // 🎬 Inicia animação de voo da ferramenta
+    setFerramentaVoando({
+      nome: itemInventario.nome,
+      quantidade: quantidade,
+      disponivel: itemInventario.disponivel
+    });
+    setShowFlyingAnimation(true);
   };
 
   // Remove ferramenta da lista
@@ -142,18 +141,7 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
       setShowAnimation(false);
       setEmprestimoParaAnimar(null);
       
-      // Mostrar comprovante
-      setEmprestimoParaComprovante({
-        id: emprestimoAdicionado.id || Date.now().toString(),
-        tipo: 'emprestimo',
-        funcionario: novo.nomeFuncionario,
-        ferramentas: novo.ferramentas,
-        quantidade: novo.ferramentas.length,
-        data: novo.dataEmprestimo,
-        responsavel: novo.nomeFuncionario
-      });
-      setShowComprovanteModal(true);
-      
+      // Limpar formulário
       setNovoEmprestimo({
         colaborador: '',
         ferramentas: []
@@ -169,6 +157,28 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
 
   return (
     <>
+      {/* Animação de voo da ferramenta */}
+      {showFlyingAnimation && ferramentaVoando && (
+        <FerramentaFlyingAnimation
+          ferramenta={ferramentaVoando.nome}
+          onComplete={() => {
+            // Adiciona ferramenta à lista após animação
+            setNovoEmprestimo(prev => ({
+              ...prev,
+              ferramentas: [...prev.ferramentas, {
+                nome: ferramentaVoando.nome,
+                quantidade: ferramentaVoando.quantidade,
+                disponivel: ferramentaVoando.disponivel
+              }]
+            }));
+            
+            // Limpa estados da animação
+            setShowFlyingAnimation(false);
+            setFerramentaVoando(null);
+          }}
+        />
+      )}
+
       {/* Animação de Empréstimo */}
       {showAnimation && emprestimoParaAnimar && (
         <BoxLoanAnimation
@@ -383,19 +393,6 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
         </div>
       </div>
     </div>
-
-    {/* Modal de Comprovante */}
-    {showComprovanteModal && emprestimoParaComprovante && (
-      <ComprovanteModal
-        isOpen={showComprovanteModal}
-        onClose={() => {
-          setShowComprovanteModal(false);
-          setEmprestimoParaComprovante(null);
-        }}
-        tipo="emprestimo"
-        dados={emprestimoParaComprovante}
-      />
-    )}
     </>
   );
 }

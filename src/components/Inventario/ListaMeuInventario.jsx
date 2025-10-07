@@ -3,7 +3,7 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 import { ToolCase, ArrowRight, Clock, Package, User, CheckCircle, CircleDotDashed, FileText } from 'lucide-react';
 import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import TransferirFerramenta from '../Transferencias/TransferirFerramenta';
-import ComprovanteEmprestimoModal from '../Emprestimos/ComprovanteEmprestimoModal';
+import ComprovanteModal from '../Comprovantes/ComprovanteModal';
 import { FuncionariosContext } from '../Funcionarios/FuncionariosProvider';
 import { db } from '../../firebaseConfig';
 
@@ -383,11 +383,28 @@ const ListaMeuInventario = ({ emprestimos, usuario, showEmptyMessage = 'Nenhum e
 
       {/* Modal de Comprovante */}
       {showComprovanteModal && emprestimoParaComprovante && (
-        <ComprovanteEmprestimoModal
-          emprestimo={emprestimoParaComprovante}
+        <ComprovanteModal
+          isOpen={showComprovanteModal}
           onClose={() => {
             setShowComprovanteModal(false);
             setEmprestimoParaComprovante(null);
+          }}
+          tipo={emprestimoParaComprovante.status === 'devolvido' ? 'devolucao' : 'emprestimo'}
+          dados={{
+            id: emprestimoParaComprovante.id,
+            para: emprestimoParaComprovante.nomeFuncionario,
+            funcionario: emprestimoParaComprovante.nomeFuncionario,
+            empresa: emprestimoParaComprovante.empresaNome || usuario?.empresa || 'N/A',
+            setor: emprestimoParaComprovante.setorNome || usuario?.setor || 'N/A',
+            cargo: emprestimoParaComprovante.funcao || emprestimoParaComprovante.cargo || usuario?.funcao || 'N/A',
+            status: emprestimoParaComprovante.status || 'emprestado',
+            quantidade: emprestimoParaComprovante.ferramentas?.length || 0,
+            ferramentas: emprestimoParaComprovante.ferramentas?.map(f => 
+              typeof f === 'object' ? (f.nome || f.descricao || f.ferramenta || 'Ferramenta') : String(f)
+            ) || [],
+            data: emprestimoParaComprovante.dataEmprestimo || emprestimoParaComprovante.dataCriacao,
+            descricao: emprestimoParaComprovante.observacao,
+            transacaoId: `WF-EMP-${emprestimoParaComprovante.id?.substring(0, 8).toUpperCase() || 'XXXXXXXX'}`
           }}
         />
       )}

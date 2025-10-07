@@ -424,3 +424,261 @@ export const compartilharComprovantePDF = async (tipo, dados) => {
     return false;
   }
 };
+
+/**
+ * Gera PDF de comprovante de ponto eletrônico
+ */
+export const gerarPDFComprovantePonto = (dados) => {
+  const pdf = new jsPDF();
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  let yPosition = 20;
+
+  const {
+    funcionarioNome,
+    empresa,
+    setor,
+    cargo,
+    cpf,
+    data,
+    pontos = {},
+    horasEsperadas,
+    horasTrabalhadas,
+    saldo,
+    advertencias = [],
+    codigoAssinatura,
+    observacoes
+  } = dados;
+
+  // Gerar código de assinatura se não existir
+  const codigo = codigoAssinatura || `WF-PONTO-${Date.now().toString(36).toUpperCase()}`;
+
+  // Formatar horários
+  const formatarHorario = (horario) => {
+    if (!horario) return '--:--';
+    if (typeof horario === 'string') return horario;
+    const date = new Date(horario);
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Header com fundo verde
+  pdf.setFillColor(22, 163, 74); // green-600
+  pdf.rect(0, 0, pageWidth, 50, 'F');
+
+  // Título
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(24);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('WorkFlow', 20, 25);
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Sistema de Ponto Eletrônico', 20, 32);
+
+  // Tipo de documento
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('COMPROVANTE DE PONTO', pageWidth - 20, 25, { align: 'right' });
+
+  // Data
+  const dataFormatada = data ? format(new Date(data), "dd/MM/yyyy", { locale: ptBR }) : format(new Date(), "dd/MM/yyyy", { locale: ptBR });
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(dataFormatada, pageWidth / 2, 42, { align: 'center' });
+
+  yPosition = 60;
+
+  // Informações do Funcionário
+  pdf.setFillColor(249, 250, 251); // gray-50
+  pdf.rect(15, yPosition, pageWidth - 30, 40, 'F');
+
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('FUNCIONÁRIO', 20, yPosition + 8);
+
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`Nome: ${funcionarioNome || 'N/A'}`, 20, yPosition + 16);
+  pdf.text(`Empresa: ${empresa || 'N/A'}`, 20, yPosition + 24);
+  pdf.text(`Setor: ${setor || 'N/A'}`, 20, yPosition + 32);
+  pdf.text(`Cargo: ${cargo || 'N/A'}`, pageWidth / 2 + 10, yPosition + 24);
+  pdf.text(`CPF: ${cpf || 'N/A'}`, pageWidth / 2 + 10, yPosition + 32);
+
+  yPosition += 50;
+
+  // Tabela de Registros
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('REGISTROS DE PONTO', 20, yPosition);
+
+  yPosition += 8;
+
+  // Cabeçalho da tabela
+  pdf.setFillColor(229, 231, 235); // gray-200
+  pdf.rect(15, yPosition, pageWidth - 30, 8, 'F');
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Tipo', 20, yPosition + 5);
+  pdf.text('Horário Registrado', 70, yPosition + 5);
+  pdf.text('Horário Esperado', 125, yPosition + 5);
+  pdf.text('Status', 175, yPosition + 5);
+
+  yPosition += 8;
+
+  // Linhas da tabela
+  const registros = [
+    { label: 'Entrada', campo: 'entrada', esperado: horasEsperadas?.entrada },
+    { label: 'Saída p/ Almoço', campo: 'saida_almoco', esperado: horasEsperadas?.almoco },
+    { label: 'Retorno', campo: 'retorno_almoco', esperado: horasEsperadas?.retorno },
+    { label: 'Saída', campo: 'saida', esperado: horasEsperadas?.saida }
+  ];
+
+  pdf.setFont('helvetica', 'normal');
+  registros.forEach((reg, idx) => {
+    if (idx % 2 === 0) {
+      pdf.setFillColor(249, 250, 251); // gray-50
+      pdf.rect(15, yPosition, pageWidth - 30, 10, 'F');
+    }
+
+    pdf.text(reg.label, 20, yPosition + 7);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(formatarHorario(pontos[reg.campo]), 70, yPosition + 7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(reg.esperado || '--:--', 125, yPosition + 7);
+    
+    if (pontos[reg.campo]) {
+      pdf.setTextColor(34, 197, 94); // green-600
+      pdf.text('✓ Registrado', 175, yPosition + 7);
+      pdf.setTextColor(0, 0, 0);
+    } else {
+      pdf.setTextColor(156, 163, 175); // gray-400
+      pdf.text('Não batido', 175, yPosition + 7);
+      pdf.setTextColor(0, 0, 0);
+    }
+
+    yPosition += 10;
+  });
+
+  yPosition += 10;
+
+  // Resumo de Horas
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('RESUMO DE HORAS', 20, yPosition);
+
+  yPosition += 10;
+
+  const saldoMinutos = saldo?.saldoMinutos || 0;
+  const saldoCor = saldoMinutos >= 0 ? [34, 197, 94] : [239, 68, 68]; // green-600 : red-500
+
+  // Boxes de resumo
+  const boxWidth = (pageWidth - 40) / 3;
+  
+  // Horas Esperadas
+  pdf.setFillColor(219, 234, 254); // blue-100
+  pdf.rect(15, yPosition, boxWidth - 2, 20, 'F');
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Horas Esperadas', 15 + boxWidth / 2, yPosition + 6, { align: 'center' });
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(horasTrabalhadas?.esperadasFormatado || '--:--', 15 + boxWidth / 2, yPosition + 15, { align: 'center' });
+
+  // Horas Trabalhadas
+  pdf.setFillColor(243, 232, 255); // purple-100
+  pdf.rect(15 + boxWidth, yPosition, boxWidth - 2, 20, 'F');
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Horas Trabalhadas', 15 + boxWidth + boxWidth / 2, yPosition + 6, { align: 'center' });
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(horasTrabalhadas?.formatado || '--:--', 15 + boxWidth + boxWidth / 2, yPosition + 15, { align: 'center' });
+
+  // Saldo
+  pdf.setFillColor(saldoMinutos >= 0 ? 220 : 254, saldoMinutos >= 0 ? 252 : 226, saldoMinutos >= 0 ? 231 : 230); // green-100 : red-100
+  pdf.rect(15 + boxWidth * 2, yPosition, boxWidth, 20, 'F');
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Saldo', 15 + boxWidth * 2 + boxWidth / 2, yPosition + 6, { align: 'center' });
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(...saldoCor);
+  pdf.text(saldo?.saldoFormatado || '--:--', 15 + boxWidth * 2 + boxWidth / 2, yPosition + 15, { align: 'center' });
+  pdf.setTextColor(0, 0, 0);
+
+  yPosition += 30;
+
+  // Advertências (se houver)
+  if (advertencias && advertencias.length > 0) {
+    pdf.setFillColor(254, 226, 226); // red-100
+    pdf.rect(15, yPosition, pageWidth - 30, 10 + (advertencias.length * 6), 'F');
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(153, 27, 27); // red-900
+    pdf.text(`ADVERTÊNCIAS (${advertencias.length})`, 20, yPosition + 7);
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    advertencias.forEach((adv, idx) => {
+      pdf.text(`• ${adv}`, 20, yPosition + 14 + (idx * 6));
+    });
+    
+    pdf.setTextColor(0, 0, 0);
+    yPosition += 10 + (advertencias.length * 6) + 5;
+  }
+
+  // Observações (se houver)
+  if (observacoes) {
+    pdf.setFillColor(254, 249, 195); // yellow-100
+    pdf.rect(15, yPosition, pageWidth - 30, 15, 'F');
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Observações:', 20, yPosition + 7);
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(observacoes, 20, yPosition + 13);
+    
+    yPosition += 20;
+  }
+
+  // Assinatura Digital
+  yPosition += 10;
+  pdf.setDrawColor(200, 200, 200);
+  pdf.setLineWidth(0.5);
+  pdf.line(15, yPosition, pageWidth - 15, yPosition);
+  
+  yPosition += 8;
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('Assinatura Digital:', 20, yPosition);
+  
+  yPosition += 6;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(8);
+  pdf.text(codigo, pageWidth / 2, yPosition, { align: 'center' });
+
+  yPosition += 8;
+  pdf.setTextColor(100, 100, 100);
+  pdf.setFontSize(7);
+  pdf.text('Este é um documento digital válido emitido pelo sistema WorkFlow', pageWidth / 2, yPosition, { align: 'center' });
+  pdf.text('Verifique a autenticidade através do código de assinatura', pageWidth / 2, yPosition + 4, { align: 'center' });
+
+  // Rodapé
+  const rodapeY = pdf.internal.pageSize.getHeight() - 10;
+  pdf.setFillColor(22, 163, 74); // green-600
+  pdf.rect(0, rodapeY - 5, pageWidth, 15, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`WorkFlow © ${new Date().getFullYear()} - Sistema de Gestão Empresarial`, pageWidth / 2, rodapeY, { align: 'center' });
+
+  // Salvar PDF
+  const nomeArquivo = `Ponto_${funcionarioNome?.replace(/\s+/g, '_')}_${dataFormatada.replace(/\//g, '-')}.pdf`;
+  pdf.save(nomeArquivo);
+
+  return pdf;
+};
