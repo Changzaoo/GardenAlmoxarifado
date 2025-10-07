@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔍 Debug - Inventário</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .status-card {
+      background: #f7fafc;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 4px solid #667eea;
+    }
+
+    .status-card.success {
+      border-left-color: #48bb78;
+      background: #f0fff4;
+    }
+
+    .status-card.error {
+      border-left-color: #f56565;
+      background: #fff5f5;
+    }
+
+    .status-card.warning {
+      border-left-color: #ed8936;
+      background: #fffaf0;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .info-item {
+      background: #edf2f7;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .info-value {
+      font-size: 24px;
+      color: #2d3748;
+      font-weight: bold;
+    }
+
+    .btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin: 5px;
+    }
+
+    .btn:hover {
+      background: #5a67d8;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .code-block {
+      background: #2d3748;
+      color: #68d391;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin-top: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .item-list {
+      margin-top: 20px;
+    }
+
+    .item-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .item-name {
+      font-weight: bold;
+      font-size: 16px;
+      color: #2d3748;
+    }
+
+    .item-badge {
+      background: #667eea;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .item-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      font-size: 14px;
+      color: #4a5568;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Debug do Inventário</h1>
+    <p class="subtitle">Verificando dados do Firebase...</p>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Carregando dados do inventário...</p>
+    </div>
+
+    <div id="content" style="display: none;"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getFirestore, collection, getDocs, query } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbxwIX6gZNT_f-1OiCU_vvzjU5iZBhUtw",
+      authDomain: "garden-c0b50.firebaseapp.com",
+      projectId: "garden-c0b50",
+      storageBucket: "garden-c0b50.firebasestorage.app",
+      messagingSenderId: "395756658091",
+      appId: "1:395756658091:web:ccd20ae5a6b2393f9bfbe8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+
+    async function debugInventario() {
+      try {
+        const user = auth.currentUser;
+
+        if (!user) {
+          showError('❌ Usuário não autenticado', 'Faça login primeiro para ver o inventário.');
+          return;
+        }
+
+        console.log('🔐 Usuário logado:', user.email);
+
+        // Buscar todos os itens do inventário
+        console.log('📦 Buscando inventário...');
+        const inventarioRef = collection(db, 'inventario');
+        const snapshot = await getDocs(inventarioRef);
+
+        console.log('✅ Snapshot recebido. Total de documentos:', snapshot.size);
+
+        if (snapshot.empty) {
+          showWarning(
+            '⚠️ Inventário Vazio',
+            'Não há itens cadastrados no inventário. Adicione itens através da página de Inventário Geral.'
+          );
+          return;
+        }
+
+        // Processar itens
+        const itens = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          itens.push({
+            id: doc.id,
+            ...data
+          });
+        });
+
+        console.log('📊 Itens processados:', itens);
+
+        // Mostrar resultados
+        showSuccess(itens, user);
+
+      } catch (error) {
+        console.error('❌ Erro ao buscar inventário:', error);
+        showError('❌ Erro ao Buscar Dados', error.message);
+      }
+    }
+
+    function showSuccess(itens, user) {
+      // Estatísticas
+      const totalItens = itens.length;
+      const totalQuantidade = itens.reduce((sum, item) => sum + (parseInt(item.quantidade) || 0), 0);
+      const totalValor = itens.reduce((sum, item) => {
+        const valor = parseFloat(item.valorUnitario) || 0;
+        const qtd = parseInt(item.quantidade) || 0;
+        return sum + (valor * qtd);
+      }, 0);
+
+      const categorias = {};
+      itens.forEach(item => {
+        const cat = item.categoria || 'Sem Categoria';
+        categorias[cat] = (categorias[cat] || 0) + 1;
+      });
+
+      content.innerHTML = `
+        <div class="status-card success">
+          <h2 style="margin-bottom: 10px;">✅ Inventário Carregado!</h2>
+          <p>Dados do Firebase carregados com sucesso.</p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Total de Itens</div>
+            <div class="info-value">${totalItens}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Quantidade Total</div>
+            <div class="info-value">${totalQuantidade}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Valor Total</div>
+            <div class="info-value">R$ ${totalValor.toFixed(2)}</div>
+          </div>
+        </div>
+
+        <div class="status-card">
+          <h3 style="margin-bottom: 15px;">📊 Itens por Categoria</h3>
+          <div class="info-grid">
+            ${Object.entries(categorias).map(([cat, count]) => `
+              <div class="info-item">
+                <div class="info-label">${cat}</div>
+                <div class="info-value">${count}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="status-card">
+          <h3 style="margin-bottom: 15px;">📦 Lista de Itens</h3>
+          <div class="item-list">
+            ${itens.map(item => `
+              <div class="item-card">
+                <div class="item-header">
+                  <div class="item-name">${item.nome || 'Sem Nome'}</div>
+                  <div class="item-badge">${item.categoria || 'N/A'}</div>
+                </div>
+                <div class="item-details">
+                  <div><strong>Quantidade:</strong> ${item.quantidade || 0}</div>
+                  <div><strong>Valor Unit:</strong> R$ ${(parseFloat(item.valorUnitario) || 0).toFixed(2)}</div>
+                  <div><strong>Setor:</strong> ${item.setor || 'N/A'}</div>
+                  <div><strong>Status:</strong> ${item.status || 'N/A'}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="status-card warning">
+          <h3 style="margin-bottom: 10px;">🔍 Se os itens não aparecem no sistema:</h3>
+          <ol style="margin-left: 20px; line-height: 1.8;">
+            <li>Verifique se você está no setor correto (sistema filtra por setor)</li>
+            <li>Limpe os filtros de busca e categoria</li>
+            <li>Recarregue a página (Ctrl + Shift + R)</li>
+            <li>Verifique o console do navegador (F12) por erros</li>
+            <li>Certifique-se de que está logado com permissões adequadas</li>
+          </ol>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+          <button class="btn" onclick="window.location.reload()">
+            🔄 Recarregar Página
+          </button>
+          <button class="btn" onclick="window.location.href='/'">
+            🏠 Voltar ao Sistema
+          </button>
+        </div>
+
+        <div class="code-block" style="margin-top: 20px;">
+          <strong>📋 Dados Brutos (JSON):</strong><br><br>
+          ${JSON.stringify(itens, null, 2)}
+        </div>
+      `;
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    }
+
+    function showError(title, message) {
+      content.innerHTML = `
+        <div class="status-card error">
+          <h2>${title}</h2>
+          <p>${message}</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+          <button class="btn" onclick="window.location.reload()">
+            🔄 Tentar Novamente
+          </button>
+          <button class="btn" onclick="window.location.href='/'">
+            🏠 Voltar ao Sistema
+          </button>
+        </div>
+      `;
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    }
+
+    function showWarning(title, message) {
+      content.innerHTML = `
+        <div class="status-card warning">
+          <h2>${title}</h2>
+          <p>${message}</p>
+        </div>
+
+        <div class="status-card">
+          <h3>💡 Como Adicionar Itens:</h3>
+          <ol style="margin-left: 20px; line-height: 1.8; margin-top: 10px;">
+            <li>Vá para a página <strong>Inventário Geral</strong></li>
+            <li>Selecione a empresa e o setor</li>
+            <li>Preencha o formulário com os dados do item</li>
+            <li>Clique em <strong>"+ Adicionar Item"</strong></li>
+          </ol>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+          <button class="btn" onclick="window.location.href='/'">
+            🏠 Ir para o Sistema
+          </button>
+        </div>
+      `;
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    }
+
+    // Aguardar autenticação
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        debugInventario();
+      } else {
+        showError('❌ Não Autenticado', 'Faça login primeiro.');
+      }
+    });
+  </script>
+</body>
+</html>

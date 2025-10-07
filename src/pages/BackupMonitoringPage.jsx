@@ -5,7 +5,9 @@ import { primaryDb, backupDb } from '../config/firebaseDual';
 import { getAllCollections, compareCollections } from '../services/databaseCollections';
 import AddFirebaseServerModal from '../components/AddFirebaseServerModal';
 import DocumentViewerModal from '../components/DocumentViewerModal';
+import ServerWorldMap from '../components/ServerWorldMap';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { 
   Activity, 
   Database, 
@@ -32,7 +34,8 @@ import {
   Plus,
   Server,
   Shield,
-  Cloud
+  Cloud,
+  X
 } from 'lucide-react';
 
 /**
@@ -169,13 +172,16 @@ const BackupMonitoringPageContent = () => {
 
     try {
       // Teste 1: Escrita
+      console.log(`🧪 Iniciando teste de escrita em ${dbName}...`);
       const writeStart = performance.now();
       const testRef = await addDoc(collection(db, 'backup_test'), {
         test: true,
         timestamp: serverTimestamp(),
-        message: 'Test write operation'
+        message: 'Test write operation',
+        createdBy: 'backup-monitoring-test'
       });
       const writeTime = performance.now() - writeStart;
+      console.log(`✅ Escrita concluída: ${testRef.id} em ${writeTime.toFixed(2)}ms`);
 
       results.tests.push({
         name: 'Escrita',
@@ -239,12 +245,27 @@ const BackupMonitoringPageContent = () => {
       results.summary = `Todos os testes passaram! Latência média: ${((writeTime + readTime + updateTime + deleteTime) / 4).toFixed(2)}ms`;
 
     } catch (error) {
+      console.error(`❌ Erro no teste de ${dbName}:`, error);
+      
       results.success = false;
       results.error = error.message;
+      
+      // Mensagem de erro mais clara para permissões
+      let errorMessage = error.message;
+      if (error.code === 'permission-denied' || error.message.includes('permission')) {
+        errorMessage = '❌ Erro de Permissões: Verifique se você está logado como Admin (nível >= 3) e recarregue a página (Ctrl+Shift+R) para atualizar as regras do Firestore.';
+        
+        toast.error('Sem permissões para testar. Recarregue a página!', {
+          position: 'top-center',
+          autoClose: 5000,
+          hideProgressBar: false
+        });
+      }
+      
       results.tests.push({
         name: 'Erro',
         status: 'error',
-        details: error.message
+        details: errorMessage
       });
 
       // Marcar database como não saudável
@@ -375,6 +396,25 @@ const BackupMonitoringPageContent = () => {
       setCustomServers(updatedServers);
       localStorage.setItem('firebaseServers', JSON.stringify(updatedServers));
     }
+  };
+
+  /**
+   * 🔄 Ativar/Desativar servidor customizado
+   */
+  const toggleServerStatus = (serverId) => {
+    const updatedServers = customServers.map(server => {
+      if (server.id === serverId) {
+        const newStatus = server.status === 'active' ? 'inactive' : 'active';
+        toast.info(`🔄 Servidor ${server.name} ${newStatus === 'active' ? 'ativado' : 'desativado'}`, {
+          position: 'top-right',
+          autoClose: 2000
+        });
+        return { ...server, status: newStatus, lastStatusChange: new Date().toISOString() };
+      }
+      return server;
+    });
+    setCustomServers(updatedServers);
+    localStorage.setItem('firebaseServers', JSON.stringify(updatedServers));
   };
 
   /**
@@ -1399,10 +1439,23 @@ const BackupMonitoringPageContent = () => {
           {/* Custom Servers */}
           {customServers.length > 0 && (
             <div className="space-y-4 mt-6">
-              <h4 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
-                <Cloud className="w-5 h-5" />
-                Servidores Customizados
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                  <Cloud className="w-5 h-5" />
+                  Servidores Customizados
+                </h4>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                    <CheckCircle className="w-4 h-4" />
+                    {customServers.filter(s => s.status === 'active').length} Ativo{customServers.filter(s => s.status === 'active').length !== 1 ? 's' : ''}
+                  </span>
+                  <span className="text-gray-400">|</span>
+                  <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                    <XCircle className="w-4 h-4" />
+                    {customServers.filter(s => s.status !== 'active').length} Inativo{customServers.filter(s => s.status !== 'active').length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {customServers.map((server) => (
@@ -1410,7 +1463,11 @@ const BackupMonitoringPageContent = () => {
                     key={server.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
+                    className={`bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4 border transition-all ${
+                      server.status === 'active' 
+                        ? 'border-green-500 ring-2 ring-green-500/50 shadow-lg shadow-green-500/20' 
+                        : 'border-gray-200 dark:border-gray-600'
+                    }`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -1445,13 +1502,46 @@ const BackupMonitoringPageContent = () => {
                           {server.description}
                         </div>
                       )}
-                      <div className="flex justify-between mt-3">
+                      <div className="flex justify-between items-center mt-3">
                         <span className="text-gray-600 dark:text-gray-400">Status:</span>
-                        <span className="flex items-center gap-1 text-orange-600">
-                          <Clock className="w-3 h-3" />
-                          Standby
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`flex items-center gap-1 text-sm font-medium ${
+                            server.status === 'active' 
+                              ? 'text-green-600 dark:text-green-400' 
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {server.status === 'active' ? (
+                              <>
+                                <CheckCircle className="w-3 h-3" />
+                                Ativo
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3" />
+                                Inativo
+                              </>
+                            )}
+                          </span>
+                          <button
+                            onClick={() => toggleServerStatus(server.id)}
+                            className={`relative w-12 h-6 rounded-full transition-colors ${
+                              server.status === 'active' 
+                                ? 'bg-green-500' 
+                                : 'bg-gray-300 dark:bg-gray-600'
+                            }`}
+                            title={server.status === 'active' ? 'Desativar servidor' : 'Ativar servidor'}
+                          >
+                            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                              server.status === 'active' ? 'translate-x-6' : 'translate-x-0'
+                            }`} />
+                          </button>
+                        </div>
                       </div>
+                      {server.lastStatusChange && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-right">
+                          Alterado em: {formatDate(server.lastStatusChange)}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -1475,6 +1565,45 @@ const BackupMonitoringPageContent = () => {
               </button>
             </div>
           )}
+
+          {/* 🗺️ Mapa Mundi de Servidores */}
+          <div className="mt-8">
+            <ServerWorldMap 
+              servers={[
+                // Servidores padrão
+                {
+                  id: 'primary',
+                  name: 'Firebase Principal',
+                  status: 'active',
+                  config: {
+                    projectId: 'garden-c0b50',
+                    authDomain: 'garden-c0b50.firebaseapp.com',
+                    storageBucket: 'garden-c0b50.appspot.com',
+                    appId: '1:123456789:web:abc123'
+                  },
+                  description: 'Servidor principal de produção',
+                  createdAt: new Date('2025-01-01').toISOString(),
+                  lastTested: new Date().toISOString()
+                },
+                {
+                  id: 'backup',
+                  name: 'Firebase Backup',
+                  status: 'active',
+                  config: {
+                    projectId: 'garden-backup',
+                    authDomain: 'garden-backup.firebaseapp.com',
+                    storageBucket: 'garden-backup.appspot.com',
+                    appId: '1:987654321:web:def456'
+                  },
+                  description: 'Servidor de backup e redundância',
+                  createdAt: new Date('2025-01-01').toISOString(),
+                  lastTested: new Date().toISOString()
+                },
+                // Servidores customizados
+                ...customServers
+              ]}
+            />
+          </div>
         </div>
 
         {/* Add Server Modal */}

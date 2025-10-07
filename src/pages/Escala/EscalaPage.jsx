@@ -32,6 +32,7 @@ const EscalaPage = ({ usuarioAtual }) => {
   const [modalResumo, setModalResumo] = useState({ aberto: false, tipo: null, dados: [] });
   const [animacaoAtiva, setAnimacaoAtiva] = useState(null); // { tipo: 'presente'|'ausente'|'folga', origem: {x, y}, destino: {x, y} }
   const [animacaoVerificacao, setAnimacaoVerificacao] = useState(null); // { funcionarioId, dia, tipo, funcionario, fase }
+  const [particulas, setParticulas] = useState([]); // Partículas para animação simplificada
   const [avaliacaoExpandida, setAvaliacaoExpandida] = useState(null);
   const [novaAvaliacao, setNovaAvaliacao] = useState({ estrelas: 0, comentario: '' });
   const [hoverEstrelas, setHoverEstrelas] = useState(0);
@@ -655,6 +656,46 @@ const EscalaPage = ({ usuarioAtual }) => {
     }
   };
 
+  // Criar animação de partículas simplificada (APENAS na visualização diária)
+  const criarParticulasSimples = (eventoClick, tipo) => {
+    // Só ativar animação na visualização diária
+    if (modoVisualizacao !== 'diario') return;
+    if (!eventoClick) return;
+
+    const botao = eventoClick.currentTarget;
+    const rect = botao.getBoundingClientRect();
+
+    // Encontrar o elemento do contador (estatísticas do funcionário)
+    const statsElement = document.querySelector('[data-stats-container]');
+    if (!statsElement) return;
+
+    const statsRect = statsElement.getBoundingClientRect();
+
+    // Ajustar cálculo de posição para mobile (melhor precisão)
+    const isMobile = window.innerWidth < 768;
+    const spreadHorizontal = isMobile ? 20 : 30; // Menor spread no mobile
+    const numParticulas = isMobile ? 6 : 8; // Menos partículas no mobile para melhor performance
+
+    // Criar partículas minúsculas
+    const novasParticulas = Array.from({ length: numParticulas }, (_, i) => ({
+      id: Date.now() + i + Math.random(), // ID único garantido
+      tipo,
+      startX: rect.left + rect.width / 2,
+      startY: rect.top + rect.height / 2,
+      endX: statsRect.left + statsRect.width / 2,
+      endY: statsRect.top + 20,
+      delay: i * (isMobile ? 60 : 50), // Delay levemente maior no mobile
+      offsetX: (Math.random() - 0.5) * spreadHorizontal, // Spread horizontal ajustado
+    }));
+
+    setParticulas(prev => [...prev, ...novasParticulas]);
+
+    // Remover partículas após animação (700ms de animação + 200ms de buffer)
+    setTimeout(() => {
+      setParticulas(prev => prev.filter(p => !novasParticulas.find(n => n.id === p.id)));
+    }, 900);
+  };
+
   // Marcar presença
   const marcarPresenca = async (funcionarioId, dia, presente, eventoClick) => {
     if (!temPermissao) {
@@ -663,6 +704,11 @@ const EscalaPage = ({ usuarioAtual }) => {
         autoClose: 3000
       });
       return;
+    }
+
+    // Criar animação de partículas simplificada
+    if (presente !== null && eventoClick) {
+      criarParticulasSimples(eventoClick, presente ? 'presente' : 'ausente');
     }
 
     // Se está marcando presença (não desmarcando), ativar animação sofisticada
@@ -1292,7 +1338,10 @@ const EscalaPage = ({ usuarioAtual }) => {
                   </div>
                   
                   {/* Estatísticas compactas - MAIS COMPACTO */}
-                  <div className="grid grid-cols-3 gap-1 text-[10px] mt-2 pt-2 border-t border-green-200 dark:border-green-700">
+                  <div 
+                    data-stats-container
+                    className="grid grid-cols-3 gap-1 text-[10px] mt-2 pt-2 border-t border-green-200 dark:border-green-700"
+                  >
                     <div 
                       data-stat-trabalho={`${func.id}`}
                       className="flex items-center gap-0.5 text-green-600 dark:text-green-400"
@@ -1311,11 +1360,17 @@ const EscalaPage = ({ usuarioAtual }) => {
                       <span className="font-semibold">{stats.feriados}</span>
                       <span className="truncate">Feriados</span>
                     </div>
-                    <div className="flex items-center gap-0.5 text-green-600 dark:text-green-400">
+                    <div 
+                      data-stat-presente={`${func.id}`}
+                      className="flex items-center gap-0.5 text-green-600 dark:text-green-400"
+                    >
                       <span className="font-semibold">{stats.presencas}</span>
                       <span className="truncate">✓ Pres.</span>
                     </div>
-                    <div className="flex items-center gap-0.5 text-red-600 dark:text-red-400">
+                    <div 
+                      data-stat-ausente={`${func.id}`}
+                      className="flex items-center gap-0.5 text-red-600 dark:text-red-400"
+                    >
                       <span className="font-semibold">{stats.faltas}</span>
                       <span className="truncate">✗ Faltas</span>
                     </div>
@@ -3426,6 +3481,54 @@ const EscalaPage = ({ usuarioAtual }) => {
           </div>
         </div>
       )}
+
+      {/* Partículas de Animação Simplificada - APENAS VISUALIZAÇÃO DIÁRIA */}
+      {modoVisualizacao === 'diario' && particulas.map(particula => (
+        <div
+          key={particula.id}
+          className="fixed pointer-events-none z-50"
+          style={{
+            left: `${particula.startX}px`,
+            top: `${particula.startY}px`,
+            animation: `particula-voar-${particula.id} 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
+            animationDelay: `${particula.delay}ms`,
+            willChange: 'transform, opacity', // Otimização para mobile
+          }}
+        >
+          <div 
+            className={`w-1.5 h-1.5 rounded-full ${
+              particula.tipo === 'presente' 
+                ? 'bg-green-500' 
+                : particula.tipo === 'ausente'
+                ? 'bg-red-500'
+                : 'bg-yellow-500'
+            }`}
+            style={{
+              boxShadow: particula.tipo === 'presente'
+                ? '0 0 4px rgba(34, 197, 94, 0.8)'
+                : particula.tipo === 'ausente'
+                ? '0 0 4px rgba(239, 68, 68, 0.8)'
+                : '0 0 4px rgba(234, 179, 8, 0.8)'
+            }}
+          />
+          <style>{`
+            @keyframes particula-voar-${particula.id} {
+              0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+              }
+              50% {
+                transform: translate(${particula.offsetX}px, ${(particula.endY - particula.startY) / 2}px) scale(1.2);
+                opacity: 0.8;
+              }
+              100% {
+                transform: translate(${particula.endX - particula.startX}px, ${particula.endY - particula.startY}px) scale(0);
+                opacity: 0;
+              }
+            }
+          `}</style>
+        </div>
+      ))}
     </div>
   );
 };

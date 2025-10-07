@@ -12,8 +12,7 @@ import {
   MessageSquarePlus,
   Users,
   Building2,
-  Briefcase,
-  Clock
+  Briefcase
 } from 'lucide-react';
 import MeuInventarioTab from '../Inventario/MeuInventarioTab';
 import TarefasTab from '../Tarefas/TarefasTab';
@@ -23,7 +22,7 @@ import DetalhesFerramentasModal from './DetalhesFerramentasModal';
 import DetalhesTarefasModal from './DetalhesTarefasModal';
 import DetalhesAvaliacoesModal from './DetalhesAvaliacoesModal';
 import AvaliacoesList from './AvaliacoesList';
-import WorkPontoTab from './WorkPontoTab';
+import DetalhamentoPontosTab from './DetalhamentoPontosTab';
 import { collection, query, where, getDocs, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -125,11 +124,10 @@ const ProfileTab = () => {
     );
     
     return () => {
+      console.log('🧹 Limpando listeners do ProfileTab (funcionarios e usuario)');
       unsubscribeFuncionarios();
       unsubscribeUsuario();
     };
-    
-    return () => unsubscribe();
   }, [usuario?.usuario, funcionarioInfo]);
   
   // PRIORIZAR funcionarioInfo (do contexto) para garantir sincronização
@@ -602,106 +600,42 @@ const ProfileTab = () => {
         </div>
       </div>
 
-      {/* Points Breakdown - Card grande */}
+      {/* Tabs - Redesenhado com cards modernos - Otimizado para Mobile */}
       <div className="mt-6 px-6">
-        <div className="rounded-2xl p-6 shadow-2xl border border-blue-400/50" style={{ backgroundColor: '#1988d3' }}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
-                <Trophy className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <p className="text-white/80 text-sm font-medium">Detalhamento de Pontos</p>
-                <p className="text-3xl font-bold text-white">{stats.pontos.total} pontos</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <button 
-              onClick={() => setModalDetalhes('ferramentas')}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-200 cursor-pointer transform hover:scale-105"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Package className="w-4 h-4 text-white" />
-                <span className="text-xs text-white/80 font-medium">Ferramentas Devolvidas</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-white">{stats.pontos.detalhes.ferramentas}</span>
-                <span className="text-sm text-white/60">pts</span>
-              </div>
-              <div className="mt-2 text-xs text-white/60">Clique para detalhes</div>
-            </button>
-            
-            <button 
-              onClick={() => setModalDetalhes('tarefas')}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-200 cursor-pointer transform hover:scale-105"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-4 h-4 text-white" />
-                <span className="text-xs text-white/80 font-medium">Tarefas Concluídas</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-white">{stats.pontos.detalhes.tarefas}</span>
-                <span className="text-sm text-white/60">pts</span>
-              </div>
-              <div className="mt-2 text-xs text-white/60">Clique para detalhes</div>
-            </button>
-            
-            <button 
-              onClick={() => setModalDetalhes('avaliacoes')}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-200 cursor-pointer transform hover:scale-105"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Star className="w-4 h-4 text-white" />
-                <span className="text-xs text-white/80 font-medium">Avaliações</span>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-white">{stats.pontos.detalhes.avaliacao}</span>
-                <span className="text-sm text-white/60">pts</span>
-              </div>
-              <div className="mt-2 text-xs text-white/60">Clique para detalhes</div>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs - Redesenhado com cards modernos */}
-      <div className="mt-6 px-6">
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
           <button 
-            className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 transform hover:scale-105 ${
+            className={`relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-6 transition-all duration-300 ${
               activeTab === 'inventario' 
-                ? 'shadow-xl' 
-                : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700'
+                ? 'shadow-xl scale-105 sm:hover:scale-105' 
+                : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:scale-105'
             }`}
-            style={activeTab === 'inventario' ? { backgroundColor: '#1988d3', boxShadow: '0 20px 25px -5px rgba(25, 136, 211, 0.5), 0 8px 10px -6px rgba(25, 136, 211, 0.5)' } : {}}
+            style={activeTab === 'inventario' ? { backgroundColor: '#1988d3', boxShadow: '0 10px 15px -3px rgba(25, 136, 211, 0.4), 0 4px 6px -4px rgba(25, 136, 211, 0.4)' } : {}}
             onClick={() => setActiveTab('inventario')}
           >
             {activeTab === 'inventario' && (
               <div className="absolute inset-0 bg-white/10"></div>
             )}
-            <div className="relative flex items-center gap-3">
-              <div className={`p-3 rounded-xl ${
+            <div className="relative flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${
                 activeTab === 'inventario' 
                   ? 'bg-white/20 backdrop-blur-sm' 
                   : 'bg-blue-100 dark:bg-blue-900/30'
               }`}>
-                <Package className={`w-6 h-6 ${
+                <Package className={`w-5 h-5 sm:w-6 sm:h-6 ${
                   activeTab === 'inventario' 
                     ? 'text-white' 
                     : 'text-blue-600 dark:text-blue-400'
                 }`} />
               </div>
-              <div className="text-left">
-                <h3 className={`font-bold text-lg ${
+              <div className="text-center sm:text-left">
+                <h3 className={`font-bold text-xs sm:text-lg ${
                   activeTab === 'inventario' 
                     ? 'text-white' 
                     : 'text-gray-900 dark:text-white'
                 }`}>
-                  Meu Inventário
+                  Inventário
                 </h3>
-                <p className={`text-sm ${
+                <p className={`text-[10px] sm:text-sm ${
                   activeTab === 'inventario' 
                     ? 'text-white/80' 
                     : 'text-gray-500 dark:text-gray-400'
@@ -713,86 +647,86 @@ const ProfileTab = () => {
           </button>
 
           <button 
-            className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 transform hover:scale-105 ${
+            className={`relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-6 transition-all duration-300 ${
               activeTab === 'tarefas' 
-                ? 'shadow-xl' 
-                : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700'
+                ? 'shadow-xl scale-105 sm:hover:scale-105' 
+                : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:scale-105'
             }`}
-            style={activeTab === 'tarefas' ? { backgroundColor: '#1988d3', boxShadow: '0 20px 25px -5px rgba(25, 136, 211, 0.5), 0 8px 10px -6px rgba(25, 136, 211, 0.5)' } : {}}
+            style={activeTab === 'tarefas' ? { backgroundColor: '#1988d3', boxShadow: '0 10px 15px -3px rgba(25, 136, 211, 0.4), 0 4px 6px -4px rgba(25, 136, 211, 0.4)' } : {}}
             onClick={() => setActiveTab('tarefas')}
           >
             {activeTab === 'tarefas' && (
               <div className="absolute inset-0 bg-white/10"></div>
             )}
-            <div className="relative flex items-center gap-3">
-              <div className={`p-3 rounded-xl ${
+            <div className="relative flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${
                 activeTab === 'tarefas' 
                   ? 'bg-white/20 backdrop-blur-sm' 
                   : 'bg-blue-100 dark:bg-blue-900/30'
               }`}>
-                <CheckCircle className={`w-6 h-6 ${
+                <CheckCircle className={`w-5 h-5 sm:w-6 sm:h-6 ${
                   activeTab === 'tarefas' 
                     ? 'text-white' 
                     : 'text-blue-600 dark:text-blue-400'
                 }`} />
               </div>
-              <div className="text-left">
-                <h3 className={`font-bold text-lg ${
+              <div className="text-center sm:text-left">
+                <h3 className={`font-bold text-xs sm:text-lg ${
                   activeTab === 'tarefas' 
                     ? 'text-white' 
                     : 'text-gray-900 dark:text-white'
                 }`}>
-                  Minhas Tarefas
+                  Tarefas
                 </h3>
-                <p className={`text-sm ${
+                <p className={`text-[10px] sm:text-sm ${
                   activeTab === 'tarefas' 
                     ? 'text-white/80' 
                     : 'text-gray-500 dark:text-gray-400'
                 }`}>
-                  {stats.tarefasConcluidas} concluídas
+                  {stats.tarefasConcluidas} feitas
                 </p>
               </div>
             </div>
           </button>
 
           <button 
-            className={`relative overflow-hidden rounded-2xl p-6 transition-all duration-300 transform hover:scale-105 ${
-              activeTab === 'workponto' 
-                ? 'shadow-xl' 
-                : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700'
+            className={`relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-6 transition-all duration-300 ${
+              activeTab === 'pontos' 
+                ? 'shadow-xl scale-105 sm:hover:scale-105' 
+                : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:scale-105'
             }`}
-            style={activeTab === 'workponto' ? { backgroundColor: '#1988d3', boxShadow: '0 20px 25px -5px rgba(25, 136, 211, 0.5), 0 8px 10px -6px rgba(25, 136, 211, 0.5)' } : {}}
-            onClick={() => setActiveTab('workponto')}
+            style={activeTab === 'pontos' ? { backgroundColor: '#1988d3', boxShadow: '0 10px 15px -3px rgba(25, 136, 211, 0.4), 0 4px 6px -4px rgba(25, 136, 211, 0.4)' } : {}}
+            onClick={() => setActiveTab('pontos')}
           >
-            {activeTab === 'workponto' && (
+            {activeTab === 'pontos' && (
               <div className="absolute inset-0 bg-white/10"></div>
             )}
-            <div className="relative flex items-center gap-3">
-              <div className={`p-3 rounded-xl ${
-                activeTab === 'workponto' 
+            <div className="relative flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+              <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${
+                activeTab === 'pontos' 
                   ? 'bg-white/20 backdrop-blur-sm' 
-                  : 'bg-purple-100 dark:bg-purple-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
               }`}>
-                <Clock className={`w-6 h-6 ${
-                  activeTab === 'workponto' 
+                <Trophy className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                  activeTab === 'pontos' 
                     ? 'text-white' 
-                    : 'text-purple-600 dark:text-purple-400'
+                    : 'text-blue-600 dark:text-blue-400'
                 }`} />
               </div>
-              <div className="text-left">
-                <h3 className={`font-bold text-lg ${
-                  activeTab === 'workponto' 
+              <div className="text-center sm:text-left">
+                <h3 className={`font-bold text-xs sm:text-lg ${
+                  activeTab === 'pontos' 
                     ? 'text-white' 
                     : 'text-gray-900 dark:text-white'
                 }`}>
-                  WorkPonto
+                  Pontos
                 </h3>
-                <p className={`text-sm ${
-                  activeTab === 'workponto' 
+                <p className={`text-[10px] sm:text-sm ${
+                  activeTab === 'pontos' 
                     ? 'text-white/80' 
                     : 'text-gray-500 dark:text-gray-400'
                 }`}>
-                  Registro de ponto
+                  {stats.pontos.total} pts
                 </p>
               </div>
             </div>
@@ -831,8 +765,11 @@ const ProfileTab = () => {
             </div>
           </div>
         )}
-        {activeTab === 'workponto' && (
-          <WorkPontoTab />
+        {activeTab === 'pontos' && (
+          <>
+            {console.log('🔍 ProfileTab passando stats:', stats)}
+            <DetalhamentoPontosTab stats={stats} />
+          </>
         )}
       </div>
 

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔧 Diagnóstico de Permissões Firebase</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 800px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .status-card {
+      background: #f7fafc;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 4px solid #667eea;
+    }
+
+    .status-card.success {
+      border-left-color: #48bb78;
+      background: #f0fff4;
+    }
+
+    .status-card.error {
+      border-left-color: #f56565;
+      background: #fff5f5;
+    }
+
+    .status-card.warning {
+      border-left-color: #ed8936;
+      background: #fffaf0;
+    }
+
+    .status-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .status-content {
+      color: #4a5568;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .info-item {
+      background: #edf2f7;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .info-value {
+      font-size: 16px;
+      color: #2d3748;
+      font-weight: bold;
+      word-break: break-all;
+    }
+
+    .btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .btn:hover {
+      background: #5a67d8;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn.secondary {
+      background: #48bb78;
+    }
+
+    .btn.secondary:hover {
+      background: #38a169;
+    }
+
+    .btn.danger {
+      background: #f56565;
+    }
+
+    .btn.danger:hover {
+      background: #e53e3e;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .code-block {
+      background: #2d3748;
+      color: #68d391;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+
+    .steps {
+      list-style: none;
+      counter-reset: step-counter;
+    }
+
+    .steps li {
+      counter-increment: step-counter;
+      padding: 15px 15px 15px 50px;
+      position: relative;
+      margin-bottom: 10px;
+      background: #edf2f7;
+      border-radius: 8px;
+    }
+
+    .steps li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 15px;
+      top: 15px;
+      background: #667eea;
+      color: white;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Diagnóstico de Permissões</h1>
+    <p class="subtitle">Verificando suas permissões no Firebase...</p>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Carregando informações do usuário...</p>
+    </div>
+
+    <div id="content" style="display: none;"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    // Configuração do Firebase (mesma do projeto)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbxwIX6gZNT_f-1OiCU_vvzjU5iZBhUtw",
+      authDomain: "garden-c0b50.firebaseapp.com",
+      projectId: "garden-c0b50",
+      storageBucket: "garden-c0b50.firebasestorage.app",
+      messagingSenderId: "395756658091",
+      appId: "1:395756658091:web:ccd20ae5a6b2393f9bfbe8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+
+    async function checkPermissions() {
+      try {
+        const user = auth.currentUser;
+
+        if (!user) {
+          showError('❌ Usuário não autenticado', 'Você precisa estar logado para usar esta funcionalidade.');
+          return;
+        }
+
+        // Buscar dados do usuário no Firestore
+        const userDoc = await getDoc(doc(db, 'usuario', user.uid));
+
+        if (!userDoc.exists()) {
+          showWarning('⚠️ Usuário sem registro', 'Seu UID não foi encontrado na coleção "usuario".');
+          return;
+        }
+
+        const userData = userDoc.data();
+        const nivel = userData.nivel || 0;
+        const nome = userData.nome || 'N/A';
+        const email = userData.email || user.email;
+
+        // Verificar se tem permissão
+        const hasPermission = nivel >= 3;
+
+        if (hasPermission) {
+          showSuccess(user, userData, nivel, nome, email);
+        } else {
+          showInsufficientLevel(user, userData, nivel, nome, email);
+        }
+
+      } catch (error) {
+        console.error('Erro ao verificar permissões:', error);
+        showError('❌ Erro ao verificar', error.message);
+      }
+    }
+
+    function showSuccess(user, userData, nivel, nome, email) {
+      content.innerHTML = `
+        <div class="status-card success">
+          <div class="icon">✅</div>
+          <div class="status-title">Permissões OK!</div>
+          <div class="status-content">
+            Você tem as permissões necessárias para testar conexões.
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Nome</div>
+            <div class="info-value">${nome}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Email</div>
+            <div class="info-value">${email}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Nível de Acesso</div>
+            <div class="info-value">${nivel} (${getNivelLabel(nivel)})</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">UID</div>
+            <div class="info-value" style="font-size: 12px;">${user.uid}</div>
+          </div>
+        </div>
+
+        <div class="status-card warning">
+          <div class="status-title">⚠️ Ainda com erro?</div>
+          <div class="status-content">
+            <p style="margin-bottom: 15px;">Se o erro persistir, siga estes passos:</p>
+            <ol class="steps">
+              <li><strong>Limpar cache do navegador</strong><br>Pressione Ctrl + Shift + Delete</li>
+              <li><strong>Recarregar página forçado</strong><br>Pressione Ctrl + Shift + R</li>
+              <li><strong>Verificar regras deployadas</strong><br>Veja o console do Firebase</li>
+              <li><strong>Fazer logout e login</strong><br>Renovar token de autenticação</li>
+            </ol>
+          </div>
+        </div>
+
+        <button class="btn secondary" onclick="window.location.reload()">
+          🔄 Recarregar Página
+        </button>
+
+        <button class="btn" onclick="window.open('https://console.firebase.google.com/project/garden-c0b50/firestore/rules', '_blank')">
+          🔧 Abrir Firebase Console
+        </button>
+      `;
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    }
+
+    function showInsufficientLevel(user, userData, nivel, nome, email) {
+      content.innerHTML = `
+        <div class="status-card error">
+          <div class="icon">❌</div>
+          <div class="status-title">Permissões Insuficientes</div>
+          <div class="status-content">
+            Seu nível de acesso (${nivel}) não é suficiente. Você precisa ser <strong>Gerente (3)</strong> ou <strong>Admin (4)</strong>.
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Nome</div>
+            <div class="info-value">${nome}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Email</div>
+            <div class="info-value">${email}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Nível Atual</div>
+            <div class="info-value" style="color: #f56565;">${nivel} (${getNivelLabel(nivel)})</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Nível Necessário</div>
+            <div class="info-value" style="color: #48bb78;">3 ou 4</div>
+          </div>
+        </div>
+
+        <div class="status-card warning">
+          <div class="status-title">🔐 Como Resolver?</div>
+          <div class="status-content">
+            <p style="margin-bottom: 15px;"><strong>Opção 1:</strong> Solicite ao administrador do sistema para aumentar seu nível de acesso.</p>
+            <p><strong>Opção 2:</strong> Entre em contato com um Admin (nível 4) para alterar manualmente no Firestore.</p>
+          </div>
+        </div>
+
+        <button class="btn danger" onclick="alert('Entre em contato com o administrador do sistema.')">
+          📧 Solicitar Acesso
+        </button>
+      `;
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    }
+
+    function showError(title, message) {
+      content.innerHTML = `
+        <div class="status-card error">
+          <div class="icon">❌</div>
+          <div class="status-title">${title}</div>
+          <div class="status-content">${message}</div>
+        </div>
+
+        <button class="btn" onclick="window.location.reload()">
+          🔄 Tentar Novamente
+        </button>
+
+        <button class="btn secondary" onclick="window.location.href='/'">
+          🏠 Voltar ao Sistema
+        </button>
+      `;
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    }
+
+    function showWarning(title, message) {
+      content.innerHTML = `
+        <div class="status-card warning">
+          <div class="icon">⚠️</div>
+          <div class="status-title">${title}</div>
+          <div class="status-content">${message}</div>
+        </div>
+
+        <div class="status-card">
+          <div class="status-title">🛠️ Como Resolver?</div>
+          <div class="status-content">
+            <p>O administrador precisa criar seu registro na coleção "usuario" do Firestore:</p>
+            <div class="code-block">
+              Coleção: usuario<br>
+              Documento ID: ${auth.currentUser?.uid || 'SEU_UID'}<br>
+              Campos necessários:<br>
+              - nome: "Seu Nome"<br>
+              - email: "seu@email.com"<br>
+              - nivel: 3 ou 4<br>
+              - dataCriacao: timestamp
+            </div>
+          </div>
+        </div>
+
+        <button class="btn" onclick="window.location.href='/'">
+          🏠 Voltar ao Sistema
+        </button>
+      `;
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    }
+
+    function getNivelLabel(nivel) {
+      const labels = {
+        0: 'Sem Acesso',
+        1: 'Funcionário',
+        2: 'Supervisor',
+        3: 'Gerente',
+        4: 'Admin'
+      };
+      return labels[nivel] || 'Desconhecido';
+    }
+
+    // Aguardar autenticação
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        checkPermissions();
+      } else {
+        showError('❌ Não Autenticado', 'Você precisa fazer login primeiro.');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Limpar Cache do Firestore</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 2rem;
+    }
+    .btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1.1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 10px 5px;
+      transition: transform 0.2s;
+    }
+    .btn:hover {
+      transform: scale(1.05);
+    }
+    .btn:active {
+      transform: scale(0.95);
+    }
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      display: none;
+    }
+    .result.show {
+      display: block;
+    }
+    .success {
+      border-left: 4px solid #10b981;
+    }
+    .error {
+      border-left: 4px solid #ef4444;
+    }
+    code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+    ol {
+      text-align: left;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧹 Limpar Cache do Firestore</h1>
+    <p>Se você está tendo erros do tipo <code>INTERNAL ASSERTION FAILED</code>, use esta ferramenta para limpar o cache do Firestore.</p>
+    
+    <button class="btn" onclick="limparTudo()">🗑️ Limpar Tudo (Recomendado)</button>
+    <button class="btn" onclick="limparFirestore()">🔥 Limpar Apenas Firestore</button>
+    <button class="btn" onclick="limparLocalStorage()">💾 Limpar LocalStorage</button>
+    
+    <div id="result" class="result"></div>
+
+    <div style="margin-top: 30px; text-align: left;">
+      <h3>📋 Passos Manuais (Alternativa):</h3>
+      <ol>
+        <li>Abra o <strong>DevTools</strong> (F12)</li>
+        <li>Vá na aba <strong>Application</strong></li>
+        <li>No menu esquerdo, expanda <strong>IndexedDB</strong></li>
+        <li>Procure por <code>firestore</code> ou <code>garden-c0b50</code></li>
+        <li>Clique com botão direito → <strong>Delete</strong></li>
+        <li>Faça o mesmo para <strong>Local Storage</strong> e <strong>Session Storage</strong></li>
+        <li>Recarregue a página (Ctrl + Shift + R)</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    function showResult(message, isSuccess = true) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.className = 'result show ' + (isSuccess ? 'success' : 'error');
+      resultDiv.innerHTML = message;
+      
+      setTimeout(() => {
+        resultDiv.classList.remove('show');
+      }, 5000);
+    }
+
+    async function limparFirestore() {
+      try {
+        // Limpar IndexedDB do Firestore
+        const databases = await indexedDB.databases();
+        let cleared = 0;
+        
+        for (const dbInfo of databases) {
+          const dbName = dbInfo.name;
+          if (dbName.includes('firestore') || dbName.includes('firebase') || dbName.includes('garden')) {
+            await new Promise((resolve, reject) => {
+              const deleteRequest = indexedDB.deleteDatabase(dbName);
+              deleteRequest.onsuccess = () => {
+                console.log('✅ Banco deletado:', dbName);
+                cleared++;
+                resolve();
+              };
+              deleteRequest.onerror = () => {
+                console.error('❌ Erro ao deletar:', dbName);
+                reject();
+              };
+            });
+          }
+        }
+        
+        if (cleared > 0) {
+          showResult(`✅ Sucesso! ${cleared} banco(s) de dados limpo(s). <br><strong>Recarregando a página...</strong>`, true);
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        } else {
+          showResult('⚠️ Nenhum banco do Firestore encontrado.', false);
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        showResult('❌ Erro ao limpar: ' + error.message, false);
+      }
+    }
+
+    function limparLocalStorage() {
+      try {
+        const keys = Object.keys(localStorage);
+        const firestoreKeys = keys.filter(k => 
+          k.includes('firebase') || 
+          k.includes('firestore') || 
+          k.includes('garden')
+        );
+        
+        firestoreKeys.forEach(key => {
+          localStorage.removeItem(key);
+          console.log('🗑️ Removido:', key);
+        });
+        
+        showResult(`✅ ${firestoreKeys.length} item(ns) removido(s) do LocalStorage!`, true);
+      } catch (error) {
+        showResult('❌ Erro: ' + error.message, false);
+      }
+    }
+
+    async function limparTudo() {
+      try {
+        // 1. Limpar Firestore IndexedDB
+        await limparFirestore();
+        
+        // 2. Limpar LocalStorage
+        limparLocalStorage();
+        
+        // 3. Limpar Session Storage
+        sessionStorage.clear();
+        
+        showResult('✅ TUDO LIMPO! Recarregando em 2 segundos...', true);
+        
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } catch (error) {
+        showResult('❌ Erro: ' + error.message, false);
+      }
+    }
+  </script>
+</body>
+</html>

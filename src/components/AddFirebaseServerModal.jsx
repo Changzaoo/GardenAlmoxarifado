@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { initializeApp } from 'firebase/app';
+import { initializeApp, deleteApp } from 'firebase/app';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
+import { toast } from 'react-toastify';
 import {
   X,
   Plus,
@@ -84,8 +85,14 @@ export const AddFirebaseServerModal = ({ isOpen, onClose, onServerAdded }) => {
         }
       });
 
+      // Notificação de sucesso no teste
+      toast.success('✅ Conexão estabelecida com sucesso!', {
+        position: 'top-right',
+        autoClose: 2000
+      });
+
       // Limpar app de teste
-      await testApp.delete();
+      await deleteApp(testApp);
 
     } catch (error) {
       console.error('❌ Erro ao testar conexão:', error);
@@ -100,6 +107,12 @@ export const AddFirebaseServerModal = ({ isOpen, onClose, onServerAdded }) => {
           storage: false
         }
       });
+
+      // Notificação de erro no teste
+      toast.error(`❌ Falha na conexão: ${error.message}`, {
+        position: 'top-right',
+        autoClose: 4000
+      });
     } finally {
       setTesting(false);
     }
@@ -110,7 +123,10 @@ export const AddFirebaseServerModal = ({ isOpen, onClose, onServerAdded }) => {
    */
   const saveServer = async () => {
     if (!testResult?.success) {
-      alert('Por favor, teste a conexão antes de salvar.');
+      toast.warning('⚠️ Por favor, teste a conexão antes de salvar.', {
+        position: 'top-center',
+        autoClose: 3000
+      });
       return;
     }
 
@@ -132,7 +148,8 @@ export const AddFirebaseServerModal = ({ isOpen, onClose, onServerAdded }) => {
         },
         createdAt: new Date().toISOString(),
         lastTested: new Date().toISOString(),
-        status: 'active'
+        status: 'inactive',
+        lastStatusChange: new Date().toISOString()
       };
 
       // Salvar no localStorage (temporário - depois migrar para um sistema mais robusto)
@@ -162,11 +179,22 @@ export const AddFirebaseServerModal = ({ isOpen, onClose, onServerAdded }) => {
       // Fechar modal
       onClose();
 
-      alert('Servidor Firebase adicionado com sucesso!');
+      // Notificação de sucesso
+      toast.success('🎉 Servidor Firebase adicionado com sucesso!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      });
 
     } catch (error) {
       console.error('❌ Erro ao salvar servidor:', error);
-      alert('Erro ao salvar servidor. Tente novamente.');
+      toast.error('❌ Erro ao salvar servidor. Tente novamente.', {
+        position: 'top-right',
+        autoClose: 4000
+      });
     } finally {
       setSaving(false);
     }

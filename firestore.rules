@@ -181,5 +181,13 @@ service cloud.firestore {
       // Ninguém pode atualizar ou deletar registros (imutável)
       allow update, delete: if false;
     }
+
+    // 🧪 Regras para testes de conexão (backup_test)
+    match /backup_test/{testId} {
+      // Apenas administradores (nível >= 3) podem fazer testes
+      allow read, write: if isAuthenticated() && 
+                            exists(/databases/$(database)/documents/usuario/$(request.auth.uid)) &&
+                            get(/databases/$(database)/documents/usuario/$(request.auth.uid)).data.nivel >= 3;
+    }
   }
 }

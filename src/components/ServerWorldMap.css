@@ -1,0 +1,205 @@
+/* 🗺️ Estilos para o Mapa Mundial de Servidores */
+
+/* Animação de pulso para servidores ativos */
+@keyframes server-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Animação de brilho para o oceano */
+@keyframes ocean-shimmer {
+  0%, 100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Estilo para a imagem do mapa mundial */
+.world-map-image {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: brightness(1.1) contrast(1.05);
+}
+
+.dark .world-map-image {
+  filter: brightness(0.9) contrast(1.1) saturate(0.8);
+}
+
+/* Estilo para marcadores de servidor */
+.server-marker {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.server-marker:hover {
+  filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.6));
+}
+
+/* Animação de loading para o mapa */
+@keyframes map-loading {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Efeito de linha de conexão animada */
+@keyframes connection-flow {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Tooltip customizado */
+.server-tooltip {
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Gradiente para o fundo do mapa no modo escuro */
+.dark .map-background {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+/* Efeito de zoom suave na imagem ao hover */
+.world-map-container:hover .world-map-image {
+  transform: scale(1.02);
+}
+
+/* Efeito de brilho nos servidores ativos */
+.server-active {
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.8));
+  animation: server-pulse 3s ease-in-out infinite;
+}
+
+/* Efeito de fade para servidores inativos */
+.server-inactive {
+  opacity: 0.6;
+  filter: grayscale(40%);
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .server-tooltip text {
+    font-size: 10px;
+  }
+  
+  .continent {
+    stroke-width: 1;
+  }
+}
+
+/* Animação de entrada do mapa */
+@keyframes map-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.map-container {
+  animation: map-fade-in 0.8s ease-out forwards;
+}
+
+/* Efeito de glow para linhas de conexão */
+.connection-line {
+  stroke: #10b981;
+  stroke-width: 2;
+  stroke-dasharray: 10, 5;
+  opacity: 0.4;
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.5));
+  animation: connection-flow 3s linear infinite;
+}
+
+/* Estilo para o header do mapa */
+.map-header {
+  background: linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Partículas animadas no header */
+.header-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: float-particle 4s ease-in-out infinite;
+}
+
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 1;
+  }
+}
+
+/* Estilo para cards de estatísticas */
+.stat-card {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.dark .stat-card {
+  background: rgba(31, 41, 55, 0.95);
+  border: 1px solid rgba(75, 85, 99, 0.8);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Progresso de uptime */
+.uptime-bar {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  border-radius: 9999px;
+  height: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.uptime-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
