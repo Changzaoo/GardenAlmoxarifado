@@ -40,6 +40,7 @@ const EscalaPage = ({ usuarioAtual }) => {
   const [abaGerenciar, setAbaGerenciar] = useState('horarios'); // 'horarios' ou 'funcionarios'
   const [horariosPersonalizados, setHorariosPersonalizados] = useState({});
   const [novoHorario, setNovoHorario] = useState({ nome: '', descricao: '', setor: '' });
+  const [botaoComAura, setBotaoComAura] = useState(null); // { id: string, tipo: 'presente'|'ausente'|'folga' }
 
   // Tipos de escala com cores
   const TIPOS_ESCALA = {
@@ -599,38 +600,15 @@ const EscalaPage = ({ usuarioAtual }) => {
       return;
     }
 
-    // Ativar animação sofisticada para FOLGA
+    // ✨ Animação de aura simplificada (0.5s) - TODAS AS TELAS
     if (tipo === 'FOLGA' && eventoClick) {
-      const funcionario = funcionarios.find(f => f.id === funcionarioId);
+      const botaoId = `${funcionarioId}_${dia}_folga`;
+      setBotaoComAura({ id: botaoId, tipo: 'folga' });
       
-      // Fase 1: Iniciar verificação de folga
-      setAnimacaoVerificacao({
-        funcionarioId,
-        dia,
-        tipo: 'folga',
-        funcionario,
-        fase: 'scanning'
-      });
-
-      // Fase 2: Análise
+      // Remover aura após 500ms
       setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'analyzing' } : null);
-      }, 1000);
-
-      // Fase 3: Verificação
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'verifying' } : null);
-      }, 2000);
-
-      // Fase 4: Confirmação
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'confirmed' } : null);
-      }, 3000);
-
-      // Fase 5: Finalização
-      setTimeout(() => {
-        setAnimacaoVerificacao(null);
-      }, 4000);
+        setBotaoComAura(null);
+      }, 500);
     }
 
     try {
@@ -647,6 +625,13 @@ const EscalaPage = ({ usuarioAtual }) => {
       };
 
       await setDoc(doc(db, 'escalas', mesAno, 'registros', docId), escalaData);
+      
+      // 🔄 Auto-avançar para próximo funcionário no modo diário
+      if (modoVisualizacao === 'diario' && tipo === 'FOLGA') {
+        setTimeout(() => {
+          setFuncionarioAtualIndex(prev => (prev + 1) % funcionariosFiltrados.length);
+        }, 300);
+      }
     } catch (error) {
       console.error('Erro ao marcar escala:', error);
       toast.error('Erro ao salvar escala. Tente novamente.', {
@@ -706,43 +691,15 @@ const EscalaPage = ({ usuarioAtual }) => {
       return;
     }
 
-    // Criar animação de partículas simplificada
+    // ✨ Animação de aura simplificada (0.5s) - TODAS AS TELAS
     if (presente !== null && eventoClick) {
-      criarParticulasSimples(eventoClick, presente ? 'presente' : 'ausente');
-    }
-
-    // Se está marcando presença (não desmarcando), ativar animação sofisticada
-    if (presente !== null) {
-      const funcionario = funcionarios.find(f => f.id === funcionarioId);
+      const botaoId = `${funcionarioId}_${dia}_${presente ? 'presente' : 'ausente'}`;
+      setBotaoComAura({ id: botaoId, tipo: presente ? 'presente' : 'ausente' });
       
-      // Fase 1: Iniciar verificação
-      setAnimacaoVerificacao({
-        funcionarioId,
-        dia,
-        tipo: presente ? 'presente' : 'ausente',
-        funcionario,
-        fase: 'scanning'
-      });
-
-      // Fase 2: Análise
+      // Remover aura após 500ms
       setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'analyzing' } : null);
-      }, 1000);
-
-      // Fase 3: Verificação
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'verifying' } : null);
-      }, 2000);
-
-      // Fase 4: Confirmação
-      setTimeout(() => {
-        setAnimacaoVerificacao(prev => prev ? { ...prev, fase: 'confirmed' } : null);
-      }, 3000);
-
-      // Fase 5: Finalização
-      setTimeout(() => {
-        setAnimacaoVerificacao(null);
-      }, 4000);
+        setBotaoComAura(null);
+      }, 500);
     }
 
     try {
@@ -762,6 +719,13 @@ const EscalaPage = ({ usuarioAtual }) => {
           marcadoEm: new Date()
         };
         await setDoc(doc(db, 'presencas', mesAno, 'registros', docId), presencaData);
+        
+        // 🔄 Auto-avançar para próximo funcionário no modo diário
+        if (modoVisualizacao === 'diario') {
+          setTimeout(() => {
+            setFuncionarioAtualIndex(prev => (prev + 1) % funcionariosFiltrados.length);
+          }, 300);
+        }
       }
     } catch (error) {
       console.error('Erro ao marcar presença:', error);
@@ -769,7 +733,6 @@ const EscalaPage = ({ usuarioAtual }) => {
         position: 'top-right',
         autoClose: 4000
       });
-      setAnimacaoVerificacao(null);
     }
   };
 
@@ -1575,7 +1538,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                         presencaStatus === true
                           ? 'bg-green-600 text-white scale-105 ring-2 ring-green-300'
                           : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-800'
-                      }`}
+                      } ${botaoComAura?.id === `${func.id}_${dia}_presente` ? 'animate-aura-presente' : ''}`}
                     >
                       <Check className="w-4 h-4" />
                       <span className="text-[10px]">Presente</span>
@@ -1586,7 +1549,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                         presencaStatus === false
                           ? 'bg-red-600 text-white scale-105 ring-2 ring-red-300'
                           : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-800'
-                      }`}
+                      } ${botaoComAura?.id === `${func.id}_${dia}_ausente` ? 'animate-aura-ausente' : ''}`}
                     >
                       <X className="w-4 h-4" />
                       <span className="text-[10px]">Ausente</span>
@@ -1597,7 +1560,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                         tipo === 'FOLGA'
                           ? 'bg-yellow-500 text-white scale-105 ring-2 ring-yellow-300'
                           : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-yellow-100 dark:hover:bg-yellow-800'
-                      }`}
+                      } ${botaoComAura?.id === `${func.id}_${dia}_folga` ? 'animate-aura-folga' : ''}`}
                     >
                       <span className="text-lg">📅</span>
                       <span className="text-[10px]">Folga</span>
@@ -1917,7 +1880,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                                     presencaStatus === true
                                       ? 'bg-green-600 text-white scale-105'
                                       : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-800'
-                                  }`}
+                                  } ${botaoComAura?.id === `${func.id}_${dia}_presente` ? 'animate-aura-presente' : ''}`}
                                   title="Presente"
                                   >
                                     <Check className="w-3 h-3 mx-auto" />
@@ -1928,7 +1891,7 @@ const EscalaPage = ({ usuarioAtual }) => {
                                       presencaStatus === false
                                         ? 'bg-red-600 text-white scale-105'
                                         : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-800'
-                                    }`}
+                                    } ${botaoComAura?.id === `${func.id}_${dia}_ausente` ? 'animate-aura-ausente' : ''}`}
                                     title="Falta"
                                   >
                                     <X className="w-3 h-3 mx-auto" />
@@ -3577,6 +3540,57 @@ const EscalaPage = ({ usuarioAtual }) => {
           `}</style>
         </div>
       ))}
+
+      {/* CSS para animações de aura simplificadas (0.5s) */}
+      <style>{`
+        @keyframes aura-presente {
+          0% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+          }
+          50% {
+            box-shadow: 0 0 20px 10px rgba(34, 197, 94, 0.4);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+          }
+        }
+        
+        @keyframes aura-ausente {
+          0% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+          }
+          50% {
+            box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0.4);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+          }
+        }
+        
+        @keyframes aura-folga {
+          0% {
+            box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7);
+          }
+          50% {
+            box-shadow: 0 0 20px 10px rgba(234, 179, 8, 0.4);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(234, 179, 8, 0);
+          }
+        }
+        
+        .animate-aura-presente {
+          animation: aura-presente 0.5s ease-out;
+        }
+        
+        .animate-aura-ausente {
+          animation: aura-ausente 0.5s ease-out;
+        }
+        
+        .animate-aura-folga {
+          animation: aura-folga 0.5s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
