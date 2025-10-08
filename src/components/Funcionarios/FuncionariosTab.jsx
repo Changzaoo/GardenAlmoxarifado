@@ -26,7 +26,8 @@ import {
   Building2,
   ChevronDown,
   X,
-  Clock
+  Clock,
+  FileText
 } from 'lucide-react';
 import GruposModal from './components/GruposModal';
 import ModalUnificarDuplicados from './components/ModalUnificarDuplicados';
@@ -40,7 +41,9 @@ import ModalConfirmacao from './components/ModalConfirmacao';
 import ModalDetalhesEstatisticas from './components/ModalDetalhesEstatisticas';
 import DetalhesHorasModal from '../WorkPonto/DetalhesHorasModal';
 import BannerResetHoras from './BannerResetHoras';
-import ModalAplicarPontosPerfeitosLote from './components/ModalAplicarPontosPerfeitosLote';
+import ModalCorrecaoPontos from './components/ModalCorrecaoPontos';
+import ModalComprovantes from '../Comprovantes/ModalComprovantes';
+import ModalComprovantesBatch from '../Comprovantes/ModalComprovantesBatch';
 
 // Função para formatar número de telefone
 const formatarTelefone = (telefone) => {
@@ -56,7 +59,10 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
   const [showGruposModal, setShowGruposModal] = useState(false);
   const [showUnificarModal, setShowUnificarModal] = useState(false);
-  const [showPontosPerfeitosModal, setShowPontosPerfeitosModal] = useState(false);
+  const [showCorrecaoPontosModal, setShowCorrecaoPontosModal] = useState(false);
+  const [showComprovantesModal, setShowComprovantesModal] = useState(false);
+  const [showComprovantesBatchModal, setShowComprovantesBatchModal] = useState(false);
+  const [funcionarioSelecionadoComprovante, setFuncionarioSelecionadoComprovante] = useState(null);
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -695,16 +701,27 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                     <Plus className="w-4 h-4" />
                     <span className="hidden sm:inline">Adicionar</span>
                   </motion.button>
-                  
+
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowPontosPerfeitosModal(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-medium rounded-lg shadow-md transition-all duration-200"
-                    title="Aplicar pontos perfeitos em lote"
+                    onClick={() => setShowCorrecaoPontosModal(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white text-sm font-medium rounded-lg shadow-md transition-all duration-200"
+                    title="Correção de pontos em lote"
                   >
                     <Clock className="w-4 h-4" />
-                    <span className="hidden sm:inline">Pontos Perfeitos</span>
+                    <span className="hidden sm:inline">Consertar Ponto</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowComprovantesBatchModal(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-sm font-medium rounded-lg shadow-md transition-all duration-200"
+                    title="Gerar comprovantes em lote (todos ou parcial)"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span className="hidden sm:inline">Comprovantes</span>
                   </motion.button>
                 </>
               )}
@@ -900,13 +917,6 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
         }}
       />
 
-      {/* Modal de Aplicar Pontos Perfeitos em Lote */}
-      <ModalAplicarPontosPerfeitosLote
-        isOpen={showPontosPerfeitosModal}
-        onClose={() => setShowPontosPerfeitosModal(false)}
-        funcionarios={funcionarios}
-      />
-
       {/* Modal de Edição */}
       {!isFuncionario && editando && (
         <ModalEditar
@@ -936,6 +946,33 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           }}
         />
       )}
+
+      {/* Modal de Correção de Pontos */}
+      <ModalCorrecaoPontos
+        isOpen={showCorrecaoPontosModal}
+        onClose={() => setShowCorrecaoPontosModal(false)}
+        funcionarios={funcionarios}
+      />
+
+      {/* Modal de Comprovantes */}
+      {funcionarioSelecionadoComprovante && (
+        <ModalComprovantes
+          isOpen={showComprovantesModal}
+          onClose={() => {
+            setShowComprovantesModal(false);
+            setFuncionarioSelecionadoComprovante(null);
+          }}
+          funcionarioNome={funcionarioSelecionadoComprovante.nome}
+          funcionarioId={funcionarioSelecionadoComprovante.id}
+        />
+      )}
+
+      {/* Modal de Comprovantes em Lote */}
+      <ModalComprovantesBatch
+        isOpen={showComprovantesBatchModal}
+        onClose={() => setShowComprovantesBatchModal(false)}
+        funcionarios={funcionarios}
+      />
     </div>
   );
 };

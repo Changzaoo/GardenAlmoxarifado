@@ -50,25 +50,27 @@ public class ThemeManagerPlugin extends Plugin {
     
     /**
      * Atualiza as cores da barra de status e navegação
+     * A barra de status permanece sempre azul (#2563eb)
      */
     private void updateStatusBar(String theme) {
         MainActivity activity = (MainActivity) getActivity();
         Window window = activity.getWindow();
         
+        // Barra de status sempre azul com ícones brancos
+        window.setStatusBarColor(Color.parseColor("#2563eb")); // Azul fixo (blue-600)
+        
+        // Barra de navegação muda com o tema
         if ("light".equals(theme)) {
-            // Tema claro
-            window.setStatusBarColor(Color.parseColor("#FFFFFF"));
+            // Tema claro - barra de navegação branca
             window.setNavigationBarColor(Color.parseColor("#FFFFFF"));
             
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                 window.getDecorView().setSystemUiVisibility(
-                    android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | 
                     android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
                 );
             }
         } else {
-            // Tema escuro
-            window.setStatusBarColor(Color.parseColor("#000000"));
+            // Tema escuro - barra de navegação preta
             window.setNavigationBarColor(Color.parseColor("#000000"));
             
             window.getDecorView().setSystemUiVisibility(0);

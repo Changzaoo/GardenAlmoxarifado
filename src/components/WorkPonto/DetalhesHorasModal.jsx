@@ -7,12 +7,16 @@ import {
   RefreshCw,
   Calendar,
   CheckCircle,
-  Save
+  Save,
+  ChevronLeft,
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { collection, query, where, getDocs, addDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ToastProvider';
+import ModalComprovantes from '../Comprovantes/ModalComprovantes';
 
 const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome }) => {
   const { usuario } = useAuth();
@@ -21,6 +25,11 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
   // Usar funcionarioId passado como prop ou o usuário logado
   const targetUserId = funcionarioId || usuario?.id;
   const targetUserName = funcionarioNome || usuario?.nome;
+  
+  // Estado para data selecionada (começa com hoje)
+  const [dataSelecionada, setDataSelecionada] = useState(new Date());
+  const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [pontosDoMes, setPontosDoMes] = useState([]);
   
   const [tempoReal, setTempoReal] = useState({
     horas: 0,
@@ -37,6 +46,7 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
     saida: ''
   });
   const [campoFocado, setCampoFocado] = useState(null);
+  const [mostrarComprovantes, setMostrarComprovantes] = useState(false);
 
   // Buscar pontos do dia em tempo real - BUSCAR POR NOME
   useEffect(() => {
@@ -44,7 +54,7 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
       return;
     }
 
-    console.log('🔍 [DetalhesHoras] Buscando pontos para:', targetUserName);
+    console.log('🔍 [DetalhesHoras] Buscando pontos para:', targetUserName, 'Data:', dataSelecionada.toLocaleDateString('pt-BR'));
     
     // Buscar por NOME do funcionário (mais confiável)
     const q = query(
@@ -55,13 +65,12 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
     const unsubscribe = onSnapshot(q, (snapshot) => {
       console.log('📦 [DetalhesHoras] Documentos encontrados:', snapshot.docs.length);
       
-      const hoje = new Date();
-      // Usar formato YYYY-MM-DD para comparação mais confiável
-      const hojeStr = hoje.toISOString().split('T')[0];
+      // Usar data selecionada ao invés de hoje
+      const dataStr = dataSelecionada.toISOString().split('T')[0];
       
-      console.log('📅 [DetalhesHoras] Data de hoje (ISO):', hojeStr);
+      console.log('📅 [DetalhesHoras] Data selecionada (ISO):', dataStr);
       
-      const pontosHoje = {
+      const pontosDia = {
         entrada: null,
         saidaAlmoco: null,
         voltaAlmoco: null,
@@ -96,53 +105,55 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
         // Usar formato YYYY-MM-DD para comparação consistente
         const dataPontoStr = dataPonto.toISOString().split('T')[0];
         
-        console.log(`🔍 [DetalhesHoras] Comparando: ${dataPontoStr} === ${hojeStr}? ${dataPontoStr === hojeStr} (Tipo: ${pontoData.tipo})`);
+        console.log(`🔍 [DetalhesHoras] Comparando: ${dataPontoStr} === ${dataStr}? ${dataPontoStr === dataStr} (Tipo: ${pontoData.tipo})`);
         
-        // Apenas pontos de hoje
-        if (dataPontoStr === hojeStr) {
+        // Apenas pontos da data selecionada
+        if (dataPontoStr === dataStr) {
           const hora = dataPonto.toLocaleTimeString('pt-BR', {
             hour: '2-digit',
             minute: '2-digit'
           });
 
-          console.log(`✓ Ponto de hoje encontrado: ${pontoData.tipo} às ${hora}`);
+          console.log(`✓ Ponto do dia encontrado: ${pontoData.tipo} às ${hora}`);
 
           if (hora === '--:--' || hora === '00:00') return;
 
           switch(pontoData.tipo) {
             case 'entrada':
-              if (!pontosHoje.entrada) pontosHoje.entrada = hora;
+              if (!pontosDia.entrada) pontosDia.entrada = hora;
               break;
             case 'saida_almoco':
-              if (!pontosHoje.saidaAlmoco) pontosHoje.saidaAlmoco = hora;
+              if (!pontosDia.saidaAlmoco) pontosDia.saidaAlmoco = hora;
               break;
             case 'retorno_almoco':
-              if (!pontosHoje.voltaAlmoco) pontosHoje.voltaAlmoco = hora;
+              if (!pontosDia.voltaAlmoco) pontosDia.voltaAlmoco = hora;
               break;
             case 'saida':
-              if (!pontosHoje.saida) pontosHoje.saida = hora;
+              if (!pontosDia.saida) pontosDia.saida = hora;
               break;
           }
         }
       });
 
-      console.log('✅ [DetalhesHoras] Pontos consolidados:', pontosHoje);
-      setPontoDia(pontosHoje);
+      console.log('✅ [DetalhesHoras] Pontos consolidados:', pontosDia);
+      setPontoDia(pontosDia);
     }, (error) => {
       console.error('❌ Erro ao buscar pontos do dia:', error);
       showToast('Erro ao carregar pontos do dia', 'error');
     });
 
     return () => unsubscribe();
-  }, [isOpen, targetUserName, showToast]);
+  }, [isOpen, targetUserName, dataSelecionada, showToast]);
 
-  // Calcular horas trabalhadas em tempo real
+  // Calcular horas trabalhadas em tempo real (ou total do dia se não for hoje)
   useEffect(() => {
     if (!isOpen || !pontoDia) {
       return;
     }
 
     const calcularTempoReal = () => {
+      // Se não for hoje E já tiver saída final, usar horário de saída ao invés de agora
+      const hoje = ehHoje();
       const agora = new Date();
       
       const horarioEntrada = pontoDia.entrada;
@@ -212,10 +223,13 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
     };
 
     calcularTempoReal();
-    const interval = setInterval(calcularTempoReal, 1000);
-
-    return () => clearInterval(interval);
-  }, [isOpen, pontoDia]);
+    
+    // Só atualizar em tempo real se for hoje
+    if (ehHoje()) {
+      const interval = setInterval(calcularTempoReal, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isOpen, pontoDia, dataSelecionada]);
 
   // Carregar pontos quando abre modal de edição OU quando muda a data
   useEffect(() => {
@@ -301,10 +315,140 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
     carregarPontosDia();
   }, [mostrarModalEdicao, dataEdicao, targetUserName, showToast]);
 
+  // Funções de navegação entre dias
+  const irParaDiaAnterior = () => {
+    const novaData = new Date(dataSelecionada);
+    novaData.setDate(novaData.getDate() - 1);
+    setDataSelecionada(novaData);
+  };
+
+  const irParaProximoDia = () => {
+    const novaData = new Date(dataSelecionada);
+    novaData.setDate(novaData.getDate() + 1);
+    setDataSelecionada(novaData);
+  };
+
+  const irParaHoje = () => {
+    setDataSelecionada(new Date());
+  };
+
+  const ehHoje = () => {
+    const hoje = new Date();
+    return dataSelecionada.toDateString() === hoje.toDateString();
+  };
+
+  // Buscar todos os pontos do mês para o calendário
+  const buscarPontosDoMes = async () => {
+    if (!targetUserName || !isOpen) return;
+
+    try {
+      const primeiroDia = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), 1);
+      const ultimoDia = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth() + 1, 0);
+
+      const q = query(
+        collection(db, 'pontos'),
+        where('funcionarioNome', '==', targetUserName)
+      );
+
+      const snapshot = await getDocs(q);
+      const pontos = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Agrupar por dia e calcular saldo
+      const pontosPorDia = {};
+      pontos.forEach(ponto => {
+        const data = ponto.data?.toDate ? ponto.data.toDate() : new Date(ponto.timestamp || ponto.data);
+        
+        // Filtrar apenas pontos do mês atual
+        if (data >= primeiroDia && data <= ultimoDia) {
+          const dataKey = data.toISOString().split('T')[0];
+          
+          if (!pontosPorDia[dataKey]) {
+            pontosPorDia[dataKey] = {
+              data: dataKey,
+              entrada: null,
+              saidaAlmoco: null,
+              voltaAlmoco: null,
+              saida: null,
+              totalMinutos: 0,
+              saldoMinutos: 0
+            };
+          }
+          
+          pontosPorDia[dataKey][ponto.tipo] = data;
+        }
+      });
+
+      // Calcular minutos trabalhados e saldo para cada dia
+      Object.keys(pontosPorDia).forEach(dataKey => {
+        const dia = pontosPorDia[dataKey];
+        let minutos = 0;
+
+        if (dia.saidaAlmoco && dia.entrada) {
+          minutos += (dia.saidaAlmoco - dia.entrada) / (1000 * 60);
+        }
+        if (dia.saida && dia.voltaAlmoco) {
+          minutos += (dia.saida - dia.voltaAlmoco) / (1000 * 60);
+        }
+
+        dia.totalMinutos = Math.round(minutos);
+        // Assumindo 8 horas esperadas por dia (480 minutos)
+        dia.saldoMinutos = dia.totalMinutos - 480;
+      });
+
+      setPontosDoMes(Object.values(pontosPorDia));
+    } catch (error) {
+      console.error('Erro ao buscar pontos do mês:', error);
+    }
+  };
+
+  // Atualizar pontos do mês quando mudar o mês ou abrir o calendário
+  useEffect(() => {
+    if (mostrarCalendario && isOpen) {
+      buscarPontosDoMes();
+    }
+  }, [mostrarCalendario, dataSelecionada.getMonth(), dataSelecionada.getFullYear(), isOpen]);
+
+  const formatarDataExibicao = () => {
+    if (ehHoje()) {
+      return 'Hoje';
+    }
+    
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+    if (dataSelecionada.toDateString() === ontem.toDateString()) {
+      return 'Ontem';
+    }
+    
+    return dataSelecionada.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
   const abrirModalEdicao = () => {
-    const hoje = new Date().toISOString().split('T')[0];
-    setDataEdicao(hoje);
-    setMostrarModalEdicao(true);
+    try {
+      console.log('🔧 Abrindo modal de edição...', { dataSelecionada, targetUserName });
+      
+      if (!dataSelecionada) {
+        console.error('❌ Data selecionada não definida');
+        showToast('Erro: data não definida', 'error');
+        return;
+      }
+      
+      const dataFormatada = dataSelecionada.toISOString().split('T')[0];
+      console.log('📅 Data formatada:', dataFormatada);
+      
+      setDataEdicao(dataFormatada);
+      setMostrarModalEdicao(true);
+    } catch (error) {
+      console.error('❌ Erro ao abrir modal de edição:', error);
+      showToast('Erro ao abrir editor de pontos: ' + error.message, 'error');
+    }
   };
 
   const salvarPontosEditados = async () => {
@@ -419,24 +563,177 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-t-2xl sticky top-0 z-10">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      Detalhes de Horas Trabalhadas
-                    </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {targetUserName}
-                    </p>
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-t-2xl sticky top-0 z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        Detalhes de Horas Trabalhadas
+                      </h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {targetUserName}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onClose}
+                    className="p-2 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  </button>
+                </div>
+
+                {/* Navegação de Data */}
+                <div className="flex items-center justify-between gap-3 bg-white/50 dark:bg-gray-800/50 rounded-xl p-3">
+                  <button
+                    onClick={irParaDiaAnterior}
+                    className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                    title="Dia anterior"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                  </button>
+                  
+                  <button
+                    onClick={() => setMostrarCalendario(!mostrarCalendario)}
+                    className="flex-1 text-center hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg px-3 py-2 transition-colors cursor-pointer group"
+                    title="Abrir calendário"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <div className="text-lg font-bold text-gray-900 dark:text-white capitalize group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        {formatarDataExibicao()}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {dataSelecionada.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </div>
+                  </button>
+                  
+                  <div className="flex items-center gap-2">
+                    {!ehHoje() && (
+                      <button
+                        onClick={irParaHoje}
+                        className="px-3 py-1.5 text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                      >
+                        Hoje
+                      </button>
+                    )}
+                    <button
+                      onClick={irParaProximoDia}
+                      className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                      title="Próximo dia"
+                    >
+                      <ChevronRight className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                </button>
+
+                {/* Calendário do Mês */}
+                <AnimatePresence>
+                  {mostrarCalendario && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-inner">
+                        <div className="grid grid-cols-7 gap-2">
+                          {/* Cabeçalho dos dias da semana */}
+                          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(dia => (
+                            <div key={dia} className="text-center text-xs font-semibold text-gray-600 dark:text-gray-400 py-2">
+                              {dia}
+                            </div>
+                          ))}
+                          
+                          {/* Dias do mês */}
+                          {(() => {
+                            const primeiroDia = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), 1);
+                            const ultimoDia = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth() + 1, 0);
+                            const diasVaziosInicio = primeiroDia.getDay();
+                            const diasDoMes = ultimoDia.getDate();
+                            const hoje = new Date();
+                            
+                            const dias = [];
+                            
+                            // Dias vazios do início
+                            for (let i = 0; i < diasVaziosInicio; i++) {
+                              dias.push(<div key={`empty-${i}`} className="aspect-square" />);
+                            }
+                            
+                            // Dias do mês
+                            for (let dia = 1; dia <= diasDoMes; dia++) {
+                              const dataCompleta = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), dia);
+                              const dataKey = dataCompleta.toISOString().split('T')[0];
+                              const pontoDoDia = pontosDoMes.find(p => p.data === dataKey);
+                              const ehDataSelecionada = dataCompleta.toDateString() === dataSelecionada.toDateString();
+                              const ehHojeDia = dataCompleta.toDateString() === hoje.toDateString();
+                              const temPontos = pontoDoDia && pontoDoDia.totalMinutos > 0;
+                              const saldoPositivo = pontoDoDia && pontoDoDia.saldoMinutos >= 0;
+                              
+                              dias.push(
+                                <button
+                                  key={dia}
+                                  onClick={() => {
+                                    setDataSelecionada(dataCompleta);
+                                    setMostrarCalendario(false);
+                                  }}
+                                  className={`
+                                    aspect-square rounded-lg flex flex-col items-center justify-center text-sm transition-all
+                                    ${ehDataSelecionada 
+                                      ? 'bg-blue-600 text-white font-bold shadow-lg scale-110' 
+                                      : ehHojeDia
+                                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+                                      : temPontos
+                                      ? saldoPositivo
+                                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30'
+                                        : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30'
+                                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }
+                                  `}
+                                  title={
+                                    temPontos
+                                      ? `${Math.floor(pontoDoDia.totalMinutos / 60)}h ${pontoDoDia.totalMinutos % 60}m trabalhadas\n${saldoPositivo ? '+' : ''}${Math.floor(Math.abs(pontoDoDia.saldoMinutos) / 60)}h ${Math.abs(pontoDoDia.saldoMinutos) % 60}m de saldo`
+                                      : 'Sem registro'
+                                  }
+                                >
+                                  <span>{dia}</span>
+                                  {temPontos && (
+                                    <span className={`text-[10px] font-bold mt-0.5 ${
+                                      ehDataSelecionada ? 'text-white' : ''
+                                    }`}>
+                                      {Math.floor(pontoDoDia.totalMinutos / 60)}h
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            }
+                            
+                            return dias;
+                          })()}
+                        </div>
+                        
+                        {/* Legenda */}
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-center gap-4 text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700"></div>
+                            <span className="text-gray-600 dark:text-gray-400">Horas positivas</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700"></div>
+                            <span className="text-gray-600 dark:text-gray-400">Horas negativas</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 rounded bg-blue-600"></div>
+                            <span className="text-gray-600 dark:text-gray-400">Dia atual</span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Conteúdo */}
@@ -455,13 +752,17 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                   </div>
                 ) : (
                   <>
-                    {/* Relógio em Tempo Real */}
+                    {/* Relógio em Tempo Real / Total do Dia */}
                     <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 dark:from-blue-600 dark:via-blue-700 dark:to-blue-900 rounded-2xl p-6 shadow-2xl">
                       <div className="text-center mb-4">
                         <div className="flex items-center justify-center gap-2 mb-2">
-                          <RefreshCw className="w-5 h-5 text-white/80 animate-spin" style={{ animationDuration: '3s' }} />
+                          {ehHoje() ? (
+                            <RefreshCw className="w-5 h-5 text-white/80 animate-spin" style={{ animationDuration: '3s' }} />
+                          ) : (
+                            <Clock className="w-5 h-5 text-white/80" />
+                          )}
                           <span className="text-white/90 text-sm font-medium uppercase tracking-wide">
-                            Tempo Real
+                            {ehHoje() ? 'Tempo Real' : 'Total do Dia'}
                           </span>
                         </div>
                         {!pontoDia.entrada ? (
@@ -470,7 +771,7 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                               Nenhum ponto registrado
                             </div>
                             <div className="text-white/70 text-sm">
-                              {targetUserName} ainda não bateu o ponto de entrada hoje
+                              {targetUserName} não bateu ponto de entrada {ehHoje() ? 'hoje' : 'neste dia'}
                             </div>
                           </div>
                         ) : (
@@ -478,25 +779,37 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                             <div className="text-6xl md:text-7xl font-bold text-white font-mono tracking-tight">
                               {String(tempoReal.horas).padStart(2, '0')}h{' '}
                               {String(tempoReal.minutos).padStart(2, '0')}m{' '}
-                              <span className="text-5xl md:text-6xl text-white/90">
-                                {String(tempoReal.segundos).padStart(2, '0')}s
-                              </span>
+                              {ehHoje() && (
+                                <span className="text-5xl md:text-6xl text-white/90">
+                                  {String(tempoReal.segundos).padStart(2, '0')}s
+                                </span>
+                              )}
                             </div>
                             <div className="text-white/80 text-sm mt-2">
-                              Horas contabilizadas hoje
+                              {ehHoje() ? 'Horas contabilizadas hoje' : 'Total de horas trabalhadas'}
                             </div>
                           </>
                         )}
                       </div>
                   
-                      {/* Botão de Editar Pontos */}
-                      <button
-                        onClick={abrirModalEdicao}
-                        className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all backdrop-blur-sm border border-white/30 hover:scale-105 transform"
-                      >
-                        <Edit3 className="w-5 h-5" />
-                        <span>Corrigir Pontos do Dia</span>
-                      </button>
+                      {/* Botões de Ações */}
+                      <div className="grid grid-cols-2 gap-3 mt-4">
+                        <button
+                          onClick={abrirModalEdicao}
+                          className="flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all backdrop-blur-sm border border-white/30 hover:scale-105 transform"
+                        >
+                          <Edit3 className="w-5 h-5" />
+                          <span className="hidden sm:inline">Corrigir</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => setMostrarComprovantes(true)}
+                          className="flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all backdrop-blur-sm border border-white/30 hover:scale-105 transform"
+                        >
+                          <FileText className="w-5 h-5" />
+                          <span className="hidden sm:inline">Comprovante</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Pontos do Dia */}
@@ -725,7 +1038,7 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                         onFocus={() => setCampoFocado('entrada')}
                         onBlur={() => setCampoFocado(null)}
                         className="w-full px-4 py-3 border-2 border-green-300 dark:border-green-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all font-mono text-lg"
-                        autoFocus={!pontoDia.entrada}
+                        autoFocus={!pontoDia?.entrada}
                       />
                     </div>
 
@@ -795,6 +1108,16 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
             </motion.div>
           </div>
         </>
+      )}
+      
+      {/* Modal de Comprovantes */}
+      {mostrarComprovantes && (
+        <ModalComprovantes
+          isOpen={mostrarComprovantes}
+          onClose={() => setMostrarComprovantes(false)}
+          funcionarioNome={targetUserName}
+          funcionarioId={targetUserId}
+        />
       )}
     </AnimatePresence>
   );

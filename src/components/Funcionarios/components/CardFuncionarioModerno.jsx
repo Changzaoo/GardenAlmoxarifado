@@ -87,7 +87,7 @@ const CardFuncionarioModerno = memo(({
         // Agrupar pontos por dia (data sem hora)
         const pontosPorDia = {};
         pontosMes.forEach(ponto => {
-          const data = new Date(ponto.timestamp || ponto.data);
+          const data = ponto.data?.toDate ? ponto.data.toDate() : new Date(ponto.timestamp || ponto.data);
           const dataKey = data.toISOString().split('T')[0];
           
           if (!pontosPorDia[dataKey]) {
@@ -102,47 +102,42 @@ const CardFuncionarioModerno = memo(({
           pontosPorDia[dataKey][ponto.tipo] = data;
         });
 
-        // Calcular total de minutos trabalhados e esperados por dia
-        let totalMinutos = 0;
+        // Calcular total de horas trabalhadas e esperadas por dia
+        let totalMinutosTrabalhados = 0;
         let totalMinutosEsperados = 0;
         let diasComPonto = 0;
 
         Object.entries(pontosPorDia).forEach(([dataKey, dia]) => {
           if (!dia.entrada) return; // Precisa pelo menos entrada
           
-          let minutosDia = 0;
-          
-          // Se tem saída final, calcular dia completo
-          if (dia.saida && dia.saida_almoco && dia.retorno_almoco) {
-            // Manhã: entrada -> saída almoço
-            const manha = (dia.saida_almoco - dia.entrada) / (1000 * 60);
-            // Tarde: retorno almoço -> saída
-            const tarde = (dia.saida - dia.retorno_almoco) / (1000 * 60);
-            minutosDia = manha + tarde;
-            diasComPonto++;
-          }
-          // Se voltou do almoço mas não bateu saída
-          else if (dia.retorno_almoco && dia.saida_almoco) {
-            const manha = (dia.saida_almoco - dia.entrada) / (1000 * 60);
-            minutosDia = manha;
-            diasComPonto++;
-          }
-          // Se saiu para almoço mas não voltou
-          else if (dia.saida_almoco) {
-            const manha = (dia.saida_almoco - dia.entrada) / (1000 * 60);
-            minutosDia = manha;
-            diasComPonto++;
-          }
-          
-          totalMinutos += Math.max(0, minutosDia);
-
-          // Calcular minutos esperados baseado na escala do funcionário
+          // Obter horários esperados da escala do funcionário
           const dataPonto = new Date(dataKey);
-          const tipoEscala = func.escala || func.tipoEscala || 'M'; // Padrão M se não especificado
+          const tipoEscala = func.escala || func.tipoEscala || 'M';
           const horariosEsperados = obterHorariosEsperados(tipoEscala, dataPonto);
           
-          if (horariosEsperados) {
-            // Calcular minutos esperados do dia baseado nos horários da escala
+          if (!horariosEsperados) return;
+
+          // Calcular minutos TRABALHADOS no dia (real)
+          let minutosTrabalhados = 0;
+          
+          // Manhã: entrada -> saída almoço
+          if (dia.saida_almoco) {
+            const manha = (dia.saida_almoco - dia.entrada) / (1000 * 60);
+            minutosTrabalhados += Math.max(0, manha);
+          }
+          
+          // Tarde: retorno almoço -> saída
+          if (dia.retorno_almoco && dia.saida) {
+            const tarde = (dia.saida - dia.retorno_almoco) / (1000 * 60);
+            minutosTrabalhados += Math.max(0, tarde);
+          }
+          
+          // Se bateu pelo menos saída do almoço, conta o dia
+          if (dia.saida_almoco) {
+            diasComPonto++;
+            totalMinutosTrabalhados += minutosTrabalhados;
+
+            // Calcular minutos ESPERADOS do dia (baseado na escala)
             const [hEntrada, mEntrada] = horariosEsperados.entrada.split(':').map(Number);
             const [hAlmoco, mAlmoco] = horariosEsperados.almoco.split(':').map(Number);
             const [hRetorno, mRetorno] = horariosEsperados.retorno.split(':').map(Number);
@@ -156,8 +151,10 @@ const CardFuncionarioModerno = memo(({
           }
         });
 
-        // Calcular saldo (diferença entre trabalhado e esperado REAL da escala)
-        const saldoMinutos = totalMinutos - totalMinutosEsperados;
+        // Calcular saldo: Trabalhado - Esperado
+        // Se positivo: trabalhou MAIS que o esperado (horas extras)
+        // Se negativo: trabalhou MENOS que o esperado (horas negativas)
+        const saldoMinutos = totalMinutosTrabalhados - totalMinutosEsperados;
 
         const formatarHoras = (minutos) => {
           const h = Math.floor(Math.abs(minutos) / 60);
@@ -165,8 +162,18 @@ const CardFuncionarioModerno = memo(({
           return `${h}h ${m.toString().padStart(2, '0')}m`;
         };
 
+        console.log(`📊 ${func.nome}:`, {
+          diasComPonto,
+          totalMinutosTrabalhados,
+          totalMinutosEsperados,
+          saldoMinutos,
+          horasTrabalhadas: formatarHoras(totalMinutosTrabalhados),
+          horasEsperadas: formatarHoras(totalMinutosEsperados)
+        });
+
         setHorasInfo({
-          totalHoras: formatarHoras(totalMinutos),
+          totalHoras: formatarHoras(totalMinutosTrabalhados),
+          totalHorasEsperadas: formatarHoras(totalMinutosEsperados),
           saldoMinutos: saldoMinutos,
           saldoFormatado: formatarHoras(saldoMinutos),
           positivo: saldoMinutos >= 0,
@@ -521,7 +528,7 @@ const CardFuncionarioModerno = memo(({
                       ? 'text-cyan-700 dark:text-cyan-300'
                       : 'text-rose-700 dark:text-rose-300'
                   }`}>
-                    {horasInfo?.saldoMinutos === 0 ? horasInfo?.saldoFormatado : horasInfo?.positivo ? '+' : ''}{horasInfo?.saldoFormatado || '--h --m'}
+                    {horasInfo?.positivo && horasInfo?.saldoMinutos > 0 ? '+' : ''}{horasInfo?.saldoFormatado || '--h --m'}
                   </span>
                 </div>
               </div>

@@ -1,13 +1,16 @@
 /**
  * Componente indicador de status offline
  * Mostra logo vermelho e contador de operações pendentes
+ * + Botão de sincronização manual
  */
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { WifiOff, Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { WifiOff, Cloud, CloudOff, RefreshCw, Download } from 'lucide-react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { syncManager } from '../utils/syncManager';
+import { autoSyncService } from '../utils/autoSyncService';
+import { toast } from 'react-toastify';
 
 const OfflineIndicator = () => {
   const { isOnline, wasOffline } = useOnlineStatus();
@@ -46,6 +49,34 @@ const OfflineIndicator = () => {
   useEffect(() => {
     setShowIndicator(!isOnline || pendingCount > 0);
   }, [isOnline, pendingCount]);
+
+  // Função para forçar sincronização manual
+  const handleManualSync = async () => {
+    if (!isOnline) {
+      toast.error('Sem conexão com a internet');
+      return;
+    }
+
+    try {
+      setSyncing(true);
+      toast.info('Iniciando sincronização manual...');
+      
+      // Upload de operações pendentes
+      if (pendingCount > 0) {
+        await syncManager.startSync();
+      }
+      
+      // Download de dados atualizados
+      await autoSyncService.downloadAllData({ showToast: true, force: true });
+      
+      toast.success('Sincronização manual concluída!');
+    } catch (error) {
+      console.error('Erro na sincronização manual:', error);
+      toast.error('Erro ao sincronizar: ' + error.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   if (!showIndicator) return null;
 
@@ -103,6 +134,19 @@ const OfflineIndicator = () => {
             >
               {pendingCount}
             </motion.div>
+          )}
+
+          {/* Botão de sincronização manual */}
+          {isOnline && !syncing && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleManualSync}
+              className="ml-2 p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+              title="Sincronizar agora"
+            >
+              <Download className="w-4 h-4" />
+            </motion.button>
           )}
         </div>
 

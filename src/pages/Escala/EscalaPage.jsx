@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Info, Filter, Check, X, Eye, EyeOff, StickyNote, MessageSquare, Settings, Building2, Star, Phone, Clock, Trash2 } from 'lucide-react';
-import { collection, doc, setDoc, onSnapshot, deleteDoc, getDocs, addDoc, serverTimestamp, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, onSnapshot, deleteDoc, getDocs, addDoc, serverTimestamp, getDoc, updateDoc, Timestamp, query, where } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { toast } from 'react-toastify';
 import { hasSupervisionPermission, isAdmin, hasManagementPermission } from '../../constants/permissoes';
@@ -467,6 +467,68 @@ const EscalaPage = ({ usuarioAtual }) => {
     return () => unsubscribe();
   }, [mesAtual]);
 
+  // 🎯 Monitorar pontos batidos e registrar presença automaticamente
+  useEffect(() => {
+    if (!funcionarios.length) return;
+
+    const mesAno = `${mesAtual.getFullYear()}-${String(mesAtual.getMonth() + 1).padStart(2, '0')}`;
+    const primeiroDia = new Date(mesAtual.getFullYear(), mesAtual.getMonth(), 1);
+    const ultimoDia = new Date(mesAtual.getFullYear(), mesAtual.getMonth() + 1, 0);
+
+    const pontosQuery = query(
+      collection(db, 'pontos'),
+      where('data', '>=', Timestamp.fromDate(primeiroDia)),
+      where('data', '<=', Timestamp.fromDate(ultimoDia))
+    );
+
+    const unsubscribe = onSnapshot(pontosQuery, async (snapshot) => {
+      // Agrupar pontos por funcionário e dia
+      const pontosPorFuncionarioDia = {};
+      
+      snapshot.docs.forEach(doc => {
+        const ponto = doc.data();
+        const dataPonto = ponto.data.toDate();
+        const dia = dataPonto.getDate();
+        const key = `${ponto.funcionarioId}_${dia}`;
+        
+        if (!pontosPorFuncionarioDia[key]) {
+          pontosPorFuncionarioDia[key] = [];
+        }
+        pontosPorFuncionarioDia[key].push(ponto);
+      });
+
+      // Para cada funcionário/dia com pontos, verificar se há presença registrada
+      for (const [key, pontos] of Object.entries(pontosPorFuncionarioDia)) {
+        const [funcionarioId, diaStr] = key.split('_');
+        const dia = parseInt(diaStr);
+        const dataFormatada = `${mesAno}-${String(dia).padStart(2, '0')}`;
+        const docId = `${funcionarioId}_${dataFormatada}`;
+        
+        // Verificar se já existe presença registrada
+        if (!presencas[docId]) {
+          // Registrar presença automaticamente
+          try {
+            const presencaData = {
+              funcionarioId,
+              data: dataFormatada,
+              presente: true,
+              marcadoPor: 'Sistema - Ponto Eletrônico',
+              marcadoEm: new Date(),
+              origem: 'ponto_automatico'
+            };
+            
+            await setDoc(doc(db, 'presencas', mesAno, 'registros', docId), presencaData);
+            console.log(`✅ Presença registrada automaticamente para funcionário ${funcionarioId} no dia ${dia}`);
+          } catch (error) {
+            console.error('Erro ao registrar presença automática:', error);
+          }
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [mesAtual, funcionarios, presencas]);
+
   // Função para ocultar/mostrar funcionário
   const toggleOcultarFuncionario = (funcId) => {
     setFuncionariosOcultos(prev => {
@@ -642,44 +704,10 @@ const EscalaPage = ({ usuarioAtual }) => {
     }
   };
 
-  // Criar animação de partículas simplificada (APENAS na visualização diária)
+  // ❌ ANIMAÇÃO DE PARTÍCULAS DESABILITADA - Apenas aura do botão no modo diário
   const criarParticulasSimples = (eventoClick, tipo) => {
-    // Só ativar animação na visualização diária
-    if (modoVisualizacao !== 'diario') return;
-    if (!eventoClick) return;
-
-    const botao = eventoClick.currentTarget;
-    const rect = botao.getBoundingClientRect();
-
-    // Encontrar o elemento do contador (estatísticas do funcionário)
-    const statsElement = document.querySelector('[data-stats-container]');
-    if (!statsElement) return;
-
-    const statsRect = statsElement.getBoundingClientRect();
-
-    // Ajustar cálculo de posição para mobile (melhor precisão)
-    const isMobile = window.innerWidth < 768;
-    const spreadHorizontal = isMobile ? 20 : 30; // Menor spread no mobile
-    const numParticulas = isMobile ? 6 : 8; // Menos partículas no mobile para melhor performance
-
-    // Criar partículas minúsculas
-    const novasParticulas = Array.from({ length: numParticulas }, (_, i) => ({
-      id: Date.now() + i + Math.random(), // ID único garantido
-      tipo,
-      startX: rect.left + rect.width / 2,
-      startY: rect.top + rect.height / 2,
-      endX: statsRect.left + statsRect.width / 2,
-      endY: statsRect.top + 20,
-      delay: i * (isMobile ? 60 : 50), // Delay levemente maior no mobile
-      offsetX: (Math.random() - 0.5) * spreadHorizontal, // Spread horizontal ajustado
-    }));
-
-    setParticulas(prev => [...prev, ...novasParticulas]);
-
-    // Remover partículas após animação (700ms de animação + 200ms de buffer)
-    setTimeout(() => {
-      setParticulas(prev => prev.filter(p => !novasParticulas.find(n => n.id === p.id)));
-    }, 900);
+    // Animação desabilitada - mantendo apenas a aura do botão
+    return;
   };
 
   // Marcar presença
@@ -743,6 +771,29 @@ const EscalaPage = ({ usuarioAtual }) => {
             if (!horarios) {
               console.log('Funcionário não trabalha neste dia');
               toast.info('✓ Presença marcada (funcionário não trabalha neste dia)', {
+                position: 'top-right',
+                autoClose: 2000
+              });
+              return;
+            }
+
+            // ✅ VERIFICAR SE JÁ EXISTEM PONTOS BATIDOS NESTE DIA
+            const inicioDia = new Date(ano, mes, dia, 0, 0, 0);
+            const fimDia = new Date(ano, mes, dia, 23, 59, 59);
+            
+            const pontosQuery = query(
+              collection(db, 'pontos'),
+              where('funcionarioId', '==', String(funcionarioId)),
+              where('data', '>=', Timestamp.fromDate(inicioDia)),
+              where('data', '<=', Timestamp.fromDate(fimDia))
+            );
+            
+            const pontosSnapshot = await getDocs(pontosQuery);
+            
+            if (!pontosSnapshot.empty) {
+              // Já existem pontos batidos, não sobrescrever
+              console.log(`Funcionário ${funcionario.nome} já possui ${pontosSnapshot.size} ponto(s) batido(s) hoje`);
+              toast.info(`✓ Presença marcada (${pontosSnapshot.size} ponto(s) já registrado(s))`, {
                 position: 'top-right',
                 autoClose: 2000
               });
@@ -3591,53 +3642,7 @@ const EscalaPage = ({ usuarioAtual }) => {
         </div>
       )}
 
-      {/* Partículas de Animação Simplificada - APENAS VISUALIZAÇÃO DIÁRIA */}
-      {modoVisualizacao === 'diario' && particulas.map(particula => (
-        <div
-          key={particula.id}
-          className="fixed pointer-events-none z-50"
-          style={{
-            left: `${particula.startX}px`,
-            top: `${particula.startY}px`,
-            animation: `particula-voar-${particula.id} 700ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
-            animationDelay: `${particula.delay}ms`,
-            willChange: 'transform, opacity', // Otimização para mobile
-          }}
-        >
-          <div 
-            className={`w-1.5 h-1.5 rounded-full ${
-              particula.tipo === 'presente' 
-                ? 'bg-green-500' 
-                : particula.tipo === 'ausente'
-                ? 'bg-red-500'
-                : 'bg-yellow-500'
-            }`}
-            style={{
-              boxShadow: particula.tipo === 'presente'
-                ? '0 0 4px rgba(34, 197, 94, 0.8)'
-                : particula.tipo === 'ausente'
-                ? '0 0 4px rgba(239, 68, 68, 0.8)'
-                : '0 0 4px rgba(234, 179, 8, 0.8)'
-            }}
-          />
-          <style>{`
-            @keyframes particula-voar-${particula.id} {
-              0% {
-                transform: translate(0, 0) scale(1);
-                opacity: 1;
-              }
-              50% {
-                transform: translate(${particula.offsetX}px, ${(particula.endY - particula.startY) / 2}px) scale(1.2);
-                opacity: 0.8;
-              }
-              100% {
-                transform: translate(${particula.endX - particula.startX}px, ${particula.endY - particula.startY}px) scale(0);
-                opacity: 0;
-              }
-            }
-          `}</style>
-        </div>
-      ))}
+      {/* ❌ Partículas removidas - Mantendo apenas animação de aura do botão */}
 
       {/* CSS para animações de aura simplificadas (0.5s) */}
       <style>{`

@@ -49,6 +49,8 @@ import AnalyticsProvider from './Analytics/AnalyticsProvider';
 import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
+import EscalaPage from '../pages/Escala/EscalaPage';
+import TarefasTab from './Tarefas/TarefasTab';
 // ✅ Novos serviços de autenticação e senha
 import { 
   authenticateUser, 
@@ -116,7 +118,8 @@ import {
   Database,
   Key,
   MousePointer,
-  FileText
+  FileText,
+  CheckSquare
 } from 'lucide-react';
 
 // Função para bloquear teclas de atalho e menu de contexto
@@ -3147,6 +3150,29 @@ const AlmoxarifadoSistema = () => {
       icone: MessageCircle,
       permissao: () => true // Todos os usuários autenticados
     },
+    {
+      id: 'escala',
+      nome: 'Escala',
+      icone: Calendar,
+      permissao: () => {
+        // ADMIN sempre tem acesso
+        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
+        // Funcionários (nível 1) podem ver apenas própria escala
+        return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_GERAL;
+      }
+    },
+    {
+      id: 'tarefas',
+      nome: 'Tarefas',
+      icone: CheckSquare,
+      permissao: () => true // Todos os usuários autenticados
+    },
+    {
+      id: 'suporte',
+      nome: 'Suporte',
+      icone: HelpCircle,
+      permissao: () => true // Todos os usuários autenticados
+    },
     
   ], [usuario?.nivel]); // Memorizar baseado no nível do usuário
   
@@ -3302,9 +3328,9 @@ const AlmoxarifadoSistema = () => {
           localStorage.setItem(`menuConfig_${usuario.id}`, JSON.stringify(menuConfig));
         } else {
           console.log('📝 Criando configuração padrão...');
-          // Configuração padrão: primeiros 4 itens visíveis (exceto ranking e meu-perfil)
-          const abasDisponiveis = abas.filter(a => a.id !== 'ranking' && a.id !== 'meu-perfil');
-          const configPadrao = abasDisponiveis.map((aba, index) => ({
+          // Configuração padrão: primeiros 4 itens visíveis
+          // TODAS as abas podem ser configuradas no menu
+          const configPadrao = abas.map((aba, index) => ({
             id: aba.id,
             visivel: index < 4, // Primeiros 4 visíveis no menu inferior
             ordem: index
@@ -3514,8 +3540,9 @@ const AlmoxarifadoSistema = () => {
   const getAbasMenuInferior = () => {
     if (!menuPersonalizado) {
       // Configuração padrão se não houver personalização
+      // TODAS as abas com permissão podem aparecer, exceto a favorita
       return abasComPermissao
-        .filter(a => a.id !== 'ranking' && a.id !== 'meu-perfil' && a.id !== itemFavorito)
+        .filter(a => a.id !== itemFavorito)
         .slice(0, 3);
     }
     
@@ -3745,7 +3772,7 @@ const AlmoxarifadoSistema = () => {
           {isMobile && menuOpen ? (
             <div className="flex-1 p-3 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-4 gap-3">
-                {getAbasOrdenadas().map((aba) => {
+                {getAbasOrdenadas(true).map((aba) => {
                   if (!aba || !aba.icone) return null; // Proteção contra abas sem ícone
                   const Icone = aba.icone;
                   return (
@@ -4400,6 +4427,14 @@ const AlmoxarifadoSistema = () => {
 
             {abaAtiva === 'suporte' && (
               <SupportTab />
+            )}
+
+            {abaAtiva === 'escala' && (
+              <EscalaPage usuarioAtual={usuario} />
+            )}
+
+            {abaAtiva === 'tarefas' && (
+              <TarefasTab funcionarioAtual={usuario} />
             )}
           </div>
         </div>

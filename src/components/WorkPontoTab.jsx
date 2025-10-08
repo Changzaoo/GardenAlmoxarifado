@@ -538,22 +538,36 @@ const WorkPontoTab = () => {
         };
         
         const tipoValidacao = tipoMap[tipo];
-        const horarioEsperado = horariosEsperados[tipoValidacao];
+        const horarioEsperadoStr = horariosEsperados[tipoValidacao];
         
-        if (horarioEsperado) {
-          const validacao = validarTolerancia(horarioEsperado, agora);
+        if (horarioEsperadoStr) {
+          // Converter string "HH:mm" para Date completo
+          const horarioEsperadoDate = combinarParaDate(horarioEsperadoStr);
           
-          // Se estiver fora da tolerância, avisar mas permitir
-          if (!validacao.dentroTolerancia) {
-            const msgTipo = validacao.tipo === 'adiantado' ? 'adiantado' : 'atrasado';
-            showToast(
-              `Atenção: Você está ${msgTipo} (${validacao.diferencaMinutos} min). ${validacao.mensagem}`,
-              'warning'
-            );
-            // Aguardar 2 segundos para o usuário ver o aviso
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          } else if (validacao.tipo === 'adiantado') {
-            showToast(`Hora positiva! Você chegou ${validacao.diferencaMinutos} min antes. ⏰`, 'success');
+          if (horarioEsperadoDate) {
+            const validacao = validarTolerancia(horarioEsperadoDate, agora);
+            
+            console.log('⏰ Validação de tolerância:', {
+              tipo,
+              esperado: horarioEsperadoStr,
+              atual: formatHora(agora),
+              diferenca: validacao.diferencaMinutos,
+              dentroTolerancia: validacao.dentroTolerancia,
+              tipoValidacao: validacao.tipo
+            });
+            
+            // Se estiver fora da tolerância, avisar mas permitir
+            if (!validacao.dentroTolerancia) {
+              const msgTipo = validacao.tipo === 'adiantado' ? 'adiantado' : 'atrasado';
+              showToast(
+                `Atenção: Você está ${msgTipo} (${Math.abs(validacao.diferencaMinutos)} min). ${validacao.mensagem}`,
+                'warning'
+              );
+              // Aguardar 2 segundos para o usuário ver o aviso
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            } else if (validacao.tipo === 'hora_positiva') {
+              showToast(`Hora positiva! Você chegou ${Math.abs(validacao.diferencaMinutos)} min antes. ⏰`, 'success');
+            }
           }
         }
       }

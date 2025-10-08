@@ -27,7 +27,9 @@ import EstatisticasAcesso from './pages/EstatisticasAcesso/EstatisticasAcesso';
 
 // Sistema offline
 import { syncManager } from './utils/syncManager';
+import { autoSyncService } from './utils/autoSyncService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+import AutoSyncIndicator from './components/Sync/AutoSyncIndicator';
 
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -42,12 +44,40 @@ function AppContent() {
   
   // Hook de status offline
   const { isOnline, wasOffline } = useOnlineStatus();
+  const [hasInitialSynced, setHasInitialSynced] = useState(false);
 
-  // Sincronizar quando reconectar
+  // Download automático ao entrar no app
+  useEffect(() => {
+    const performInitialSync = async () => {
+      if (isOnline && !hasInitialSynced) {
+        console.log('🚀 Iniciando download automático de dados...');
+        try {
+          await autoSyncService.downloadAllData({ 
+            showToast: true, 
+            force: false // Respeita intervalo mínimo
+          });
+          setHasInitialSynced(true);
+        } catch (error) {
+          console.error('❌ Erro no download inicial:', error);
+        }
+      }
+    };
+
+    // Executar após 2 segundos para não bloquear a inicialização
+    const timer = setTimeout(performInitialSync, 2000);
+    return () => clearTimeout(timer);
+  }, [isOnline, hasInitialSynced]);
+
+  // Sincronizar quando reconectar (uploads pendentes)
   useEffect(() => {
     if (isOnline && wasOffline) {
-      console.log('🔄 Reconectado! Iniciando sincronização...');
+      console.log('🔄 Reconectado! Iniciando sincronização de pendências...');
       syncManager.startSync();
+      
+      // Também refazer download para garantir dados atualizados
+      setTimeout(() => {
+        autoSyncService.downloadAllData({ showToast: false, force: true });
+      }, 3000);
     }
   }, [isOnline, wasOffline]);
 
@@ -108,6 +138,9 @@ function AppContent() {
       
       {/* Indicador de status offline */}
       <OfflineIndicator />
+      
+      {/* Indicador de sincronização automática */}
+      <AutoSyncIndicator />
       
       <ToastContainer 
         position="top-right" 

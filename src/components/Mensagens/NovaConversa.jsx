@@ -193,7 +193,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
   const usuariosFiltrados = usuarios
     .filter(u =>
       u.nome?.toLowerCase().includes(busca.toLowerCase()) ||
-      u.cargo?.toLowerCase().includes(busca.toLowerCase()) ||
+      (typeof u.cargo === 'string' && u.cargo.toLowerCase().includes(busca.toLowerCase())) ||
       u.email?.toLowerCase().includes(busca.toLowerCase())
     )
     .sort((a, b) => {

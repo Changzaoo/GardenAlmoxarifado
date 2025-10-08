@@ -6,9 +6,9 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDarkLight</item>
         <item name="colorAccent">@color/colorAccentLight</item>
         <item name="android:windowBackground">@color/colorBackgroundLight</item>
-        <item name="android:statusBarColor">@color/statusBarLight</item>
+        <item name="android:statusBarColor">@color/statusBarFixed</item>
         <item name="android:navigationBarColor">@color/navigationBarLight</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">true</item>
     </style>
     
@@ -18,7 +18,7 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDarkDark</item>
         <item name="colorAccent">@color/colorAccentDark</item>
         <item name="android:windowBackground">@color/colorBackgroundDark</item>
-        <item name="android:statusBarColor">@color/statusBarDark</item>
+        <item name="android:statusBarColor">@color/statusBarFixed</item>
         <item name="android:navigationBarColor">@color/navigationBarDark</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>

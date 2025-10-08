@@ -31,12 +31,13 @@ export const useAndroidTheme = (currentTheme) => {
             console.warn('⚠️ Plugin customizado não disponível, usando fallback:', pluginError);
             
             // Fallback para StatusBar padrão
+            // Mantém a cor azul fixa independente do tema
             await StatusBar.setStyle({
-              style: isDark ? Style.Dark : Style.Light,
+              style: Style.Light, // Sempre light para ícones brancos sobre fundo azul
             });
 
             await StatusBar.setBackgroundColor({
-              color: isDark ? '#000000' : '#FFFFFF',
+              color: '#2563eb', // Azul fixo (blue-600)
             });
 
             await StatusBar.setOverlaysWebView({ overlay: false });

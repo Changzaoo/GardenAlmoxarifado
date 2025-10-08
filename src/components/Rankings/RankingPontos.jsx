@@ -1148,6 +1148,11 @@ const RankingPontos = () => {
       {showDetails && selectedFuncionario && (
         <DetalhesPontos
           funcionario={selectedFuncionario}
+          periodoAtual={periodoAtual}
+          mesSelected={mesSelected}
+          anoSelected={anoSelected}
+          semanaSelected={semanaSelected}
+          semanasDoMes={semanasDoMes}
           onClose={() => {
             setShowDetails(false);
             setSelectedFuncionario(null);
@@ -1655,8 +1660,7 @@ const RankingPontos = () => {
   );
 };
 
-const DetalhesPontos = ({ funcionario, onClose }) => {
-  const { emprestimos, tarefas, avaliacoes } = funcionario;
+const DetalhesPontos = ({ funcionario, periodoAtual, mesSelected, anoSelected, semanaSelected, semanasDoMes, onClose }) => {
   const [sectionsOpen, setSectionsOpen] = useState({
     emprestimos: false,
     tarefas: false,
@@ -1674,6 +1678,55 @@ const DetalhesPontos = ({ funcionario, onClose }) => {
     const date = new Date(data);
     return date.toLocaleDateString('pt-BR');
   };
+
+  // Filtrar dados pelo período selecionado
+  const filtrarDadosPorPeriodo = () => {
+    let dataLimiteInicio, dataLimiteFim;
+
+    if (periodoAtual === 'semana' && semanasDoMes && semanasDoMes[semanaSelected]) {
+      dataLimiteInicio = semanasDoMes[semanaSelected].inicio;
+      dataLimiteFim = semanasDoMes[semanaSelected].fim;
+    } else if (periodoAtual === 'mes') {
+      dataLimiteInicio = new Date(anoSelected, mesSelected, 1);
+      dataLimiteFim = new Date(anoSelected, mesSelected + 1, 0);
+    } else if (periodoAtual === 'ano') {
+      dataLimiteInicio = new Date(anoSelected, 0, 1);
+      dataLimiteFim = new Date(anoSelected, 11, 31, 23, 59, 59);
+    } else {
+      // Sem filtro de período, mostrar tudo
+      return {
+        emprestimos: funcionario.emprestimos || [],
+        tarefas: funcionario.tarefas || [],
+        avaliacoes: funcionario.avaliacoes || []
+      };
+    }
+
+    // Filtrar empréstimos pelo período
+    const emprestimosFiltrados = (funcionario.emprestimos || []).filter(emp => {
+      const dataDevolucao = new Date(emp.dataDevolucao);
+      return dataDevolucao >= dataLimiteInicio && dataDevolucao <= dataLimiteFim;
+    });
+
+    // Filtrar tarefas pelo período
+    const tarefasFiltradas = (funcionario.tarefas || []).filter(tarefa => {
+      const data = new Date(tarefa.dataConclusao);
+      return !isNaN(data) && data >= dataLimiteInicio && data <= dataLimiteFim;
+    });
+
+    // Filtrar avaliações pelo período
+    const avaliacoesFiltradas = (funcionario.avaliacoes || []).filter(av => {
+      const data = new Date(av.data);
+      return !isNaN(data.getTime()) && data >= dataLimiteInicio && data <= dataLimiteFim;
+    });
+
+    return {
+      emprestimos: emprestimosFiltrados,
+      tarefas: tarefasFiltradas,
+      avaliacoes: avaliacoesFiltradas
+    };
+  };
+
+  const { emprestimos, tarefas, avaliacoes } = filtrarDadosPorPeriodo();
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">

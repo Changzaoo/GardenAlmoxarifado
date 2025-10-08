@@ -64,6 +64,7 @@ public class MainActivity extends BridgeActivity {
     
     /**
      * Atualiza as cores da barra de status e navegação
+     * A barra de status permanece sempre azul (#2563eb)
      */
     private void updateStatusBar() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
@@ -71,24 +72,25 @@ public class MainActivity extends BridgeActivity {
         
         Window window = getWindow();
         
+        // Barra de status sempre azul com ícones brancos
+        window.setStatusBarColor(Color.parseColor("#2563eb")); // Azul fixo (blue-600)
+        
+        // Barra de navegação muda com o tema
         if ("light".equals(theme)) {
-            // Tema claro: fundo branco, ícones escuros
-            window.setStatusBarColor(Color.parseColor("#FFFFFF"));
+            // Tema claro: barra de navegação branca
             window.setNavigationBarColor(Color.parseColor("#FFFFFF"));
             
-            // Ícones da barra de status em preto (API 23+)
+            // Ícones da barra de navegação em preto (API 23+)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                 window.getDecorView().setSystemUiVisibility(
-                    android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | 
                     android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
                 );
             }
         } else {
-            // Tema escuro: fundo preto, ícones claros
-            window.setStatusBarColor(Color.parseColor("#000000"));
+            // Tema escuro: barra de navegação preta
             window.setNavigationBarColor(Color.parseColor("#000000"));
             
-            // Remove flags de light mode
+            // Remove flags de light mode (ícones da barra de status sempre brancos sobre azul)
             window.getDecorView().setSystemUiVisibility(0);
         }
     }
