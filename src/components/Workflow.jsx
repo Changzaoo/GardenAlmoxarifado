@@ -72,6 +72,7 @@ import { DatabaseRotationProvider } from '../contexts/DatabaseRotationContext';
 import PasswordResetForm from './PasswordReset/PasswordResetForm';
 import UserCreationForm from './PasswordReset/UserCreationForm';
 import '../utils/passwordDebug'; // Carrega utilitário de debug de senhas
+import OfflineLogo from './common/OfflineLogo';
 // Icons
 import { 
   Package,
@@ -1133,7 +1134,7 @@ const LoginForm = () => {
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-700/20 p-8">
         <div className="text-center mb-8">
           <div className="mx-auto w-24 h-24 flex items-center justify-center mb-4 relative">
-            <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
+            <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">WorkFlow</h1>
           
@@ -1496,7 +1497,7 @@ const ErrorScreen = ({ error, resetError }) => {
           <div className="relative w-32 h-32">
             {/* Logo com ícone de erro */}
             <div className="relative w-full h-full flex items-center justify-center">
-              <img 
+              <OfflineLogo 
                 src="/logo.png" 
                 alt="WorkFlow Error" 
                 className="w-full h-full object-contain opacity-90 saturate-0"
@@ -1665,8 +1666,24 @@ const AlmoxarifadoSistema = () => {
   
   // Estados para personalização do menu
   const [menuPersonalizado, setMenuPersonalizado] = useState(null);
-  const [itemFavorito, setItemFavorito] = useState(null); // Inicia como null até carregar do Firebase
-  const [favoritoCarregado, setFavoritoCarregado] = useState(false); // Flag para controlar se favorito foi carregado
+  // ✅ OTIMIZAÇÃO: Tentar carregar favorito do localStorage primeiro para redirecionamento instantâneo
+  const [itemFavorito, setItemFavorito] = useState(() => {
+    if (usuario?.id) {
+      const cached = localStorage.getItem(`favorito_${usuario.id}`);
+      if (cached) {
+        console.log('⚡ Favorito carregado do localStorage na inicialização:', cached);
+        return cached;
+      }
+    }
+    return null;
+  });
+  const [favoritoCarregado, setFavoritoCarregado] = useState(() => {
+    // Se tem cache, marca como carregado imediatamente
+    if (usuario?.id) {
+      return !!localStorage.getItem(`favorito_${usuario.id}`);
+    }
+    return false;
+  });
   const [paginaInicialDefinida, setPaginaInicialDefinida] = useState(false); // Flag para controlar se página inicial já foi definida
   const [showMenuConfig, setShowMenuConfig] = useState(false);
   const [menuLongPressTimer, setMenuLongPressTimer] = useState(null);
@@ -3089,7 +3106,10 @@ const AlmoxarifadoSistema = () => {
       id: 'gerenciamento-inventario', 
       nome: 'Inventário & Empréstimos', 
       icone: Package,
-      permissao: () => true // Todos os usuários autenticados (abas internas controlam permissões)
+      permissao: () => {
+        // Apenas usuários nível 2 ou superior (Supervisor, Gerente, Admin)
+        return usuario?.nivel <= NIVEIS_PERMISSAO.SUPERVISOR;
+      }
     },
     { 
       id: 'funcionarios', 
@@ -3128,7 +3148,13 @@ const AlmoxarifadoSistema = () => {
       permissao: () => true // Todos os usuários autenticados
     },
     
-  ].filter(aba => aba.permissao()), [usuario?.nivel]); // Memorizar baseado no nível do usuário
+  ], [usuario?.nivel]); // Memorizar baseado no nível do usuário
+  
+  // Filtrar abas por permissão (para menu inferior e navegação)
+  const abasComPermissao = useMemo(() => 
+    abas.filter(aba => aba.permissao()), 
+    [abas]
+  );
   
   // Permissões simplificadas usando sistema reversivo com prioridade para ADMIN
   const podeVerUsuarios = () => {
@@ -3143,15 +3169,15 @@ const AlmoxarifadoSistema = () => {
 
   // Obter aba favorita (item central) com verificação de permissões e fallbacks robustos
   const getAbaFavorita = () => {
-    if (!abas || abas.length === 0) return null;
+    if (!abasComPermissao || abasComPermissao.length === 0) return null;
     
     // Primeiro, tentar encontrar a aba favorita configurada
-    let favorita = abas.find(aba => aba.id === itemFavorito);
+    let favorita = abasComPermissao.find(aba => aba.id === itemFavorito);
     
     // Se não encontrar, usar fallback baseado no nível do usuário
     if (!favorita) {
-      const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'gerenciamento-inventario';
-      favorita = abas.find(aba => aba.id === fallbackPadrao);
+      const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'dashboard';
+      favorita = abasComPermissao.find(aba => aba.id === fallbackPadrao);
     }
     
     // Verificar se usuário tem permissão para a aba favorita
@@ -3160,11 +3186,11 @@ const AlmoxarifadoSistema = () => {
         console.log(`⚠️ Usuário sem permissão para página favorita: ${favorita.id}`);
         
       // Buscar primeira aba com permissão, priorizando páginas mais importantes
-      // Para funcionários, priorizar Meu Perfil
+      // Para funcionários, priorizar Meu Perfil e Dashboard
       const abaasPriorizadas = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO 
-        ? ['meu-perfil', 'gerenciamento-inventario', 'tarefas', 'mensagens']
-        : ['meu-perfil', 'gerenciamento-inventario', 'funcionarios'];        for (const abaId of abaasPriorizadas) {
-          const aba = abas.find(a => a.id === abaId);
+        ? ['meu-perfil', 'dashboard', 'tarefas', 'mensagens']
+        : ['dashboard', 'meu-perfil', 'gerenciamento-inventario', 'funcionarios'];        for (const abaId of abaasPriorizadas) {
+          const aba = abasComPermissao.find(a => a.id === abaId);
           if (aba && (!aba.permissao || aba.permissao())) {
             console.log(`✅ Usando fallback priorizado: ${abaId}`);
             return aba;
@@ -3172,7 +3198,7 @@ const AlmoxarifadoSistema = () => {
         }
         
         // Se nenhuma das priorizadas funcionar, encontrar qualquer aba disponível
-        const abaDisponivel = abas.find(aba => {
+        const abaDisponivel = abasComPermissao.find(aba => {
           if (aba.permissao && typeof aba.permissao === 'function') {
             return aba.permissao();
           }
@@ -3186,7 +3212,7 @@ const AlmoxarifadoSistema = () => {
         
         // Último recurso: retornar a primeira aba (mesmo sem permissão)
         console.warn('⚠️ Nenhuma aba com permissão encontrada, usando primeira aba');
-        return abas[0];
+        return abasComPermissao[0];
       }
     }
     
@@ -3222,7 +3248,8 @@ const AlmoxarifadoSistema = () => {
     
     // Se não houver estado válido, usar página favorita como inicial
     const abaFavorita = getAbaFavorita();
-    const paginaInicial = abaFavorita ? abaFavorita.id : 'gerenciamento-inventario';
+    const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'dashboard';
+    const paginaInicial = abaFavorita ? abaFavorita.id : fallbackPadrao;
     console.log('⭐ Iniciando com página favorita:', paginaInicial);
     setAbaAtiva(paginaInicial);
     
@@ -3245,20 +3272,34 @@ const AlmoxarifadoSistema = () => {
 
     const carregarMenuConfig = async () => {
       try {
+        // ✅ OTIMIZAÇÃO: Carregar favorito do localStorage PRIMEIRO (instantâneo)
+        const favoritoPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+        const favoritoCache = localStorage.getItem(`favorito_${usuario.id}`);
+        
+        if (favoritoCache) {
+          console.log('⚡ Favorito carregado do cache:', favoritoCache);
+          setItemFavorito(favoritoCache);
+          setFavoritoCarregado(true); // Marca como carregado imediatamente
+        }
+        
         console.log('🔄 Carregando configuração do menu...');
         const usuarioDoc = await getDoc(doc(db, 'usuarios', usuario.id));
         const dados = usuarioDoc.data();
         const menuConfig = dados?.menuConfig;
         
-        // Definir favorito padrão baseado no nível do usuário
-        const favoritoPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
         const favorito = dados?.itemFavorito || favoritoPadrao;
+        
+        // Atualizar cache do favorito
+        localStorage.setItem(`favorito_${usuario.id}`, favorito);
         
         if (menuConfig && menuConfig.length > 0) {
           console.log('✅ Configuração carregada:', { menuConfig, favorito });
           setMenuPersonalizado(menuConfig);
           setItemFavorito(favorito);
-          setFavoritoCarregado(true); // Marca favorito como carregado
+          setFavoritoCarregado(true);
+          
+          // Salvar no cache local também
+          localStorage.setItem(`menuConfig_${usuario.id}`, JSON.stringify(menuConfig));
         } else {
           console.log('📝 Criando configuração padrão...');
           // Configuração padrão: primeiros 4 itens visíveis (exceto ranking e meu-perfil)
@@ -3389,9 +3430,14 @@ const AlmoxarifadoSistema = () => {
       
       setMenuPersonalizado(novaConfig);
       setItemFavorito(favoritoFinal);
+      
+      // ✅ OTIMIZAÇÃO: Salvar no localStorage para carregamento instantâneo
+      localStorage.setItem(`favorito_${usuario.id}`, favoritoFinal);
+      localStorage.setItem(`menuConfig_${usuario.id}`, JSON.stringify(novaConfig));
+      
       setMenuConfigSaved(true);
       
-      console.log('✅ Configuração salva no Firebase Backup com sucesso!');
+      console.log('✅ Configuração salva no Firebase Backup e cache local com sucesso!');
       
       // Remove mensagem após 2 segundos
       setTimeout(() => setMenuConfigSaved(false), 2000);
@@ -3453,10 +3499,11 @@ const AlmoxarifadoSistema = () => {
   };
 
   // Obter abas na ordem personalizada
-  const getAbasOrdenadas = () => {
-    if (!menuPersonalizado) return abas;
+  const getAbasOrdenadas = (somenteComPermissao = false) => {
+    const abasParaUsar = somenteComPermissao ? abasComPermissao : abas;
+    if (!menuPersonalizado) return abasParaUsar;
     
-    const abasMap = new Map(abas.map(aba => [aba.id, aba]));
+    const abasMap = new Map(abasParaUsar.map(aba => [aba.id, aba]));
     return menuPersonalizado
       .sort((a, b) => a.ordem - b.ordem)
       .map(config => abasMap.get(config.id))
@@ -3467,19 +3514,12 @@ const AlmoxarifadoSistema = () => {
   const getAbasMenuInferior = () => {
     if (!menuPersonalizado) {
       // Configuração padrão se não houver personalização
-      return abas
+      return abasComPermissao
         .filter(a => a.id !== 'ranking' && a.id !== 'meu-perfil' && a.id !== itemFavorito)
-        .filter(aba => {
-          // Filtrar por permissão
-          if (aba.permissao && typeof aba.permissao === 'function') {
-            return aba.permissao();
-          }
-          return true;
-        })
         .slice(0, 3);
     }
     
-    const abasOrdenadas = getAbasOrdenadas();
+    const abasOrdenadas = getAbasOrdenadas(true); // Usar apenas abas com permissão
     return abasOrdenadas.filter(aba => {
       const config = menuPersonalizado.find(c => c.id === aba.id);
       
@@ -3606,7 +3646,7 @@ const AlmoxarifadoSistema = () => {
               <div className="flex items-center justify-center w-full">
                 <div className="flex items-center">
                   <div className="relative w-10 h-10 mr-2">
-                    <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
+                    <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
                   </div>
                   <h1 className="text-base font-bold text-gray-900 dark:text-white">WorkFlow</h1>
                 </div>
@@ -3642,7 +3682,7 @@ const AlmoxarifadoSistema = () => {
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className={`flex items-center ${menuRecolhido ? 'justify-center w-full' : ''}`}>
                 <div className="relative w-12 h-12">
-                  <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
+                  <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
                 </div>
                 {!menuRecolhido && (
                   <div className="ml-3">
@@ -3685,7 +3725,7 @@ const AlmoxarifadoSistema = () => {
               {/* Logo e nome centralizado */}
               <div className="flex-1 flex items-center justify-center">
                 <div className="relative w-10 h-10 mr-3">
-                  <img src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
+                  <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
                 </div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">WorkFlow</h1>
               </div>
@@ -4255,39 +4295,43 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'gerenciamento-inventario' && (
-              <GerenciamentoInventario
-                // Props de Inventário
-                inventario={inventario}
-                emprestimos={emprestimos}
-                adicionarItem={adicionarItem}
-                removerItem={removerItem}
-                atualizarItem={atualizarItem}
-                reimportarInventario={reimportarInventario}
-                corrigirInventario={corrigirInventario}
-                obterDetalhesEmprestimos={obterDetalhesEmprestimos}
-                // Props de Compras
-                compras={compras}
-                adicionarCompra={adicionarCompra}
-                removerCompra={removerCompra}
-                atualizarCompra={atualizarCompra}
-                // Props de Ferramentas Danificadas
-                ferramentasDanificadas={ferramentasDanificadas}
-                adicionarFerramentaDanificada={adicionarFerramentaDanificada}
-                atualizarFerramentaDanificada={atualizarFerramentaDanificada}
-                removerFerramentaDanificada={removerFerramentaDanificada}
-                // Props de Ferramentas Perdidas
-                ferramentasPerdidas={ferramentasPerdidas}
-                adicionarFerramentaPerdida={adicionarFerramentaPerdida}
-                atualizarFerramentaPerdida={atualizarFerramentaPerdida}
-                removerFerramentaPerdida={removerFerramentaPerdida}
-                // Props de Empréstimos
-                funcionarios={funcionarios}
-                adicionarEmprestimo={adicionarEmprestimo}
-                removerEmprestimo={removerEmprestimo}
-                atualizarEmprestimo={atualizarEmprestimo}
-                devolverFerramentas={devolverFerramentas}
-                emprestimosCarregados={emprestimosCarregados}
-              />
+              usuario?.nivel <= NIVEIS_PERMISSAO.SUPERVISOR ? (
+                <GerenciamentoInventario
+                  // Props de Inventário
+                  inventario={inventario}
+                  emprestimos={emprestimos}
+                  adicionarItem={adicionarItem}
+                  removerItem={removerItem}
+                  atualizarItem={atualizarItem}
+                  reimportarInventario={reimportarInventario}
+                  corrigirInventario={corrigirInventario}
+                  obterDetalhesEmprestimos={obterDetalhesEmprestimos}
+                  // Props de Compras
+                  compras={compras}
+                  adicionarCompra={adicionarCompra}
+                  removerCompra={removerCompra}
+                  atualizarCompra={atualizarCompra}
+                  // Props de Ferramentas Danificadas
+                  ferramentasDanificadas={ferramentasDanificadas}
+                  adicionarFerramentaDanificada={adicionarFerramentaDanificada}
+                  atualizarFerramentaDanificada={atualizarFerramentaDanificada}
+                  removerFerramentaDanificada={removerFerramentaDanificada}
+                  // Props de Ferramentas Perdidas
+                  ferramentasPerdidas={ferramentasPerdidas}
+                  adicionarFerramentaPerdida={adicionarFerramentaPerdida}
+                  atualizarFerramentaPerdida={atualizarFerramentaPerdida}
+                  removerFerramentaPerdida={removerFerramentaPerdida}
+                  // Props de Empréstimos
+                  funcionarios={funcionarios}
+                  adicionarEmprestimo={adicionarEmprestimo}
+                  removerEmprestimo={removerEmprestimo}
+                  atualizarEmprestimo={atualizarEmprestimo}
+                  devolverFerramentas={devolverFerramentas}
+                  emprestimosCarregados={emprestimosCarregados}
+                />
+              ) : (
+                <PermissionDenied message="Você não tem permissão para acessar Inventário e Empréstimos." />
+              )
             )}
             
             {abaAtiva === 'funcionarios' && (
@@ -4317,7 +4361,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'historico-emprestimos' && (
-              usuario?.nivel === NIVEIS_PERMISSAO.ADMIN ? (
+              usuario?.nivel <= NIVEIS_PERMISSAO.SUPERVISOR ? (
                 <HistoricoEmprestimosTab
                   emprestimos={emprestimos}
                   devolverFerramentas={devolverFerramentas}
@@ -4326,7 +4370,7 @@ const AlmoxarifadoSistema = () => {
                   inventario={inventario}
                 />
               ) : (
-                <PermissionDenied message="Apenas administradores podem visualizar o histórico de empréstimos." />
+                <PermissionDenied message="Você não tem permissão para visualizar o histórico de empréstimos." />
               )
             )}
 

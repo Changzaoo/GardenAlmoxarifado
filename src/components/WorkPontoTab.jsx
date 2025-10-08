@@ -67,11 +67,21 @@ const WorkPontoTab = () => {
   const [funcionarioData, setFuncionarioData] = useState(null);
   const [showComprovanteModal, setShowComprovanteModal] = useState(false);
   const [comprovanteData, setComprovanteData] = useState(null);
-  const [horariosPersonalizados, setHorariosPersonalizados] = useState({
-    almoco: null,
-    retorno: null
+  
+  // Carregar horários personalizados do localStorage
+  const [horariosPersonalizados, setHorariosPersonalizados] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`horariosPersonalizados_${usuario?.id}`);
+      return saved ? JSON.parse(saved) : { almoco: null, retorno: null };
+    } catch (error) {
+      console.error('Erro ao carregar horários personalizados:', error);
+      return { almoco: null, retorno: null };
+    }
   });
+  
   const [editandoHorarios, setEditandoHorarios] = useState(false);
+  const [editandoAlmoco, setEditandoAlmoco] = useState(false);
+  const [editandoRetorno, setEditandoRetorno] = useState(false);
   const [horasTrabalhadasHoje, setHorasTrabalhadasHoje] = useState({
     horas: 0,
     minutos: 0,
@@ -819,26 +829,35 @@ const WorkPontoTab = () => {
     <div>
       {/* Cabeçalho com relógio em tempo real */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
           <Clock className="w-6 h-6" /> Registro de Ponto
         </h2>
-        <div className="flex items-center gap-4">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl px-6 py-3 shadow-lg">
-            <div className="text-white text-sm font-semibold mb-1">Data Atual</div>
-            <div className="text-white text-lg font-bold">{formatData(horaAtual)}</div>
-          </div>
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl px-6 py-3 shadow-lg">
-            <div className="text-white text-sm font-semibold mb-1">Hora Atual</div>
-            <div className="text-white text-2xl font-bold font-mono">
-              {horaAtual.toLocaleTimeString('pt-BR')}
+        
+        {/* Layout responsivo: coluna em mobile, linha em desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Data e Hora juntas em mobile */}
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl px-6 py-4 shadow-lg">
+            <div className="flex md:flex-col items-center md:items-start justify-between md:justify-start gap-4 md:gap-0">
+              <div className="flex-1 md:mb-3">
+                <div className="text-white text-sm font-semibold mb-1">Data Atual</div>
+                <div className="text-white text-lg md:text-xl font-bold">{formatData(horaAtual)}</div>
+              </div>
+              <div className="flex-1 md:border-t md:border-white/20 md:pt-3">
+                <div className="text-white text-sm font-semibold mb-1">Hora Atual</div>
+                <div className="text-white text-xl md:text-2xl font-bold font-mono">
+                  {horaAtual.toLocaleTimeString('pt-BR')}
+                </div>
+              </div>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl px-6 py-3 shadow-lg">
-            <div className="text-white text-sm font-semibold mb-1 flex items-center gap-2">
-              <RefreshCw className="w-3 h-3 animate-spin" />
-              Horas contabilizadas hoje
+          
+          {/* Horas contabilizadas - destaque maior em mobile */}
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl px-6 py-4 shadow-lg md:col-span-2">
+            <div className="text-white text-sm font-semibold mb-2 flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Horas Contabilizadas Hoje
             </div>
-            <div className="text-white text-lg font-bold font-mono">
+            <div className="text-white text-3xl md:text-2xl font-bold font-mono text-center md:text-left">
               {String(horasTrabalhadasHoje.horas).padStart(2, '0')}h{' '}
               {String(horasTrabalhadasHoje.minutos).padStart(2, '0')}m{' '}
               {String(horasTrabalhadasHoje.segundos).padStart(2, '0')}s
@@ -855,13 +874,6 @@ const WorkPontoTab = () => {
               <Clock className="w-5 h-5" />
               Seu Horário Hoje {tipoEscala && <span className="text-sm bg-blue-200 dark:bg-blue-900 px-2 py-1 rounded">Escala {tipoEscala}</span>}
             </h3>
-            <button
-              onClick={() => setEditandoHorarios(!editandoHorarios)}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2"
-            >
-              <Clock className="w-4 h-4" />
-              {editandoHorarios ? 'Salvar' : 'Ajustar Horários'}
-            </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm">
@@ -871,58 +883,82 @@ const WorkPontoTab = () => {
               </div>
             </div>
             
-            {/* Campo de Almoço Editável */}
-            <div className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm">
-              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Almoço</div>
-              {editandoHorarios ? (
+            {/* Campo de Almoço - Clicável para editar */}
+            <div 
+              className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all group"
+              onClick={() => !editandoAlmoco && setEditandoAlmoco(true)}
+            >
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold flex items-center justify-center gap-1">
+                Almoço
+                {!editandoAlmoco && <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500" />}
+              </div>
+              {editandoAlmoco ? (
                 <input
                   type="time"
                   value={horariosPersonalizados.almoco || horariosEsperados.almoco || '12:00'}
                   onChange={(e) => {
-                    setHorariosPersonalizados({
+                    const novoHorario = e.target.value;
+                    const novosHorarios = {
                       ...horariosPersonalizados,
-                      almoco: e.target.value
-                    });
-                    // Atualizar horários esperados imediatamente
+                      almoco: novoHorario
+                    };
+                    setHorariosPersonalizados(novosHorarios);
                     setHorariosEsperados({
                       ...horariosEsperados,
-                      almoco: e.target.value
+                      almoco: novoHorario
                     });
-                    showToast('Horário de almoço ajustado!', 'success');
+                    // Salvar no localStorage
+                    localStorage.setItem(`horariosPersonalizados_${usuario?.id}`, JSON.stringify(novosHorarios));
+                    showToast('✓ Horário de almoço atualizado!', 'success');
+                    setEditandoAlmoco(false);
                   }}
-                  className="w-full text-xl font-bold text-blue-900 dark:text-blue-100 font-mono bg-blue-50 dark:bg-blue-900/50 border-2 border-blue-300 dark:border-blue-700 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onBlur={() => setTimeout(() => setEditandoAlmoco(false), 200)}
+                  autoFocus
+                  className="w-full text-xl font-bold text-orange-600 dark:text-orange-400 font-mono bg-orange-50 dark:bg-orange-900/30 border-2 border-orange-400 dark:border-orange-600 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               ) : (
                 <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">
-                  {horariosPersonalizados.almoco || horariosEsperados.almoco || '--:--'}
+                  {horariosPersonalizados.almoco || horariosEsperados.almoco || '12:00'}
                 </div>
               )}
             </div>
             
-            {/* Campo de Retorno Editável */}
-            <div className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm">
-              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Retorno</div>
-              {editandoHorarios ? (
+            {/* Campo de Retorno - Clicável para editar */}
+            <div 
+              className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:ring-2 hover:ring-green-400 transition-all group"
+              onClick={() => !editandoRetorno && setEditandoRetorno(true)}
+            >
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold flex items-center justify-center gap-1">
+                Retorno
+                {!editandoRetorno && <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-green-500" />}
+              </div>
+              {editandoRetorno ? (
                 <input
                   type="time"
                   value={horariosPersonalizados.retorno || horariosEsperados.retorno || '13:00'}
                   onChange={(e) => {
-                    setHorariosPersonalizados({
+                    const novoHorario = e.target.value;
+                    const novosHorarios = {
                       ...horariosPersonalizados,
-                      retorno: e.target.value
-                    });
-                    // Atualizar horários esperados imediatamente
+                      retorno: novoHorario
+                    };
+                    setHorariosPersonalizados(novosHorarios);
                     setHorariosEsperados({
                       ...horariosEsperados,
-                      retorno: e.target.value
+                      retorno: novoHorario
                     });
-                    showToast('Horário de retorno ajustado!', 'success');
+                    // Salvar no localStorage
+                    localStorage.setItem(`horariosPersonalizados_${usuario?.id}`, JSON.stringify(novosHorarios));
+                    showToast('✓ Horário de retorno atualizado!', 'success');
+                    setEditandoRetorno(false);
                   }}
-                  className="w-full text-xl font-bold text-blue-900 dark:text-blue-100 font-mono bg-blue-50 dark:bg-blue-900/50 border-2 border-blue-300 dark:border-blue-700 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onBlur={() => setTimeout(() => setEditandoRetorno(false), 200)}
+                  autoFocus
+                  className="w-full text-xl font-bold text-green-600 dark:text-green-400 font-mono bg-green-50 dark:bg-green-900/30 border-2 border-green-400 dark:border-green-600 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               ) : (
                 <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">
-                  {horariosPersonalizados.retorno || horariosEsperados.retorno || '--:--'}
+                  {horariosPersonalizados.retorno || horariosEsperados.retorno || '13:00'}
                 </div>
               )}
             </div>
@@ -935,13 +971,10 @@ const WorkPontoTab = () => {
             </div>
           </div>
           <div className="mt-4 text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 rounded-lg p-3">
+            <strong>💡 Dica:</strong> Clique nos horários de <strong>Almoço</strong> e <strong>Retorno</strong> para editá-los. As alterações são salvas automaticamente.
+            <br />
             <strong>Tolerância:</strong> Você pode bater ponto até 10 minutos antes ou depois do horário. 
             Fora desse período, será registrado como hora positiva (crédito) ou hora negativa (débito).
-            {editandoHorarios && (
-              <div className="mt-2 pt-2 border-t border-blue-300 dark:border-blue-700">
-                <strong>Modo Edição:</strong> Ajuste seus horários de almoço conforme necessário. As mudanças são aplicadas instantaneamente.
-              </div>
-            )}
           </div>
         </div>
       )}

@@ -20,7 +20,7 @@ const Sidebar = ({ onProfileClick }) => {
       name: 'Inventário',
       path: '/inventario',
       icon: <Package className="w-5 h-5" />,
-      requiredLevel: 1
+      requiredLevel: 2
     },
     {
       name: 'Funcionários',
@@ -32,7 +32,7 @@ const Sidebar = ({ onProfileClick }) => {
       name: 'Empréstimos',
       path: '/emprestimos',
       icon: <Clock className="w-5 h-5" />,
-      requiredLevel: 1
+      requiredLevel: 2
     },
     {
       name: 'Danificadas',
