@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, Wifi, Coffee, AlertTriangle, PhoneCall, Send, CheckCircle } from 'lucide-react';
+import { RefreshCw, Wifi, Coffee, AlertTriangle, PhoneCall, CheckCircle } from 'lucide-react';
 import { db } from '../../firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
 
@@ -9,12 +9,8 @@ import { collection, addDoc } from 'firebase/firestore';
  */
 const MobileErrorScreen = ({ error, errorInfo, resetError }) => {
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [enviandoRelatorio, setEnviandoRelatorio] = useState(false);
   const [relatorioEnviado, setRelatorioEnviado] = useState(false);
-  const [descricao, setDescricao] = useState('');
-  const [nomeContato, setNomeContato] = useState('');
-  const [emailContato, setEmailContato] = useState('');
   
   // Detectar tipo de erro
   const errorType = detectErrorType(error?.message || '');
@@ -66,21 +62,6 @@ const MobileErrorScreen = ({ error, errorInfo, resetError }) => {
   };
 
   const enviarRelatorioErro = async () => {
-    // Validação
-    if (!nomeContato.trim()) {
-      alert('Por favor, informe seu nome para enviar o relatório.');
-      return;
-    }
-    if (!emailContato.trim()) {
-      alert('Por favor, informe seu email para que possamos entrar em contato.');
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailContato)) {
-      alert('Por favor, informe um email válido.');
-      return;
-    }
-
     setEnviandoRelatorio(true);
 
     try {
@@ -91,16 +72,17 @@ const MobileErrorScreen = ({ error, errorInfo, resetError }) => {
         errorCode,
         errorMessage: error?.message || error?.toString() || 'Erro desconhecido',
         errorStack: error?.stack || null,
+        errorInfo: errorInfo || null,
         timestamp: new Date().toISOString(),
         url: window.location.href,
         browserInfo,
         usuarioId: 'anonimo',
-        usuarioNome: nomeContato || 'Usuário Anônimo',
+        usuarioNome: 'Usuário Anônimo',
         usuarioUsername: '',
         usuarioLogado: false,
-        contatoNome: nomeContato,
-        contatoEmail: emailContato,
-        descricao: descricao || 'Sem descrição adicional',
+        contatoNome: 'Relatório Automático',
+        contatoEmail: 'auto@system.local',
+        descricao: 'Relatório enviado automaticamente pelo sistema',
         status: 'pendente',
         criadoEm: new Date().toISOString()
       };
@@ -113,16 +95,12 @@ const MobileErrorScreen = ({ error, errorInfo, resetError }) => {
       // Copiar código de erro para clipboard
       navigator.clipboard.writeText(errorCode).catch(() => {});
       
+      // Mostrar mensagem de sucesso por 3 segundos
       setTimeout(() => {
-        setShowReportModal(false);
         setRelatorioEnviado(false);
-        setDescricao('');
-        setNomeContato('');
-        setEmailContato('');
       }, 3000);
     } catch (err) {
       console.error('Erro ao enviar relatório:', err);
-      alert('Não foi possível enviar o relatório. Por favor, tente novamente.');
       setEnviandoRelatorio(false);
     }
   };
@@ -237,27 +215,51 @@ const MobileErrorScreen = ({ error, errorInfo, resetError }) => {
 
           {/* Reportar Erro */}
           <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Problema persistindo?
-            </p>
-            <div className="space-y-2">
-              <button
-                onClick={() => setShowReportModal(true)}
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition-all"
-              >
-                <AlertTriangle className="w-5 h-5" />
-                Reportar este Erro
-              </button>
-              <a
-                href="https://wa.me/5500000000000"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition-all"
-              >
-                <PhoneCall className="w-5 h-5" />
-                Falar com Suporte
-              </a>
-            </div>
+            {relatorioEnviado ? (
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+                <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300 mb-2">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-bold">Relatório Enviado!</span>
+                </div>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Obrigado! Nossa equipe irá analisar o problema.
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Problema persistindo?
+                </p>
+                <div className="space-y-2">
+                  <button
+                    onClick={enviarRelatorioErro}
+                    disabled={enviandoRelatorio}
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed"
+                  >
+                    {enviandoRelatorio ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Enviando relatório...
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="w-5 h-5" />
+                        Reportar este Erro
+                      </>
+                    )}
+                  </button>
+                  <a
+                    href="https://wa.me/5500000000000"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition-all"
+                  >
+                    <PhoneCall className="w-5 h-5" />
+                    Falar com Suporte
+                  </a>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -268,110 +270,6 @@ const MobileErrorScreen = ({ error, errorInfo, resetError }) => {
           </p>
         </div>
       </div>
-
-      {/* Modal de Reportar Erro */}
-      {showReportModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Reportar Problema
-              </h3>
-              
-              {relatorioEnviado ? (
-                <div className="text-center py-6">
-                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-10 h-10 text-white" />
-                  </div>
-                  <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                    Relatório Enviado!
-                  </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Obrigado por nos ajudar a melhorar o sistema. Nossa equipe irá analisar o problema.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                    <p className="text-sm text-blue-800 dark:text-blue-200">
-                      Para que possamos entrar em contato sobre este erro, por favor preencha seus dados:
-                    </p>
-                  </div>
-
-                  <div className="space-y-3 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Seu Nome <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={nomeContato}
-                        onChange={(e) => setNomeContato(e.target.value)}
-                        placeholder="Digite seu nome completo"
-                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Seu Email <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        value={emailContato}
-                        onChange={(e) => setEmailContato(e.target.value)}
-                        placeholder="seu.email@exemplo.com"
-                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Descrição do Problema
-                      </label>
-                      <textarea
-                        value={descricao}
-                        onChange={(e) => setDescricao(e.target.value)}
-                        placeholder="O que você estava fazendo quando o erro ocorreu?"
-                        className="w-full h-24 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setShowReportModal(false);
-                        setDescricao('');
-                        setNomeContato('');
-                        setEmailContato('');
-                      }}
-                      className="flex-1 px-4 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={enviarRelatorioErro}
-                      disabled={enviandoRelatorio}
-                      className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold transition-all flex items-center justify-center gap-2"
-                    >
-                      {enviandoRelatorio ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          Enviando...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          Enviar
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

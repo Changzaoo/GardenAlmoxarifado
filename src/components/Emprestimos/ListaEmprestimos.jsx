@@ -89,7 +89,8 @@ const ListaEmprestimos = ({
   
   const { usuario } = useAuth();
   
-  const temPermissaoEdicao = usuario && usuario.nivel >= NIVEIS_PERMISSAO.SUPERVISOR;
+  // ✅ Sistema reverso: Admin (0) <= Supervisor (2) = tem permissão
+  const temPermissaoEdicao = usuario && usuario.nivel <= NIVEIS_PERMISSAO.SUPERVISOR;
 
   // Função para ordenar os empréstimos
   const sortEmprestimos = (emprestimos) => {

@@ -18,11 +18,16 @@ import UserProfileModal from './components/Auth/UserProfileModal';
 import NotificationPermissionModal from './components/Notifications/NotificationPermissionModal';
 import BiometricAuth from './components/Auth/BiometricAuth';
 import CriarAdminTemp from './components/Auth/CriarAdminTemp';
+import OfflineIndicator from './components/OfflineIndicator';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Componentes das páginas
 import Workflow from './components/Workflow';
 import EstatisticasAcesso from './pages/EstatisticasAcesso/EstatisticasAcesso';
+
+// Sistema offline
+import { syncManager } from './utils/syncManager';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
 
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -34,6 +39,17 @@ function AppContent() {
   
   const [showBiometric, setShowBiometric] = useState(false);
   const [biometricChecked, setBiometricChecked] = useState(false);
+  
+  // Hook de status offline
+  const { isOnline, wasOffline } = useOnlineStatus();
+
+  // Sincronizar quando reconectar
+  useEffect(() => {
+    if (isOnline && wasOffline) {
+      console.log('🔄 Reconectado! Iniciando sincronização...');
+      syncManager.startSync();
+    }
+  }, [isOnline, wasOffline]);
 
   useEffect(() => {
     // Verifica se está em plataforma nativa (Android/iOS)
@@ -89,6 +105,10 @@ function AppContent() {
       <RouteStateManager />
       <ScrollPersistence />
       <NotificationPermissionModal />
+      
+      {/* Indicador de status offline */}
+      <OfflineIndicator />
+      
       <ToastContainer 
         position="top-right" 
         autoClose={3000}

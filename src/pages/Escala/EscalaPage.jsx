@@ -1334,6 +1334,54 @@ const EscalaPage = ({ usuarioAtual }) => {
                         {tipo === 'ATESTADO' && 'Atestado'}
                         {tipo === 'VAZIO' && '-'}
                       </div>
+                      
+                      {/* Horários de Almoço Editáveis */}
+                      {(tipo === 'M' || tipo === 'M1' || tipo === 'M4') && (
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center gap-1 bg-purple-50 dark:bg-purple-900/20 rounded px-1.5 py-1">
+                            <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                            <input
+                              type="time"
+                              defaultValue={
+                                tipo === 'M' || tipo === 'M1' ? '12:00' : '10:30'
+                              }
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                // Salvar horário de almoço personalizado
+                                const novaConfig = { ...configuracoesEscala };
+                                if (!novaConfig[func.id]) novaConfig[func.id] = {};
+                                if (!novaConfig[func.id][tipo]) novaConfig[func.id][tipo] = {};
+                                novaConfig[func.id][tipo].almoco = e.target.value;
+                                setConfiguracoesEscala(novaConfig);
+                                toast.success('Horário de almoço atualizado!', { autoClose: 1500 });
+                              }}
+                              className="w-full text-[9px] bg-transparent border-0 text-purple-700 dark:text-purple-300 font-medium focus:outline-none focus:ring-1 focus:ring-purple-400 rounded px-1"
+                              title="Almoço"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1 bg-green-50 dark:bg-green-900/20 rounded px-1.5 py-1">
+                            <Clock className="w-3 h-3 text-green-600 dark:text-green-400 flex-shrink-0" />
+                            <input
+                              type="time"
+                              defaultValue={
+                                tipo === 'M' || tipo === 'M1' ? '13:00' : '11:30'
+                              }
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                // Salvar horário de retorno personalizado
+                                const novaConfig = { ...configuracoesEscala };
+                                if (!novaConfig[func.id]) novaConfig[func.id] = {};
+                                if (!novaConfig[func.id][tipo]) novaConfig[func.id][tipo] = {};
+                                novaConfig[func.id][tipo].retorno = e.target.value;
+                                setConfiguracoesEscala(novaConfig);
+                                toast.success('Horário de retorno atualizado!', { autoClose: 1500 });
+                              }}
+                              className="w-full text-[9px] bg-transparent border-0 text-green-700 dark:text-green-300 font-medium focus:outline-none focus:ring-1 focus:ring-green-400 rounded px-1"
+                              title="Retorno"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   

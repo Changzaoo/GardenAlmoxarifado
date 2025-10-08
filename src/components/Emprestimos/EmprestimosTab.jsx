@@ -1,4 +1,5 @@
 import { useAuth } from '../../hooks/useAuth';
+import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import NovoEmprestimo from './NovoEmprestimo';
 import ListaEmprestimos from './ListaEmprestimos';
 
@@ -12,11 +13,16 @@ const EmprestimosTab = ({
   funcionarios
 }) => {
   const { usuario } = useAuth();
-  const isFuncionario = usuario?.nivel === 'funcionario';
+  
+  // ✅ Permite criar empréstimos: Admin (0), Funcionário (1) e Supervisor (2)
+  const podeRealizarEmprestimo = usuario && usuario.nivel <= NIVEIS_PERMISSAO.SUPERVISOR;
+  
+  // Funcionários nível 1 têm apenas visualização
+  const readonly = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO;
   
   return (
     <div className="space-y-6">
-      {!isFuncionario && (
+      {podeRealizarEmprestimo && (
         <NovoEmprestimo
           inventario={inventario}
           adicionarEmprestimo={adicionarEmprestimo}
@@ -29,7 +35,7 @@ const EmprestimosTab = ({
         devolverFerramentas={devolverFerramentas}
         removerEmprestimo={removerEmprestimo}
         atualizarDisponibilidade={atualizarDisponibilidade}
-        readonly={isFuncionario}
+        readonly={readonly}
         funcionarios={funcionarios}
       />
     </div>

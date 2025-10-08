@@ -14,7 +14,7 @@ const formatarTelefone = (telefone) => {
   return telefone;
 };
 
-const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
+const FormularioAdicao = ({ onSubmit, loading, formatarTelefone, usuarioLogado }) => {
   const { showToast } = useToast();
   const fileInputRef = useRef();
   const [dados, setDados] = useState({ 
@@ -32,6 +32,19 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
   const [empresas, setEmpresas] = useState([]);
   const [setores, setSetores] = useState([]);
   const [setoresDisponiveis, setSetoresDisponiveis] = useState([]);
+
+  // Preencher automaticamente empresa e setor do usuário logado
+  useEffect(() => {
+    if (usuarioLogado && usuarioLogado.empresaId && usuarioLogado.setorId) {
+      setDados(prevDados => ({
+        ...prevDados,
+        empresaId: usuarioLogado.empresaId,
+        empresaNome: usuarioLogado.empresaNome || '',
+        setorId: usuarioLogado.setorId,
+        setorNome: usuarioLogado.setorNome || ''
+      }));
+    }
+  }, [usuarioLogado]);
 
   useEffect(() => {
     carregarEmpresas();
@@ -167,33 +180,41 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
     
     onSubmit({ ...dados, photoURL });
     
-    // Resetar form
+    // Resetar form mantendo empresa e setor do usuário logado
     setDados({ 
       nome: '', 
       cargo: '', 
       telefone: '',
-      empresaId: '',
-      empresaNome: '',
-      setorId: '',
-      setorNome: '',
+      empresaId: usuarioLogado?.empresaId || '',
+      empresaNome: usuarioLogado?.empresaNome || '',
+      setorId: usuarioLogado?.setorId || '',
+      setorNome: usuarioLogado?.setorNome || '',
       photoURL: ''
     });
     removerFoto();
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-          <Plus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+    <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Mensagem informativa */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex gap-3">
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                Novo Funcionário = Novo Usuário
+              </h4>
+              <p className="text-xs text-blue-800 dark:text-blue-200">
+                O funcionário será registrado automaticamente na sua empresa <strong>({dados.empresaNome || 'carregando...'})</strong> e setor <strong>({dados.setorNome || 'carregando...'})</strong>. Após o cadastro, ele poderá fazer login no sistema.
+              </p>
+            </div>
+          </div>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Adicionar Novo Funcionário</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Preencha os dados para cadastrar</p>
-        </div>
-      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Preview da Foto */}
         {fotoPreview && (
           <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -313,7 +334,8 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
             <select
               value={dados.empresaId}
               onChange={handleEmpresaChange}
-              className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-2.5 rounded-lg text-sm bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none cursor-not-allowed opacity-75"
+              disabled
               required
             >
               <option value="">Selecione a Empresa</option>
@@ -323,6 +345,9 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              O funcionário será adicionado à sua empresa
+            </p>
           </div>
         
           {/* Setor */}
@@ -333,9 +358,9 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
             <select
               value={dados.setorId}
               onChange={handleSetorChange}
-              className="w-full px-4 py-2.5 rounded-lg text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2.5 rounded-lg text-sm bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none cursor-not-allowed opacity-75"
+              disabled
               required
-              disabled={!dados.empresaId}
             >
               <option value="">Selecione o Setor</option>
               {setoresDisponiveis.map(setor => (
@@ -344,6 +369,9 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              O funcionário será adicionado ao seu setor
+            </p>
           </div>
         
           {/* Upload de Foto */}
@@ -389,7 +417,6 @@ const FormularioAdicao = ({ onSubmit, loading, formatarTelefone }) => {
           </button>
         </div>
       </form>
-    </div>
   );
 };
 

@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Phone, Briefcase, CheckCircle, Package, Search, Clock, MessageSquare, ThumbsUp, Gauge, Wrench, Edit2 } from 'lucide-react';
+import { X, Users, Phone, Briefcase, CheckCircle, Package, Clock, ThumbsUp, Gauge, Edit2 } from 'lucide-react';
 import CargoSelect from './components/CargoSelect';
 import { useAuth } from '../../hooks/useAuth';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
-import MeuInventarioTab from '../Inventario/MeuInventarioTab';
-import TarefasTab from '../Tarefas/TarefasTab';
-import { FuncionariosProvider } from './FuncionariosProvider';
 import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import AvaliacoesTab from './AvaliacoesTab';
 
@@ -15,16 +12,6 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
   const isFuncionario = usuario?.nivel === 'funcionario';
   const [editandoCargo, setEditandoCargo] = useState(false);
   const [cargoTemp, setCargoPerfil] = useState(funcionario.cargo || '');
-  const [activeTab, setActiveTab] = useState('inventario');
-  const [emprestimos, setEmprestimos] = useState([]);
-  const [filtroEmprestimos, setFiltroEmprestimos] = useState('');
-  const [filtroPeriodo, setFiltroPeriodo] = useState('todos'); // 'todos', 'hoje', 'semana', 'mes'
-  const [filtroStatus, setFiltroStatus] = useState('todos'); // 'todos', 'emprestado', 'devolvido'
-  const [avaliacoesExpandidas, setAvaliacoesExpandidas] = useState({
-    desempenho: false,
-    tarefas: false,
-    autoavaliacoes: false
-  });
   const [stats, setStats] = useState({
     tarefasConcluidas: 0,
     tarefasEmAndamento: 0,
@@ -81,16 +68,15 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
           const isAvaliacao = emprestimosData.length > 0 && ('nota' in emprestimosData[0] || 'avaliacao' in emprestimosData[0]);
           
           if (isEmprestimo) {
-            // Se for um snapshot de empréstimos
-            setEmprestimos(prev => {
-              const uniqueEmprestimos = [...prev];
-              emprestimosData.forEach(emp => {
-                if (!uniqueEmprestimos.some(e => e.id === emp.id)) {
-                  uniqueEmprestimos.push(emp);
-                }
-              });
-              return uniqueEmprestimos;
-            });
+            // Se for um snapshot de empréstimos - atualizar contador
+            const emprestimosAtivos = emprestimosData.filter(emp => 
+              emp.status === 'ativo' || emp.status === 'emprestado' || !emp.dataDevolucao
+            ).length;
+            
+            setStats(prev => ({
+              ...prev,
+              emprestimosAtivos
+            }));
           } else if (isAvaliacao) {
             // Se for um snapshot de avaliações (regulares ou desempenho)
             const avaliacoes = emprestimosData.map(av => ({
@@ -143,7 +129,6 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
 
     return () => {
       unsubscribes.forEach(unsub => unsub());
-      setEmprestimos([]);
     };
   }, [funcionario?.id, funcionario?.nome]);
 
@@ -271,33 +256,35 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
         </div>
 
         <div className="mt-20 px-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {funcionario.nome}
-          </h2>
-          <div className="flex items-center gap-2 mt-1">
-            <Briefcase className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <div className="flex-1">
-              {editandoCargo ? (
-                <CargoSelect
-                  value={cargoTemp}
-                  onChange={setCargoPerfil}
-                  className="bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500 dark:text-gray-400">{funcionario.cargo || 'Cargo não definido'}</span>
-                  {usuario?.nivel >= 2 && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditandoCargo(true);
-                        setCargoPerfil(funcionario.cargo || '');
-                      }}
-                      className="p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
-                    >
-                      <Edit2 className="w-3 h-3 text-blue-500 dark:text-[#1D9BF0]" />
-                    </button>
-                  )}
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent mb-2">
+                {funcionario.nome}
+              </h2>
+              <div className="flex items-center gap-2 mt-1">
+                <Briefcase className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <div className="flex-1">
+                  {editandoCargo ? (
+                    <CargoSelect
+                      value={cargoTemp}
+                      onChange={setCargoPerfil}
+                      className="bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 dark:text-gray-400">{funcionario.cargo || 'Cargo não definido'}</span>
+                      {usuario?.nivel >= 2 && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditandoCargo(true);
+                            setCargoPerfil(funcionario.cargo || '');
+                          }}
+                          className="p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors"
+                        >
+                          <Edit2 className="w-3 h-3 text-blue-500 dark:text-[#1D9BF0]" />
+                        </button>
+                      )}
                 </div>
               )}
             </div>
@@ -331,186 +318,108 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
               </button>
             </div>
           )}
-          <div className="flex items-center gap-2 mt-1">
-            <Phone className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <span className="text-gray-500 dark:text-gray-400">{funcionario.telefone}</span>
+              <div className="flex items-center gap-2 mt-2">
+                <Phone className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span className="text-gray-500 dark:text-gray-400">{funcionario.telefone}</span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        
-
-
-
-         
-
-        <div className="mt-6 border-b border-[#2F3336]">
-          <div className="flex px-6">
-            <button 
-              className={`px-6 py-4 font-medium text-sm relative ${
-                activeTab === 'inventario' 
-                  ? 'text-blue-500 dark:text-[#1D9BF0] font-bold' 
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}
-              onClick={() => setActiveTab('inventario')}
+          {/* Cards de Estatísticas Modernos */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            {/* Pontos */}
+            <button
+              onClick={() => {/* Pode adicionar ação futura */}}
+              className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800 hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer text-left"
             >
-              Inventário
-              {activeTab === 'inventario' && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 dark:bg-[#1D9BF0] rounded-full" />
-              )}
-            </button>
-            <button 
-              className={`px-6 py-4 font-medium text-sm relative ${
-                activeTab === 'tarefas' 
-                  ? 'text-blue-500 dark:text-[#1D9BF0] font-bold' 
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}
-              onClick={() => setActiveTab('tarefas')}
-            >
-              Tarefas
-              {activeTab === 'tarefas' && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 dark:bg-[#1D9BF0] rounded-full" />
-              )}
-            </button>
-            {usuario?.nivel >= 2 && (
-              <button 
-                className={`px-6 py-4 font-medium text-sm relative ${
-                  activeTab === 'avaliacoes' 
-                    ? 'text-blue-500 dark:text-[#1D9BF0] font-bold' 
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-                onClick={() => setActiveTab('avaliacoes')}
-              >
-                Avaliações
-                {activeTab === 'avaliacoes' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 dark:bg-[#1D9BF0] rounded-full" />
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 px-6 pb-6">
-          {activeTab === 'inventario' && (
-            <>
-              <div className="flex gap-4 items-center mb-4">
-                <div className="relative flex-1 min-w-[350px]">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Buscar por ferramenta..."
-                    value={filtroEmprestimos}
-                    onChange={(e) => setFiltroEmprestimos(e.target.value)}
-                    className="w-full h-10 pl-10 pr-4 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
-                  />
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+                  <Gauge className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <select
-                  value={filtroPeriodo}
-                  onChange={(e) => setFiltroPeriodo(e.target.value)}
-                  className="border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
-                >
-                  <option value="todos">Todos os períodos</option>
-                  <option value="hoje">Hoje</option>
-                  <option value="semana">Últimos 7 dias</option>
-                  <option value="mes">Último mês</option>
-                </select>
-                <select
-                  value={filtroStatus}
-                  onChange={(e) => setFiltroStatus(e.target.value)}
-                  className="border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-[#1D9BF0] bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600"
-                >
-                  <option value="todos">Todos os status</option>
-                  <option value="emprestado">Não devolvidos</option>
-                  <option value="devolvido">Devolvidos</option>
-                </select>
+                <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">Pontos</span>
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                {emprestimos.length === 0 ? (
-                  'Nenhum empréstimo encontrado para este funcionário'
-                ) : (
-                  `${emprestimos.length} empréstimo${emprestimos.length !== 1 ? 's' : ''} encontrado${emprestimos.length !== 1 ? 's' : ''}`
-                )}
+              <span className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">{stats.pontosDesempenho || 0}</span>
+            </button>
+
+            {/* Avaliação */}
+            <button
+              onClick={() => {/* Pode adicionar ação futura */}}
+              className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800 hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
+                  <ThumbsUp className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <span className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 uppercase tracking-wide">Avaliação</span>
               </div>
-              <FuncionariosProvider>
-                <MeuInventarioTab
-                  emprestimos={emprestimos.filter(emp => {
-                    // Filtra por termo de busca
-                    if (filtroEmprestimos && !emp.ferramentas?.some(f => 
-                      f.nome.toLowerCase().includes(filtroEmprestimos.toLowerCase())
-                    )) {
-                      return false;
-                    }
+              <span className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">{stats.mediaAvaliacoes.toFixed(1)} ⭐</span>
+            </button>
 
-                    // Filtra por status
-                    if (filtroStatus === 'emprestado' && emp.status !== 'ativo') {
-                      return false;
-                    }
-                    if (filtroStatus === 'devolvido' && emp.status !== 'devolvido') {
-                      return false;
-                    }
-
-                    // Filtra por período
-                    if (filtroPeriodo !== 'todos') {
-                      const empDate = new Date(emp.dataEmprestimo);
-                      const today = new Date();
-                      
-                      switch (filtroPeriodo) {
-                        case 'hoje':
-                          return empDate.getDate() === today.getDate() &&
-                                empDate.getMonth() === today.getMonth() &&
-                                empDate.getFullYear() === today.getFullYear();
-                        case 'semana':
-                          const weekAgo = new Date(today);
-                          weekAgo.setDate(today.getDate() - 7);
-                          return empDate >= weekAgo;
-                        case 'mes':
-                          const monthAgo = new Date(today);
-                          monthAgo.setMonth(today.getMonth() - 1);
-                          return empDate >= monthAgo;
-                        default:
-                          return true;
-                      }
-                    }
-
-                    return true;
-                  })}
-                  readOnly={true}
-                  showEmptyMessage={`Nenhum empréstimo encontrado para ${funcionario.nome}`}
-                />
-              </FuncionariosProvider>
-            </>
-          )}
-          {activeTab === 'tarefas' && (
-            <>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                {stats.tarefasConcluidas > 0 && (
-                  `${stats.tarefasConcluidas} tarefa${stats.tarefasConcluidas !== 1 ? 's' : ''}`
-                )}
-                {stats.totalAvaliacoes > 0 && (
-                  ` • Média de avaliação: ${stats.mediaAvaliacoes.toFixed(1)} `
-                )}
+            {/* Tarefas Concluídas */}
+            <button
+              onClick={() => {/* Pode adicionar ação futura */}}
+              className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800 hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Tarefas</span>
               </div>
-              <FuncionariosProvider>
-                <TarefasTab 
-                  showOnlyUserTasks={true}
-                  showAddButton={false}
-                  userFilter={funcionario.nome}
-                  readOnly={true}
-                  defaultFiltros={{
-                    status: 'todas',
-                    periodo: 'todos',
-                    avaliacao: 'todas'
-                  }}
-                />
-              </FuncionariosProvider>
-            </>
-          )}
-          {activeTab === 'avaliacoes' && (
-            <AvaliacoesTab 
-              funcionario={funcionario} 
-              pontosDesempenho={stats.pontosDesempenho}
-            />
-          )}
+              <span className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.tarefasConcluidas}</span>
+            </button>
+
+            {/* Em Andamento */}
+            <button
+              onClick={() => {/* Pode adicionar ação futura */}}
+              className="bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-900/20 dark:to-sky-900/20 rounded-xl p-4 border border-cyan-200 dark:border-cyan-800 hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-cyan-100 dark:bg-cyan-900/50 rounded-lg">
+                  <Clock className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <span className="text-xs font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide">Em Andamento</span>
+              </div>
+              <span className="text-2xl font-bold text-cyan-900 dark:text-cyan-100">{stats.tarefasEmAndamento}</span>
+            </button>
+
+            {/* Empréstimos */}
+            <button
+              onClick={() => {/* Pode adicionar ação futura */}}
+              className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800 hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                  <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Empréstimos</span>
+              </div>
+              <span className="text-2xl font-bold text-purple-900 dark:text-purple-100">{stats.emprestimosAtivos}</span>
+            </button>
+          </div>
         </div>
+
+        {usuario?.nivel >= 2 && (
+          <>
+            <div className="mt-6 border-b border-gray-200 dark:border-[#2F3336]">
+              <div className="flex px-6">
+                <button 
+                  className="px-6 py-4 font-medium text-sm relative text-blue-500 dark:text-[#1D9BF0] font-bold"
+                >
+                  Avaliações
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 dark:bg-[#1D9BF0] rounded-full" />
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 px-6 pb-6">
+              <AvaliacoesTab 
+                funcionario={funcionario} 
+                pontosDesempenho={stats.pontosDesempenho}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

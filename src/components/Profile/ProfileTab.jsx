@@ -654,7 +654,7 @@ const ProfileTab = () => {
                 ? 'shadow-xl scale-105 sm:hover:scale-105' 
                 : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:scale-105'
             }`}
-            style={activeTab === 'workponto' ? { backgroundColor: '#10b981', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.4), 0 4px 6px -4px rgba(16, 185, 129, 0.4)' } : {}}
+            style={activeTab === 'workponto' ? { backgroundColor: '#3b82f6', boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.4), 0 4px 6px -4px rgba(59, 130, 246, 0.4)' } : {}}
             onClick={() => setActiveTab('workponto')}
           >
             {activeTab === 'workponto' && (
@@ -664,12 +664,12 @@ const ProfileTab = () => {
               <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${
                 activeTab === 'workponto' 
                   ? 'bg-white/20 backdrop-blur-sm' 
-                  : 'bg-green-100 dark:bg-green-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
               }`}>
                 <Clock className={`w-5 h-5 sm:w-6 sm:h-6 ${
                   activeTab === 'workponto' 
                     ? 'text-white' 
-                    : 'text-green-600 dark:text-green-400'
+                    : 'text-blue-600 dark:text-blue-400'
                 }`} />
               </div>
               <div className="text-center sm:text-left">

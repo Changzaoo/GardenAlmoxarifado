@@ -41,15 +41,12 @@ const BarraBuscaModerna = ({ filtroAtual, setFiltroAtual, searchTerm, setSearchT
         transition={{ duration: 0.3 }}
         className="relative flex-1 max-w-lg"
       >
-        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
-          <Search className="w-5 h-5 text-gray-400" />
-        </div>
         <input
           type="text"
           placeholder="Buscar funcionários..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3.5 rounded-2xl text-sm bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white dark:focus:bg-gray-800 transition-all duration-300 shadow-lg shadow-blue-500/10 dark:shadow-blue-500/5"
+          className="w-full pl-4 pr-4 py-3.5 rounded-2xl text-sm bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 focus:bg-white dark:focus:bg-gray-800 transition-all duration-300 shadow-lg shadow-blue-500/10 dark:shadow-blue-500/5"
         />
         {searchTerm && (
           <motion.button

@@ -24,7 +24,8 @@ import {
   Crown,
   Trophy,
   Building2,
-  ChevronDown
+  ChevronDown,
+  X
 } from 'lucide-react';
 import GruposModal from './components/GruposModal';
 import ModalUnificarDuplicados from './components/ModalUnificarDuplicados';
@@ -35,6 +36,7 @@ import BarraBuscaModerna from './components/BarraBuscaModerna';
 import CardFuncionarioModerno from './components/CardFuncionarioModerno';
 import ModalEditar from './components/ModalEditar';
 import ModalConfirmacao from './components/ModalConfirmacao';
+import ModalDetalhesEstatisticas from './components/ModalDetalhesEstatisticas';
 
 // Função para formatar número de telefone
 const formatarTelefone = (telefone) => {
@@ -64,6 +66,8 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   const [filtroAtual, setFiltroAtual] = useState('nome');
   const [avaliacoesExpandidas, setAvaliacoesExpandidas] = useState(null);
   const [avaliacoesDesempenhoExpandidas, setAvaliacoesDesempenhoExpandidas] = useState(null);
+  const [estatisticaExpandida, setEstatisticaExpandida] = useState(null);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const fileInputRef = useRef();
   
   // Estados para filtros de empresa e setor
@@ -205,6 +209,8 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 
   const { usuario } = useAuth();
   const isFuncionario = usuario?.nivel === 'funcionario';
+  // Verifica se é supervisor ou acima (nível <= 2)
+  const podeCriarFuncionario = usuario && usuario.nivel <= 2;
 
   // Carregar empresas e setores
   useEffect(() => {
@@ -470,14 +476,23 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 
   const handleAdicionar = async (novosDados) => {
     setLoading(true);
-    await adicionarFuncionario({
-      ...novosDados,
-      photoURL: formEdit.photoURL || ''
-    });
-    setNovoFuncionario({ nome: '', cargo: '', telefone: '' });
-    setFormEdit(prev => ({ ...prev, photoURL: '' }));
-    setPreview(null);
-    setLoading(false);
+    try {
+      await adicionarFuncionario({
+        ...novosDados,
+        photoURL: formEdit.photoURL || ''
+      });
+      setNovoFuncionario({ nome: '', cargo: '', telefone: '' });
+      setFormEdit(prev => ({ ...prev, photoURL: '' }));
+      setPreview(null);
+      // Fechar formulário após sucesso
+      setMostrarFormulario(false);
+      showToast('Funcionário adicionado com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao adicionar funcionário:', error);
+      showToast('Erro ao adicionar funcionário', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSalvarEdicao = async (dadosAtualizados) => {
@@ -651,7 +666,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
             transition={{ duration: 0.5 }}
             className="flex flex-col lg:flex-row items-center justify-between gap-4"
           >
-            {/* Controles de visualização */}
+            {/* Controles de visualização e Botão Adicionar */}
             <div className="flex items-center gap-3">
               <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {funcionariosFiltrados.length} de {funcionarios.length} funcionários
@@ -661,6 +676,19 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                   <UserX className="w-3 h-3" />
                   Inativos
                 </span>
+              )}
+              
+              {/* Botão Adicionar Funcionário na barra */}
+              {podeCriarFuncionario && !readonly && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setMostrarFormulario(!mostrarFormulario)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg shadow-md transition-all duration-200"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Adicionar</span>
+                </motion.button>
               )}
             </div>
 
@@ -680,28 +708,40 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 
       {/* Container Principal */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Formulário de Adição Modernizado */}
-        {!isFuncionario && !readonly && (
+        {/* Formulário de Adição (aparece quando botão é clicado) */}
+        {podeCriarFuncionario && !readonly && mostrarFormulario && (
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6"
           >
             <div className="bg-white/70 backdrop-blur-sm dark:bg-gray-800/70 rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl shadow-blue-500/10 dark:shadow-blue-500/5 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
-                  <Plus className="w-5 h-5 text-white" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+                    <Plus className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Adicionar Novo Funcionário
+                  </h2>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Adicionar Novo Funcionário
-                </h2>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setMostrarFormulario(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                </motion.button>
               </div>
               <FormularioAdicao
                 onSubmit={handleAdicionar}
-                loading={loading}
-                formatarTelefone={formatarTelefone}
-              />
+                  loading={loading}
+                  formatarTelefone={formatarTelefone}
+                  usuarioLogado={usuario}
+                />
             </div>
           </motion.div>
         )}
@@ -784,6 +824,8 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                     demitirFuncionario={demitirFuncionario}
                     reintegrarFuncionario={reintegrarFuncionario}
                     filtroAtual={filtroAtual}
+                    estatisticaExpandida={estatisticaExpandida}
+                    setEstatisticaExpandida={setEstatisticaExpandida}
                   />
                 </motion.div>
               ))}
@@ -791,6 +833,19 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           )}
         </AnimatePresence>
       </div>
+
+      {/* Modal de Detalhes das Estatísticas */}
+      {estatisticaExpandida && (
+        <ModalDetalhesEstatisticas
+          isOpen={true}
+          onClose={() => setEstatisticaExpandida(null)}
+          tipo={estatisticaExpandida.tipo}
+          funcionario={estatisticaExpandida.funcionario}
+          stats={estatisticaExpandida.stats}
+          pontos={estatisticaExpandida.pontos}
+          horasInfo={estatisticaExpandida.horasInfo}
+        />
+      )}
 
       {/* Modal de Perfil do Funcionário */}
       {funcionarioSelecionado && (

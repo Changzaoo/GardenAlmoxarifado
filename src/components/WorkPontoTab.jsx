@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, LogIn, LogOut, Coffee, ArrowRightLeft, Clock, CheckCircle, AlertTriangle, TrendingUp, Award, FileText } from 'lucide-react';
+import { Calendar, LogIn, LogOut, Coffee, ArrowRightLeft, Clock, CheckCircle, AlertTriangle, TrendingUp, Award, FileText, Edit2, Utensils } from 'lucide-react';
 import { collection, addDoc, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useAuth } from '../hooks/useAuth';
@@ -54,6 +54,11 @@ const WorkPontoTab = () => {
   const [funcionarioData, setFuncionarioData] = useState(null);
   const [showComprovanteModal, setShowComprovanteModal] = useState(false);
   const [comprovanteData, setComprovanteData] = useState(null);
+  const [horariosPersonalizados, setHorariosPersonalizados] = useState({
+    almoco: null,
+    retorno: null
+  });
+  const [editandoHorarios, setEditandoHorarios] = useState(false);
 
   // Relógio em tempo real
   useEffect(() => {
@@ -434,7 +439,7 @@ const WorkPontoTab = () => {
     <div>
       {/* Cabeçalho com relógio em tempo real */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-green-700 dark:text-green-300">
+        <h2 className="text-xl font-bold mb-2 flex items-center gap-2 text-blue-700 dark:text-blue-300">
           <Clock className="w-6 h-6" /> Registro de Ponto
         </h2>
         <div className="flex items-center gap-4">
@@ -442,7 +447,7 @@ const WorkPontoTab = () => {
             <div className="text-white text-sm font-semibold mb-1">Data Atual</div>
             <div className="text-white text-lg font-bold">{formatData(horaAtual)}</div>
           </div>
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl px-6 py-3 shadow-lg">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl px-6 py-3 shadow-lg">
             <div className="text-white text-sm font-semibold mb-1">Hora Atual</div>
             <div className="text-white text-2xl font-bold font-mono">
               {horaAtual.toLocaleTimeString('pt-BR')}
@@ -453,40 +458,99 @@ const WorkPontoTab = () => {
 
       {/* Card de Horários Esperados */}
       {horariosEsperados && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 rounded-xl p-6 mb-6 shadow-lg border border-indigo-200 dark:border-indigo-800">
-          <h3 className="font-bold text-indigo-900 dark:text-indigo-100 mb-4 flex items-center gap-2 text-lg">
-            <Clock className="w-5 h-5" />
-            Seu Horário Hoje {tipoEscala && <span className="text-sm bg-indigo-200 dark:bg-indigo-900 px-2 py-1 rounded">Escala {tipoEscala}</span>}
-          </h3>
+        <div className="bg-gradient-to-r from-blue-50 to-blue-50 dark:from-blue-950 dark:to-blue-950 rounded-xl p-6 mb-6 shadow-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-blue-900 dark:text-blue-100 flex items-center gap-2 text-lg">
+              <Clock className="w-5 h-5" />
+              Seu Horário Hoje {tipoEscala && <span className="text-sm bg-blue-200 dark:bg-blue-900 px-2 py-1 rounded">Escala {tipoEscala}</span>}
+            </h3>
+            <button
+              onClick={() => setEditandoHorarios(!editandoHorarios)}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2"
+            >
+              <Clock className="w-4 h-4" />
+              {editandoHorarios ? 'Salvar' : 'Ajustar Horários'}
+            </button>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-indigo-900/30 rounded-lg p-4 text-center shadow-sm">
+            <div className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Entrada</div>
-              <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100 font-mono">
+              <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">
                 {horariosEsperados.entrada || '--:--'}
               </div>
             </div>
-            <div className="bg-white dark:bg-purple-900/30 rounded-lg p-4 text-center shadow-sm">
+            
+            {/* Campo de Almoço Editável */}
+            <div className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Almoço</div>
-              <div className="text-2xl font-bold text-purple-900 dark:text-purple-100 font-mono">
-                {horariosEsperados.almoco || '--:--'}
-              </div>
+              {editandoHorarios ? (
+                <input
+                  type="time"
+                  value={horariosPersonalizados.almoco || horariosEsperados.almoco || '12:00'}
+                  onChange={(e) => {
+                    setHorariosPersonalizados({
+                      ...horariosPersonalizados,
+                      almoco: e.target.value
+                    });
+                    // Atualizar horários esperados imediatamente
+                    setHorariosEsperados({
+                      ...horariosEsperados,
+                      almoco: e.target.value
+                    });
+                    showToast('Horário de almoço ajustado!', 'success');
+                  }}
+                  className="w-full text-xl font-bold text-blue-900 dark:text-blue-100 font-mono bg-blue-50 dark:bg-blue-900/50 border-2 border-blue-300 dark:border-blue-700 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              ) : (
+                <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">
+                  {horariosPersonalizados.almoco || horariosEsperados.almoco || '--:--'}
+                </div>
+              )}
             </div>
-            <div className="bg-white dark:bg-purple-900/30 rounded-lg p-4 text-center shadow-sm">
+            
+            {/* Campo de Retorno Editável */}
+            <div className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Retorno</div>
-              <div className="text-2xl font-bold text-purple-900 dark:text-purple-100 font-mono">
-                {horariosEsperados.retorno || '--:--'}
-              </div>
+              {editandoHorarios ? (
+                <input
+                  type="time"
+                  value={horariosPersonalizados.retorno || horariosEsperados.retorno || '13:00'}
+                  onChange={(e) => {
+                    setHorariosPersonalizados({
+                      ...horariosPersonalizados,
+                      retorno: e.target.value
+                    });
+                    // Atualizar horários esperados imediatamente
+                    setHorariosEsperados({
+                      ...horariosEsperados,
+                      retorno: e.target.value
+                    });
+                    showToast('Horário de retorno ajustado!', 'success');
+                  }}
+                  className="w-full text-xl font-bold text-blue-900 dark:text-blue-100 font-mono bg-blue-50 dark:bg-blue-900/50 border-2 border-blue-300 dark:border-blue-700 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              ) : (
+                <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">
+                  {horariosPersonalizados.retorno || horariosEsperados.retorno || '--:--'}
+                </div>
+              )}
             </div>
-            <div className="bg-white dark:bg-indigo-900/30 rounded-lg p-4 text-center shadow-sm">
+            
+            <div className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Saída</div>
-              <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100 font-mono">
+              <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">
                 {horariosEsperados.saida || '--:--'}
               </div>
             </div>
           </div>
-          <div className="mt-4 text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg p-3">
-            <strong>⏰ Tolerância:</strong> Você pode bater ponto até 10 minutos antes ou depois do horário. 
+          <div className="mt-4 text-xs text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/40 rounded-lg p-3">
+            <strong>Tolerância:</strong> Você pode bater ponto até 10 minutos antes ou depois do horário. 
             Fora desse período, será registrado como hora positiva (crédito) ou hora negativa (débito).
+            {editandoHorarios && (
+              <div className="mt-2 pt-2 border-t border-blue-300 dark:border-blue-700">
+                <strong>Modo Edição:</strong> Ajuste seus horários de almoço conforme necessário. As mudanças são aplicadas instantaneamente.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -495,11 +559,11 @@ const WorkPontoTab = () => {
       {saldoDia && (
         <div className={`rounded-xl p-6 mb-6 shadow-lg border ${
           saldoDia.saldoMinutos >= 0 
-            ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800'
+            ? 'bg-gradient-to-r from-blue-50 to-blue-50 dark:from-blue-950 dark:to-blue-950 border-blue-200 dark:border-blue-800'
             : 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950 border-red-200 dark:border-red-800'
         }`}>
           <h3 className={`font-bold mb-4 flex items-center gap-2 text-lg ${
-            saldoDia.saldoMinutos >= 0 ? 'text-green-900 dark:text-green-100' : 'text-red-900 dark:text-red-100'
+            saldoDia.saldoMinutos >= 0 ? 'text-blue-900 dark:text-blue-100' : 'text-red-900 dark:text-red-100'
           }`}>
             <TrendingUp className="w-5 h-5" />
             Saldo de Horas Hoje
@@ -520,7 +584,7 @@ const WorkPontoTab = () => {
             <div className="bg-white dark:bg-gray-900/40 rounded-lg p-4 text-center shadow-sm">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Saldo</div>
               <div className={`text-3xl font-bold font-mono ${
-                saldoDia.saldoMinutos >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                saldoDia.saldoMinutos >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'
               }`}>
                 {saldoDia.saldoFormatado || '--:--'}
               </div>
@@ -546,7 +610,7 @@ const WorkPontoTab = () => {
           <div className="mt-4 flex justify-center">
             <button
               onClick={gerarComprovante}
-              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-all shadow-lg flex items-center gap-2"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-lg flex items-center gap-2"
             >
               <FileText className="w-5 h-5" />
               Gerar Comprovante do Dia
@@ -558,18 +622,18 @@ const WorkPontoTab = () => {
       {/* Registros de Hoje */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {registros.map((r) => (
-          <div key={r.tipo} className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 flex items-center gap-4 shadow-sm border border-green-100 dark:border-green-800">
-            <div className="p-2 bg-white dark:bg-green-950 rounded-lg">
-              {r.tipo === 'entrada' && <LogIn className="w-6 h-6 text-green-700" />}
-              {r.tipo === 'saida_almoco' && <Coffee className="w-6 h-6 text-yellow-600" />}
-              {r.tipo === 'retorno_almoco' && <ArrowRightLeft className="w-6 h-6 text-blue-600" />}
+          <div key={r.tipo} className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 flex items-center gap-4 shadow-sm border-2 border-blue-200 dark:border-blue-700">
+            <div className="p-2 bg-white dark:bg-blue-950 rounded-lg shadow-sm">
+              {r.tipo === 'entrada' && <LogIn className="w-6 h-6 text-blue-600" />}
+              {r.tipo === 'saida_almoco' && <Utensils className="w-6 h-6 text-orange-600" />}
+              {r.tipo === 'retorno_almoco' && <ArrowRightLeft className="w-6 h-6 text-teal-600" />}
               {r.tipo === 'saida' && <LogOut className="w-6 h-6 text-red-600" />}
             </div>
             <div className="flex-1">
               <div className="font-semibold text-gray-900 dark:text-white text-lg mb-1">{r.label}</div>
               <div className="text-gray-600 dark:text-gray-300 text-sm">
                 {r.horario ? (
-                  <span className="font-mono text-base text-green-700 dark:text-green-300 flex items-center gap-2">
+                  <span className="font-mono text-base text-blue-700 dark:text-blue-300 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4" />
                     {formatHora(r.horario)}
                   </span>
@@ -579,7 +643,7 @@ const WorkPontoTab = () => {
               </div>
             </div>
             <button
-              className={`px-4 py-2 rounded-lg font-bold text-white transition-all ${r.horario ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-lg'} ${batendo ? 'opacity-60' : ''}`}
+              className={`px-4 py-2 rounded-lg font-bold text-white transition-all ${r.horario ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-lg'} ${batendo ? 'opacity-60' : ''}`}
               disabled={!!r.horario || batendo}
               onClick={() => baterPonto(r.tipo)}
             >
@@ -657,36 +721,20 @@ const WorkPontoTab = () => {
                       {pontos.map((ponto) => (
                         <div 
                           key={ponto.id} 
-                          className={`rounded-lg p-3 border-2 ${
-                            ponto.tipo === 'entrada' 
-                              ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' 
-                              : ponto.tipo === 'saida_almoco'
-                              ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800'
-                              : ponto.tipo === 'retorno_almoco'
-                              ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'
-                              : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'
-                          }`}
+                          className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 dark:from-blue-900/20 dark:to-blue-800/20 dark:border-blue-700 rounded-lg p-3"
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${
-                              ponto.tipo === 'entrada' 
-                                ? 'bg-green-100 dark:bg-green-900/40' 
-                                : ponto.tipo === 'saida_almoco'
-                                ? 'bg-yellow-100 dark:bg-yellow-900/40'
-                                : ponto.tipo === 'retorno_almoco'
-                                ? 'bg-blue-100 dark:bg-blue-900/40'
-                                : 'bg-red-100 dark:bg-red-900/40'
-                            }`}>
-                              {ponto.tipo === 'entrada' && <LogIn className="w-5 h-5 text-green-700 dark:text-green-400" />}
-                              {ponto.tipo === 'saida_almoco' && <Coffee className="w-5 h-5 text-yellow-700 dark:text-yellow-400" />}
-                              {ponto.tipo === 'retorno_almoco' && <ArrowRightLeft className="w-5 h-5 text-blue-700 dark:text-blue-400" />}
-                              {ponto.tipo === 'saida' && <LogOut className="w-5 h-5 text-red-700 dark:text-red-400" />}
+                            <div className="p-2 rounded-lg bg-white dark:bg-blue-950 shadow-sm">
+                              {ponto.tipo === 'entrada' && <LogIn className="w-5 h-5 text-blue-600" />}
+                              {ponto.tipo === 'saida_almoco' && <Utensils className="w-5 h-5 text-orange-600" />}
+                              {ponto.tipo === 'retorno_almoco' && <ArrowRightLeft className="w-5 h-5 text-teal-600" />}
+                              {ponto.tipo === 'saida' && <LogOut className="w-5 h-5 text-red-600" />}
                             </div>
                             <div className="flex-1">
                               <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                {ponto.tipo === 'entrada' ? '🟢 Entrada' :
-                                 ponto.tipo === 'saida_almoco' ? '🟡 Saída Almoço' :
-                                 ponto.tipo === 'retorno_almoco' ? '🔵 Retorno' : '🔴 Saída'}
+                                {ponto.tipo === 'entrada' ? 'Entrada' :
+                                 ponto.tipo === 'saida_almoco' ? 'Saída Almoço' :
+                                 ponto.tipo === 'retorno_almoco' ? 'Retorno' : 'Saída'}
                               </div>
                               <div className="text-lg font-mono font-bold text-gray-900 dark:text-white">
                                 {formatHora(ponto.data)}
@@ -705,7 +753,7 @@ const WorkPontoTab = () => {
       )}
 
       <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-        <strong>ℹ️ Como funciona:</strong> Você pode bater até 4 pontos por dia: início do trabalho, saída para almoço, retorno do almoço e saída do trabalho. Cada ponto só pode ser registrado uma vez por dia.
+        <strong>Como funciona:</strong> Você pode bater até 4 pontos por dia: início do trabalho, saída para almoço, retorno do almoço e saída do trabalho. Cada ponto só pode ser registrado uma vez por dia.
       </div>
 
       {/* Modal de Comprovante */}

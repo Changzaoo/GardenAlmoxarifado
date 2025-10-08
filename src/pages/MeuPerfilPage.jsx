@@ -15,7 +15,7 @@ const MeuPerfilPage = () => {
           <User className="inline w-5 h-5 mr-1" /> Meu Perfil
         </button>
         <button
-          className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-all ${aba === 'workponto' ? 'border-green-600 text-green-700 bg-green-50' : 'border-transparent text-gray-500 bg-gray-100'}`}
+          className={`px-4 py-2 rounded-t-lg font-semibold border-b-2 transition-all ${aba === 'workponto' ? 'border-blue-600 text-blue-700 bg-blue-50' : 'border-transparent text-gray-500 bg-gray-100'}`}
           onClick={() => setAba('workponto')}
         >
           <Clock className="inline w-5 h-5 mr-1" /> WorkPonto
