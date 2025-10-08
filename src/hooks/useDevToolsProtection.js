@@ -11,8 +11,19 @@ export const useDevToolsProtection = () => {
   const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
+    // 🍎 Detectar se está no iOS (deve ser declarado primeiro)
+    const isIOSDevice = () => {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    };
+
     // 🚨 Verificação INICIAL antes de carregar qualquer coisa
     const initialCheck = () => {
+      // 🍎 Pular verificação inicial no iOS
+      if (isIOSDevice()) {
+        return false;
+      }
+      
       const isDevToolsOpen = 
         window.outerWidth - window.innerWidth > 160 ||
         window.outerHeight - window.innerHeight > 160;
@@ -68,8 +79,28 @@ export const useDevToolsProtection = () => {
 
     // ==================== MÉTODOS DE DETECÇÃO DE DEVTOOLS ====================
 
-    // Método 1: Detecção por tamanho de janela (menos sensível)
+    // 🍎 Detectar se está rodando no iOS
+    const isIOS = () => {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    };
+
+    // 🍎 Detectar se está rodando no Safari do iOS
+    const isIOSSafari = () => {
+      const ua = navigator.userAgent;
+      const iOS = /iPad|iPhone|iPod/.test(ua);
+      const webkit = /WebKit/.test(ua);
+      const notChrome = !/CriOS/.test(ua);
+      return iOS && webkit && notChrome;
+    };
+
+    // Método 1: Detecção por tamanho de janela (DESABILITADO NO iOS)
     const checkWindowSize = () => {
+      // 🍎 Desabilitar no iOS - Safari faz zoom que altera dimensões da janela
+      if (isIOS() || isIOSSafari()) {
+        return false;
+      }
+      
       const widthThreshold = window.outerWidth - window.innerWidth > 300;
       const heightThreshold = window.outerHeight - window.innerHeight > 300;
       return widthThreshold || heightThreshold;
@@ -110,8 +141,13 @@ export const useDevToolsProtection = () => {
       return window.Firebug && window.Firebug.chrome && window.Firebug.chrome.isInitialized;
     };
 
-    // Método 6: Detecção por diferença de innerHeight/outerHeight (menos sensível)
+    // Método 6: Detecção por diferença de innerHeight/outerHeight (DESABILITADO NO iOS)
     const checkHeightDifference = () => {
+      // 🍎 Desabilitar no iOS - Safari faz zoom que altera dimensões
+      if (isIOS() || isIOSSafari()) {
+        return false;
+      }
+      
       const threshold = 300;
       return window.outerHeight - window.innerHeight > threshold || 
              window.outerWidth - window.innerWidth > threshold;

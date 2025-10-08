@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Phone, Briefcase, CheckCircle, Package, Clock, ThumbsUp, Gauge, Edit2 } from 'lucide-react';
+import { X, Users, Phone, Briefcase, CheckCircle, Package, Clock, ThumbsUp, Gauge, Edit2, Calendar } from 'lucide-react';
 import CargoSelect from './components/CargoSelect';
 import { useAuth } from '../../hooks/useAuth';
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import AvaliacoesTab from './AvaliacoesTab';
@@ -19,7 +19,12 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
     mediaAvaliacoes: 0,
     totalAvaliacoes: 0,
     avaliacoes: [],
-    pontosDesempenho: 0
+    pontosDesempenho: 0,
+    pontosRegistrados: 0,
+    pontosHoje: 0,
+    pontosSemana: 0,
+    pontosMes: 0,
+    ultimoPonto: null
   });
 
   // Carregar empréstimos do funcionário
@@ -192,11 +197,6 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
         processarTarefas(responsavelSnap);
         processarTarefas(responsavelLowerSnap);
 
-        // Contar empréstimos ativos
-        const emprestimosAtivos = emprestimos.filter(emp => 
-          emp.status === 'ativo' || emp.status === 'emprestado'
-        ).length;
-
         // Calcular pontos das avaliações de desempenho
         const avaliacoesDesempenho = avaliacoes.filter(av => av.tipo === 'desempenho');
         const pontosDesempenho = avaliacoesDesempenho.reduce((sum, av) => {
@@ -204,15 +204,15 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
           return sum + (nota * 10); // 10 pontos por estrela
         }, 0);
 
-        setStats({
+        setStats(prev => ({
+          ...prev,
           tarefasConcluidas,
           tarefasEmAndamento,
-          emprestimosAtivos,
           mediaAvaliacoes: totalAvaliacoes > 0 ? (somaAvaliacoes / totalAvaliacoes) : 0,
           totalAvaliacoes,
           avaliacoes,
           pontosDesempenho
-        });
+        }));
       } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
       }
@@ -221,7 +221,59 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
     if (funcionario?.id) {
       fetchUserStats();
     }
-  }, [funcionario?.id, funcionario?.nome, emprestimos]);
+  }, [funcionario?.id, funcionario?.nome]);
+
+  // Buscar pontos do WorkPonto
+  useEffect(() => {
+    if (!funcionario?.id) return;
+
+    const pontosRef = collection(db, 'pontos');
+    const q = query(
+      pontosRef,
+      where('funcionarioId', '==', String(funcionario.id)),
+      orderBy('timestamp', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const pontos = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Calcular estatísticas
+      const agora = new Date();
+      const hoje = agora.toISOString().split('T')[0];
+      
+      // Início da semana (domingo)
+      const inicioSemana = new Date(agora);
+      inicioSemana.setDate(agora.getDate() - agora.getDay());
+      inicioSemana.setHours(0, 0, 0, 0);
+      
+      // Início do mês
+      const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+
+      const pontosHoje = pontos.filter(p => p.data?.startsWith(hoje)).length;
+      const pontosSemana = pontos.filter(p => {
+        const dataPonto = new Date(p.timestamp);
+        return dataPonto >= inicioSemana;
+      }).length;
+      const pontosMes = pontos.filter(p => {
+        const dataPonto = new Date(p.timestamp);
+        return dataPonto >= inicioMes;
+      }).length;
+
+      setStats(prev => ({
+        ...prev,
+        pontosRegistrados: pontos.length,
+        pontosHoje,
+        pontosSemana,
+        pontosMes,
+        ultimoPonto: pontos[0] || null
+      }));
+    });
+
+    return () => unsubscribe();
+  }, [funcionario?.id]);
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/70 dark:bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
@@ -327,7 +379,7 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
 
           {/* Cards de Estatísticas Modernos */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            {/* Pontos */}
+            {/* Pontos Desempenho */}
             <button
               onClick={() => {/* Pode adicionar ação futura */}}
               className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800 hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer text-left"
@@ -396,6 +448,91 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
               </div>
               <span className="text-2xl font-bold text-purple-900 dark:text-purple-100">{stats.emprestimosAtivos}</span>
             </button>
+          </div>
+
+          {/* Seção de Pontos WorkPonto */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-2xl p-6 border border-blue-200 dark:border-blue-800/30 mb-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
+                <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="text-xl font-bold text-blue-900 dark:text-blue-100">Registro de Pontos WorkPonto</h3>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {/* Total de Pontos */}
+              <div className="bg-white dark:bg-gray-800/50 rounded-xl p-4 border border-blue-100 dark:border-blue-900/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase">Total</span>
+                </div>
+                <span className="text-3xl font-bold text-blue-900 dark:text-blue-100">{stats.pontosRegistrados}</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">pontos registrados</p>
+              </div>
+
+              {/* Pontos Hoje */}
+              <div className="bg-white dark:bg-gray-800/50 rounded-xl p-4 border border-green-100 dark:border-green-900/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <span className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase">Hoje</span>
+                </div>
+                <span className="text-3xl font-bold text-green-900 dark:text-green-100">{stats.pontosHoje}</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">pontos hoje</p>
+              </div>
+
+              {/* Pontos Semana */}
+              <div className="bg-white dark:bg-gray-800/50 rounded-xl p-4 border border-purple-100 dark:border-purple-900/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase">Semana</span>
+                </div>
+                <span className="text-3xl font-bold text-purple-900 dark:text-purple-100">{stats.pontosSemana}</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">pontos nesta semana</p>
+              </div>
+
+              {/* Pontos Mês */}
+              <div className="bg-white dark:bg-gray-800/50 rounded-xl p-4 border border-orange-100 dark:border-orange-900/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  <span className="text-xs font-semibold text-orange-700 dark:text-orange-300 uppercase">Mês</span>
+                </div>
+                <span className="text-3xl font-bold text-orange-900 dark:text-orange-100">{stats.pontosMes}</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">pontos neste mês</p>
+              </div>
+            </div>
+
+            {/* Último Ponto Registrado */}
+            {stats.ultimoPonto && (
+              <div className="bg-white dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                      <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Último Registro</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(stats.ultimoPonto.timestamp).toLocaleDateString('pt-BR')} às{' '}
+                        {new Date(stats.ultimoPonto.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      stats.ultimoPonto.tipo === 'entrada' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' :
+                      stats.ultimoPonto.tipo === 'saida_almoco' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' :
+                      stats.ultimoPonto.tipo === 'retorno_almoco' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' :
+                      'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+                    }`}>
+                      {stats.ultimoPonto.tipo === 'entrada' ? '🟢 Entrada' :
+                       stats.ultimoPonto.tipo === 'saida_almoco' ? '🟠 Saída Almoço' :
+                       stats.ultimoPonto.tipo === 'retorno_almoco' ? '🔵 Retorno Almoço' :
+                       '🔴 Saída'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

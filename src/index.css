@@ -4,6 +4,43 @@
 
 @import './styles/darkMode.css';
 
+/* ========================================
+   🍎 CORREÇÕES ESPECÍFICAS PARA iOS
+   ======================================== */
+
+/* Previne zoom automático no iOS quando foca em inputs */
+@supports (-webkit-touch-callout: none) {
+  /* Garante que inputs tenham pelo menos 16px para evitar zoom no iOS */
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+  
+  /* Previne comportamento de bounce no scroll (iOS) */
+  body {
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Remove delay de tap no iOS */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  
+  /* Permite seleção de texto apenas onde necessário */
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
 :root {
   --background: #ffffff;
   --text: #0F1419;

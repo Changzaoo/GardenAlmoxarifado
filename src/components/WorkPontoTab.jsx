@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, LogIn, LogOut, Coffee, ArrowRightLeft, Clock, CheckCircle, AlertTriangle, TrendingUp, Award, FileText, Edit2, Utensils } from 'lucide-react';
-import { collection, addDoc, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { Calendar, LogIn, LogOut, Coffee, ArrowRightLeft, Clock, CheckCircle, AlertTriangle, TrendingUp, Award, FileText, Edit2, Utensils, RefreshCw } from 'lucide-react';
+import { collection, addDoc, query, where, onSnapshot, doc, getDoc, getDocs, deleteDoc, doc as firestoreDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from './ToastProvider';
@@ -20,6 +20,19 @@ function formatData(date) {
   if (!date) return '';
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleDateString('pt-BR');
+}
+
+// Combina um horário 'HH:mm' com a data de hoje (retorna Date)
+function combinarParaDate(horario) {
+  if (!horario) return null;
+  try {
+    const hoje = new Date();
+    const [h, m] = horario.split(':').map(Number);
+    const resultado = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), h, m, 0, 0);
+    return resultado;
+  } catch (e) {
+    return null;
+  }
 }
 
 // Obter início do dia atual
@@ -59,6 +72,26 @@ const WorkPontoTab = () => {
     retorno: null
   });
   const [editandoHorarios, setEditandoHorarios] = useState(false);
+  const [horasTrabalhadasHoje, setHorasTrabalhadasHoje] = useState({
+    horas: 0,
+    minutos: 0,
+    segundos: 0
+  });
+  const [desdeEntrada, setDesdeEntrada] = useState({ horas: 0, minutos: 0, segundos: 0 });
+  const [tolerancias, setTolerancias] = useState({
+    entrada: null,
+    saida_almoco: null,
+    retorno_almoco: null,
+    saida: null
+  });
+  const [mostrarModalEdicao, setMostrarModalEdicao] = useState(false);
+  const [dataEdicao, setDataEdicao] = useState('');
+  const [pontosEdicao, setPontosEdicao] = useState({
+    entrada: '',
+    saidaAlmoco: '',
+    voltaAlmoco: '',
+    saida: ''
+  });
 
   // Relógio em tempo real
   useEffect(() => {
@@ -67,6 +100,127 @@ const WorkPontoTab = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Calcular horas trabalhadas em tempo real
+  useEffect(() => {
+    const calcularHoras = () => {
+      const entrada = registros.find(r => r.tipo === 'entrada')?.horario;
+      const saidaAlmoco = registros.find(r => r.tipo === 'saida_almoco')?.horario;
+      const retornoAlmoco = registros.find(r => r.tipo === 'retorno_almoco')?.horario;
+      const saida = registros.find(r => r.tipo === 'saida')?.horario;
+
+      if (!entrada) {
+        setHorasTrabalhadasHoje({ horas: 0, minutos: 0, segundos: 0 });
+        return;
+      }
+
+      const agora = new Date();
+      const entradaTime = new Date(entrada);
+      let totalSegundos = 0;
+
+      // Cenário 1: Já bateu saída final (dia completo)
+      if (saida) {
+        const saidaTime = new Date(saida);
+        const saidaAlmocoTime = new Date(saidaAlmoco);
+        const retornoAlmocoTime = new Date(retornoAlmoco);
+        
+        // Manhã: entrada até saída almoço
+        const segundosManha = Math.floor((saidaAlmocoTime - entradaTime) / 1000);
+        
+        // Tarde: retorno almoço até saída
+        const segundosTarde = Math.floor((saidaTime - retornoAlmocoTime) / 1000);
+        
+        totalSegundos = segundosManha + segundosTarde;
+      }
+      // Cenário 2: Voltou do almoço mas ainda não bateu saída (tempo real na tarde)
+      else if (retornoAlmoco) {
+        const saidaAlmocoTime = new Date(saidaAlmoco);
+        const retornoAlmocoTime = new Date(retornoAlmoco);
+        
+        // Manhã: entrada até saída almoço
+        const segundosManha = Math.floor((saidaAlmocoTime - entradaTime) / 1000);
+        
+        // Tarde: retorno almoço até agora (TEMPO REAL)
+        const segundosTarde = Math.floor((agora - retornoAlmocoTime) / 1000);
+        
+        totalSegundos = segundosManha + segundosTarde;
+      }
+      // Cenário 3: Saiu para almoço mas não voltou
+      else if (saidaAlmoco) {
+        const saidaAlmocoTime = new Date(saidaAlmoco);
+        
+        // Apenas manhã: entrada até saída almoço
+        totalSegundos = Math.floor((saidaAlmocoTime - entradaTime) / 1000);
+      }
+      // Cenário 4: Ainda não saiu para almoço (tempo real desde entrada)
+      else {
+        // Desde entrada até agora (TEMPO REAL)
+        totalSegundos = Math.floor((agora - entradaTime) / 1000);
+      }
+
+      // Garantir não negativo
+      if (totalSegundos < 0) totalSegundos = 0;
+
+      // Converter para horas, minutos, segundos
+      const horas = Math.floor(totalSegundos / 3600);
+      const minutos = Math.floor((totalSegundos % 3600) / 60);
+      const segundos = totalSegundos % 60;
+
+      setHorasTrabalhadasHoje({ horas, minutos, segundos });
+
+      // Calcular tempo desde a entrada (entrada -> agora ou entrada -> saida_almoco se bateu almoço?)
+      try {
+        const agora = new Date();
+        if (!entrada) {
+          setDesdeEntrada({ horas: 0, minutos: 0, segundos: 0 });
+        } else {
+          const entradaTime = new Date(entrada);
+          // Se já bateu saída final, calcular até a saída
+          const fimParaDesde = saida ? new Date(saida) : agora;
+          const totalSegDesde = Math.max(0, Math.floor((fimParaDesde - entradaTime) / 1000));
+          const h = Math.floor(totalSegDesde / 3600);
+          const m = Math.floor((totalSegDesde % 3600) / 60);
+          const s = totalSegDesde % 60;
+          setDesdeEntrada({ horas: h, minutos: m, segundos: s });
+        }
+      } catch (e) {
+        console.error('Erro ao calcular desdeEntrada', e);
+      }
+
+      // Calcular tolerância para cada ponto comparando com horáriosEsperados
+      try {
+        const novo = { entrada: null, saida_almoco: null, retorno_almoco: null, saida: null };
+        const esperado = horariosEsperados || {};
+
+        if (entrada && esperado.entrada) {
+          const v = validarTolerancia(combinarParaDate(esperado.entrada), entrada);
+          novo.entrada = v;
+        }
+        if (saidaAlmoco && (esperado.almoco || esperado.saida)) {
+          const horarioEsperado = esperado.almoco || esperado.saida;
+          const v = validarTolerancia(combinarParaDate(horarioEsperado), saidaAlmoco);
+          novo.saida_almoco = v;
+        }
+        if (retornoAlmoco && esperado.retorno) {
+          const v = validarTolerancia(combinarParaDate(esperado.retorno), retornoAlmoco);
+          novo.retorno_almoco = v;
+        }
+        if (saida && esperado.saida) {
+          const v = validarTolerancia(combinarParaDate(esperado.saida), saida);
+          novo.saida = v;
+        }
+
+        setTolerancias(novo);
+      } catch (e) {
+        console.error('Erro ao calcular tolerancias', e);
+      }
+    };
+
+    calcularHoras();
+    const interval = setInterval(calcularHoras, 1000);
+
+    return () => clearInterval(interval);
+  }, [registros]);
 
   // Carregar dados do funcionário e horários esperados
   useEffect(() => {
@@ -435,6 +589,232 @@ const WorkPontoTab = () => {
     }
   };
 
+  // Carregar pontos quando a data de edição é selecionada
+  useEffect(() => {
+    if (!dataEdicao || !usuario?.id || !mostrarModalEdicao) return;
+
+    const carregarPontosDia = async () => {
+      try {
+        const userId = usuario.id || usuario.uid;
+        const q = query(
+          collection(db, 'pontos'),
+          where('funcionarioId', '==', String(userId))
+        );
+
+        const snapshot = await getDocs(q);
+        
+        const pontosDoDia = snapshot.docs
+          .map(doc => doc.data())
+          .filter(ponto => {
+            const dataPonto = new Date(ponto.timestamp).toISOString().split('T')[0];
+            return dataPonto === dataEdicao;
+          });
+
+        if (pontosDoDia.length > 0) {
+          const pontosOrganizados = {
+            entrada: '',
+            saidaAlmoco: '',
+            voltaAlmoco: '',
+            saida: ''
+          };
+
+          pontosDoDia.forEach(ponto => {
+            const hora = new Date(ponto.timestamp).toLocaleTimeString('pt-BR', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            });
+
+            switch(ponto.tipo) {
+              case 'entrada':
+                pontosOrganizados.entrada = hora;
+                break;
+              case 'saida_almoco':
+                pontosOrganizados.saidaAlmoco = hora;
+                break;
+              case 'retorno_almoco':
+                pontosOrganizados.voltaAlmoco = hora;
+                break;
+              case 'saida':
+                pontosOrganizados.saida = hora;
+                break;
+            }
+          });
+
+          setPontosEdicao(pontosOrganizados);
+        } else {
+          setPontosEdicao({
+            entrada: '',
+            saidaAlmoco: '',
+            voltaAlmoco: '',
+            saida: ''
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao carregar pontos:', error);
+      }
+    };
+
+    carregarPontosDia();
+  }, [dataEdicao, usuario?.id, mostrarModalEdicao]);
+
+  // Função para abrir modal de edição
+  const abrirModalEdicao = () => {
+    const hoje = new Date().toISOString().split('T')[0];
+    setDataEdicao(hoje);
+    setMostrarModalEdicao(true);
+  };
+
+  // Função para salvar pontos editados
+  const salvarPontosEditados = async () => {
+    if (!dataEdicao) {
+      showToast('Selecione uma data válida', 'error');
+      return;
+    }
+
+    // Validar formato de horários (HH:MM)
+    const regexHorario = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    const pontosValidos = Object.entries(pontosEdicao).filter(([_, valor]) => valor !== '');
+    
+    for (const [campo, valor] of pontosValidos) {
+      if (!regexHorario.test(valor)) {
+        showToast(`Horário inválido no campo ${campo}. Use o formato HH:MM`, 'error');
+        return;
+      }
+    }
+
+    try {
+      showToast('Salvando pontos...', 'info');
+      
+      const userId = usuario.id || usuario.uid;
+      const { getDocs } = await import('firebase/firestore');
+      
+      // Buscar pontos existentes do dia
+      const q = query(
+        collection(db, 'pontos'),
+        where('funcionarioId', '==', String(userId))
+      );
+      
+      const snapshot = await getDocs(q);
+      const pontosDoDia = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        const dataPonto = new Date(data.timestamp).toISOString().split('T')[0];
+        return dataPonto === dataEdicao;
+      });
+
+      // Deletar pontos antigos e criar novos
+      const { deleteDoc, doc: firestoreDoc } = await import('firebase/firestore');
+      
+      for (const pontoDoc of pontosDoDia) {
+        await deleteDoc(firestoreDoc(db, 'pontos', pontoDoc.id));
+      }
+
+      // Criar novos pontos com horários corrigidos
+      const dataBase = new Date(dataEdicao);
+      
+      if (pontosEdicao.entrada) {
+        const [hora, minuto] = pontosEdicao.entrada.split(':');
+        const timestamp = new Date(dataBase);
+        timestamp.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+        
+        await addDoc(collection(db, 'pontos'), {
+          funcionarioId: String(userId),
+          funcionarioNome: usuario.nome || usuario.usuario || 'Sem nome',
+          tipo: 'entrada',
+          data: timestamp.toISOString(),
+          timestamp: timestamp.getTime()
+        });
+      }
+
+      if (pontosEdicao.saidaAlmoco) {
+        const [hora, minuto] = pontosEdicao.saidaAlmoco.split(':');
+        const timestamp = new Date(dataBase);
+        timestamp.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+        
+        await addDoc(collection(db, 'pontos'), {
+          funcionarioId: String(userId),
+          funcionarioNome: usuario.nome || usuario.usuario || 'Sem nome',
+          tipo: 'saida_almoco',
+          data: timestamp.toISOString(),
+          timestamp: timestamp.getTime()
+        });
+      }
+
+      if (pontosEdicao.voltaAlmoco) {
+        const [hora, minuto] = pontosEdicao.voltaAlmoco.split(':');
+        const timestamp = new Date(dataBase);
+        timestamp.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+        
+        await addDoc(collection(db, 'pontos'), {
+          funcionarioId: String(userId),
+          funcionarioNome: usuario.nome || usuario.usuario || 'Sem nome',
+          tipo: 'retorno_almoco',
+          data: timestamp.toISOString(),
+          timestamp: timestamp.getTime()
+        });
+      }
+
+      if (pontosEdicao.saida) {
+        const [hora, minuto] = pontosEdicao.saida.split(':');
+        const timestamp = new Date(dataBase);
+        timestamp.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+        
+        await addDoc(collection(db, 'pontos'), {
+          funcionarioId: String(userId),
+          funcionarioNome: usuario.nome || usuario.usuario || 'Sem nome',
+          tipo: 'saida',
+          data: timestamp.toISOString(),
+          timestamp: timestamp.getTime()
+        });
+      }
+
+      showToast('✓ Pontos corrigidos com sucesso!', 'success');
+      setMostrarModalEdicao(false);
+      setPontosEdicao({
+        entrada: '',
+        saidaAlmoco: '',
+        voltaAlmoco: '',
+        saida: ''
+      });
+
+      // Forçar atualização imediata dos registros
+      // Aguardar um pouco para o Firestore processar
+      setTimeout(() => {
+        // O onSnapshot do historico já vai recarregar automaticamente
+        // Mas vamos forçar recalculo dos registros de hoje
+        const hoje = new Date().toISOString().split('T')[0];
+        const pontosHoje = historico.filter(ponto => {
+          const dataPonto = new Date(ponto.timestamp).toISOString().split('T')[0];
+          return dataPonto === hoje;
+        });
+
+        // Atualizar registros localmente para recalculo imediato
+        const novosRegistros = {
+          entrada: { tipo: 'entrada', horario: null },
+          saida_almoco: { tipo: 'saida_almoco', horario: null },
+          retorno_almoco: { tipo: 'retorno_almoco', horario: null },
+          saida: { tipo: 'saida', horario: null }
+        };
+
+        pontosHoje.forEach(ponto => {
+          if (novosRegistros[ponto.tipo]) {
+            novosRegistros[ponto.tipo].horario = new Date(ponto.timestamp);
+          }
+        });
+
+        setRegistros([
+          novosRegistros.entrada,
+          novosRegistros.saida_almoco,
+          novosRegistros.retorno_almoco,
+          novosRegistros.saida
+        ]);
+      }, 500);
+    } catch (error) {
+      console.error('Erro ao salvar pontos:', error);
+      showToast('Erro ao salvar pontos. Tente novamente.', 'error');
+    }
+  };
+
   return (
     <div>
       {/* Cabeçalho com relógio em tempo real */}
@@ -451,6 +831,17 @@ const WorkPontoTab = () => {
             <div className="text-white text-sm font-semibold mb-1">Hora Atual</div>
             <div className="text-white text-2xl font-bold font-mono">
               {horaAtual.toLocaleTimeString('pt-BR')}
+            </div>
+          </div>
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl px-6 py-3 shadow-lg">
+            <div className="text-white text-sm font-semibold mb-1 flex items-center gap-2">
+              <RefreshCw className="w-3 h-3 animate-spin" />
+              Horas contabilizadas hoje
+            </div>
+            <div className="text-white text-lg font-bold font-mono">
+              {String(horasTrabalhadasHoje.horas).padStart(2, '0')}h{' '}
+              {String(horasTrabalhadasHoje.minutos).padStart(2, '0')}m{' '}
+              {String(horasTrabalhadasHoje.segundos).padStart(2, '0')}s
             </div>
           </div>
         </div>
@@ -633,10 +1024,18 @@ const WorkPontoTab = () => {
               <div className="font-semibold text-gray-900 dark:text-white text-lg mb-1">{r.label}</div>
               <div className="text-gray-600 dark:text-gray-300 text-sm">
                 {r.horario ? (
-                  <span className="font-mono text-base text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    {formatHora(r.horario)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-base text-blue-700 dark:text-blue-300">{formatHora(r.horario)}</span>
+                    {/* Indicador de tolerância */}
+                    {tolerancias[r.tipo] && (
+                      <span className="text-xs ml-2 rounded px-2 py-0.5 font-semibold" style={{
+                        background: tolerancias[r.tipo].dentroTolerancia ? 'rgba(16,185,129,0.15)' : (tolerancias[r.tipo].tipo === 'atrasado' || tolerancias[r.tipo].tipo === 'adiantado' ? 'rgba(239,68,68,0.12)' : 'rgba(250,204,21,0.12)'),
+                        color: tolerancias[r.tipo].dentroTolerancia ? '#10B981' : (tolerancias[r.tipo].tipo === 'atrasado' || tolerancias[r.tipo].tipo === 'adiantado' ? '#DC2626' : '#F59E0B')
+                      }}>
+                        {tolerancias[r.tipo].dentroTolerancia ? 'Dentro ±10m' : tolerancias[r.tipo].tipo === 'atrasado' ? 'Atrasado' : tolerancias[r.tipo].tipo === 'adiantado' ? 'Adiantado' : (tolerancias[r.tipo].tipo === 'hora_positiva' ? 'Hora positiva' : 'Hora negativa')}
+                      </span>
+                    )}
+                  </div>
                 ) : (
                   <span className="italic text-gray-400">Não registrado</span>
                 )}
@@ -763,6 +1162,132 @@ const WorkPontoTab = () => {
           onClose={() => setShowComprovanteModal(false)}
           dados={comprovanteData}
         />
+      )}
+
+      {/* Modal de Edição de Pontos */}
+      {mostrarModalEdicao && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setMostrarModalEdicao(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Cabeçalho */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-t-2xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Edit2 className="w-6 h-6" />
+                <h3 className="text-xl font-bold">Corrigir Pontos do Dia</h3>
+              </div>
+              <button
+                onClick={() => setMostrarModalEdicao(false)}
+                className="hover:bg-white/20 rounded-lg p-2 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-6 space-y-6">
+              {/* Seletor de Data */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Selecione a Data
+                </label>
+                <input
+                  type="date"
+                  value={dataEdicao}
+                  onChange={(e) => setDataEdicao(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Campos de Horário */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-green-600" />
+                    1º Ponto (Entrada)
+                  </label>
+                  <input
+                    type="time"
+                    value={pontosEdicao.entrada}
+                    onChange={(e) => setPontosEdicao({...pontosEdicao, entrada: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-orange-600" />
+                    2º Ponto (Saída Almoço)
+                  </label>
+                  <input
+                    type="time"
+                    value={pontosEdicao.saidaAlmoco}
+                    onChange={(e) => setPontosEdicao({...pontosEdicao, saidaAlmoco: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-600" />
+                    3º Ponto (Volta Almoço)
+                  </label>
+                  <input
+                    type="time"
+                    value={pontosEdicao.voltaAlmoco}
+                    onChange={(e) => setPontosEdicao({...pontosEdicao, voltaAlmoco: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-red-600" />
+                    4º Ponto (Saída)
+                  </label>
+                  <input
+                    type="time"
+                    value={pontosEdicao.saida}
+                    onChange={(e) => setPontosEdicao({...pontosEdicao, saida: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Informação */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                <div className="flex gap-3">
+                  <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    <p className="font-semibold mb-1">Como funciona:</p>
+                    <ul className="space-y-1 text-xs">
+                      <li>• Preencha apenas os pontos que deseja corrigir</li>
+                      <li>• Deixe em branco os que não precisam ser alterados</li>
+                      <li>• Use o formato 24 horas (ex: 14:30)</li>
+                      <li>• A correção substitui os pontos existentes</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões */}
+              <div className="flex gap-3">
+                <button
+                  onClick={salvarPontosEditados}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Salvar Correções
+                </button>
+                <button
+                  onClick={() => setMostrarModalEdicao(false)}
+                  className="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-bold transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

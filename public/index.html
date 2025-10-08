@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/logo.png" type="image/png" />
     
-    <!-- Viewport otimizado para mobile -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+    <!-- Viewport otimizado para mobile - Previne zoom no iOS em campos de input -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <!-- Theme Color - Será atualizado dinamicamente via JavaScript -->
     <meta name="theme-color" content="#3b82f6" id="theme-color-meta" />
@@ -20,11 +20,19 @@
     <meta name="apple-mobile-web-app-title" content="Workflow" />
     <meta name="format-detection" content="telephone=no" />
     
-    <!-- iOS Icons -->
+    <!-- iOS Icons - PWA Splash Screens -->
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="%PUBLIC_URL%/logo.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/logo.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/logo.png" />
     <link rel="apple-touch-icon" sizes="167x167" href="%PUBLIC_URL%/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/logo.png" />
+    <link rel="apple-touch-icon" sizes="1024x1024" href="%PUBLIC_URL%/logo.png" />
+    
+    <!-- iOS Splash Screens para diferentes dispositivos -->
+    <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/logo.png" />
+    
+    <!-- iOS Orientação -->
+    <meta name="apple-mobile-web-app-orientation" content="portrait" />
     
     <!-- Android/PWA -->
     <link rel="manifest" href="/manifest.json?v=2.0" />

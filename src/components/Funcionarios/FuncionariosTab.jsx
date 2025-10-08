@@ -37,6 +37,7 @@ import CardFuncionarioModerno from './components/CardFuncionarioModerno';
 import ModalEditar from './components/ModalEditar';
 import ModalConfirmacao from './components/ModalConfirmacao';
 import ModalDetalhesEstatisticas from './components/ModalDetalhesEstatisticas';
+import DetalhesHorasModal from '../WorkPonto/DetalhesHorasModal';
 
 // Função para formatar número de telefone
 const formatarTelefone = (telefone) => {
@@ -177,7 +178,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
     return funcionarios.filter(func => {
       // Filtro por texto de busca
       const matchesSearch = func.nome?.toLowerCase().includes(searchLower) ||
-                           func.cargo?.toLowerCase().includes(searchLower) ||
+                           (func.cargo && typeof func.cargo === 'string' ? func.cargo.toLowerCase().includes(searchLower) : false) ||
                            func.telefone?.includes(searchTerm) ||
                            func.email?.toLowerCase().includes(searchLower) ||
                            func.matricula?.toLowerCase().includes(searchLower) ||
@@ -835,7 +836,14 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
       </div>
 
       {/* Modal de Detalhes das Estatísticas */}
-      {estatisticaExpandida && (
+      {estatisticaExpandida && estatisticaExpandida.tipo === 'horas' ? (
+        <DetalhesHorasModal
+          isOpen={true}
+          onClose={() => setEstatisticaExpandida(null)}
+          funcionarioId={estatisticaExpandida.funcionario?.id}
+          funcionarioNome={estatisticaExpandida.funcionario?.nome}
+        />
+      ) : estatisticaExpandida && (
         <ModalDetalhesEstatisticas
           isOpen={true}
           onClose={() => setEstatisticaExpandida(null)}

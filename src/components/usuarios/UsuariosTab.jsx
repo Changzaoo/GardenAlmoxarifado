@@ -996,8 +996,8 @@ const UsuariosTab = () => {
 
       {/* Modal de Usuário */}
       {mostrarModal && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-w-md w-full flex flex-col max-h-[90vh] md:max-h-[85vh]`}>
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4 pb-20 md:pb-4">
+          <div className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-w-md w-full flex flex-col max-h-[75vh] md:max-h-[85vh]`}>
             {/* Header fixo */}
             <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <h3 className={`text-lg md:text-xl font-bold ${colors.text}`}>

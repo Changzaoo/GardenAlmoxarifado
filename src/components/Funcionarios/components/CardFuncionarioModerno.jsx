@@ -76,25 +76,67 @@ const CardFuncionarioModerno = memo(({
         );
 
         const snapshot = await getDocs(q);
-        const pontos = snapshot.docs
+        const pontosMes = snapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter(ponto => {
-            const dataPonto = new Date(ponto.data);
+            const dataPonto = new Date(ponto.timestamp || ponto.data);
             return dataPonto >= primeiroDiaMes;
           });
 
+        // Agrupar pontos por dia (data sem hora)
+        const pontosPorDia = {};
+        pontosMes.forEach(ponto => {
+          const data = new Date(ponto.timestamp || ponto.data);
+          const dataKey = data.toISOString().split('T')[0];
+          
+          if (!pontosPorDia[dataKey]) {
+            pontosPorDia[dataKey] = {
+              entrada: null,
+              saida_almoco: null,
+              retorno_almoco: null,
+              saida: null
+            };
+          }
+          
+          pontosPorDia[dataKey][ponto.tipo] = data;
+        });
+
         // Calcular total de minutos trabalhados
         let totalMinutos = 0;
-        pontos.forEach(ponto => {
-          if (ponto.horasTrabalhadas) {
-            const [horas, minutos] = ponto.horasTrabalhadas.split(':').map(Number);
-            totalMinutos += (horas * 60) + minutos;
+        let diasComPonto = 0;
+
+        Object.values(pontosPorDia).forEach(dia => {
+          if (!dia.entrada) return; // Precisa pelo menos entrada
+          
+          let minutosDia = 0;
+          
+          // Se tem saída final, calcular dia completo
+          if (dia.saida && dia.saida_almoco && dia.retorno_almoco) {
+            // Manhã: entrada -> saída almoço
+            const manha = (dia.saida_almoco - dia.entrada) / (1000 * 60);
+            // Tarde: retorno almoço -> saída
+            const tarde = (dia.saida - dia.retorno_almoco) / (1000 * 60);
+            minutosDia = manha + tarde;
+            diasComPonto++;
           }
+          // Se voltou do almoço mas não bateu saída
+          else if (dia.retorno_almoco && dia.saida_almoco) {
+            const manha = (dia.saida_almoco - dia.entrada) / (1000 * 60);
+            minutosDia = manha;
+            diasComPonto++;
+          }
+          // Se saiu para almoço mas não voltou
+          else if (dia.saida_almoco) {
+            const manha = (dia.saida_almoco - dia.entrada) / (1000 * 60);
+            minutosDia = manha;
+            diasComPonto++;
+          }
+          
+          totalMinutos += Math.max(0, minutosDia);
         });
 
         // Calcular saldo (diferença entre trabalhado e esperado)
-        const diasTrabalhados = pontos.length;
-        const horasEsperadas = diasTrabalhados * 8 * 60; // 8 horas por dia em minutos
+        const horasEsperadas = diasComPonto * 8 * 60; // 8 horas por dia em minutos
         const saldoMinutos = totalMinutos - horasEsperadas;
 
         const formatarHoras = (minutos) => {
@@ -108,7 +150,7 @@ const CardFuncionarioModerno = memo(({
           saldoMinutos: saldoMinutos,
           saldoFormatado: formatarHoras(saldoMinutos),
           positivo: saldoMinutos >= 0,
-          diasTrabalhados: diasTrabalhados
+          diasTrabalhados: diasComPonto
         });
       } catch (error) {
         console.error('Erro ao buscar horas do funcionário:', error);

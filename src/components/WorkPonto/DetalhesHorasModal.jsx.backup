@@ -1,0 +1,853 @@
+import React, { useState, useEffect } from 'react';
+import { motion, Anim    // Função para processar documentos
+    const processarDocumentos = (snapshot) => {
+      console.log('📦 [DetalhesHoras] Total documentos encontrados:', snapshot.docs.length);
+      
+      // Listar TODOS os funcionarioId encontrados para comparação
+      const idsEncontrados = snapshot.docs.map(doc => doc.data().funcionarioId);
+      console.log('🆔 [DetalhesHoras] IDs no Firestore:', idsEncontrados);
+      console.log('🎯 [DetalhesHoras] ID procurado:', String(targetUserId));
+      
+      const hoje = new Date();
+      const hojeStr = hoje.toLocaleDateString('pt-BR');
+      console.log('📅 [DetalhesHoras] Data de hoje:', hojeStr);} from 'framer-motion';
+import { 
+  X, 
+  Clock,
+  Edit3,
+  RefreshCw,
+  Calendar,
+  CheckCircle,
+  Save
+} from 'lucide-react';
+import { collection, query, where, getDocs, addDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebaseConfig';
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../ToastProvider';
+
+const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome }) => {
+  const { usuario } = useAuth();
+  const { showToast } = useToast();
+  
+  // Usar funcionarioId passado como prop ou o usuário logado
+  const targetUserId = funcionarioId || usuario?.id;
+  const targetUserName = funcionarioNome || usuario?.nome;
+  
+  console.log('🎯 [DetalhesHoras] Modal inicializado:', {
+    isOpen,
+    funcionarioId,
+    funcionarioNome,
+    targetUserId,
+    targetUserName,
+    usuarioLogado: usuario?.nome
+  });
+  
+  const [tempoReal, setTempoReal] = useState({
+    horas: 0,
+    minutos: 0,
+    segundos: 0
+  });
+  const [pontoDia, setPontoDia] = useState(null);
+  const [mostrarModalEdicao, setMostrarModalEdicao] = useState(false);
+  const [dataEdicao, setDataEdicao] = useState('');
+  const [pontosEdicao, setPontosEdicao] = useState({
+    entrada: '',
+    saidaAlmoco: '',
+    voltaAlmoco: '',
+    saida: ''
+  });
+
+  // Buscar pontos do dia em tempo real
+  useEffect(() => {
+    if (!isOpen || !targetUserId) {
+      console.log('⏭️ [DetalhesHoras] Pulando busca:', { isOpen, targetUserId });
+      return;
+    }
+
+    console.log('🔍 [DetalhesHoras] Iniciando busca de pontos...');
+    console.log('👤 [DetalhesHoras] Target User:', targetUserId, '(', typeof targetUserId, ')');
+    console.log('👤 [DetalhesHoras] Target Name:', targetUserName);
+    console.log('👤 [DetalhesHoras] Usuario logado:', usuario);
+    
+    // Tentar múltiplas formas de buscar
+    const queries = [
+      // Buscar por funcionarioId como string
+      query(collection(db, 'pontos'), where('funcionarioId', '==', String(targetUserId))),
+      // Buscar por funcionarioNome
+      query(collection(db, 'pontos'), where('funcionarioNome', '==', targetUserName))
+    ];
+    
+    // Vamos usar a primeira query por enquanto, mas buscar por ambos
+    const q = query(
+      collection(db, 'pontos'),
+      where('funcionarioId', '==', String(targetUserId))
+    );
+
+    // Usar onSnapshot para atualização em tempo real
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('� [DetalhesHoras] Total documentos encontrados:', snapshot.docs.length);
+      
+      // Listar TODOS os funcionarioId encontrados para comparação
+      const idsEncontrados = snapshot.docs.map(doc => doc.data().funcionarioId);
+      console.log('🆔 [DetalhesHoras] IDs no Firestore:', idsEncontrados);
+      console.log('🎯 [DetalhesHoras] ID procurado:', String(targetUserId));
+      
+      const hoje = new Date();
+      const hojeStr = hoje.toLocaleDateString('pt-BR');
+      console.log('📅 [DetalhesHoras] Data de hoje:', hojeStr);
+      
+      const pontosHoje = {
+        entrada: null,
+        saidaAlmoco: null,
+        voltaAlmoco: null,
+        saida: null
+      };
+
+      snapshot.docs.forEach((doc) => {
+        const pontoData = doc.data();
+        console.log('📄 [DetalhesHoras] Documento:', {
+          id: doc.id,
+          tipo: pontoData.tipo,
+          data: pontoData.data,
+          timestamp: pontoData.timestamp,
+          funcionarioId: pontoData.funcionarioId,
+          funcionarioNome: pontoData.funcionarioNome
+        });
+        
+        if (!pontoData || !pontoData.tipo) return;
+        
+        // Converter a data do ponto - priorizar timestamp se existir
+        let dataPonto;
+        if (pontoData.timestamp && typeof pontoData.timestamp === 'number') {
+          // Usar timestamp numérico (mais confiável)
+          dataPonto = new Date(pontoData.timestamp);
+          console.log('📅 [DetalhesHoras] Usando timestamp:', pontoData.timestamp, '→', dataPonto);
+        } else if (pontoData.data) {
+          // Usar campo data como fallback
+          if (typeof pontoData.data.toDate === 'function') {
+            dataPonto = pontoData.data.toDate();
+          } else if (typeof pontoData.data === 'string') {
+            dataPonto = new Date(pontoData.data);
+          } else if (pontoData.data.seconds) {
+            dataPonto = new Date(pontoData.data.seconds * 1000);
+          } else {
+            dataPonto = new Date(pontoData.data);
+          }
+          console.log('📅 [DetalhesHoras] Usando data:', pontoData.data, '→', dataPonto);
+        } else {
+          console.warn('⚠️ [DetalhesHoras] Documento sem data/timestamp válido');
+          return;
+        }
+        
+        // Validar data
+        if (isNaN(dataPonto.getTime())) {
+          console.warn('⚠️ [DetalhesHoras] Data inválida:', data.data);
+          return;
+        }
+        
+        const dataPontoStr = dataPonto.toLocaleDateString('pt-BR');
+        console.log('📅 [DetalhesHoras] Data ponto:', dataPontoStr, 'vs Hoje:', hojeStr);
+        
+        // Apenas pontos de hoje
+        if (dataPontoStr === hojeStr) {
+          const hora = dataPonto.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          console.log('✅ [DetalhesHoras] Ponto de hoje encontrado:', data.tipo, hora);
+
+          // Validar hora (evitar horários inválidos)
+          if (hora === '--:--' || hora === '00:00') {
+            console.warn('⚠️ [DetalhesHoras] Hora inválida:', hora);
+            return;
+          }
+
+          switch(pontoData.tipo) {
+            case 'entrada':
+              if (!pontosHoje.entrada) {
+                pontosHoje.entrada = hora;
+                console.log('✅ [DetalhesHoras] Entrada registrada:', hora);
+              }
+              break;
+            case 'saida_almoco':
+              if (!pontosHoje.saidaAlmoco) {
+                pontosHoje.saidaAlmoco = hora;
+                console.log('✅ [DetalhesHoras] Saída almoço registrada:', hora);
+              }
+              break;
+            case 'retorno_almoco':
+              if (!pontosHoje.voltaAlmoco) {
+                pontosHoje.voltaAlmoco = hora;
+                console.log('✅ [DetalhesHoras] Volta almoço registrada:', hora);
+              }
+              break;
+            case 'saida':
+              if (!pontosHoje.saida) {
+                pontosHoje.saida = hora;
+                console.log('✅ [DetalhesHoras] Saída registrada:', hora);
+              }
+              break;
+          }
+        } else {
+          console.log('📆 [DetalhesHoras] Ponto de outro dia ignorado:', dataPontoStr);
+        }
+      });
+
+      console.log('🎯 [DetalhesHoras] Pontos consolidados:', pontosHoje);
+      setPontoDia(pontosHoje);
+    }, (error) => {
+      console.error('Erro ao buscar pontos do dia:', error);
+      showToast('Erro ao carregar pontos do dia', 'error');
+    });
+
+    return () => unsubscribe();
+  }, [isOpen, targetUserId, showToast]);
+
+  // Calcular horas trabalhadas em tempo real
+  useEffect(() => {
+    if (!isOpen || !pontoDia) {
+      return;
+    }
+
+    const calcularTempoReal = () => {
+      const agora = new Date();
+      
+      const horarioEntrada = pontoDia.entrada;
+      const horarioSaidaAlmoco = pontoDia.saidaAlmoco;
+      const horarioVoltaAlmoco = pontoDia.voltaAlmoco;
+      const horarioSaida = pontoDia.saida;
+      
+      // Se não tem entrada, zerar o contador
+      if (!horarioEntrada) {
+        setTempoReal({ horas: 0, minutos: 0, segundos: 0 });
+        return;
+      }
+      
+      // Converter horário de entrada para Date de hoje
+      const [horaEntrada, minutoEntrada] = horarioEntrada.split(':').map(Number);
+      const entrada = new Date();
+      entrada.setHours(horaEntrada, minutoEntrada, 0, 0);
+      
+      let totalSegundosTrabalhados = 0;
+      
+      // Se já bateu o ponto de saída, usa o valor fixo
+      if (horarioSaida && horarioSaidaAlmoco && horarioVoltaAlmoco) {
+        const [horaSaida, minutoSaida] = horarioSaida.split(':').map(Number);
+        const saida = new Date();
+        saida.setHours(horaSaida, minutoSaida, 0, 0);
+        
+        const [horaSaidaAlmoco, minutoSaidaAlmoco] = horarioSaidaAlmoco.split(':').map(Number);
+        const saidaAlmoco = new Date();
+        saidaAlmoco.setHours(horaSaidaAlmoco, minutoSaidaAlmoco, 0, 0);
+        
+        const [horaVoltaAlmoco, minutoVoltaAlmoco] = horarioVoltaAlmoco.split(':').map(Number);
+        const voltaAlmoco = new Date();
+        voltaAlmoco.setHours(horaVoltaAlmoco, minutoVoltaAlmoco, 0, 0);
+        
+        // Manhã + Tarde
+        const segundosManha = Math.floor((saidaAlmoco - entrada) / 1000);
+        const segundosTarde = Math.floor((saida - voltaAlmoco) / 1000);
+        totalSegundosTrabalhados = segundosManha + segundosTarde;
+      }
+      // Se voltou do almoço, mas não bateu saída ainda (tempo real)
+      else if (horarioVoltaAlmoco && horarioSaidaAlmoco) {
+        const [horaSaidaAlmoco, minutoSaidaAlmoco] = horarioSaidaAlmoco.split(':').map(Number);
+        const saidaAlmoco = new Date();
+        saidaAlmoco.setHours(horaSaidaAlmoco, minutoSaidaAlmoco, 0, 0);
+        
+        const [horaVoltaAlmoco, minutoVoltaAlmoco] = horarioVoltaAlmoco.split(':').map(Number);
+        const voltaAlmoco = new Date();
+        voltaAlmoco.setHours(horaVoltaAlmoco, minutoVoltaAlmoco, 0, 0);
+        
+        // Manhã + Tarde até agora (TEMPO REAL)
+        const segundosManha = Math.floor((saidaAlmoco - entrada) / 1000);
+        const segundosTarde = Math.floor((agora - voltaAlmoco) / 1000);
+        totalSegundosTrabalhados = segundosManha + segundosTarde;
+      }
+      // Se saiu para almoço mas ainda não voltou
+      else if (horarioSaidaAlmoco) {
+        const [horaSaidaAlmoco, minutoSaidaAlmoco] = horarioSaidaAlmoco.split(':').map(Number);
+        const saidaAlmoco = new Date();
+        saidaAlmoco.setHours(horaSaidaAlmoco, minutoSaidaAlmoco, 0, 0);
+        
+        totalSegundosTrabalhados = Math.floor((saidaAlmoco - entrada) / 1000);
+      }
+      // Se ainda não saiu para almoço (tempo real desde entrada)
+      else {
+        totalSegundosTrabalhados = Math.floor((agora - entrada) / 1000);
+      }
+      
+      // Garantir que não seja negativo
+      if (totalSegundosTrabalhados < 0) totalSegundosTrabalhados = 0;
+      
+      // Converter para horas, minutos e segundos
+      const horas = Math.floor(totalSegundosTrabalhados / 3600);
+      const minutos = Math.floor((totalSegundosTrabalhados % 3600) / 60);
+      const segundos = totalSegundosTrabalhados % 60;
+      
+      setTempoReal({ horas, minutos, segundos });
+    };
+
+    // Calcular imediatamente e depois a cada segundo
+    calcularTempoReal();
+    const interval = setInterval(calcularTempoReal, 1000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, pontoDia]);
+
+  // Carregar pontos quando abre modal de edição
+  useEffect(() => {
+    if (!mostrarModalEdicao || !dataEdicao || !targetUserId) return;
+
+    const carregarPontosDia = async () => {
+      try {
+        const q = query(
+          collection(db, 'pontos'),
+          where('funcionarioId', '==', String(targetUserId))
+        );
+
+        const snapshot = await getDocs(q);
+        
+        const pontosDoDia = snapshot.docs
+          .map(doc => doc.data())
+          .filter(ponto => {
+            // Usar timestamp ou data para comparação
+            let dataPonto;
+            if (ponto.timestamp) {
+              dataPonto = new Date(ponto.timestamp);
+            } else if (ponto.data) {
+              dataPonto = new Date(ponto.data);
+            } else {
+              return false;
+            }
+            
+            const dataPontoStr = dataPonto.toISOString().split('T')[0];
+            return dataPontoStr === dataEdicao;
+          });
+
+        if (pontosDoDia.length > 0) {
+          const pontosOrganizados = {
+            entrada: '',
+            saidaAlmoco: '',
+            voltaAlmoco: '',
+            saida: ''
+          };
+
+          pontosDoDia.forEach(ponto => {
+            // Usar timestamp ou data para obter a hora
+            let dataPontoObj;
+            if (ponto.timestamp) {
+              dataPontoObj = new Date(ponto.timestamp);
+            } else if (ponto.data) {
+              dataPontoObj = new Date(ponto.data);
+            } else {
+              return;
+            }
+            
+            const hora = dataPontoObj.toLocaleTimeString('pt-BR', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            });
+
+            switch(ponto.tipo) {
+              case 'entrada':
+                pontosOrganizados.entrada = hora;
+                break;
+              case 'saida_almoco':
+                pontosOrganizados.saidaAlmoco = hora;
+                break;
+              case 'retorno_almoco':
+                pontosOrganizados.voltaAlmoco = hora;
+                break;
+              case 'saida':
+                pontosOrganizados.saida = hora;
+                break;
+            }
+          });
+
+          setPontosEdicao(pontosOrganizados);
+        } else {
+          setPontosEdicao({
+            entrada: '',
+            saidaAlmoco: '',
+            voltaAlmoco: '',
+            saida: ''
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao carregar pontos:', error);
+      }
+    };
+
+    carregarPontosDia();
+  }, [dataEdicao, targetUserId, mostrarModalEdicao]);
+
+  // Função para abrir modal de edição
+  const abrirModalEdicao = () => {
+    const hoje = new Date().toISOString().split('T')[0];
+    setDataEdicao(hoje);
+    setMostrarModalEdicao(true);
+  };
+
+  // Função para salvar pontos editados
+  const salvarPontosEditados = async () => {
+    if (!dataEdicao) {
+      showToast('Selecione uma data válida', 'error');
+      return;
+    }
+
+    // Validar formato de horários (HH:MM)
+    const regexHorario = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    const pontosValidos = Object.entries(pontosEdicao).filter(([_, valor]) => valor !== '');
+    
+    for (const [campo, valor] of pontosValidos) {
+      if (!regexHorario.test(valor)) {
+        showToast(`Horário inválido no campo ${campo}. Use o formato HH:MM`, 'error');
+        return;
+      }
+    }
+
+    try {
+      showToast('Salvando pontos...', 'info');
+      
+      // Buscar pontos existentes do dia
+      const q = query(
+        collection(db, 'pontos'),
+        where('funcionarioId', '==', String(targetUserId))
+      );
+      
+      const snapshot = await getDocs(q);
+      const pontosDoDia = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        const dataPonto = new Date(data.data).toISOString().split('T')[0];
+        return dataPonto === dataEdicao;
+      });
+
+      // Deletar pontos antigos do dia
+      for (const doc of pontosDoDia) {
+        await deleteDoc(doc.ref);
+      }
+
+      // Criar novos pontos
+      const dataBase = new Date(dataEdicao);
+      
+      const mapeamentoTipos = {
+        entrada: 'entrada',
+        saidaAlmoco: 'saida_almoco',
+        voltaAlmoco: 'retorno_almoco',
+        saida: 'saida'
+      };
+
+      for (const [campo, tipo] of Object.entries(mapeamentoTipos)) {
+        if (pontosEdicao[campo]) {
+          const [hora, minuto] = pontosEdicao[campo].split(':').map(Number);
+          const timestamp = new Date(dataBase);
+          timestamp.setHours(hora, minuto, 0, 0);
+
+          await addDoc(collection(db, 'pontos'), {
+            funcionarioId: String(targetUserId),
+            funcionarioNome: targetUserName,
+            tipo,
+            data: timestamp.toISOString(),
+            timestamp: timestamp.toISOString(),
+            dataCriacao: new Date().toISOString(),
+            editado: true,
+            editadoPor: usuario?.nome || 'Administrador',
+            dataEdicao: new Date().toISOString()
+          });
+        }
+      }
+
+      showToast('Pontos corrigidos com sucesso!', 'success');
+      setMostrarModalEdicao(false);
+      
+      // Recarregar pontos do dia
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Erro ao salvar pontos:', error);
+      showToast('Erro ao salvar pontos. Tente novamente.', 'error');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
+          />
+          
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-t-2xl sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      Detalhes de Horas Trabalhadas
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {targetUserName}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Conteúdo */}
+              <div className="p-6 space-y-6">
+                {!pontoDia ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-3" />
+                      <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Carregando registros...
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Buscando pontos de {targetUserName}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Relógio em Tempo Real */}
+                    <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 dark:from-blue-600 dark:via-blue-700 dark:to-blue-900 rounded-2xl p-6 shadow-2xl">
+                      <div className="text-center mb-4">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <RefreshCw className="w-5 h-5 text-white/80 animate-spin" style={{ animationDuration: '3s' }} />
+                          <span className="text-white/90 text-sm font-medium uppercase tracking-wide">
+                            Tempo Real
+                          </span>
+                        </div>
+                        {!pontoDia.entrada ? (
+                          <div className="py-4">
+                            <div className="text-3xl md:text-4xl font-bold text-white/90 mb-2">
+                              Nenhum ponto registrado
+                            </div>
+                            <div className="text-white/70 text-sm">
+                              {targetUserName} ainda não bateu o ponto de entrada hoje
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-6xl md:text-7xl font-bold text-white font-mono tracking-tight">
+                              {String(tempoReal.horas).padStart(2, '0')}h{' '}
+                              {String(tempoReal.minutos).padStart(2, '0')}m{' '}
+                              <span className="text-5xl md:text-6xl text-white/90">
+                                {String(tempoReal.segundos).padStart(2, '0')}s
+                              </span>
+                            </div>
+                            <div className="text-white/80 text-sm mt-2">
+                              Horas contabilizadas hoje
+                            </div>
+                          </>
+                        )}
+                      </div>
+                  
+                  {/* Botão de Editar Pontos */}
+                  <button
+                    onClick={abrirModalEdicao}
+                    className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all backdrop-blur-sm border border-white/30 hover:scale-105 transform"
+                  >
+                    <Edit3 className="w-5 h-5" />
+                    <span>Corrigir Pontos do Dia</span>
+                  </button>
+                </div>
+
+                {/* Pontos do Dia */}
+                {pontoDia && (
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        Pontos Registrados Hoje
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">
+                          {[pontoDia.entrada, pontoDia.saidaAlmoco, pontoDia.voltaAlmoco, pontoDia.saida].filter(Boolean).length} de 4
+                        </span>
+                        <div className="flex gap-1">
+                          {[pontoDia.entrada, pontoDia.saidaAlmoco, pontoDia.voltaAlmoco, pontoDia.saida].map((ponto, idx) => (
+                            <div 
+                              key={idx}
+                              className={`w-2 h-2 rounded-full transition-all ${
+                                ponto 
+                                  ? 'bg-green-500 shadow-lg shadow-green-500/50' 
+                                  : 'bg-gray-300 dark:bg-gray-600'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className={`bg-white dark:bg-gray-700 rounded-lg p-4 border-2 transition-all ${
+                        pontoDia.entrada 
+                          ? 'border-green-500 shadow-lg shadow-green-500/20' 
+                          : 'border-gray-200 dark:border-gray-600 opacity-60'
+                      }`}>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                          <span>1º Ponto - Entrada</span>
+                          {pontoDia.entrada && <CheckCircle className="w-4 h-4 text-green-500" />}
+                        </div>
+                        <div className={`text-2xl font-bold font-mono ${
+                          pontoDia.entrada 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-gray-400 dark:text-gray-500'
+                        }`}>
+                          {pontoDia.entrada || '--:--'}
+                        </div>
+                        {!pontoDia.entrada && (
+                          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">Não registrado</div>
+                        )}
+                      </div>
+
+                      <div className={`bg-white dark:bg-gray-700 rounded-lg p-4 border-2 transition-all ${
+                        pontoDia.saidaAlmoco 
+                          ? 'border-orange-500 shadow-lg shadow-orange-500/20' 
+                          : 'border-gray-200 dark:border-gray-600 opacity-60'
+                      }`}>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                          <span>2º Ponto - Saída Almoço</span>
+                          {pontoDia.saidaAlmoco && <CheckCircle className="w-4 h-4 text-orange-500" />}
+                        </div>
+                        <div className={`text-2xl font-bold font-mono ${
+                          pontoDia.saidaAlmoco 
+                            ? 'text-orange-600 dark:text-orange-400' 
+                            : 'text-gray-400 dark:text-gray-500'
+                        }`}>
+                          {pontoDia.saidaAlmoco || '--:--'}
+                        </div>
+                        {!pontoDia.saidaAlmoco && (
+                          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">Não registrado</div>
+                        )}
+                      </div>
+
+                      <div className={`bg-white dark:bg-gray-700 rounded-lg p-4 border-2 transition-all ${
+                        pontoDia.voltaAlmoco 
+                          ? 'border-blue-500 shadow-lg shadow-blue-500/20' 
+                          : 'border-gray-200 dark:border-gray-600 opacity-60'
+                      }`}>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                          <span>3º Ponto - Volta Almoço</span>
+                          {pontoDia.voltaAlmoco && <CheckCircle className="w-4 h-4 text-blue-500" />}
+                        </div>
+                        <div className={`text-2xl font-bold font-mono ${
+                          pontoDia.voltaAlmoco 
+                            ? 'text-blue-600 dark:text-blue-400' 
+                            : 'text-gray-400 dark:text-gray-500'
+                        }`}>
+                          {pontoDia.voltaAlmoco || '--:--'}
+                        </div>
+                        {!pontoDia.voltaAlmoco && (
+                          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">Não registrado</div>
+                        )}
+                      </div>
+
+                      <div className={`bg-white dark:bg-gray-700 rounded-lg p-4 border-2 transition-all ${
+                        pontoDia.saida 
+                          ? 'border-red-500 shadow-lg shadow-red-500/20' 
+                          : 'border-gray-200 dark:border-gray-600 opacity-60'
+                      }`}>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                          <span>4º Ponto - Saída</span>
+                          {pontoDia.saida && <CheckCircle className="w-4 h-4 text-red-500" />}
+                        </div>
+                        <div className={`text-2xl font-bold font-mono ${
+                          pontoDia.saida 
+                            ? 'text-red-600 dark:text-red-400' 
+                            : 'text-gray-400 dark:text-gray-500'
+                        }`}>
+                          {pontoDia.saida || '--:--'}
+                        </div>
+                        {!pontoDia.saida && (
+                          <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">Não registrado</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </>
+      )}
+
+      {/* Modal de Edição de Pontos */}
+      {mostrarModalEdicao && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMostrarModalEdicao(false)}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60]"
+          />
+          
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30">
+                <div className="flex items-center gap-3">
+                  <Edit3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      Corrigir Pontos
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {targetUserName}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMostrarModalEdicao(false)}
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-white/50"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Conteúdo */}
+              <div className="p-6 space-y-6">
+                {/* Seletor de Data */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Data
+                  </label>
+                  <input
+                    type="date"
+                    value={dataEdicao}
+                    onChange={(e) => setDataEdicao(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Campos de Horário */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-green-600" />
+                      1º Ponto (Entrada)
+                    </label>
+                    <input
+                      type="time"
+                      value={pontosEdicao.entrada}
+                      onChange={(e) => setPontosEdicao({...pontosEdicao, entrada: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-orange-600" />
+                      2º Ponto (Saída Almoço)
+                    </label>
+                    <input
+                      type="time"
+                      value={pontosEdicao.saidaAlmoco}
+                      onChange={(e) => setPontosEdicao({...pontosEdicao, saidaAlmoco: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-blue-600" />
+                      3º Ponto (Volta Almoço)
+                    </label>
+                    <input
+                      type="time"
+                      value={pontosEdicao.voltaAlmoco}
+                      onChange={(e) => setPontosEdicao({...pontosEdicao, voltaAlmoco: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-red-600" />
+                      4º Ponto (Saída)
+                    </label>
+                    <input
+                      type="time"
+                      value={pontosEdicao.saida}
+                      onChange={(e) => setPontosEdicao({...pontosEdicao, saida: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Informação */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="flex gap-3">
+                    <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-blue-700 dark:text-blue-300">
+                      <p className="font-semibold mb-1">Como funciona:</p>
+                      <ul className="space-y-1 text-xs">
+                        <li>• Preencha apenas os pontos que deseja corrigir</li>
+                        <li>• Deixe em branco os que não precisam ser alterados</li>
+                        <li>• Use o formato 24 horas (ex: 14:30)</li>
+                        <li>• A correção sobrescreve os pontos existentes</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botões */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setMostrarModalEdicao(false)}
+                    className="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-xl font-semibold transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={salvarPontosEditados}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    <Save className="w-5 h-5" />
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default DetalhesHorasModal;
