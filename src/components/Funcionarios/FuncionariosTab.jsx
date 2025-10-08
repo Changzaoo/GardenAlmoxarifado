@@ -25,7 +25,8 @@ import {
   Trophy,
   Building2,
   ChevronDown,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 import GruposModal from './components/GruposModal';
 import ModalUnificarDuplicados from './components/ModalUnificarDuplicados';
@@ -38,6 +39,8 @@ import ModalEditar from './components/ModalEditar';
 import ModalConfirmacao from './components/ModalConfirmacao';
 import ModalDetalhesEstatisticas from './components/ModalDetalhesEstatisticas';
 import DetalhesHorasModal from '../WorkPonto/DetalhesHorasModal';
+import BannerResetHoras from './BannerResetHoras';
+import ModalAplicarPontosPerfeitosLote from './components/ModalAplicarPontosPerfeitosLote';
 
 // Função para formatar número de telefone
 const formatarTelefone = (telefone) => {
@@ -53,6 +56,7 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
   const [showGruposModal, setShowGruposModal] = useState(false);
   const [showUnificarModal, setShowUnificarModal] = useState(false);
+  const [showPontosPerfeitosModal, setShowPontosPerfeitosModal] = useState(false);
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -679,17 +683,30 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                 </span>
               )}
               
-              {/* Botão Adicionar Funcionário na barra */}
+              {/* Botões de Ação */}
               {podeCriarFuncionario && !readonly && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setMostrarFormulario(!mostrarFormulario)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg shadow-md transition-all duration-200"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Adicionar</span>
-                </motion.button>
+                <>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setMostrarFormulario(!mostrarFormulario)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg shadow-md transition-all duration-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Adicionar</span>
+                  </motion.button>
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowPontosPerfeitosModal(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-sm font-medium rounded-lg shadow-md transition-all duration-200"
+                    title="Aplicar pontos perfeitos em lote"
+                  >
+                    <Clock className="w-4 h-4" />
+                    <span className="hidden sm:inline">Pontos Perfeitos</span>
+                  </motion.button>
+                </>
               )}
             </div>
 
@@ -709,6 +726,9 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 
       {/* Container Principal */}
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Banner de Aviso - Reset de Horas */}
+        <BannerResetHoras />
+
         {/* Formulário de Adição (aparece quando botão é clicado) */}
         {podeCriarFuncionario && !readonly && mostrarFormulario && (
           <motion.div 
@@ -878,6 +898,13 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
           // Recarregar lista de funcionários
           showToast('Funcionários unificados com sucesso!', 'success');
         }}
+      />
+
+      {/* Modal de Aplicar Pontos Perfeitos em Lote */}
+      <ModalAplicarPontosPerfeitosLote
+        isOpen={showPontosPerfeitosModal}
+        onClose={() => setShowPontosPerfeitosModal(false)}
+        funcionarios={funcionarios}
       />
 
       {/* Modal de Edição */}

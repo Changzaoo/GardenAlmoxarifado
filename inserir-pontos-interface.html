@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚀 Inserir Pontos Perfeitos + Banco de Horas</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 900px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .info-box {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+    }
+
+    .info-box h3 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .info-box ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .info-box li {
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .info-box li::before {
+      content: "✅";
+      font-size: 16px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+    }
+
+    .warning-box h3 {
+      color: #856404;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .btn-container {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 18px 30px;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+
+    .log-container {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .log-container.active {
+      display: block;
+    }
+
+    .log-line {
+      margin: 5px 0;
+      padding: 5px;
+    }
+
+    .log-info { color: #4fc3f7; }
+    .log-success { color: #81c784; font-weight: bold; }
+    .log-warning { color: #ffb74d; }
+    .log-error { color: #e57373; font-weight: bold; }
+    .log-title { color: #ba68c8; font-weight: bold; font-size: 16px; }
+    .log-separator { color: #757575; }
+
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e9ecef;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .progress-bar.active {
+      display: block;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>
+        🚀 Inserir Pontos Perfeitos
+      </h1>
+      <p>Adicione pontos e banco de horas de 01/10 a 07/10/2025</p>
+    </div>
+
+    <div class="content">
+      <!-- Informações -->
+      <div class="info-box">
+        <h3>📋 O que este script faz:</h3>
+        <ul>
+          <li>Insere pontos PERFEITOS de 01/10 a 07/10 para TODOS os funcionários</li>
+          <li>Adiciona as horas ao banco de horas de cada um</li>
+          <li>Registra a escala de cada funcionário no período</li>
+          <li>Respeita as regras de cada escala (M, M1, M4)</li>
+          <li>Não duplica pontos já existentes</li>
+        </ul>
+      </div>
+
+      <!-- Avisos -->
+      <div class="warning-box">
+        <h3>⚠️ ATENÇÃO:</h3>
+        <ul>
+          <li>Você precisa estar <strong>logado como ADMIN</strong></li>
+          <li>Esta operação <strong>insere dados</strong> no Firebase</li>
+          <li>Faça <strong>backup</strong> antes de executar</li>
+          <li>Processo leva cerca de 1-2 minutos</li>
+        </ul>
+      </div>
+
+      <!-- Botões -->
+      <div class="btn-container">
+        <button class="btn btn-primary" id="btnExecutar">
+          <span>▶️</span>
+          <span>Executar Script</span>
+        </button>
+        <button class="btn btn-secondary" id="btnLimpar">
+          <span>🗑️</span>
+          <span>Limpar Log</span>
+        </button>
+      </div>
+
+      <!-- Barra de Progresso -->
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill">0%</div>
+      </div>
+
+      <!-- Log -->
+      <div class="log-container" id="logContainer"></div>
+
+      <!-- Estatísticas -->
+      <div class="stats-grid" id="statsGrid" style="display: none;">
+        <div class="stat-card">
+          <div class="stat-number" id="statFuncionarios">0</div>
+          <div class="stat-label">Funcionários</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="statPontos">0</div>
+          <div class="stat-label">Pontos Inseridos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="statHoras">0h</div>
+          <div class="stat-label">Horas Adicionadas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="statEscalas">0</div>
+          <div class="stat-label">Escalas Registradas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // ⚠️ CONFIGURE SEU FIREBASE AQUI
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_AUTH_DOMAIN",
+      projectId: "SEU_PROJECT_ID",
+      storageBucket: "SEU_STORAGE_BUCKET",
+      messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
+
+    // Inicializar Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+
+    // Elementos
+    const btnExecutar = document.getElementById('btnExecutar');
+    const btnLimpar = document.getElementById('btnLimpar');
+    const logContainer = document.getElementById('logContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const statsGrid = document.getElementById('statsGrid');
+
+    // Definição das escalas (CORRIGIDA)
+    const ESCALAS = {
+      M: {
+        label: 'M - 6x1',
+        semana: {
+          entrada: '07:20',
+          saida_almoco: '12:00',
+          retorno_almoco: '13:00',
+          saida: '16:20'
+        },
+        sabado: {
+          entrada: '07:20',
+          saida_almoco: '11:20', // ✅ CORRIGIDO: Sai 11:20 no sábado
+          retorno_almoco: null,
+          saida: null
+        },
+        domingo: null, // ✅ CORRIGIDO: Não trabalha domingo
+        trabalhaFimDeSemana: true
+      },
+      M1: {
+        label: 'M1 - 6x1',
+        semana: {
+          entrada: '07:00',
+          saida_almoco: '12:00',
+          retorno_almoco: '13:00',
+          saida: '15:20'
+        },
+        fimDeSemana: {
+          entrada: '07:00',
+          saida_almoco: '10:00',
+          retorno_almoco: '11:00',
+          saida: '13:00'
+        },
+        trabalhaFimDeSemana: true
+      },
+      M4: {
+        label: 'M4 - 5x2',
+        semana: {
+          entrada: '06:00',
+          saida_almoco: '10:30',
+          retorno_almoco: '11:30',
+          saida: '15:40'
+        },
+        fimDeSemana: null,
+        trabalhaFimDeSemana: false
+      }
+    };
+
+    // Funções de log
+    function addLog(message, type = 'info') {
+      logContainer.classList.add('active');
+      const line = document.createElement('div');
+      line.className = `log-line log-${type}`;
+      line.textContent = message;
+      logContainer.appendChild(line);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function clearLog() {
+      logContainer.innerHTML = '';
+      logContainer.classList.remove('active');
+      statsGrid.style.display = 'none';
+      progressBar.classList.remove('active');
+    }
+
+    function updateProgress(percent, text) {
+      progressBar.classList.add('active');
+      progressFill.style.width = percent + '%';
+      progressFill.textContent = text || percent + '%';
+    }
+
+    function updateStats(funcionarios, pontos, horas, escalas) {
+      statsGrid.style.display = 'grid';
+      document.getElementById('statFuncionarios').textContent = funcionarios;
+      document.getElementById('statPontos').textContent = pontos;
+      document.getElementById('statHoras').textContent = Math.floor(horas / 60) + 'h ' + (horas % 60) + 'm';
+      document.getElementById('statEscalas').textContent = escalas;
+    }
+
+    // Calcular horas trabalhadas
+    function calcularHorasDia(horarios) {
+      if (!horarios) return 0;
+      if (!horarios.retorno_almoco || !horarios.saida) {
+        // Apenas manhã (sábado M)
+        const [hE, mE] = horarios.entrada.split(':').map(Number);
+        const [hSA, mSA] = horarios.saida_almoco.split(':').map(Number);
+        return (hSA * 60 + mSA) - (hE * 60 + mE);
+      }
+
+      const [hE, mE] = horarios.entrada.split(':').map(Number);
+      const [hSA, mSA] = horarios.saida_almoco.split(':').map(Number);
+      const [hRA, mRA] = horarios.retorno_almoco.split(':').map(Number);
+      const [hS, mS] = horarios.saida.split(':').map(Number);
+
+      const manha = (hSA * 60 + mSA) - (hE * 60 + mE);
+      const tarde = (hS * 60 + mS) - (hRA * 60 + mRA);
+      return manha + tarde;
+    }
+
+    // Criar timestamp
+    function criarTimestamp(data, horario) {
+      const [horas, minutos] = horario.split(':').map(Number);
+      const novaData = new Date(data);
+      novaData.setHours(horas, minutos, 0, 0);
+      return firebase.firestore.Timestamp.fromDate(novaData);
+    }
+
+    // Script principal
+    async function executarScript() {
+      try {
+        btnExecutar.disabled = true;
+        btnExecutar.innerHTML = '<span class="spinner">⏳</span><span>Processando...</span>';
+        clearLog();
+        
+        addLog('═══════════════════════════════════════════════════════════', 'separator');
+        addLog('🚀 SCRIPT: Inserir Pontos Perfeitos + Banco de Horas', 'title');
+        addLog('═══════════════════════════════════════════════════════════', 'separator');
+        addLog('');
+        addLog('⏳ Iniciando processo...', 'info');
+        addLog('');
+
+        // 1. Buscar funcionários
+        addLog('📋 Buscando funcionários ativos...', 'info');
+        const funcionariosSnapshot = await db.collection('funcionarios').get();
+        const funcionarios = funcionariosSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(f => !f.demitido);
+
+        addLog(`✅ ${funcionarios.length} funcionários encontrados`, 'success');
+        addLog('', 'info');
+
+        let totalPontosInseridos = 0;
+        let totalHorasAdicionadas = 0;
+        let totalEscalasInseridas = 0;
+        let funcionariosProcessados = 0;
+
+        // 2. Processar cada funcionário
+        for (let i = 0; i < funcionarios.length; i++) {
+          const func = funcionarios[i];
+          const progresso = Math.floor(((i + 1) / funcionarios.length) * 100);
+          updateProgress(progresso, `${i + 1}/${funcionarios.length} funcionários`);
+
+          const escalaKey = func.escala || func.tipoEscala || 'M';
+          const escala = ESCALAS[escalaKey];
+
+          if (!escala) {
+            addLog(`⚠️  ${func.nome}: Escala desconhecida (${escalaKey}) - Pulando`, 'warning');
+            continue;
+          }
+
+          addLog(`👤 Processando: ${func.nome} (Escala: ${escalaKey})`, 'info');
+
+          let horasFuncionario = 0;
+          let pontosInseridos = 0;
+
+          // 3. Processar cada dia (01/10 a 07/10)
+          for (let dia = 1; dia <= 7; dia++) {
+            const data = new Date(2025, 9, dia);
+            const diaSemana = data.getDay();
+            const diasSemanaTexto = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            
+            let horarios;
+            
+            // Determinar horários baseado no dia
+            if (escalaKey === 'M') {
+              if (diaSemana === 0) { // Domingo
+                addLog(`   ⏭️  ${String(dia).padStart(2, '0')}/10 (${diasSemanaTexto[diaSemana]}) - Folga`, 'info');
+                continue;
+              } else if (diaSemana === 6) { // Sábado
+                horarios = escala.sabado;
+              } else {
+                horarios = escala.semana;
+              }
+            } else if (diaSemana === 0 || diaSemana === 6) {
+              if (!escala.trabalhaFimDeSemana) {
+                addLog(`   ⏭️  ${String(dia).padStart(2, '0')}/10 (${diasSemanaTexto[diaSemana]}) - Folga`, 'info');
+                continue;
+              }
+              horarios = escala.fimDeSemana;
+            } else {
+              horarios = escala.semana;
+            }
+
+            if (!horarios) {
+              addLog(`   ⏭️  ${String(dia).padStart(2, '0')}/10 (${diasSemanaTexto[diaSemana]}) - Sem horário`, 'info');
+              continue;
+            }
+
+            // Verificar pontos existentes
+            const inicio = firebase.firestore.Timestamp.fromDate(new Date(2025, 9, dia, 0, 0, 0));
+            const fim = firebase.firestore.Timestamp.fromDate(new Date(2025, 9, dia, 23, 59, 59));
+            
+            const pontosExistentes = await db.collection('pontos')
+              .where('funcionarioId', '==', String(func.id))
+              .where('timestamp', '>=', inicio)
+              .where('timestamp', '<=', fim)
+              .get();
+
+            if (!pontosExistentes.empty) {
+              addLog(`   ⏭️  ${String(dia).padStart(2, '0')}/10 (${diasSemanaTexto[diaSemana]}) - Já possui pontos`, 'warning');
+              continue;
+            }
+
+            // Criar pontos
+            const pontos = [{ tipo: 'entrada', horario: horarios.entrada }];
+            
+            if (horarios.saida_almoco) {
+              pontos.push({ tipo: 'saida_almoco', horario: horarios.saida_almoco });
+            }
+            
+            if (horarios.retorno_almoco) {
+              pontos.push({ tipo: 'retorno_almoco', horario: horarios.retorno_almoco });
+            }
+            
+            if (horarios.saida) {
+              pontos.push({ tipo: 'saida', horario: horarios.saida });
+            }
+
+            // Inserir pontos
+            for (const ponto of pontos) {
+              const timestamp = criarTimestamp(data, ponto.horario);
+              
+              await db.collection('pontos').add({
+                funcionarioId: String(func.id),
+                funcionarioNome: func.nome,
+                tipo: ponto.tipo,
+                timestamp: timestamp,
+                data: timestamp,
+                localizacao: {
+                  latitude: -22.9068,
+                  longitude: -43.1729,
+                  precisao: 10
+                },
+                origem: 'script_automatico_html',
+                observacao: 'Ponto perfeito inserido automaticamente (01-07/10/2025)'
+              });
+
+              totalPontosInseridos++;
+              pontosInseridos++;
+            }
+
+            // Registrar escala do dia
+            const dataKey = `${2025}-${String(10).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+            const escalaDocRef = db.collection('escalas').doc(dataKey);
+            const escalaDoc = await escalaDocRef.get();
+            
+            let escalasData = escalaDoc.exists ? escalaDoc.data() : {};
+            if (!escalasData[String(func.id)]) {
+              escalasData[String(func.id)] = escalaKey;
+              await escalaDocRef.set(escalasData, { merge: true });
+              totalEscalasInseridas++;
+            }
+
+            // Calcular horas
+            const minutosDia = calcularHorasDia(horarios);
+            horasFuncionario += minutosDia;
+
+            const h = Math.floor(minutosDia / 60);
+            const m = minutosDia % 60;
+            addLog(`   ✅ ${String(dia).padStart(2, '0')}/10 (${diasSemanaTexto[diaSemana]}) - ${pontos.length} pontos inseridos (${h}h ${m}m)`, 'success');
+          }
+
+          // 4. Atualizar banco de horas
+          if (horasFuncionario > 0) {
+            const bancoHorasAtual = func.bancoHoras || 0;
+            const novoBancoHoras = bancoHorasAtual + horasFuncionario;
+
+            await db.collection('funcionarios').doc(func.id).update({
+              bancoHoras: novoBancoHoras,
+              ultimaAtualizacaoBancoHoras: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            totalHorasAdicionadas += horasFuncionario;
+
+            const horasTotal = Math.floor(horasFuncionario / 60);
+            const minutosTotal = horasFuncionario % 60;
+
+            addLog(`   💰 Banco de Horas: +${horasTotal}h ${minutosTotal}m`, 'success');
+          }
+
+          funcionariosProcessados++;
+          addLog('', 'info');
+        }
+
+        // 5. Resumo final
+        addLog('═══════════════════════════════════════════════════════════', 'separator');
+        addLog('🎉 PROCESSO CONCLUÍDO COM SUCESSO!', 'title');
+        addLog('═══════════════════════════════════════════════════════════', 'separator');
+        addLog('', 'info');
+        addLog('📊 RESUMO GERAL:', 'info');
+        addLog(`   • Funcionários processados: ${funcionariosProcessados}`, 'success');
+        addLog(`   • Pontos inseridos: ${totalPontosInseridos}`, 'success');
+        addLog(`   • Escalas registradas: ${totalEscalasInseridas}`, 'success');
+        addLog(`   • Total de horas adicionadas: ${Math.floor(totalHorasAdicionadas / 60)}h ${totalHorasAdicionadas % 60}m`, 'success');
+        addLog('', 'info');
+        addLog('✅ Todos os funcionários agora têm pontos perfeitos de 01/10 a 07/10!', 'success');
+        addLog('✅ Banco de horas atualizado para todos!', 'success');
+        addLog('✅ Escalas registradas no sistema!', 'success');
+        addLog('', 'info');
+        addLog('⚡ Recarregue a página do sistema para ver as mudanças!', 'warning');
+
+        updateStats(funcionariosProcessados, totalPontosInseridos, totalHorasAdicionadas, totalEscalasInseridas);
+        updateProgress(100, '✅ Concluído!');
+
+      } catch (error) {
+        addLog('❌ ERRO: ' + error.message, 'error');
+        addLog('', 'info');
+        addLog('💡 Possíveis causas:', 'warning');
+        addLog('   • Firebase não configurado corretamente', 'warning');
+        addLog('   • Permissões insuficientes no Firestore', 'warning');
+        addLog('   • Conexão com internet instável', 'warning');
+        console.error(error);
+      } finally {
+        btnExecutar.disabled = false;
+        btnExecutar.innerHTML = '<span>▶️</span><span>Executar Script</span>';
+      }
+    }
+
+    // Event listeners
+    btnExecutar.addEventListener('click', executarScript);
+    btnLimpar.addEventListener('click', clearLog);
+  </script>
+</body>
+</html>

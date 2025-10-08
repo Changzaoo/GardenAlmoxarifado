@@ -21,6 +21,7 @@ import {
   Save,
   RefreshCw
 } from 'lucide-react';
+import ModalCorrigirPontosMes from './ModalCorrigirPontosMes';
 
 const ModalDetalhesEstatisticas = ({ 
   isOpen, 
@@ -47,6 +48,9 @@ const ModalDetalhesEstatisticas = ({
     voltaAlmoco: '',
     saida: ''
   });
+  
+  // Estado para o novo modal de correção mensal
+  const [mostrarModalCorrecaoMes, setMostrarModalCorrecaoMes] = useState(false);
 
   // Estado para armazenar pontos do dia
   const [pontoDia, setPontoDia] = useState(null);
@@ -348,8 +352,8 @@ const ModalDetalhesEstatisticas = ({
         ['Dias Trabalhados:', horasInfo?.diasTrabalhados || 0],
         ['Total de Horas:', horasInfo?.totalHoras || '--:--'],
         ['Base Esperada:', horasInfo?.diasTrabalhados ? `${horasInfo.diasTrabalhados * 8}h` : '--h'],
-        ['Saldo:', `${horasInfo?.positivo ? '+' : ''}${horasInfo?.saldoFormatado || '--h --m'}`],
-        ['Status:', horasInfo?.positivo ? 'Acima da Meta ✓' : 'Abaixo da Meta ⚠'],
+        ['Saldo:', `${horasInfo?.saldoMinutos === 0 ? '' : horasInfo?.positivo ? '+' : ''}${horasInfo?.saldoFormatado || '--h --m'}`],
+        ['Status:', horasInfo?.saldoMinutos === 0 ? 'Dentro da Meta ✓' : horasInfo?.positivo ? 'Acima da Meta ✓' : 'Abaixo da Meta ⚠'],
       ];
 
       const ws = XLSX.utils.aoa_to_sheet(dados);
@@ -412,9 +416,9 @@ const ModalDetalhesEstatisticas = ({
       y += 10;
       doc.text(`Base Esperada (8h/dia): ${horasInfo?.diasTrabalhados ? `${horasInfo.diasTrabalhados * 8}h` : '--h'}`, 20, y);
       y += 10;
-      doc.text(`Saldo: ${horasInfo?.positivo ? '+' : ''}${horasInfo?.saldoFormatado || '--h --m'}`, 20, y);
+      doc.text(`Saldo: ${horasInfo?.saldoMinutos === 0 ? '' : horasInfo?.positivo ? '+' : ''}${horasInfo?.saldoFormatado || '--h --m'}`, 20, y);
       y += 10;
-      doc.text(`Status: ${horasInfo?.positivo ? 'Acima da Meta ✓' : 'Abaixo da Meta ⚠'}`, 20, y);
+      doc.text(`Status: ${horasInfo?.saldoMinutos === 0 ? 'Dentro da Meta ✓' : horasInfo?.positivo ? 'Acima da Meta ✓' : 'Abaixo da Meta ⚠'}`, 20, y);
       
       // Rodapé
       doc.setFontSize(8);
@@ -798,36 +802,44 @@ const ModalDetalhesEstatisticas = ({
               
               {/* Botão de Editar Pontos */}
               <button
-                onClick={abrirModalEdicao}
+                onClick={() => setMostrarModalCorrecaoMes(true)}
                 className="w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all backdrop-blur-sm border border-white/30 hover:scale-105 transform"
               >
                 <Edit3 className="w-5 h-5" />
-                <span>Corrigir Pontos do Dia</span>
+                <span>Corrigir Pontos do Mês</span>
               </button>
             </div>
 
             {/* Header - Saldo do Mês */}
             <div className={`rounded-2xl p-6 text-center ${
-              horasInfo?.positivo
+              horasInfo?.saldoMinutos === 0
+                ? 'bg-gradient-to-r from-gray-100 to-slate-100 dark:from-gray-800/30 dark:to-slate-800/30'
+                : horasInfo?.positivo
                 ? 'bg-gradient-to-r from-cyan-100 to-sky-100 dark:from-cyan-900/30 dark:to-sky-900/30'
                 : 'bg-gradient-to-r from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30'
             }`}>
               <div className="flex items-center justify-center gap-3 mb-3">
-                {horasInfo?.positivo ? (
+                {horasInfo?.saldoMinutos === 0 ? (
+                  <CheckCircle2 className="w-12 h-12 text-gray-600 dark:text-gray-400" />
+                ) : horasInfo?.positivo ? (
                   <TrendingUp className="w-12 h-12 text-cyan-600 dark:text-cyan-400" />
                 ) : (
                   <Timer className="w-12 h-12 text-rose-600 dark:text-rose-400" />
                 )}
                 <div>
                   <div className={`text-5xl font-bold font-mono ${
-                    horasInfo?.positivo
+                    horasInfo?.saldoMinutos === 0
+                      ? 'text-gray-700 dark:text-gray-300'
+                      : horasInfo?.positivo
                       ? 'text-cyan-700 dark:text-cyan-300'
                       : 'text-rose-700 dark:text-rose-300'
                   }`}>
-                    {horasInfo?.positivo ? '+' : ''}{horasInfo?.saldoFormatado || '--h --m'}
+                    {horasInfo?.saldoMinutos === 0 ? horasInfo?.saldoFormatado : horasInfo?.positivo ? '+' : ''}{horasInfo?.saldoFormatado || '--h --m'}
                   </div>
                   <div className={`text-sm font-medium ${
-                    horasInfo?.positivo
+                    horasInfo?.saldoMinutos === 0
+                      ? 'text-gray-600 dark:text-gray-400'
+                      : horasInfo?.positivo
                       ? 'text-cyan-600 dark:text-cyan-400'
                       : 'text-rose-600 dark:text-rose-400'
                   }`}>
@@ -1194,6 +1206,15 @@ const ModalDetalhesEstatisticas = ({
           </div>
         </>
       )}
+
+      {/* Modal de Correção de Pontos do Mês */}
+      <ModalCorrigirPontosMes
+        isOpen={mostrarModalCorrecaoMes}
+        onClose={() => setMostrarModalCorrecaoMes(false)}
+        funcionario={funcionario}
+        mes={new Date().getMonth()}
+        ano={new Date().getFullYear()}
+      />
     </AnimatePresence>
   );
 };

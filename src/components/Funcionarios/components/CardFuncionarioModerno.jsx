@@ -34,6 +34,8 @@ import InformacoesContato from './InformacoesContato';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../../firebaseConfig';
 import { getOptimizedMotionProps } from '../../../utils/performanceUtils';
+import { obterHorariosEsperados } from '../../../utils/escalaUtils';
+import { obterDataInicioCalculoHoras } from '../../../utils/dataCalculoHoras';
 
 const CardFuncionarioModerno = memo(({
   funcionario: func,
@@ -66,9 +68,8 @@ const CardFuncionarioModerno = memo(({
       if (!func.id) return;
 
       try {
-        // Buscar pontos do mês atual
-        const hoje = new Date();
-        const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        // Buscar pontos a partir da data de início configurada
+        const dataInicio = obterDataInicioCalculoHoras();
         
         const q = query(
           collection(db, 'pontos'),
@@ -80,7 +81,7 @@ const CardFuncionarioModerno = memo(({
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter(ponto => {
             const dataPonto = new Date(ponto.timestamp || ponto.data);
-            return dataPonto >= primeiroDiaMes;
+            return dataPonto >= dataInicio; // Apenas a partir da data configurada
           });
 
         // Agrupar pontos por dia (data sem hora)
@@ -101,11 +102,12 @@ const CardFuncionarioModerno = memo(({
           pontosPorDia[dataKey][ponto.tipo] = data;
         });
 
-        // Calcular total de minutos trabalhados
+        // Calcular total de minutos trabalhados e esperados por dia
         let totalMinutos = 0;
+        let totalMinutosEsperados = 0;
         let diasComPonto = 0;
 
-        Object.values(pontosPorDia).forEach(dia => {
+        Object.entries(pontosPorDia).forEach(([dataKey, dia]) => {
           if (!dia.entrada) return; // Precisa pelo menos entrada
           
           let minutosDia = 0;
@@ -133,11 +135,29 @@ const CardFuncionarioModerno = memo(({
           }
           
           totalMinutos += Math.max(0, minutosDia);
+
+          // Calcular minutos esperados baseado na escala do funcionário
+          const dataPonto = new Date(dataKey);
+          const tipoEscala = func.escala || func.tipoEscala || 'M'; // Padrão M se não especificado
+          const horariosEsperados = obterHorariosEsperados(tipoEscala, dataPonto);
+          
+          if (horariosEsperados) {
+            // Calcular minutos esperados do dia baseado nos horários da escala
+            const [hEntrada, mEntrada] = horariosEsperados.entrada.split(':').map(Number);
+            const [hAlmoco, mAlmoco] = horariosEsperados.almoco.split(':').map(Number);
+            const [hRetorno, mRetorno] = horariosEsperados.retorno.split(':').map(Number);
+            const [hSaida, mSaida] = horariosEsperados.saida.split(':').map(Number);
+            
+            const minutosEntradaAlmoco = (hAlmoco * 60 + mAlmoco) - (hEntrada * 60 + mEntrada);
+            const minutosRetornoSaida = (hSaida * 60 + mSaida) - (hRetorno * 60 + mRetorno);
+            const minutosEsperadosDia = minutosEntradaAlmoco + minutosRetornoSaida;
+            
+            totalMinutosEsperados += minutosEsperadosDia;
+          }
         });
 
-        // Calcular saldo (diferença entre trabalhado e esperado)
-        const horasEsperadas = diasComPonto * 8 * 60; // 8 horas por dia em minutos
-        const saldoMinutos = totalMinutos - horasEsperadas;
+        // Calcular saldo (diferença entre trabalhado e esperado REAL da escala)
+        const saldoMinutos = totalMinutos - totalMinutosEsperados;
 
         const formatarHoras = (minutos) => {
           const h = Math.floor(Math.abs(minutos) / 60);
@@ -470,11 +490,15 @@ const CardFuncionarioModerno = memo(({
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3 flex-1">
                 <div className={`p-2.5 rounded-xl ${
-                  horasInfo?.positivo
+                  horasInfo?.saldoMinutos === 0
+                    ? 'bg-gray-100 dark:bg-gray-800/50'
+                    : horasInfo?.positivo
                     ? 'bg-cyan-100 dark:bg-cyan-900/50'
                     : 'bg-rose-100 dark:bg-rose-900/50'
                 }`}>
-                  {horasInfo?.positivo ? (
+                  {horasInfo?.saldoMinutos === 0 ? (
+                    <CheckCircle2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  ) : horasInfo?.positivo ? (
                     <TrendingUp className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                   ) : (
                     <Timer className="w-5 h-5 text-rose-600 dark:text-rose-400" />
@@ -482,18 +506,22 @@ const CardFuncionarioModerno = memo(({
                 </div>
                 <div className="flex-1">
                   <span className={`text-xs font-medium block uppercase tracking-wide ${
-                    horasInfo?.positivo
+                    horasInfo?.saldoMinutos === 0
+                      ? 'text-gray-600 dark:text-gray-400'
+                      : horasInfo?.positivo
                       ? 'text-cyan-600 dark:text-cyan-400'
                       : 'text-rose-600 dark:text-rose-400'
                   }`}>
-                    {horasInfo?.positivo ? 'Horas Positivas' : 'Horas Negativas'}
+                    {horasInfo?.saldoMinutos === 0 ? 'Horas Normais' : horasInfo?.positivo ? 'Horas Positivas' : 'Horas Negativas'}
                   </span>
                   <span className={`text-xl font-bold font-mono ${
-                    horasInfo?.positivo
+                    horasInfo?.saldoMinutos === 0
+                      ? 'text-gray-700 dark:text-gray-300'
+                      : horasInfo?.positivo
                       ? 'text-cyan-700 dark:text-cyan-300'
                       : 'text-rose-700 dark:text-rose-300'
                   }`}>
-                    {horasInfo?.positivo ? '+' : ''}{horasInfo?.saldoFormatado || '--h --m'}
+                    {horasInfo?.saldoMinutos === 0 ? horasInfo?.saldoFormatado : horasInfo?.positivo ? '+' : ''}{horasInfo?.saldoFormatado || '--h --m'}
                   </span>
                 </div>
               </div>

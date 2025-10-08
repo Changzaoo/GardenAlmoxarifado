@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Info, Filter, Check, X, Eye, EyeOff, StickyNote, MessageSquare, Settings, Building2, Star, Phone, Clock, Trash2 } from 'lucide-react';
-import { collection, doc, setDoc, onSnapshot, deleteDoc, getDocs, addDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, onSnapshot, deleteDoc, getDocs, addDoc, serverTimestamp, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { toast } from 'react-toastify';
 import { hasSupervisionPermission, isAdmin, hasManagementPermission } from '../../constants/permissoes';
+import { obterHorariosEsperados } from '../../utils/escalaUtils';
 
 const EscalaPage = ({ usuarioAtual }) => {
   const [dataAtual, setDataAtual] = useState(new Date());
@@ -719,6 +720,103 @@ const EscalaPage = ({ usuarioAtual }) => {
           marcadoEm: new Date()
         };
         await setDoc(doc(db, 'presencas', mesAno, 'registros', docId), presencaData);
+        
+        // 🎯 ADICIONAR PONTOS AUTOMATICAMENTE quando marcar como PRESENTE
+        if (presente === true) {
+          try {
+            // Buscar dados do funcionário
+            const funcionario = funcionarios.find(f => f.id === funcionarioId);
+            if (!funcionario) {
+              console.warn('Funcionário não encontrado:', funcionarioId);
+              return;
+            }
+
+            // Criar data completa
+            const ano = mesAtual.getFullYear();
+            const mes = mesAtual.getMonth();
+            const dataCompleta = new Date(ano, mes, dia);
+
+            // Obter horários esperados da escala
+            const tipoEscala = funcionario.escala || funcionario.tipoEscala || 'M';
+            const horarios = obterHorariosEsperados(tipoEscala, dataCompleta);
+
+            if (!horarios) {
+              console.log('Funcionário não trabalha neste dia');
+              toast.info('✓ Presença marcada (funcionário não trabalha neste dia)', {
+                position: 'top-right',
+                autoClose: 2000
+              });
+              return;
+            }
+
+            // Função para criar timestamp
+            const criarTimestamp = (horario) => {
+              const [h, m] = horario.split(':').map(Number);
+              const dataHora = new Date(ano, mes, dia, h, m, 0);
+              return Timestamp.fromDate(dataHora);
+            };
+
+            // Inserir os 4 pontos
+            const pontos = [
+              { tipo: 'entrada', horario: horarios.entrada },
+              { tipo: 'saida_almoco', horario: horarios.almoco },
+              { tipo: 'retorno_almoco', horario: horarios.retorno },
+              { tipo: 'saida', horario: horarios.saida }
+            ];
+
+            for (const ponto of pontos) {
+              if (!ponto.horario) continue;
+
+              await addDoc(collection(db, 'pontos'), {
+                funcionarioId: String(funcionarioId),
+                funcionarioNome: funcionario.nome,
+                tipo: ponto.tipo,
+                timestamp: criarTimestamp(ponto.horario),
+                data: criarTimestamp(ponto.horario),
+                localizacao: {
+                  latitude: -22.9068,
+                  longitude: -43.1729,
+                  precisao: 10
+                },
+                origem: 'marcacao_presenca_automatica',
+                observacao: `Ponto inserido automaticamente ao marcar presença`
+              });
+            }
+
+            // Calcular minutos trabalhados
+            const [hE, mE] = horarios.entrada.split(':').map(Number);
+            const [hSA, mSA] = horarios.almoco.split(':').map(Number);
+            const [hVA, mVA] = horarios.retorno.split(':').map(Number);
+            const [hS, mS] = horarios.saida.split(':').map(Number);
+
+            const minutosManha = (hSA * 60 + mSA) - (hE * 60 + mE);
+            const minutosTarde = (hS * 60 + mS) - (hVA * 60 + mVA);
+            const minutosTotal = minutosManha + minutosTarde;
+
+            // Atualizar banco de horas
+            const funcionarioRef = doc(db, 'funcionarios', String(funcionarioId));
+            const funcionarioDoc = await getDoc(funcionarioRef);
+            const bancoHorasAtual = funcionarioDoc.data()?.bancoHoras || 0;
+
+            await updateDoc(funcionarioRef, {
+              bancoHoras: bancoHorasAtual + minutosTotal
+            });
+
+            const h = Math.floor(minutosTotal / 60);
+            const m = minutosTotal % 60;
+
+            toast.success(`✓ Presença marcada + 4 pontos adicionados (${h}h ${m}m)`, {
+              position: 'top-right',
+              autoClose: 3000
+            });
+          } catch (erroPontos) {
+            console.error('Erro ao adicionar pontos:', erroPontos);
+            toast.warning('Presença marcada, mas houve erro ao adicionar pontos', {
+              position: 'top-right',
+              autoClose: 3000
+            });
+          }
+        }
         
         // 🔄 Auto-avançar para próximo funcionário no modo diário
         if (modoVisualizacao === 'diario') {
