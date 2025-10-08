@@ -45,4 +45,8 @@ const decryptObject = (obj) => {
   return decrypted;
 };
 
-export { encrypt, decrypt, encryptObject, decryptObject };
+// Aliases para compatibilidade
+const encryptData = encrypt;
+const decryptData = decrypt;
+
+export { encrypt, decrypt, encryptObject, decryptObject, encryptData, decryptData };

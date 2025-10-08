@@ -227,22 +227,11 @@ const AppInitializer = ({ children }) => {
     return null;
   }
 
-  // Se ainda está carregando, mostrar LoadingScreen
-  if (!loadingComplete) {
-    return (
-      <LoadingScreen 
-        progress={progress} 
-        loadingText={loadingText}
-        isComplete={systemReady}
-      />
-    );
-  }
-
-  // Carregamento completo, mostrar aplicação com fade in
+  // Remover LoadingScreen daqui - será mostrado apenas pelo Workflow
+  // Carregamento completo, mostrar aplicação diretamente
   return (
     <div 
       style={{ 
-        animation: 'fadeIn 0.5s ease-in-out',
         width: '100%',
         height: '100%'
       }}

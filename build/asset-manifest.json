@@ -1,18 +1,20 @@
 {
   "files": {
-    "main.css": "./static/css/main.1c62c27b.css",
-    "main.js": "./static/js/main.2ee74477.js",
+    "main.css": "./static/css/main.37d68fe3.css",
+    "main.js": "./static/js/main.a3db3ebf.js",
+    "static/js/973.65608095.chunk.js": "./static/js/973.65608095.chunk.js",
     "static/js/142.ba4a3a25.chunk.js": "./static/js/142.ba4a3a25.chunk.js",
     "static/js/52.4b0f1ba7.chunk.js": "./static/js/52.4b0f1ba7.chunk.js",
     "static/js/82.c3721bc9.chunk.js": "./static/js/82.c3721bc9.chunk.js",
     "static/js/239.aa75864e.chunk.js": "./static/js/239.aa75864e.chunk.js",
-    "static/js/344.05800c68.chunk.js": "./static/js/344.05800c68.chunk.js",
-    "static/js/914.347610bb.chunk.js": "./static/js/914.347610bb.chunk.js",
+    "static/js/271.63ea232d.chunk.js": "./static/js/271.63ea232d.chunk.js",
+    "static/js/914.53388ba1.chunk.js": "./static/js/914.53388ba1.chunk.js",
+    "static/js/35.d397a04f.chunk.js": "./static/js/35.d397a04f.chunk.js",
     "service-worker.js": "./service-worker.js",
     "index.html": "./index.html"
   },
   "entrypoints": [
-    "static/css/main.1c62c27b.css",
-    "static/js/main.2ee74477.js"
+    "static/css/main.37d68fe3.css",
+    "static/js/main.a3db3ebf.js"
   ]
 }

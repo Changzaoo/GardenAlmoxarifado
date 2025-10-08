@@ -204,7 +204,7 @@ const ServerWorldMap = () => {
       )}
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 p-6 text-white relative overflow-hidden">
         {/* Animação de fundo */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 left-0 w-full h-full">
@@ -306,7 +306,7 @@ const ServerWorldMap = () => {
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => resetTransform()}
-                  className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-purple-500 text-purple-600 dark:text-purple-400"
+                  className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-blue-500 text-blue-600 dark:text-blue-400"
                   title="Resetar Visualização"
                 >
                   <Maximize2 className="w-5 h-5" />
@@ -822,9 +822,9 @@ const ServerWorldMap = () => {
                 </div>
 
                 {/* Região */}
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <MapPin className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    <MapPin className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     <div className="flex-1">
                       <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
                         📍 Localização Precisa
@@ -833,7 +833,7 @@ const ServerWorldMap = () => {
                         {selectedServer.location.flag} {selectedServer.location.name}
                       </p>
                       {selectedServer.location.state && (
-                        <p className="text-sm text-purple-600 dark:text-purple-400 font-medium mt-1">
+                        <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mt-1">
                           Estado/Região: {selectedServer.location.state}
                         </p>
                       )}

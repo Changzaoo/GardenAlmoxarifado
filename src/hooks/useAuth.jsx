@@ -1,8 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { encryptPassword, verifyPassword } from '../utils/crypto';
-import { encryptData } from '../utils/cryptoUtils';
+import { encryptData, decryptData } from '../utils/cryptoUtils';
 import { dbWorkflowBR1 } from '../config/firebaseWorkflowBR1';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import rateLimiter from '../utils/rateLimiter';
+import sessionManager from '../utils/sessionManager';
+import csrfProtection from '../utils/csrfProtection';
+import { toast } from 'react-hot-toast';
 
 // Criar o contexto
 export const AuthContext = createContext({
@@ -30,32 +34,70 @@ export const AuthProvider = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sessionWarningShown, setSessionWarningShown] = useState(false);
 
-  // Carregar dados do usuário e usuários salvos
+  // Carregar dados do usuário e usuários salvos (descriptografados)
   useEffect(() => {
     const usuarioSalvo = localStorage.getItem('usuario');
     const usuariosSalvos = localStorage.getItem('usuarios');
 
-    if (usuarioSalvo) {
-      setUsuario(JSON.parse(usuarioSalvo));
-    }
-    if (usuariosSalvos) {
-      setUsuarios(JSON.parse(usuariosSalvos));
+    try {
+      if (usuarioSalvo) {
+        // Tentar descriptografar, se falhar usar JSON direto (compatibilidade)
+        try {
+          const decrypted = decryptData(usuarioSalvo);
+          setUsuario(JSON.parse(decrypted));
+        } catch {
+          setUsuario(JSON.parse(usuarioSalvo));
+        }
+      }
+      if (usuariosSalvos) {
+        try {
+          const decrypted = decryptData(usuariosSalvos);
+          setUsuarios(JSON.parse(decrypted));
+        } catch {
+          setUsuarios(JSON.parse(usuariosSalvos));
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados de autenticação:', error);
     }
     setLoading(false);
   }, []);
 
-  // Salvar alterações no localStorage
+  // Salvar alterações no localStorage (criptografados)
   useEffect(() => {
-    if (usuario) {
-      localStorage.setItem('usuario', JSON.stringify(usuario));
-    }
-    if (usuarios.length > 0) {
-      localStorage.setItem('usuarios', JSON.stringify(usuarios));
+    try {
+      if (usuario) {
+        const encrypted = encryptData(JSON.stringify(usuario));
+        localStorage.setItem('usuario', encrypted);
+      }
+      if (usuarios.length > 0) {
+        const encrypted = encryptData(JSON.stringify(usuarios));
+        localStorage.setItem('usuarios', encrypted);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar dados de autenticação:', error);
     }
   }, [usuario, usuarios]);
 
-  const login = async (username, password) => {
+  const login = async (username, password, csrfToken) => {
+    // 🛡️ PROTEÇÃO CSRF: Validar token antes de processar
+    if (!csrfProtection.validateOperation('login', csrfToken)) {
+      throw new Error('Token de segurança inválido. Recarregue a página e tente novamente.');
+    }
+
+    // 🛡️ PROTEÇÃO: Verificar rate limiting antes de processar
+    const rateLimitCheck = rateLimiter.canAttemptLogin(username);
+    if (!rateLimitCheck.allowed) {
+      throw new Error(rateLimitCheck.message);
+    }
+
+    // Se há delay necessário, aguardar
+    if (rateLimitCheck.waitTime) {
+      await new Promise(resolve => setTimeout(resolve, rateLimitCheck.waitTime * 1000));
+    }
+
     // 1. Primeiro tenta buscar no workflowbr1
     try {
       const usuariosRef = collection(dbWorkflowBR1, 'usuarios');
@@ -75,6 +117,11 @@ export const AuthProvider = ({ children }) => {
         const senhaCorreta = verifyPassword(password, hash, salt, version);
 
         if (!senhaCorreta) {
+          // 🛡️ PROTEÇÃO: Registrar tentativa falhada
+          const result = rateLimiter.recordAttempt(username, false);
+          if (result.message) {
+            throw new Error(`Senha incorreta. ${result.message}`);
+          }
           throw new Error('Senha incorreta');
         }
 
@@ -93,21 +140,65 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
+        // 🛡️ PROTEÇÃO: Registrar tentativa bem-sucedida (limpa rate limiter)
+        rateLimiter.recordAttempt(username, true);
+
+        // �️ CSRF: Rotacionar token após login bem-sucedido
+        csrfProtection.rotateAfterOperation('login');
+
+        // �🕐 INICIAR GERENCIAMENTO DE SESSÃO
+        sessionManager.startSession(
+          (remainingSeconds) => {
+            // Alerta antes da expiração
+            if (!sessionWarningShown) {
+              setSessionWarningShown(true);
+              const minutes = Math.ceil(remainingSeconds / 60);
+              toast.error(
+                `Sua sessão expirará em ${minutes} minuto${minutes !== 1 ? 's' : ''} por inatividade.`,
+                {
+                  duration: 10000,
+                  position: 'top-center',
+                  icon: '⏰'
+                }
+              );
+            }
+          },
+          (reason) => {
+            // Logout automático
+            toast.error(reason || 'Sessão expirada', {
+              duration: 5000,
+              icon: '🔒'
+            });
+            logout();
+          }
+        );
+
         setUsuario(usuarioEncontrado);
         return usuarioEncontrado;
       }
     } catch (error) {
       console.error('Erro ao buscar no workflowbr1:', error);
+      // Se erro não é de autenticação, re-throw
+      if (error.message.includes('incorreta') || error.message.includes('bloqueada') || error.message.includes('tentativas')) {
+        throw error;
+      }
     }
 
     // 2. Se não encontrou no workflowbr1, tenta no localStorage (sistema antigo)
     const usuarioEncontrado = usuarios.find(u => u.username === username);
     if (!usuarioEncontrado) {
+      // 🛡️ PROTEÇÃO: Registrar tentativa falhada
+      rateLimiter.recordAttempt(username, false);
       throw new Error('Usuário não encontrado');
     }
 
     const senhaCorreta = await verifyPassword(password, usuarioEncontrado.senha);
     if (!senhaCorreta) {
+      // 🛡️ PROTEÇÃO: Registrar tentativa falhada
+      const result = rateLimiter.recordAttempt(username, false);
+      if (result.message) {
+        throw new Error(`Senha incorreta. ${result.message}`);
+      }
       throw new Error('Senha incorreta');
     }
 
@@ -125,12 +216,55 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
+    // 🛡️ PROTEÇÃO: Registrar tentativa bem-sucedida (limpa rate limiter)
+    rateLimiter.recordAttempt(username, true);
+
+    // �️ CSRF: Rotacionar token após login bem-sucedido
+    csrfProtection.rotateAfterOperation('login');
+
+    // �🕐 INICIAR GERENCIAMENTO DE SESSÃO (sistema antigo)
+    sessionManager.startSession(
+      (remainingSeconds) => {
+        if (!sessionWarningShown) {
+          setSessionWarningShown(true);
+          const minutes = Math.ceil(remainingSeconds / 60);
+          toast.error(
+            `Sua sessão expirará em ${minutes} minuto${minutes !== 1 ? 's' : ''} por inatividade.`,
+            {
+              duration: 10000,
+              position: 'top-center',
+              icon: '⏰'
+            }
+          );
+        }
+      },
+      (reason) => {
+        toast.error(reason || 'Sessão expirada', {
+          duration: 5000,
+          icon: '🔒'
+        });
+        logout();
+      }
+    );
+
     setUsuario(usuarioEncontrado);
     return usuarioEncontrado;
   };
 
-  const logout = () => {
+  const logout = (csrfToken) => {
+    // 🛡️ PROTEÇÃO CSRF: Validar token para logout
+    if (csrfToken && !csrfProtection.validateOperation('logout', csrfToken)) {
+      console.warn('⚠️ Token CSRF inválido no logout (executando mesmo assim por segurança)');
+    }
+
+    // 🕐 ENCERRAR SESSÃO
+    sessionManager.endSession();
+    
+    // 🛡️ CSRF: Limpar token após logout
+    csrfProtection.clearToken();
+    
     setUsuario(null);
+    setSessionWarningShown(false);
     localStorage.removeItem('usuario');
     
     // Limpar cookies de autenticação para evitar login automático
@@ -160,7 +294,13 @@ export const AuthProvider = ({ children }) => {
     return novoUsuario;
   };
 
-  const atualizarUsuario = async (id, dadosAtualizados) => {
+  const atualizarUsuario = async (id, dadosAtualizados, csrfToken) => {
+    // 🛡️ PROTEÇÃO CSRF: Validar token para operações de atualização
+    const operacao = dadosAtualizados.senha ? 'updatePassword' : 'updateUser';
+    if (!csrfProtection.validateOperation(operacao, csrfToken)) {
+      throw new Error('Token de segurança inválido. Operação não autorizada.');
+    }
+
     const usuarioIndex = usuarios.findIndex(u => u.id === id);
     if (usuarioIndex === -1) {
       throw new Error('Usuário não encontrado');
@@ -174,12 +314,13 @@ export const AuthProvider = ({ children }) => {
     if (dadosAtualizados.senha) {
       usuarioAtualizado.senha = await encryptPassword(dadosAtualizados.senha);
       
-      // 🔑 ATUALIZAR AUTHKEY COM A SENHA DIGITADA (PRIORIDADE 1 NO LOGIN)
-      // authKey é a senha em texto plano que será verificada PRIMEIRO no login
-      usuarioAtualizado.authKey = dadosAtualizados.senha;
-      usuarioAtualizado.authKeyUpdatedAt = new Date();
-      
-      console.log('🔑 Campo authKey atualizado com a senha digitada pelo usuário');
+      // � SEGURANÇA: Remover authKey se existir (vulnerabilidade crítica)
+      // authKey armazenava senha em texto plano - NUNCA deve ser usado
+      if (usuarioAtualizado.authKey) {
+        delete usuarioAtualizado.authKey;
+        delete usuarioAtualizado.authKeyUpdatedAt;
+        console.warn('� Campo authKey removido por questões de segurança');
+      }
     }
 
     const novosUsuarios = [...usuarios];
@@ -190,13 +331,25 @@ export const AuthProvider = ({ children }) => {
       setUsuario(usuarioAtualizado);
     }
 
+    // 🛡️ CSRF: Rotacionar token após atualização sensível
+    csrfProtection.rotateAfterOperation(operacao);
+
     return usuarioAtualizado;
   };
 
-  const excluirUsuario = (id) => {
+  const excluirUsuario = (id, csrfToken) => {
+    // 🛡️ PROTEÇÃO CSRF: Validar token para exclusão
+    if (!csrfProtection.validateOperation('deleteUser', csrfToken)) {
+      throw new Error('Token de segurança inválido. Operação não autorizada.');
+    }
+
     setUsuarios(prev => prev.filter(u => u.id !== id));
+    
+    // 🛡️ CSRF: Rotacionar token após exclusão
+    csrfProtection.rotateAfterOperation('deleteUser');
+    
     if (usuario?.id === id) {
-      logout();
+      logout(csrfToken);
     }
   };
 

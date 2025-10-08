@@ -4847,6 +4847,7 @@ const App = () => {
   const [sistemaInicializado, setSistemaInicializado] = useState(false);
   const [fadeOutLoading, setFadeOutLoading] = useState(false);
   const [mostrarConteudo, setMostrarConteudo] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Aguardar a inicialização completa antes de mostrar conteúdo
   useEffect(() => {
@@ -4874,7 +4875,7 @@ const App = () => {
 
   // Mostrar loading até sistema estar completamente pronto
   if (loading || !mostrarConteudo) {
-    return <LoadingScreen fadeOut={fadeOutLoading} />;
+    return <LoadingScreen fadeOut={fadeOutLoading} isRedirecting={false} />;
   }
 
   // Renderizar conteúdo com fade-in suave

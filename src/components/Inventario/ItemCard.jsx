@@ -1,8 +1,41 @@
-import React, { useState } from 'react';
-import { Trash2, Pencil, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Trash2, Pencil, AlertCircle, CheckCircle2, AlertTriangle, AlertOctagon, XCircle } from 'lucide-react';
 
-const ItemCard = ({ item, onRemover, onEditar, detalhesEmprestimos }) => {
+const ItemCard = ({ item, onRemover, onEditar, detalhesEmprestimos, ferramentasDanificadas = [], ferramentasPerdidas = [] }) => {
   const [mostrarDetalhes, setMostrarDetalhes] = useState(false);
+  
+  // Calcular valores de perdas e danos para este item
+  const descontos = useMemo(() => {
+    const itemNormalized = item.nome.toLowerCase().trim();
+    
+    // Somar valores de ferramentas danificadas
+    const valorDanificadas = ferramentasDanificadas
+      .filter(f => f.nomeItem && f.nomeItem.toLowerCase().trim() === itemNormalized)
+      .reduce((total, f) => total + (parseFloat(f.valorEstimado) || 0), 0);
+    
+    // Somar valores de ferramentas perdidas
+    const valorPerdidas = ferramentasPerdidas
+      .filter(f => f.nomeItem && f.nomeItem.toLowerCase().trim() === itemNormalized)
+      .reduce((total, f) => total + (parseFloat(f.valorEstimado) || 0), 0);
+    
+    // Contar quantidades
+    const qtdDanificadas = ferramentasDanificadas
+      .filter(f => f.nomeItem && f.nomeItem.toLowerCase().trim() === itemNormalized)
+      .length;
+      
+    const qtdPerdidas = ferramentasPerdidas
+      .filter(f => f.nomeItem && f.nomeItem.toLowerCase().trim() === itemNormalized)
+      .length;
+    
+    return {
+      valorDanificadas,
+      valorPerdidas,
+      valorTotal: valorDanificadas + valorPerdidas,
+      qtdDanificadas,
+      qtdPerdidas,
+      temDescontos: valorDanificadas > 0 || valorPerdidas > 0
+    };
+  }, [item.nome, ferramentasDanificadas, ferramentasPerdidas]);
   
   const getStatusInfo = () => {
     if (item.disponivel === 0) {
@@ -87,11 +120,58 @@ const ItemCard = ({ item, onRemover, onEditar, detalhesEmprestimos }) => {
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm font-semibold text-gray-800 dark:text-gray-200">
-                <span>Valor Total</span>
-                <span className="text-green-600 dark:text-green-400">
+                <span>Valor Total Bruto</span>
+                <span className="text-gray-700 dark:text-gray-300">
                   {(parseFloat(item.valorUnitario) * parseInt(item.quantidade)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
               </div>
+              
+              {/* Descontos de Danificadas e Perdidas */}
+              {descontos.temDescontos && (
+                <>
+                  {descontos.valorDanificadas > 0 && (
+                    <div className="flex justify-between items-center text-sm text-orange-600 dark:text-orange-400">
+                      <span className="flex items-center gap-1">
+                        <AlertOctagon className="w-3 h-3" />
+                        Danificadas ({descontos.qtdDanificadas})
+                      </span>
+                      <span className="font-medium">
+                        - {descontos.valorDanificadas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {descontos.valorPerdidas > 0 && (
+                    <div className="flex justify-between items-center text-sm text-red-600 dark:text-red-400">
+                      <span className="flex items-center gap-1">
+                        <XCircle className="w-3 h-3" />
+                        Perdidas ({descontos.qtdPerdidas})
+                      </span>
+                      <span className="font-medium">
+                        - {descontos.valorPerdidas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="h-px bg-gray-300 dark:bg-gray-600 my-1"></div>
+                  
+                  <div className="flex justify-between items-center text-sm font-bold text-gray-900 dark:text-white">
+                    <span>Valor Total Líquido</span>
+                    <span className="text-green-600 dark:text-green-400">
+                      {((parseFloat(item.valorUnitario) * parseInt(item.quantidade)) - descontos.valorTotal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+                </>
+              )}
+              
+              {!descontos.temDescontos && (
+                <div className="flex justify-between items-center text-sm font-bold text-gray-900 dark:text-white">
+                  <span>Valor Total Líquido</span>
+                  <span className="text-green-600 dark:text-green-400">
+                    {(parseFloat(item.valorUnitario) * parseInt(item.quantidade)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+              )}
             </>
           )}
         </div>

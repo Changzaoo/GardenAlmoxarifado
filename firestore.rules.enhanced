@@ -1,0 +1,349 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ========================================
+    // FUNÇÕES AUXILIARES DE SEGURANÇA
+    // ========================================
+    
+    // Verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Verificar se o usuário é admin (nível > 2 no novo sistema)
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/usuario/$(request.auth.uid)).data.nivel > 2;
+    }
+    
+    // Verificar se o usuário é o dono do recurso
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Validar timestamp (evita backdating/futuredating excessivo)
+    // Permite até 5 minutos de diferença para compensar relógios dessincronizados
+    function isValidTimestamp(timestamp) {
+      let diff = request.time.toMillis() - timestamp;
+      return diff > -300000 && diff < 300000; // ±5 minutos
+    }
+    
+    // Verificar nível mínimo de acesso
+    function hasMinLevel(minLevel) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/usuario/$(request.auth.uid)).data.nivel >= minLevel;
+    }
+    
+    // 🛡️ NOVA: Validar tamanho de documento (máximo 1MB)
+    function isValidSize() {
+      return request.resource.size() < 1048576; // 1MB
+    }
+    
+    // 🛡️ NOVA: Validar número de campos (prevenir documentos muito grandes)
+    function hasReasonableFieldCount() {
+      return request.resource.data.keys().size() < 100;
+    }
+    
+    // 🛡️ NOVA: Verificar se usuário pertence ao mesmo setor/empresa
+    function isSameSector(targetUserId) {
+      let currentUser = get(/databases/$(database)/documents/usuario/$(request.auth.uid)).data;
+      let targetUser = get(/databases/$(database)/documents/usuario/$(targetUserId)).data;
+      return currentUser.setorId == targetUser.setorId && 
+             currentUser.empresaId == targetUser.empresaId;
+    }
+    
+    // 🛡️ NOVA: Rate limiting por usuário (máx 100 writes por minuto)
+    // Nota: Firestore não suporta rate limiting nativo, mas podemos contar operações
+    function withinRateLimit() {
+      // Esta função seria implementada com Cloud Functions
+      // Por enquanto retorna true, mas serve como placeholder
+      return true;
+    }
+    
+    // 🛡️ NOVA: Validar string não vazia e com tamanho razoável
+    function isValidString(str, maxLength) {
+      return str is string && 
+             str.size() > 0 && 
+             str.size() <= maxLength;
+    }
+    
+    // 🛡️ NOVA: Validar que campos obrigatórios existem
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ========================================
+    // REGRA PADRÃO: NEGAR TUDO
+    // ========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ========================================
+    // TEMPLATES
+    // ========================================
+    match /templates/{templateId} {
+      allow read: if isAuthenticated();
+      allow write: if hasMinLevel(2) && 
+                      isValidSize() && 
+                      hasReasonableFieldCount();
+    }
+
+    // ========================================
+    // USUÁRIOS
+    // ========================================
+    match /usuario/{userId} {
+      // Leitura: Admin ou próprio usuário ou usuário do mesmo setor
+      allow read: if isAdmin() || 
+                     isOwner(userId) ||
+                     (isAuthenticated() && isSameSector(userId));
+      
+      // Criação: Apenas admin
+      allow create: if isAdmin() && 
+                       isValidSize() && 
+                       hasRequiredFields(['usuario', 'nivel', 'ativo']) &&
+                       isValidString(request.resource.data.usuario, 50);
+      
+      // Atualização: Admin ou próprio usuário
+      // Usuário comum não pode alterar seu próprio nível
+      allow update: if (isAdmin() || isOwner(userId)) && 
+                       isValidSize() &&
+                       (!('nivel' in request.resource.data.diff(resource.data).affectedKeys()) || isAdmin());
+      
+      // Deleção: Apenas admin
+      allow delete: if isAdmin();
+    }
+
+    // ========================================
+    // INVENTÁRIO
+    // ========================================
+    match /inventario/{itemId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isAdmin() && 
+                       isValidTimestamp(request.resource.data.timestamp) &&
+                       isValidSize() &&
+                       hasRequiredFields(['nome', 'quantidade', 'timestamp']);
+      
+      allow update: if isAdmin() && 
+                       isValidTimestamp(request.resource.data.timestamp) &&
+                       isValidSize();
+      
+      allow delete: if isAdmin();
+    }
+
+    // ========================================
+    // DOCUMENTOS LEGAIS
+    // ========================================
+    match /legal/{docId} {
+      allow read: if isAuthenticated();
+      
+      allow write: if hasMinLevel(2) && 
+                      isValidSize() &&
+                      hasReasonableFieldCount();
+    }
+
+    // ========================================
+    // EMPRÉSTIMOS
+    // ========================================
+    match /emprestimos/{emprestimoId} {
+      allow read: if isAuthenticated();
+      
+      allow create, update: if isAdmin() && 
+                               isValidTimestamp(request.resource.data.timestamp) &&
+                               isValidSize() &&
+                               hasRequiredFields(['ferramenta', 'funcionario', 'timestamp']);
+      
+      allow delete: if isAdmin();
+    }
+
+    // ========================================
+    // VERIFICAÇÕES MENSAIS (IMUTÁVEL APÓS CRIAÇÃO)
+    // ========================================
+    match /verificacoes_mensais/{verificacaoId} {
+      allow read: if isAuthenticated();
+      
+      // 🛡️ Imutável: apenas criação e atualização (não deleção)
+      allow create: if isAdmin() && 
+                       isValidSize() &&
+                       hasReasonableFieldCount();
+      
+      allow update: if isAdmin() && 
+                       isValidSize();
+      
+      allow delete: if false; // Nunca permitir deleção
+    }
+
+    // ========================================
+    // FERRAMENTAS DANIFICADAS
+    // ========================================
+    match /ferramentas_danificadas/{ferramenta} {
+      allow read: if isAuthenticated();
+      
+      allow create, update: if isAdmin() && 
+                               isValidTimestamp(request.resource.data.timestamp) &&
+                               isValidSize();
+      
+      allow delete: if isAdmin();
+    }
+
+    // ========================================
+    // FERRAMENTAS PERDIDAS
+    // ========================================
+    match /ferramentas_perdidas/{ferramenta} {
+      allow read: if isAuthenticated();
+      
+      allow create, update: if isAdmin() && 
+                               isValidTimestamp(request.resource.data.timestamp) &&
+                               isValidSize();
+      
+      allow delete: if isAdmin();
+    }
+
+    // ========================================
+    // HISTÓRICO (IMUTÁVEL)
+    // ========================================
+    match /historico/{historicoId} {
+      allow read: if isAuthenticated();
+      
+      // 🛡️ Imutável: apenas criação, nunca atualização ou deleção
+      allow create: if isAdmin() && 
+                       isValidSize() &&
+                       hasRequiredFields(['acao', 'usuario', 'timestamp']);
+      
+      allow update, delete: if false; // Histórico é imutável
+    }
+
+    // ========================================
+    // SISTEMA DE MENSAGENS
+    // ========================================
+    match /conversas/{conversaId} {
+      // Apenas participantes podem ver a conversa
+      allow read: if isAuthenticated() && 
+                     request.auth.uid in resource.data.participantes;
+      
+      // Criar conversa
+      allow create: if isAuthenticated() && 
+                       request.auth.uid in request.resource.data.participantes &&
+                       isValidSize() &&
+                       hasRequiredFields(['participantes', 'criadoEm']);
+      
+      // Atualizar conversa (adicionar participantes, etc)
+      allow update: if isAuthenticated() && 
+                       request.auth.uid in resource.data.participantes &&
+                       isValidSize();
+      
+      // Deletar conversa
+      allow delete: if isAuthenticated() && 
+                       request.auth.uid in resource.data.participantes;
+      
+      // Mensagens dentro da conversa
+      match /mensagens/{mensagemId} {
+        // Apenas participantes da conversa podem ver mensagens
+        allow read: if isAuthenticated() && 
+                       request.auth.uid in get(/databases/$(database)/documents/conversas/$(conversaId)).data.participantes;
+        
+        // Criar mensagem (validar remetente)
+        allow create: if isAuthenticated() && 
+                         request.auth.uid in get(/databases/$(database)/documents/conversas/$(conversaId)).data.participantes &&
+                         request.resource.data.remetenteId == request.auth.uid &&
+                         isValidSize() &&
+                         hasRequiredFields(['texto', 'remetenteId', 'timestamp']) &&
+                         isValidString(request.resource.data.texto, 5000); // máx 5000 chars
+        
+        // 🛡️ Mensagens são imutáveis (não podem ser editadas ou deletadas)
+        allow update, delete: if false;
+      }
+    }
+
+    // ========================================
+    // ANALYTICS DE ACESSO (APENAS LEITURA ADMIN)
+    // ========================================
+    match /analytics_acessos/{acessoId} {
+      // Apenas admin nível 4+ pode ler
+      allow read: if hasMinLevel(4);
+      
+      // Qualquer usuário autenticado pode criar registro de acesso
+      allow create: if isAuthenticated() && 
+                       isValidSize() &&
+                       hasRequiredFields(['userId', 'timestamp']);
+      
+      // 🛡️ Imutável: nunca atualizar ou deletar
+      allow update, delete: if false;
+    }
+
+    // ========================================
+    // BACKUP TEST
+    // ========================================
+    match /backup_test/{docId} {
+      allow read: if hasMinLevel(3);
+      allow write: if hasMinLevel(3) && isValidSize();
+    }
+
+    // ========================================
+    // SISTEMA DE PONTOS
+    // ========================================
+    match /pontos/{pontoId} {
+      allow read: if isAuthenticated();
+      
+      // Criar ponto
+      allow create: if isAuthenticated() && 
+                       hasRequiredFields(['userId', 'timestamp', 'tipo']) &&
+                       request.resource.data.userId == request.auth.uid &&
+                       isValidSize();
+      
+      // Apenas admin pode atualizar/deletar pontos
+      allow update, delete: if isAdmin();
+    }
+
+    // ========================================
+    // WORK PONTO (CONTROLE DE PONTO)
+    // ========================================
+    match /WorkPonto/{pontoId} {
+      allow read: if isAuthenticated();
+      
+      // Criar registro de ponto
+      allow create: if isAuthenticated() && 
+                       isValidSize() &&
+                       hasReasonableFieldCount();
+      
+      // Apenas admin pode atualizar/deletar
+      allow update, delete: if isAdmin();
+    }
+
+    // ========================================
+    // 🆕 LOGS DE SEGURANÇA (NOVO)
+    // ========================================
+    match /security_logs/{logId} {
+      // Apenas admin pode ler logs
+      allow read: if hasMinLevel(4);
+      
+      // Sistema pode criar logs
+      allow create: if isAuthenticated() && 
+                       isValidSize() &&
+                       hasRequiredFields(['event', 'userId', 'timestamp']);
+      
+      // Logs são imutáveis
+      allow update, delete: if false;
+    }
+
+    // ========================================
+    // 🆕 SESSÕES ATIVAS (NOVO)
+    // ========================================
+    match /active_sessions/{sessionId} {
+      // Usuário pode ver apenas suas próprias sessões
+      allow read: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Criar sessão
+      allow create: if isAuthenticated() && 
+                       request.resource.data.userId == request.auth.uid &&
+                       isValidSize();
+      
+      // Usuário pode encerrar suas próprias sessões
+      allow update, delete: if isAuthenticated() && 
+                               resource.data.userId == request.auth.uid;
+    }
+  }
+}

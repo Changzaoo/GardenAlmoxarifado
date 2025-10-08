@@ -244,6 +244,8 @@ const InventarioTab = ({
               atualizarItem={atualizarItem}
               readonly={isFuncionario}
               obterDetalhesEmprestimos={obterDetalhesEmprestimos}
+              ferramentasDanificadas={ferramentasDanificadas}
+              ferramentasPerdidas={ferramentasPerdidas}
             />
           </div>
         );

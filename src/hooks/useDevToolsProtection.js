@@ -2,13 +2,33 @@ import { useEffect, useState } from 'react';
 import { SECURITY_CONFIG, obscure } from '../config/security';
 
 /**
- * Sistema Anti-DevTools Robusto
- * Bloqueia completamente o carregamento do sistema se DevTools for detectado
+ * 🔒 Sistema Anti-DevTools Ultra Robusto
+ * Bloqueia COMPLETAMENTE o carregamento do sistema se DevTools (F12) for detectado
+ * Detecta abertura do console em TEMPO REAL e impede acesso imediato
  */
 export const useDevToolsProtection = () => {
   const [devToolsDetected, setDevToolsDetected] = useState(false);
+  const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
+    // 🚨 Verificação INICIAL antes de carregar qualquer coisa
+    const initialCheck = () => {
+      const isDevToolsOpen = 
+        window.outerWidth - window.innerWidth > 160 ||
+        window.outerHeight - window.innerHeight > 160;
+      
+      if (isDevToolsOpen) {
+        blockApplication('DevTools detectado ao iniciar');
+        return true;
+      }
+      return false;
+    };
+
+    // Se DevTools já está aberto, bloquear IMEDIATAMENTE
+    if (initialCheck()) {
+      return;
+    }
+
     if (!SECURITY_CONFIG.devTools.enabled) return;
 
     // Esconder console.log e outros métodos

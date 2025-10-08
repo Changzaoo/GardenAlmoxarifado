@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebaseConfig';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, serverTimestamp } from 'firebase/firestore';
-import { Building2, Briefcase, Clock, Plus, Edit2, Trash2, Save, X, ChevronRight, AlertTriangle, Mail, Phone, MapPin, User, FileText, Calendar } from 'lucide-react';
+import { Building2, Briefcase, Clock, Plus, Edit2, Trash2, Save, X, ChevronRight, ChevronDown, ChevronUp, AlertTriangle, Mail, Phone, MapPin, User, FileText, Calendar, DollarSign, Package, AlertOctagon, XCircle, TrendingUp, Boxes } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { isAdmin as checkIsAdmin, hasManagementPermission } from '../../constants/permissoes';
 
@@ -15,10 +15,18 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
   const [loading, setLoading] = useState(true);
   const [editando, setEditando] = useState(null);
 
+  // Estados para dados financeiros
+  const [inventario, setInventario] = useState([]);
+  const [ferramentasDanificadas, setFerramentasDanificadas] = useState([]);
+  const [ferramentasPerdidas, setFerramentasPerdidas] = useState([]);
+
   // Estados de modais
   const [modalEmpresa, setModalEmpresa] = useState(false);
   const [modalSetor, setModalSetor] = useState(false);
   const [modalHorario, setModalHorario] = useState(false);
+
+  // Estado para controlar setores expandidos/minimizados
+  const [setoresExpandidos, setSetoresExpandidos] = useState({});
 
   // Estados de formulário
   const [formEmpresa, setFormEmpresa] = useState({ nome: '', cnpj: '', endereco: '', telefone: '', email: '', ativo: true });
@@ -28,9 +36,93 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
   // Verificar permissões
   const isAdmin = checkIsAdmin(usuarioAtual?.nivel) || hasManagementPermission(usuarioAtual?.nivel);
 
+  // Função para carregar dados financeiros
+  const carregarDadosFinanceiros = async () => {
+    try {
+      // Carregar inventário
+      const inventarioRef = collection(db, 'inventario');
+      const inventarioSnap = await getDocs(inventarioRef);
+      const inventarioData = inventarioSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setInventario(inventarioData);
+
+      // Carregar ferramentas danificadas
+      const danificadasRef = collection(db, 'ferramentas_danificadas');
+      const danificadasSnap = await getDocs(danificadasRef);
+      const danificadasData = danificadasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setFerramentasDanificadas(danificadasData);
+
+      // Carregar ferramentas perdidas
+      const perdidasRef = collection(db, 'ferramentas_perdidas');
+      const perdidasSnap = await getDocs(perdidasRef);
+      const perdidasData = perdidasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setFerramentasPerdidas(perdidasData);
+    } catch (error) {
+      console.error('Erro ao carregar dados financeiros:', error);
+    }
+  };
+
+  // Função para calcular valores do setor
+  const calcularValoresSetor = (setorId, setorNome) => {
+    const itensSetor = inventario.filter(item => 
+      item.setorId === setorId || item.setorNome === setorNome
+    );
+
+    const valorBruto = itensSetor.reduce((sum, item) => {
+      const valor = parseFloat(item.valorUnitario || 0);
+      const qtd = parseInt(item.quantidade || 0);
+      return sum + (valor * qtd);
+    }, 0);
+
+    const danificadasSetor = ferramentasDanificadas.filter(d => 
+      itensSetor.some(i => i.nome.toLowerCase().trim() === d.nomeItem?.toLowerCase().trim())
+    );
+    const valorDanificadas = danificadasSetor.reduce((sum, d) => sum + (parseFloat(d.valorEstimado) || 0), 0);
+
+    const perdidasSetor = ferramentasPerdidas.filter(p => 
+      itensSetor.some(i => i.nome.toLowerCase().trim() === p.nomeItem?.toLowerCase().trim())
+    );
+    const valorPerdidas = perdidasSetor.reduce((sum, p) => sum + (parseFloat(p.valorEstimado) || 0), 0);
+
+    return {
+      valorBruto,
+      valorDanificadas,
+      valorPerdidas,
+      valorLiquido: valorBruto - valorDanificadas - valorPerdidas,
+      totalItens: itensSetor.length,
+      quantidadeTotal: itensSetor.reduce((sum, item) => sum + parseInt(item.quantidade || 0), 0)
+    };
+  };
+
+  // Função para calcular valores da empresa (soma de todos os setores)
+  const calcularValoresEmpresa = (empresaId) => {
+    const setoresEmpresa = setores.filter(s => s.empresaId === empresaId);
+    
+    return setoresEmpresa.reduce((total, setor) => {
+      const valores = calcularValoresSetor(setor.id, setor.nome);
+      return {
+        valorBruto: total.valorBruto + valores.valorBruto,
+        valorDanificadas: total.valorDanificadas + valores.valorDanificadas,
+        valorPerdidas: total.valorPerdidas + valores.valorPerdidas,
+        valorLiquido: total.valorLiquido + valores.valorLiquido,
+        totalItens: total.totalItens + valores.totalItens,
+        quantidadeTotal: total.quantidadeTotal + valores.quantidadeTotal,
+        totalSetores: total.totalSetores + 1
+      };
+    }, { 
+      valorBruto: 0, 
+      valorDanificadas: 0, 
+      valorPerdidas: 0, 
+      valorLiquido: 0,
+      totalItens: 0,
+      quantidadeTotal: 0,
+      totalSetores: 0
+    });
+  };
+
   // Carregar dados iniciais
   useEffect(() => {
     carregarEmpresas();
+    carregarDadosFinanceiros();
   }, []);
 
   useEffect(() => {
@@ -295,12 +387,12 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 shadow-xl">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 shadow-xl">
         <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
           <Building2 className="w-8 h-8" />
           Gerenciamento Unificado
         </h1>
-        <p className="text-purple-100 mt-2">
+        <p className="text-blue-100 mt-2">
           Gerencie empresas, setores e horários personalizados
         </p>
       </div>
@@ -308,7 +400,7 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
       {/* Breadcrumb de Navegação Hierárquica */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md">
         <div className="flex items-center gap-2 text-sm flex-wrap">
-          <Building2 className="w-5 h-5 text-purple-600" />
+          <Building2 className="w-5 h-5 text-blue-600" />
           <span className="font-semibold text-gray-700 dark:text-gray-300">
             {empresaSelecionada ? empresaSelecionada.nome : 'Selecione uma empresa'}
           </span>
@@ -334,10 +426,10 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Coluna 1: Empresas */}
         <div className="space-y-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 border-purple-200 dark:border-purple-700">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 border-blue-200 dark:border-blue-700">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <Building2 className="w-6 h-6 text-purple-600" />
+                <Building2 className="w-6 h-6 text-blue-600" />
                 Empresas ({empresas.length})
               </h2>
               {isAdmin && (
@@ -346,7 +438,7 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                     handleCancelar();
                     setModalEmpresa(true);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all font-bold shadow-md"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all font-bold shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   Nova
@@ -361,19 +453,45 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                   <p>Nenhuma empresa cadastrada</p>
                 </div>
               ) : (
-                empresas.map((empresa) => (
+                empresas.map((empresa) => {
+                  const valores = calcularValoresEmpresa(empresa.id);
+                  return (
                   <div
                     key={empresa.id}
                     className={`p-4 rounded-xl border-2 transition-all cursor-pointer hover:shadow-lg ${
                       empresaSelecionada?.id === empresa.id
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
                     }`}
                     onClick={() => setEmpresaSelecionada(empresa)}
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{empresa.nome}</h3>
+                        
+                        {/* Valores Financeiros */}
+                        <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-3 mb-2">
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-semibold mb-1">
+                                <DollarSign className="w-4 h-4" />
+                                <span>Valor Líquido:</span>
+                              </div>
+                              <div className="text-green-700 dark:text-green-400 font-bold text-sm">
+                                R$ {valores.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-semibold mb-1">
+                                <Package className="w-4 h-4" />
+                                <span>Itens:</span>
+                              </div>
+                              <div className="text-gray-700 dark:text-gray-300 font-bold text-sm">
+                                {valores.totalItens} itens
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                         
                         {empresa.cnpj && (
                           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
@@ -434,8 +552,78 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                         </div>
                       )}
                     </div>
+
+                    {/* Setores da Empresa */}
+                    {(() => {
+                      const setoresDaEmpresa = setores.filter(s => s.empresaId === empresa.id);
+                      if (setoresDaEmpresa.length > 0) {
+                        const isExpanded = setoresExpandidos[empresa.id];
+                        return (
+                          <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSetoresExpandidos(prev => ({
+                                  ...prev,
+                                  [empresa.id]: !prev[empresa.id]
+                                }));
+                              }}
+                              className="w-full flex items-center justify-between gap-2 mb-2 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                  Setores ({setoresDaEmpresa.length})
+                                </span>
+                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              )}
+                            </button>
+                            
+                            {isExpanded && (
+                              <div className="space-y-2">
+                                {setoresDaEmpresa.map(setor => {
+                                  const valoresSetor = calcularValoresSetor(setor.id, setor.nome);
+                                  return (
+                                    <div 
+                                      key={setor.id}
+                                      className="bg-white dark:bg-gray-700 rounded-lg p-2 border border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer"
+                                      onClick={() => setSetorSelecionado(setor.id)}
+                                    >
+                                      <div className="flex justify-between items-center mb-1">
+                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                          {setor.nome}
+                                        </span>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="flex items-center gap-1">
+                                          <DollarSign className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                          <span className="text-gray-600 dark:text-gray-400">Líquido:</span>
+                                          <span className="font-bold text-green-700 dark:text-green-400">
+                                            R$ {valoresSetor.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <Package className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                                          <span className="text-gray-600 dark:text-gray-400">{valoresSetor.totalItens} itens</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -476,7 +664,9 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                     <p>Nenhum setor cadastrado</p>
                   </div>
                 ) : (
-                  setores.map((setor) => (
+                  setores.map((setor) => {
+                    const valores = calcularValoresSetor(setor.id, setor.nome);
+                    return (
                     <div
                       key={setor.id}
                       className={`p-4 rounded-xl border-2 transition-all cursor-pointer hover:shadow-lg ${
@@ -489,6 +679,62 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{setor.nome}</h3>
+                          
+                          {/* Valores Financeiros */}
+                          <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-3 mb-2">
+                            <div className="space-y-2 text-xs">
+                              <div className="flex justify-between items-center">
+                                <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                                  <TrendingUp className="w-4 h-4" />
+                                  Valor Bruto:
+                                </span>
+                                <span className="font-bold text-gray-700 dark:text-gray-300">
+                                  R$ {valores.valorBruto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                              {valores.valorDanificadas > 0 && (
+                                <div className="flex justify-between items-center text-orange-600 dark:text-orange-400">
+                                  <span className="flex items-center gap-1.5">
+                                    <AlertOctagon className="w-4 h-4" />
+                                    Danificadas:
+                                  </span>
+                                  <span className="font-bold">
+                                    - R$ {valores.valorDanificadas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                              )}
+                              {valores.valorPerdidas > 0 && (
+                                <div className="flex justify-between items-center text-red-600 dark:text-red-400">
+                                  <span className="flex items-center gap-1.5">
+                                    <XCircle className="w-4 h-4" />
+                                    Perdidas:
+                                  </span>
+                                  <span className="font-bold">
+                                    - R$ {valores.valorPerdidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex justify-between items-center pt-2 border-t border-blue-300 dark:border-blue-600">
+                                <span className="font-bold text-green-700 dark:text-green-400 flex items-center gap-1.5">
+                                  <DollarSign className="w-4 h-4" />
+                                  Líquido:
+                                </span>
+                                <span className="font-bold text-green-700 dark:text-green-400">
+                                  R$ {valores.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-blue-600 dark:text-blue-400 pt-1">
+                                <span className="flex items-center gap-1.5">
+                                  <Package className="w-4 h-4" />
+                                  {valores.totalItens} itens
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                  <Boxes className="w-4 h-4" />
+                                  {valores.quantidadeTotal} unid.
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                           
                           {setor.descricao && (
                             <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -534,7 +780,8 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                         </div>
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}
@@ -635,7 +882,7 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
       {modalEmpresa && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 p-6 rounded-t-2xl">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-t-2xl">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                   <Building2 className="w-7 h-7" />
@@ -721,7 +968,7 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all font-bold shadow-lg transform hover:scale-105 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all font-bold shadow-lg transform hover:scale-105 flex items-center justify-center gap-2"
                 >
                   <Save className="w-5 h-5" />
                   {editando?.tipo === 'empresa' ? 'Atualizar' : 'Cadastrar'}

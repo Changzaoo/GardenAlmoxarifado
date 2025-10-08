@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desbloquear Proteção DevTools</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .status {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .status.blocked {
+            background: #fee;
+            color: #c00;
+            border: 2px solid #fcc;
+        }
+
+        .status.unblocked {
+            background: #efe;
+            color: #0a0;
+            border: 2px solid #cfc;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-unlock {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-unlock:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-back {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-back:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-relock {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-relock:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .info h3 {
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .info p {
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .info code {
+            background: #1e293b;
+            color: #10b981;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .icon.animated {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon animated" id="icon">🔒</div>
+        <h1>Proteção DevTools</h1>
+        <p class="subtitle">Gerenciar proteção contra inspeção</p>
+        
+        <div class="status blocked" id="status">
+            ⚠️ Proteção está ATIVA
+        </div>
+
+        <div class="buttons">
+            <button class="btn-unlock" onclick="unlockProtection()">
+                🔓 Desbloquear
+            </button>
+            <button class="btn-back" onclick="goBack()">
+                ← Voltar ao App
+            </button>
+            <button class="btn-relock" onclick="relockProtection()">
+                🔒 Reativar
+            </button>
+        </div>
+
+        <div class="info">
+            <h3>ℹ️ Informações</h3>
+            <p><strong>Status Atual:</strong> <span id="statusText">Verificando...</span></p>
+            <p><strong>Como funciona:</strong></p>
+            <ul style="margin-left: 20px; color: #475569;">
+                <li>🔓 <strong>Desbloquear:</strong> Desabilita a proteção permanentemente</li>
+                <li>🔒 <strong>Reativar:</strong> Volta a ativar a proteção</li>
+                <li>← <strong>Voltar:</strong> Retorna à aplicação principal</li>
+            </ul>
+            <p style="margin-top: 15px;">
+                <strong>Via Console:</strong><br>
+                <code>localStorage.setItem('__DEVTOOLS_DISABLED__', 'true')</code>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Verificar status atual
+        function checkStatus() {
+            try {
+                const isDisabled = localStorage.getItem('__DEVTOOLS_DISABLED__') === 'true';
+                const statusEl = document.getElementById('status');
+                const statusTextEl = document.getElementById('statusText');
+                const iconEl = document.getElementById('icon');
+
+                if (isDisabled) {
+                    statusEl.className = 'status unblocked';
+                    statusEl.innerHTML = '✅ Proteção está DESABILITADA';
+                    statusTextEl.textContent = 'Desabilitada (DevTools podem ser usados)';
+                    iconEl.textContent = '🔓';
+                } else {
+                    statusEl.className = 'status blocked';
+                    statusEl.innerHTML = '⚠️ Proteção está ATIVA';
+                    statusTextEl.textContent = 'Ativa (DevTools serão bloqueados)';
+                    iconEl.textContent = '🔒';
+                }
+            } catch (error) {
+                console.error('Erro ao verificar status:', error);
+            }
+        }
+
+        // Desbloquear proteção
+        function unlockProtection() {
+            try {
+                localStorage.setItem('__DEVTOOLS_DISABLED__', 'true');
+                checkStatus();
+                alert('✅ Proteção DESABILITADA com sucesso!\n\nAgora você pode usar o DevTools livremente.\n\nPara aplicar as mudanças, recarregue a página principal.');
+            } catch (error) {
+                alert('❌ Erro ao desabilitar proteção: ' + error.message);
+            }
+        }
+
+        // Reativar proteção
+        function relockProtection() {
+            try {
+                localStorage.removeItem('__DEVTOOLS_DISABLED__');
+                checkStatus();
+                alert('🔒 Proteção REATIVADA com sucesso!\n\nDevTools serão bloqueados novamente.\n\nPara aplicar as mudanças, recarregue a página principal.');
+            } catch (error) {
+                alert('❌ Erro ao reativar proteção: ' + error.message);
+            }
+        }
+
+        // Voltar ao app
+        function goBack() {
+            if (confirm('Deseja voltar à aplicação principal?')) {
+                window.location.href = '/';
+            }
+        }
+
+        // Verificar status ao carregar
+        checkStatus();
+
+        // Atualizar status a cada segundo
+        setInterval(checkStatus, 1000);
+
+        console.log('🔧 Painel de Controle DevTools Protection carregado');
+        console.log('');
+        console.log('Comandos disponíveis:');
+        console.log('  unlockProtection()  - Desabilita proteção');
+        console.log('  relockProtection()  - Reativa proteção');
+        console.log('  checkStatus()       - Verifica status atual');
+    </script>
+</body>
+</html>

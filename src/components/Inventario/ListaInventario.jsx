@@ -4,7 +4,15 @@ import ItemCard from './ItemCard';
 import { useToast } from '../ToastProvider';
 import ModalEditarItem from './ModalEditarItem';
 
-const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, obterDetalhesEmprestimos }) => {
+const ListaInventario = ({ 
+  inventario, 
+  emprestimos, 
+  removerItem, 
+  atualizarItem, 
+  obterDetalhesEmprestimos,
+  ferramentasDanificadas = [],
+  ferramentasPerdidas = []
+}) => {
   const [filtroInventario, setFiltroInventario] = useState('');
   const [itemParaEditar, setItemParaEditar] = useState(null);
   const [ordenacao, setOrdenacao] = useState('nome-asc'); // nome-asc, nome-desc, qtd-asc, qtd-desc, valor-asc, valor-desc
@@ -164,6 +172,8 @@ const ListaInventario = ({ inventario, emprestimos, removerItem, atualizarItem, 
               onRemover={handleRemoverItem}
               onEditar={() => setItemParaEditar(item)}
               detalhesEmprestimos={obterDetalhesEmprestimos(item.nome)}
+              ferramentasDanificadas={ferramentasDanificadas}
+              ferramentasPerdidas={ferramentasPerdidas}
             />
           ))}
         </div>

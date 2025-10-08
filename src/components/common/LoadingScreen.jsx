@@ -32,13 +32,13 @@ const LoadingScreen = ({
       // Fase de redirecionamento (só aparece se isRedirecting for true)
       const redirectPhase = { 
         text: 'Redirecionando para página favorita...', 
-        duration: 500, 
+        duration: 1200, 
         progress: 95 
       };
       
       const finalPhase = { 
         text: 'Finalizando...', 
-        duration: 300, 
+        duration: 500, 
         progress: 100 
       };
       

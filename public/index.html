@@ -43,6 +43,33 @@
     
     <title>Workflow - Sistema de Gestão</title>
     
+    <!-- 🛡️ PROTEÇÃO ANTI-DEVTOOLS - CARREGA ANTES DE TUDO -->
+    <script>
+      // Script inline para bloqueio IMEDIATO (MODO SUAVE)
+      (function() {
+        'use strict';
+        
+        // Não bloquear em mobile/tablet
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) return;
+        
+        // Não bloquear em telas pequenas
+        if (window.innerWidth < 800 || window.innerHeight < 600) return;
+        
+        const detect = () => {
+          const threshold = 200; // Era 160 - aumentado para evitar falsos positivos
+          const widthDiff = window.outerWidth - window.innerWidth;
+          const heightDiff = window.outerHeight - window.innerHeight;
+          
+          // Precisa ter diferença significativa em AMBAS dimensões
+          return (widthDiff > threshold && heightDiff > threshold);
+        };
+        
+        // Desabilitado detecção inicial - apenas bloqueia teclas
+        // if (detect()) { ... }
+      })();
+    </script>
+    
     <!-- SEO -->
     <meta name="robots" content="noindex, nofollow" />
     <meta name="author" content="Workflow" />
@@ -66,6 +93,9 @@
   </head>
   
   <body>
+    <!-- 🛡️ PROTEÇÃO ANTI-DEVTOOLS - Script Principal -->
+    <script src="%PUBLIC_URL%/devtools-blocker.js"></script>
+    
     <noscript>
       <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
         <h1>JavaScript Necessário</h1>
