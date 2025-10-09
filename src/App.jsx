@@ -19,6 +19,8 @@ import NotificationPermissionModal from './components/Notifications/Notification
 import BiometricAuth from './components/Auth/BiometricAuth';
 import CriarAdminTemp from './components/Auth/CriarAdminTemp';
 import OfflineIndicator from './components/OfflineIndicator';
+import QRCodeScanner from './components/QRCode/QRCodeScanner';
+import PasswordResetForm from './components/PasswordReset/PasswordResetForm';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Componentes das páginas
@@ -31,8 +33,14 @@ import { autoSyncService } from './utils/autoSyncService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import AutoSyncIndicator from './components/Sync/AutoSyncIndicator';
 
+// 🆘 CORREÇÃO DE EMERGÊNCIA - Firestore
+import { detectarECorrigirErroFirestore, adicionarBotaoEmergencia } from './utils/firestoreEmergency';
+
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
+
+// 🔥 Ativar detecção automática de erros do Firestore
+detectarECorrigirErroFirestore();
 
 // Componente interno para usar o hook de analytics
 function AppContent() {
@@ -129,6 +137,11 @@ function AppContent() {
       </div>
     );
   }
+
+  // 🆘 Adicionar botão de emergência ao DOM
+  useEffect(() => {
+    adicionarBotaoEmergencia();
+  }, []);
   
   return (
     <div className="App">
@@ -156,6 +169,8 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<LoginFormContainer />} />
         <Route path="/criar-admin-temp" element={<CriarAdminTemp />} />
+        <Route path="/qr-auth" element={<QRCodeScanner />} />
+        <Route path="/redefinir-senha" element={<PasswordResetForm onVoltar={() => window.location.href = '/'} />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<PrivateRoute requiredLevel={1}><Workflow /></PrivateRoute>} />
           <Route path="/estatisticas-acesso" element={<PrivateRoute requiredLevel={4}><EstatisticasAcesso /></PrivateRoute>} />

@@ -457,10 +457,27 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
       return;
     }
 
+    // Validações iniciais
+    if (!targetUserId || !targetUserName) {
+      console.error('❌ Dados do funcionário inválidos:', { targetUserId, targetUserName });
+      showToast('Erro: dados do funcionário não encontrados', 'error');
+      return;
+    }
+
+    // Verificar se pelo menos um ponto foi preenchido
+    const temPontoPreenchido = Object.values(pontosEdicao).some(
+      hora => hora && hora.trim() !== ''
+    );
+    
+    if (!temPontoPreenchido) {
+      showToast('Preencha pelo menos um horário', 'error');
+      return;
+    }
+
     try {
       console.log('💾 Iniciando salvamento de pontos...');
       console.log('📅 Data da edição:', dataEdicao);
-      console.log('👤 Funcionário:', targetUserName);
+      console.log('👤 Funcionário:', targetUserName, '(ID:', targetUserId, ')');
       console.log('⏰ Pontos a salvar:', pontosEdicao);
 
       // Remover pontos antigos do dia selecionado
@@ -492,8 +509,15 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
 
       console.log('🗑️ Total de pontos a remover:', pontosParaRemover.length);
 
+      // Remover pontos antigos
       for (const doc of pontosParaRemover) {
-        await deleteDoc(doc.ref);
+        try {
+          await deleteDoc(doc.ref);
+          console.log('✅ Ponto removido:', doc.id);
+        } catch (deleteError) {
+          console.error('❌ Erro ao deletar ponto:', doc.id, deleteError);
+          throw new Error(`Erro ao remover ponto antigo: ${deleteError.message}`);
+        }
       }
 
       // Adicionar novos pontos
@@ -507,37 +531,82 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
       let pontosAdicionados = 0;
       for (const ponto of pontosParaAdicionar) {
         if (ponto.hora && ponto.hora.trim() !== '') {
-          const [hora, minuto] = ponto.hora.split(':').map(Number);
-          
-          // Criar data usando o formato correto para evitar problemas de fuso horário
-          // dataEdicao está no formato YYYY-MM-DD
-          const [ano, mes, dia] = dataEdicao.split('-').map(Number);
-          const data = new Date(ano, mes - 1, dia, hora, minuto, 0, 0);
+          try {
+            // Validar formato da hora
+            const horaMatch = ponto.hora.match(/^(\d{2}):(\d{2})$/);
+            if (!horaMatch) {
+              console.error('❌ Formato de hora inválido:', ponto.hora);
+              throw new Error(`Formato de hora inválido: ${ponto.hora}. Use HH:MM`);
+            }
 
-          const novoPonto = {
-            funcionarioId: String(targetUserId),
-            funcionarioNome: targetUserName,
-            tipo: ponto.tipo,
-            data: data.toISOString(),
-            timestamp: data.getTime()
-          };
+            const [hora, minuto] = ponto.hora.split(':').map(Number);
+            
+            // Validar valores de hora e minuto
+            if (hora < 0 || hora > 23) {
+              throw new Error(`Hora inválida: ${hora}. Deve estar entre 0 e 23`);
+            }
+            if (minuto < 0 || minuto > 59) {
+              throw new Error(`Minuto inválido: ${minuto}. Deve estar entre 0 e 59`);
+            }
+            
+            // Criar data usando o formato correto para evitar problemas de fuso horário
+            const [ano, mes, dia] = dataEdicao.split('-').map(Number);
+            const data = new Date(ano, mes - 1, dia, hora, minuto, 0, 0);
 
-          console.log(`➕ Adicionando ponto: ${ponto.tipo} às ${ponto.hora}`);
-          console.log(`   Data ISO: ${data.toISOString()}`);
-          console.log(`   Timestamp: ${data.getTime()}`);
-          console.log(`   Data check: ${data.toISOString().split('T')[0]}`);
-          
-          await addDoc(collection(db, 'pontos'), novoPonto);
-          pontosAdicionados++;
+            // Validar se a data foi criada corretamente
+            if (isNaN(data.getTime())) {
+              throw new Error(`Data inválida criada: ${dataEdicao} ${ponto.hora}`);
+            }
+
+            const novoPonto = {
+              funcionarioId: String(targetUserId),
+              funcionarioNome: String(targetUserName),
+              tipo: ponto.tipo,
+              data: data.toISOString(),
+              timestamp: data.getTime()
+            };
+
+            console.log(`➕ Adicionando ponto: ${ponto.tipo} às ${ponto.hora}`);
+            console.log('   Objeto completo:', JSON.stringify(novoPonto, null, 2));
+            
+            const docRef = await addDoc(collection(db, 'pontos'), novoPonto);
+            console.log('✅ Ponto adicionado com ID:', docRef.id);
+            pontosAdicionados++;
+          } catch (addError) {
+            console.error(`❌ Erro ao adicionar ponto ${ponto.tipo}:`, addError);
+            throw new Error(`Erro ao adicionar ${ponto.tipo}: ${addError.message}`);
+          }
         }
       }
 
+      if (pontosAdicionados === 0) {
+        showToast('Nenhum ponto foi salvo. Verifique os horários preenchidos.', 'warning');
+        return;
+      }
+
       console.log('✅ Pontos adicionados:', pontosAdicionados);
-      showToast(`Pontos atualizados com sucesso! ${pontosAdicionados} registros salvos.`, 'success');
+      showToast(`✅ Pontos atualizados com sucesso! ${pontosAdicionados} registro(s) salvo(s).`, 'success');
       setMostrarModalEdicao(false);
+      
+      // Recarregar dados após salvar
+      if (typeof carregarPontosDia === 'function') {
+        carregarPontosDia();
+      }
     } catch (error) {
       console.error('❌ Erro ao salvar pontos:', error);
-      showToast('Erro ao salvar pontos. Tente novamente.', 'error');
+      console.error('Stack trace:', error.stack);
+      
+      // Mensagem de erro mais específica
+      let mensagemErro = 'Erro ao salvar pontos. ';
+      if (error.code === 'permission-denied') {
+        mensagemErro += 'Você não tem permissão para editar pontos.';
+      } else if (error.message) {
+        mensagemErro += error.message;
+      } else {
+        mensagemErro += 'Tente novamente.';
+      }
+      
+      showToast(mensagemErro, 'error');
     }
   };
 

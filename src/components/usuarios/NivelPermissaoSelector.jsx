@@ -99,11 +99,14 @@ const NivelPermissaoSelector = ({
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
       >
-        {niveisDisponiveis.map(nivelOption => (
-          <option key={nivelOption.valor} value={nivelOption.valor}>
-            {showIcon && nivelOption.icone} {nivelOption.label} (Nível {nivelOption.valor})
-          </option>
-        ))}
+        {niveisDisponiveis.map(nivelOption => {
+          if (!nivelOption) return null; // Proteção contra opções inválidas
+          return (
+            <option key={nivelOption.valor} value={nivelOption.valor}>
+              {showIcon && nivelOption.icone} {nivelOption.label} (Nível {nivelOption.valor})
+            </option>
+          );
+        })}
       </select>
 
       {showDescription && nivel !== null && nivel !== undefined && (

@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../config/firebaseDual';
+import { db } from '../../firebaseConfig';
 import {
   Key,
   Plus,
@@ -22,7 +22,8 @@ import {
   Briefcase,
   UserPlus,
   UserCheck,
-  Tabs
+  Tabs,
+  QrCode
 } from 'lucide-react';
 import {
   criarCodigoRedefinicao,
@@ -32,6 +33,13 @@ import {
   criarCodigoCriacaoConta,
   listarCodigosCriacaoAtivos
 } from '../../services/passwordReset';
+import {
+  criarQRCodeCriacaoConta,
+  criarQRCodeRedefinicaoSenha,
+  listarQRCodesAtivos,
+  revogarQRCode
+} from '../../services/qrCodeAuth';
+import QRCodeDisplay from '../QRCode/QRCodeDisplay';
 import { useAuth } from '../Workflow';
 
 const PasswordResetManager = () => {
@@ -61,6 +69,12 @@ const PasswordResetManager = () => {
   const [erro, setErro] = useState('');
   const [filtro, setFiltro] = useState('todos'); // todos, ativos, expirados
   const [busca, setBusca] = useState('');
+  
+  // Estados para QR Code
+  const [qrCodesAtivos, setQrCodesAtivos] = useState([]);
+  const [qrCodeSelecionado, setQrCodeSelecionado] = useState(null);
+  const [mostrarQRCode, setMostrarQRCode] = useState(false);
+  const [tipoGeracao, setTipoGeracao] = useState('codigo'); // 'codigo' | 'qrcode'
 
   useEffect(() => {
     carregarCodigos();
@@ -125,6 +139,16 @@ const PasswordResetManager = () => {
         setCodigosCriacao(resultado.codigos);
       }
     }
+    
+    // Carregar QR Codes ativos também
+    await carregarQRCodes();
+  };
+  
+  const carregarQRCodes = async () => {
+    const resultado = await listarQRCodesAtivos();
+    if (resultado.success) {
+      setQrCodesAtivos(resultado.qrCodes);
+    }
   };
 
   const handleGerarCodigo = async () => {
@@ -150,33 +174,77 @@ const PasswordResetManager = () => {
     try {
       let resultado;
       
-      if (abaAtiva === 'redefinicao') {
-        resultado = await criarCodigoRedefinicao(
-          usuario.id,
-          usuarioSelecionado || null,
-          validadeHoras,
-          (nivel >= 1 && nivel <= 3) ? empresaSelecionada : null,
-          (nivel >= 1 && nivel <= 3) ? setorSelecionado : null,
-          nivelUsuario
-        );
+      // Gerar QR Code ou Código tradicional
+      if (tipoGeracao === 'qrcode') {
+        if (abaAtiva === 'redefinicao') {
+          // Para redefinição, precisa selecionar usuário
+          if (!usuarioSelecionado) {
+            setErro('Selecione um usuário para redefinição de senha');
+            setCarregando(false);
+            return;
+          }
+          
+          const usuarioObj = usuarios.find(u => u.id === usuarioSelecionado);
+          resultado = await criarQRCodeRedefinicaoSenha({
+            usuarioId: usuarioObj.id,
+            usuarioEmail: usuarioObj.email,
+            usuarioNome: usuarioObj.nome || usuarioObj.email,
+            validadeHoras,
+            criadoPor: usuario.email
+          });
+        } else {
+          // Criação de conta
+          const empresaObj = empresas.find(e => e.id === empresaSelecionada);
+          const setorObj = setores.find(s => s.id === setorSelecionado);
+          
+          resultado = await criarQRCodeCriacaoConta({
+            nivelUsuario,
+            empresaId: (nivel >= 1 && nivel <= 3) ? empresaSelecionada : null,
+            empresaNome: (nivel >= 1 && nivel <= 3) ? empresaObj?.nome : null,
+            setorId: (nivel >= 1 && nivel <= 3) ? setorSelecionado : null,
+            setorNome: (nivel >= 1 && nivel <= 3) ? setorObj?.nome : null,
+            validadeHoras,
+            criadoPor: usuario.email
+          });
+        }
+        
+        if (resultado.success) {
+          setQrCodeSelecionado(resultado.qrCode);
+          setMostrarQRCode(true);
+          await carregarCodigos();
+        } else {
+          setErro(resultado.error || 'Erro ao gerar QR Code');
+        }
       } else {
-        resultado = await criarCodigoCriacaoConta(
-          usuario.id,
-          validadeHoras,
-          (nivel >= 1 && nivel <= 3) ? empresaSelecionada : null,
-          (nivel >= 1 && nivel <= 3) ? setorSelecionado : null,
-          nivelUsuario
-        );
-      }
+        // Código tradicional
+        if (abaAtiva === 'redefinicao') {
+          resultado = await criarCodigoRedefinicao(
+            usuario.id,
+            usuarioSelecionado || null,
+            validadeHoras,
+            (nivel >= 1 && nivel <= 3) ? empresaSelecionada : null,
+            (nivel >= 1 && nivel <= 3) ? setorSelecionado : null,
+            nivelUsuario
+          );
+        } else {
+          resultado = await criarCodigoCriacaoConta(
+            usuario.id,
+            validadeHoras,
+            (nivel >= 1 && nivel <= 3) ? empresaSelecionada : null,
+            (nivel >= 1 && nivel <= 3) ? setorSelecionado : null,
+            nivelUsuario
+          );
+        }
 
-      if (resultado.success) {
-        setCodigoGerado(resultado);
-        await carregarCodigos();
-      } else {
-        setErro(resultado.error || 'Erro ao gerar código');
+        if (resultado.success) {
+          setCodigoGerado(resultado);
+          await carregarCodigos();
+        } else {
+          setErro(resultado.error || 'Erro ao gerar código');
+        }
       }
     } catch (error) {
-      console.error('Erro ao gerar código:', error);
+      console.error('Erro ao gerar código/QR Code:', error);
       setErro('Erro ao gerar código');
     } finally {
       setCarregando(false);
@@ -233,6 +301,14 @@ const PasswordResetManager = () => {
     setSetorSelecionado('');
     setNivelUsuario('1');
     setErro('');
+    setTipoGeracao('codigo');
+  };
+  
+  const handleRevogarQRCode = async (qrCodeId) => {
+    const resultado = await revogarQRCode(qrCodeId);
+    if (resultado.success) {
+      await carregarQRCodes();
+    }
   };
 
   // Obter códigos atuais baseado na aba ativa
@@ -633,6 +709,65 @@ const PasswordResetManager = () => {
                   </h3>
                   
                   <div className="space-y-4">
+                    {/* Seletor de Tipo: Código ou QR Code */}
+                    <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-2 border-purple-200 dark:border-purple-700 rounded-xl p-4">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-3">
+                        🎯 Escolha o tipo de autenticação
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setTipoGeracao('codigo')}
+                          className={`p-4 rounded-lg border-2 transition-all ${
+                            tipoGeracao === 'codigo'
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                              : 'border-gray-300 dark:border-gray-600 hover:border-blue-300'
+                          }`}
+                        >
+                          <Key className={`w-8 h-8 mx-auto mb-2 ${
+                            tipoGeracao === 'codigo' ? 'text-blue-600' : 'text-gray-400'
+                          }`} />
+                          <p className={`font-semibold text-sm ${
+                            tipoGeracao === 'codigo' ? 'text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400'
+                          }`}>
+                            Código de Texto
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Tradicional
+                          </p>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => setTipoGeracao('qrcode')}
+                          className={`p-4 rounded-lg border-2 transition-all ${
+                            tipoGeracao === 'qrcode'
+                              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
+                              : 'border-gray-300 dark:border-gray-600 hover:border-purple-300'
+                          }`}
+                        >
+                          <QrCode className={`w-8 h-8 mx-auto mb-2 ${
+                            tipoGeracao === 'qrcode' ? 'text-purple-600' : 'text-gray-400'
+                          }`} />
+                          <p className={`font-semibold text-sm ${
+                            tipoGeracao === 'qrcode' ? 'text-purple-700 dark:text-purple-300' : 'text-gray-600 dark:text-gray-400'
+                          }`}>
+                            QR Code Único
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Moderno e seguro
+                          </p>
+                        </button>
+                      </div>
+                      {tipoGeracao === 'qrcode' && (
+                        <div className="mt-3 p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                          <p className="text-xs text-purple-700 dark:text-purple-300">
+                            ✨ <strong>QR Code único:</strong> Gerado com timestamp e só pode ser usado uma única vez. Mais seguro e prático!
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
                     {/* Usuário Específico - Só para redefinição */}
                     {abaAtiva === 'redefinicao' && (
                       <div>
@@ -833,7 +968,10 @@ const PasswordResetManager = () => {
                             Gerando...
                           </div>
                         ) : (
-                          'Gerar Código'
+                          <span className="flex items-center justify-center gap-2">
+                            {tipoGeracao === 'qrcode' ? <QrCode className="w-5 h-5" /> : <Key className="w-5 h-5" />}
+                            {tipoGeracao === 'qrcode' ? 'Gerar QR Code' : 'Gerar Código'}
+                          </span>
                         )}
                       </button>
                     </div>
@@ -842,6 +980,21 @@ const PasswordResetManager = () => {
               )}
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+      
+      {/* Modal de exibição do QR Code */}
+      <AnimatePresence>
+        {mostrarQRCode && qrCodeSelecionado && (
+          <QRCodeDisplay
+            qrCode={qrCodeSelecionado}
+            onClose={() => {
+              setMostrarQRCode(false);
+              setQrCodeSelecionado(null);
+              fecharModal();
+            }}
+            onRevoke={handleRevogarQRCode}
+          />
         )}
       </AnimatePresence>
     </div>

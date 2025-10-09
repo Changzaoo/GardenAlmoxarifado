@@ -184,6 +184,7 @@ const GerenciamentoInventario = ({
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-2">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
             {abas.map((aba) => {
+              if (!aba || !aba.icone) return null; // Proteção contra abas sem ícone
               const IconeAba = aba.icone;
               const isAtiva = abaAtiva === aba.id;
               

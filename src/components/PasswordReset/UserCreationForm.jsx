@@ -654,6 +654,7 @@ const UserCreationForm = ({ onVoltar, onSucesso }) => {
       <div className="mb-8">
         <div className="flex justify-between mb-2">
           {etapas.map((etapa, index) => {
+            if (!etapa || !etapa.icone) return null; // Proteção contra etapas sem ícone
             const Icone = etapa.icone;
             const isConcluida = etapa.numero < etapaAtual;
             const isAtual = etapa.numero === etapaAtual;

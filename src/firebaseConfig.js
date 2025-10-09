@@ -72,16 +72,28 @@ const app = initializeFirebase();
 // Inicializar Firestore com configurações otimizadas
 export const db = getFirestore(app);
 
-// Habilitar persistência offline com configuração de sincronização multi-tab
+// CORREÇÃO DEFINITIVA: Habilitar persistência SEM sincronização multi-tab
+// synchronizeTabs: false evita conflitos de estado que causam INTERNAL ASSERTION FAILED
+let persistenceEnabled = false;
 enableIndexedDbPersistence(db, {
-  synchronizeTabs: true // Permite múltiplas abas abertas
+  synchronizeTabs: false, // ✅ CORRIGIDO: false evita conflitos de estado
+  forceOwnership: true // ✅ NOVO: Força esta aba a ser a dona do cache
+}).then(() => {
+  persistenceEnabled = true;
+  console.log('✅ Persistência Firestore ativada com sucesso');
 }).catch((err) => {
   if (err.code === 'failed-precondition') {
-    console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    console.warn('⚠️ Múltiplas abas abertas detectadas. Feche outras abas para melhor performance.');
+    // Continua funcionando sem persistência
   } else if (err.code === 'unimplemented') {
-    console.warn('The current browser does not support persistence.');
+    console.warn('⚠️ Este navegador não suporta persistência.');
+  } else {
+    console.error('❌ Erro ao habilitar persistência:', err);
   }
 });
+
+// Expor flag de persistência para debug
+export const isOfflinePersistenceEnabled = () => persistenceEnabled;
 
 // Inicializar Auth com validação de estado
 export const auth = getAuth(app);
