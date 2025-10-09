@@ -15,7 +15,6 @@ const MeuInventarioTab = ({ emprestimos, readOnly = false, showEmptyMessage }) =
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroOrdenacao, setFiltroOrdenacao] = useState('mais-recente');
 
-
   // Carregar transferências pendentes
   useEffect(() => {
     let unsubscribe = () => {};
@@ -34,7 +33,7 @@ const MeuInventarioTab = ({ emprestimos, readOnly = false, showEmptyMessage }) =
           id: doc.id,
           ...doc.data()
         }));
-        console.log('Transferências pendentes carregadas:', transferenciasData);
+
         setTransferencias(transferenciasData);
         setIsLoadingTransferencias(false);
       });
@@ -43,16 +42,6 @@ const MeuInventarioTab = ({ emprestimos, readOnly = false, showEmptyMessage }) =
     carregarTransferencias();
     return () => unsubscribe();
   }, [usuario]);
-
-  console.log('MeuInventarioTab - Estado:', {
-    'ID do usuário': usuario?.id,
-    'Total de empréstimos recebidos': Array.isArray(emprestimos) ? emprestimos.length : 'N/A',
-    'Empréstimos ativos': Array.isArray(emprestimos) 
-      ? emprestimos.filter(emp => emp.status !== 'devolvido' && emp.status !== 'cancelado').length 
-      : 'N/A',
-    'Detalhes dos empréstimos': emprestimos,
-    'Total de transferências': transferencias.length,
-  });
 
   // Filtrar e ordenar empréstimos
   const emprestimosFiltrados = useMemo(() => {

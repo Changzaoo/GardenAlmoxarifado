@@ -12,8 +12,6 @@ const FerramentaFlyingAnimation = ({ ferramenta, onComplete }) => {
   const [particles, setParticles] = useState([]);
 
   useEffect(() => {
-    console.log('🎬 Iniciando animação de voo para:', ferramenta);
-    
     // Gera partículas ao longo da trajetória
     const particleInterval = setInterval(() => {
       const newParticles = Array.from({ length: 3 }, (_, i) => ({
@@ -29,7 +27,6 @@ const FerramentaFlyingAnimation = ({ ferramenta, onComplete }) => {
 
     // ⚡ Timer FORÇADO para finalizar animação em 800ms
     const completeTimer = setTimeout(() => {
-      console.log('✅ Animação de voo finalizada após 800ms');
       clearInterval(particleInterval);
       if (onComplete) {
         onComplete();

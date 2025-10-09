@@ -62,13 +62,11 @@ class AutoSyncService {
   async downloadAllData(options = { showToast: true, force: false }) {
     // Evitar múltiplas sincronizações simultâneas
     if (this.isSyncing) {
-      console.log('⏳ Sincronização já em andamento...');
       return { success: false, message: 'Sync em andamento' };
     }
 
     // Verificar se deve fazer sync
     if (!options.force && !this.shouldSync()) {
-      console.log('⏭️ Sync muito recente, pulando...');
       return { success: false, message: 'Sync recente' };
     }
 
@@ -93,8 +91,6 @@ class AutoSyncService {
     };
 
     try {
-      console.log('🚀 Iniciando download automático de dados...');
-
       // 1. Funcionários
       try {
         const funcionariosSnap = await getDocs(collection(db, 'funcionarios'));
@@ -104,7 +100,6 @@ class AutoSyncService {
         }));
         await offlineStorage.saveToCache(STORES.FUNCIONARIOS, funcionarios);
         stats.funcionarios = funcionarios.length;
-        console.log(`✅ ${funcionarios.length} funcionários baixados`);
         this.notifyListeners({ 
           type: 'sync_progress', 
           step: 'funcionarios', 
@@ -134,7 +129,6 @@ class AutoSyncService {
         }));
         await offlineStorage.saveToCache(STORES.PONTOS, pontos);
         stats.pontos = pontos.length;
-        console.log(`✅ ${pontos.length} pontos baixados`);
         this.notifyListeners({ 
           type: 'sync_progress', 
           step: 'pontos', 
@@ -154,7 +148,6 @@ class AutoSyncService {
         }));
         await offlineStorage.saveToCache(STORES.AVALIACOES, avaliacoes);
         stats.avaliacoes = avaliacoes.length;
-        console.log(`✅ ${avaliacoes.length} avaliações baixadas`);
         this.notifyListeners({ 
           type: 'sync_progress', 
           step: 'avaliacoes', 
@@ -174,7 +167,6 @@ class AutoSyncService {
         }));
         await offlineStorage.saveToCache(STORES.EMPRESTIMOS, emprestimos);
         stats.emprestimos = emprestimos.length;
-        console.log(`✅ ${emprestimos.length} empréstimos baixados`);
         this.notifyListeners({ 
           type: 'sync_progress', 
           step: 'emprestimos', 
@@ -196,7 +188,6 @@ class AutoSyncService {
         // Salvar em uma store temporária (como não existe FERRAMENTAS no offlineStorage, vamos usar localStorage como fallback)
         localStorage.setItem('offline_ferramentas', JSON.stringify(ferramentas));
         stats.ferramentas = ferramentas.length;
-        console.log(`✅ ${ferramentas.length} ferramentas baixadas`);
         this.notifyListeners({ 
           type: 'sync_progress', 
           step: 'ferramentas', 
@@ -216,7 +207,6 @@ class AutoSyncService {
         }));
         await offlineStorage.saveToCache(STORES.TAREFAS, tarefas);
         stats.tarefas = tarefas.length;
-        console.log(`✅ ${tarefas.length} tarefas baixadas`);
         this.notifyListeners({ 
           type: 'sync_progress', 
           step: 'tarefas', 
@@ -236,7 +226,6 @@ class AutoSyncService {
         }));
         await offlineStorage.saveToCache(STORES.ESCALAS, escalas);
         stats.escalas = escalas.length;
-        console.log(`✅ ${escalas.length} escalas baixadas`);
         this.notifyListeners({ 
           type: 'sync_progress', 
           step: 'escalas', 
@@ -267,7 +256,6 @@ class AutoSyncService {
         
         localStorage.setItem('offline_mensagens', JSON.stringify(mensagens));
         stats.mensagens = mensagens.length;
-        console.log(`✅ ${mensagens.length} mensagens baixadas`);
         this.notifyListeners({ 
           type: 'sync_progress', 
           step: 'mensagens', 
@@ -293,9 +281,6 @@ class AutoSyncService {
       const totalItems = Object.values(stats).reduce((sum, val) => 
         typeof val === 'number' ? sum + val : sum, 0
       );
-
-      console.log('✅ Download automático concluído:', stats);
-      
       if (options.showToast && toastId) {
         if (stats.errors.length === 0) {
           toast.update(toastId, {
@@ -392,15 +377,12 @@ class AutoSyncService {
       const stores = Object.values(STORES);
       for (const store of stores) {
         // IndexedDB clearing seria feito aqui
-        console.log(`🗑️ Limpando ${store}...`);
       }
       
       localStorage.removeItem('offline_ferramentas');
       localStorage.removeItem('offline_mensagens');
       localStorage.removeItem('last_auto_sync');
       localStorage.removeItem('last_sync_summary');
-      
-      console.log('✅ Dados offline limpos');
       return true;
     } catch (error) {
       console.error('❌ Erro ao limpar dados offline:', error);

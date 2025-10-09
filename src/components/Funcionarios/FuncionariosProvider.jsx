@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
+import initialSyncService from '../../services/initialSyncService';
 
 export const FuncionariosContext = createContext();
 
@@ -104,8 +105,7 @@ export const FuncionariosProvider = ({ children }) => {
           origens: [...new Set([...(usuarioExistente.origens || []), origem])],
           idsRelacionados: [...new Set([...(usuarioExistente.idsRelacionados || []), docId, userId])]
         });
-        
-        console.log(`🔗 Mesclando "${nome || email}" (${origem}) com ID ${idFinal}`);
+
       } else {
         // Novo funcionário
         todosUsuarios.set(idFinal, {
@@ -121,8 +121,7 @@ export const FuncionariosProvider = ({ children }) => {
           const nomeNorm = normalizarNome(nome);
           if (nomeNorm) nomeIndex.set(nomeNorm, idFinal);
         }
-        
-        console.log(`➕ Novo funcionário "${nome || email}" (${origem}) com ID ${idFinal}`);
+
       }
     };
 
@@ -156,89 +155,41 @@ export const FuncionariosProvider = ({ children }) => {
                       cargoNormalizado.includes('administrador');
       
       if (isAdmin) {
-        console.log(`🚫 Administrador "${f.nome}" (nível: ${f.nivel}) excluído da lista de funcionários`);
+
         return false;
       }
       
       return true;
     });
-    
-    console.log(`✅ Total de funcionários únicos unificados: ${resultado.length}`);
-    console.log(`   📋 Todos com empresa: ${EMPRESA_PADRAO.nome}`);
-    console.log(`   🏢 Todos com setor: ${SETOR_PADRAO.nome}`);
-    
+
     return resultado;
   };
 
   useEffect(() => {
-    const unsubscribers = [];
-    let funcionariosCache = [];
-    let usuariosCache = [];
-    let usuarioSingularCache = [];
+    // Listeners em tempo real para as três coleções
+    const unsubscribeFuncionarios = onSnapshot(collection(db, 'funcionarios'), (snapshot) => {
+      const funcionariosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Atualizar quando houver mudanças
+      const unsubscribeUsuarios = onSnapshot(collection(db, 'usuarios'), (usuariosSnapshot) => {
+        const usuariosData = usuariosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const unsubscribeUsuario = onSnapshot(collection(db, 'usuario'), (usuarioSnapshot) => {
+          const usuarioData = usuarioSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          
+          // Unificar todas as três coleções
+          const unificados = unificarFuncionarios(funcionariosData, usuariosData, usuarioData);
+          setFuncionarios(unificados);
+        });
+        
+        return unsubscribeUsuario;
+      });
+      
+      return unsubscribeUsuarios;
+    });
 
-    const atualizarFuncionarios = () => {
-      const unificados = unificarFuncionarios(
-        funcionariosCache, 
-        usuariosCache, 
-        usuarioSingularCache
-      );
-      setFuncionarios(unificados);
-    };
-
-    // 1️⃣ Buscar da coleção 'funcionarios'
-    const unsubscribeFuncionarios = onSnapshot(
-      collection(db, 'funcionarios'), 
-      (snapshot) => {
-        funcionariosCache = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        console.log(`📋 Carregados ${funcionariosCache.length} documentos de "funcionarios"`);
-        atualizarFuncionarios();
-      }, 
-      (error) => {
-        console.error('❌ Erro ao carregar funcionários:', error);
-      }
-    );
-    unsubscribers.push(unsubscribeFuncionarios);
-
-    // 2️⃣ Buscar da coleção 'usuarios' (PLURAL)
-    const unsubscribeUsuarios = onSnapshot(
-      collection(db, 'usuarios'),
-      (snapshot) => {
-        usuariosCache = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        console.log(`👥 Carregados ${usuariosCache.length} documentos de "usuarios" (plural)`);
-        atualizarFuncionarios();
-      },
-      (error) => {
-        console.error('❌ Erro ao carregar usuários (plural):', error);
-      }
-    );
-    unsubscribers.push(unsubscribeUsuarios);
-
-    // 3️⃣ Buscar da coleção 'usuario' (SINGULAR - legado)
-    const unsubscribeUsuarioSingular = onSnapshot(
-      collection(db, 'usuario'),
-      (snapshot) => {
-        usuarioSingularCache = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        console.log(`👤 Carregados ${usuarioSingularCache.length} documentos de "usuario" (singular)`);
-        atualizarFuncionarios();
-      },
-      (error) => {
-        console.error('❌ Erro ao carregar usuário (singular):', error);
-      }
-    );
-    unsubscribers.push(unsubscribeUsuarioSingular);
-
-    // Cleanup
     return () => {
-      unsubscribers.forEach(unsub => unsub());
+      unsubscribeFuncionarios();
     };
   }, []);
 

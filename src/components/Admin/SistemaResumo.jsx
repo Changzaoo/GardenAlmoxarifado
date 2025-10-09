@@ -50,22 +50,8 @@ const SistemaResumo = () => {
   const [mostrarMigracaoNovoModeloModal, setMostrarMigracaoNovoModeloModal] = useState(false);
 
   // Verificar permissão de admin
-  console.log('🔍 SistemaResumo - Dados do usuário:', {
-    usuario,
-    nivelPermissao,
-    nivelUsuario: usuario?.nivel,
-    NIVEL_ADMIN: NIVEIS_PERMISSAO.ADMIN,
-    comparacao: {
-      'nivelPermissao === ADMIN': nivelPermissao === NIVEIS_PERMISSAO.ADMIN,
-      'usuario.nivel === ADMIN': usuario?.nivel === NIVEIS_PERMISSAO.ADMIN,
-      'usuario.nivel === 4': usuario?.nivel === 4,
-      'nivelPermissao === 4': nivelPermissao === 4
-    }
-  });
 
   const isAdmin = nivelPermissao === NIVEIS_PERMISSAO.ADMIN || usuario?.nivel === NIVEIS_PERMISSAO.ADMIN;
-
-  console.log('✅ isAdmin:', isAdmin);
 
   useEffect(() => {
     if (isAdmin) {
@@ -118,8 +104,7 @@ const SistemaResumo = () => {
         emprestimosAtivos: emprestimosAtivosSnap.size,
         avaliacoes: avaliacoesSnap.size
       });
-      
-      console.log('📊 Estatísticas carregadas');
+
     } catch (error) {
       console.error('❌ Erro ao carregar estatísticas:', error);
     } finally {

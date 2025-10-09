@@ -81,9 +81,6 @@ const RecuperarSenha = ({ onVoltar }) => {
       setCodigoGerado(codigoRecuperacao);
       setUserId(uid);
       setEtapa('codigo');
-
-      console.log('✅ Código de recuperação gerado:', codigoRecuperacao);
-
     } catch (error) {
       console.error('Erro ao enviar código:', error);
       setErro('Erro ao processar solicitação. Tente novamente.');
@@ -149,8 +146,6 @@ const RecuperarSenha = ({ onVoltar }) => {
       await resetPasswordWithCode(userId, novaSenha);
 
       setEtapa('sucesso');
-      console.log('✅ Senha resetada com sucesso');
-
     } catch (error) {
       console.error('Erro ao resetar senha:', error);
       setErro('Erro ao resetar senha. Tente novamente.');

@@ -103,9 +103,7 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
   };
 
   const handleSubmit = async () => {
-    console.log('Dados do usuário:', usuario);
-    console.log('Dados do funcionário:', funcionario);
-    
+
     if (!funcionario?.id || !usuario?.id) {
       showToast('Erro ao salvar avaliação. Por favor, tente novamente.', 'error');
       return;
@@ -145,8 +143,6 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
         anonima: novaAvaliacao.anonima,
         dataCriacao: serverTimestamp()
       };
-
-      console.log('Dados a serem salvos:', novaAvaliacaoData);
 
       await addDoc(avaliacoesRef, novaAvaliacaoData);
 
@@ -702,9 +698,4 @@ function AvaliacoesTab({ funcionario, pontosDesempenho = 0 }) {
 }
 
 export default AvaliacoesTab;
-
-
-
-
-
 

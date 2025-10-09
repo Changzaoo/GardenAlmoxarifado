@@ -124,8 +124,6 @@ const HistoricoEmprestimosTab = ({
       return;
     }
 
-    console.log('Iniciando devolução parcial:', { emprestimo, ferramentasSelecionadas, devolvidoPorTerceiros });
-
     try {
       const ferramentasNaoDevolvidas = emprestimo.ferramentas.filter(
         f => !ferramentasSelecionadas.find(fs => fs.id === f.id)
@@ -173,7 +171,7 @@ const HistoricoEmprestimosTab = ({
       }
 
       // Realiza a devolução total do empréstimo
-      console.log('Realizando devolução do empréstimo', selectedEmprestimo.id);
+
       await devolverFerramentas(selectedEmprestimo.id, atualizarDisponibilidade, devolvidoPorTerceiros);
 
       setSelectedEmprestimo(null);
@@ -524,6 +522,4 @@ const HistoricoEmprestimosTab = ({
 };
 
 export default HistoricoEmprestimosTab;
-
-
 

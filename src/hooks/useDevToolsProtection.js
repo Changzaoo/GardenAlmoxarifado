@@ -171,7 +171,7 @@ export const useDevToolsProtection = () => {
 
       // Trigger para método 4 (toString)
       requestAnimationFrame(() => {
-        console.log('%c', element);
+
       });
 
       return false;
@@ -179,7 +179,7 @@ export const useDevToolsProtection = () => {
 
     // Função de bloqueio total do sistema
     const blockSystem = () => {
-      console.log('🚨 DevTools detectado - Sistema bloqueado');
+
       setDevToolsDetected(true);
 
       // Limpar todo o conteúdo da página

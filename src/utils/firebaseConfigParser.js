@@ -8,22 +8,16 @@
  */
 export const parseFirebaseConfig = (configText) => {
   try {
-    console.log('📝 Iniciando parse do texto colado...');
-    
     // Remover comentários (tanto // quanto /* */)
     let cleanText = configText
       .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* */
       .replace(/\/\/.*/g, ''); // Remove //
-    
-    console.log('🧹 Texto limpo de comentários');
-    
     // Extrair valores usando regex mais flexível
     const extractValue = (key) => {
       // Tentar formato: key: "value"
       const regex1 = new RegExp(`${key}:\\s*["']([^"']+)["']`, 'i');
       const match1 = cleanText.match(regex1);
       if (match1) {
-        console.log(`✅ ${key}: ${match1[1]}`);
         return match1[1];
       }
       
@@ -31,11 +25,8 @@ export const parseFirebaseConfig = (configText) => {
       const regex2 = new RegExp(`${key}\\s*=\\s*["']([^"']+)["']`, 'i');
       const match2 = cleanText.match(regex2);
       if (match2) {
-        console.log(`✅ ${key}: ${match2[1]}`);
         return match2[1];
       }
-      
-      console.log(`⚠️ ${key}: não encontrado`);
       return null;
     };
 
@@ -67,9 +58,6 @@ export const parseFirebaseConfig = (configText) => {
 export const detectFirebaseRegion = (config) => {
   const authDomain = config.authDomain || '';
   const projectId = config.projectId || '';
-  
-  console.log('🔍 Detectando região para:', { authDomain, projectId });
-  
   // Mapa de regiões Firebase com coordenadas
   const regionMap = {
     // América do Norte
@@ -127,31 +115,26 @@ export const detectFirebaseRegion = (config) => {
   // Detectar por padrões conhecidos do projeto
   // garden-c0b50 = Principal Brasil
   if (projectId.includes('garden-c0b50')) {
-    console.log('✅ Detectado: Firebase Principal (Brasil)');
     return { region: 'southamerica-east1', ...regionMap['southamerica-east1'] };
   }
   
   // garden-backup = Backup EUA
   if (projectId.includes('garden-backup')) {
-    console.log('✅ Detectado: Firebase Backup (EUA)');
     return { region: 'us-central1', ...regionMap['us-central1'] };
   }
   
   // Tentar detectar por padrão de nome de projeto
   // Projetos brasileiros geralmente têm -br ou brasil no nome
   if (projectId.match(/br|brasil|brazil/i)) {
-    console.log('✅ Detectado: Projeto brasileiro');
     return { region: 'southamerica-east1', ...regionMap['southamerica-east1'] };
   }
   
   // Backup como padrão se tiver "backup" no nome
   if (projectId.match(/backup/i)) {
-    console.log('✅ Detectado: Servidor de Backup');
     return { region: 'us-central1', ...regionMap['us-central1'] };
   }
   
   // Default: us-central1 (região padrão do Firebase)
-  console.log('⚠️ Usando região padrão: us-central1');
   return { region: 'us-central1', ...regionMap['us-central1'] };
 };
 

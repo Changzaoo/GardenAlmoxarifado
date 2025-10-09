@@ -7,8 +7,7 @@ const APP_SECRET = process.env.NODE_ENV === 'production'
 
 // Log para debug (remover em produção após confirmar que funciona)
 if (process.env.NODE_ENV === 'production') {
-  console.log('🔑 Crypto: APP_SECRET configurado:', APP_SECRET ? 'SIM ✅' : 'NÃO ❌');
-  console.log('🌍 Crypto: Environment:', process.env.NODE_ENV);
+
   if (!APP_SECRET) {
     console.error('❌ ERRO CRÍTICO: REACT_APP_CRYPTO_SECRET não está definido no Vercel!');
     console.error('⚠️ As senhas SHA-512 NÃO funcionarão sem esta variável!');

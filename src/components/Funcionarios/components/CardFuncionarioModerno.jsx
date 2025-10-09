@@ -31,11 +31,10 @@ import {
 } from 'lucide-react';
 import AvaliacoesCard from './AvaliacoesCard';
 import InformacoesContato from './InformacoesContato';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../firebaseConfig';
 import { getOptimizedMotionProps } from '../../../utils/performanceUtils';
 import { obterHorariosEsperados } from '../../../utils/escalaUtils';
-import { obterDataInicioCalculoHoras } from '../../../utils/dataCalculoHoras';
 
 const CardFuncionarioModerno = memo(({
   funcionario: func,
@@ -62,27 +61,42 @@ const CardFuncionarioModerno = memo(({
   const [mostrarCartaoVisitas, setMostrarCartaoVisitas] = useState(false);
   const menuRef = useRef(null);
 
-  // Buscar informações de horas do funcionário
+  // Buscar informações de horas do funcionário em TEMPO REAL
   useEffect(() => {
-    const buscarHorasFuncionario = async () => {
-      if (!func.id) return;
+    if (!func.id) return;
 
-      try {
-        // Buscar pontos a partir da data de início configurada
-        const dataInicio = obterDataInicioCalculoHoras();
-        
-        const q = query(
-          collection(db, 'pontos'),
-          where('funcionarioId', '==', String(func.id))
-        );
+    const hoje = new Date();
+    const dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const mesReferencia = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
 
-        const snapshot = await getDocs(q);
-        const pontosMes = snapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(ponto => {
-            const dataPonto = new Date(ponto.timestamp || ponto.data);
-            return dataPonto >= dataInicio; // Apenas a partir da data configurada
-          });
+    // Listener para pontos
+    const pontosQuery = query(
+      collection(db, 'pontos'),
+      where('funcionarioId', '==', String(func.id))
+    );
+
+    const ajustesQuery = query(
+      collection(db, 'ajustes_manuais_horas'),
+      where('funcionarioId', '==', String(func.id)),
+      where('mesReferencia', '==', mesReferencia),
+      where('ativo', '==', true)
+    );
+
+    const unsubscribePontos = onSnapshot(pontosQuery, (pontosSnapshot) => {
+      const pontosMes = pontosSnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(ponto => {
+          const dataPonto = ponto.data?.toDate ? ponto.data.toDate() : new Date(ponto.timestamp || ponto.data);
+          return dataPonto >= dataInicio;
+        });
+
+      onSnapshot(ajustesQuery, (ajustesSnapshot) => {
+        const ajustesManuais = ajustesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Calcular total de minutos de ajustes manuais
+        const minutosAjustesManuais = ajustesManuais.reduce((total, ajuste) => {
+          return total + (ajuste.minutos || 0);
+        }, 0);
 
         // Agrupar pontos por dia (data sem hora)
         const pontosPorDia = {};
@@ -108,36 +122,30 @@ const CardFuncionarioModerno = memo(({
         let diasComPonto = 0;
 
         Object.entries(pontosPorDia).forEach(([dataKey, dia]) => {
-          if (!dia.entrada) return; // Precisa pelo menos entrada
+          if (!dia.entrada) return;
           
-          // Obter horários esperados da escala do funcionário
           const dataPonto = new Date(dataKey);
           const tipoEscala = func.escala || func.tipoEscala || 'M';
           const horariosEsperados = obterHorariosEsperados(tipoEscala, dataPonto);
           
           if (!horariosEsperados) return;
 
-          // Calcular minutos TRABALHADOS no dia (real)
           let minutosTrabalhados = 0;
           
-          // Manhã: entrada -> saída almoço
           if (dia.saida_almoco) {
             const manha = (dia.saida_almoco - dia.entrada) / (1000 * 60);
             minutosTrabalhados += Math.max(0, manha);
           }
           
-          // Tarde: retorno almoço -> saída
           if (dia.retorno_almoco && dia.saida) {
             const tarde = (dia.saida - dia.retorno_almoco) / (1000 * 60);
             minutosTrabalhados += Math.max(0, tarde);
           }
           
-          // Se bateu pelo menos saída do almoço, conta o dia
           if (dia.saida_almoco) {
             diasComPonto++;
             totalMinutosTrabalhados += minutosTrabalhados;
 
-            // Calcular minutos ESPERADOS do dia (baseado na escala)
             const [hEntrada, mEntrada] = horariosEsperados.entrada.split(':').map(Number);
             const [hAlmoco, mAlmoco] = horariosEsperados.almoco.split(':').map(Number);
             const [hRetorno, mRetorno] = horariosEsperados.retorno.split(':').map(Number);
@@ -151,10 +159,7 @@ const CardFuncionarioModerno = memo(({
           }
         });
 
-        // Calcular saldo: Trabalhado - Esperado
-        // Se positivo: trabalhou MAIS que o esperado (horas extras)
-        // Se negativo: trabalhou MENOS que o esperado (horas negativas)
-        const saldoMinutos = totalMinutosTrabalhados - totalMinutosEsperados;
+        const saldoMinutos = (totalMinutosTrabalhados + minutosAjustesManuais) - totalMinutosEsperados;
 
         const formatarHoras = (minutos) => {
           const h = Math.floor(Math.abs(minutos) / 60);
@@ -162,30 +167,23 @@ const CardFuncionarioModerno = memo(({
           return `${h}h ${m.toString().padStart(2, '0')}m`;
         };
 
-        console.log(`📊 ${func.nome}:`, {
-          diasComPonto,
-          totalMinutosTrabalhados,
-          totalMinutosEsperados,
-          saldoMinutos,
-          horasTrabalhadas: formatarHoras(totalMinutosTrabalhados),
-          horasEsperadas: formatarHoras(totalMinutosEsperados)
-        });
-
         setHorasInfo({
-          totalHoras: formatarHoras(totalMinutosTrabalhados),
+          totalHoras: formatarHoras(totalMinutosTrabalhados + minutosAjustesManuais),
           totalHorasEsperadas: formatarHoras(totalMinutosEsperados),
           saldoMinutos: saldoMinutos,
           saldoFormatado: formatarHoras(saldoMinutos),
           positivo: saldoMinutos >= 0,
-          diasTrabalhados: diasComPonto
+          diasTrabalhados: diasComPonto,
+          ajustesManuais: ajustesManuais.length > 0 ? ajustesManuais : null,
+          minutosAjustados: minutosAjustesManuais
         });
-      } catch (error) {
-        console.error('Erro ao buscar horas do funcionário:', error);
-      }
-    };
+      });
+    });
 
-    buscarHorasFuncionario();
-  }, [func.id]);
+    return () => {
+      unsubscribePontos();
+    };
+  }, [func.id, func.escala, func.tipoEscala, func.nome]);
 
   // Fechar menu ao clicar fora
   useEffect(() => {

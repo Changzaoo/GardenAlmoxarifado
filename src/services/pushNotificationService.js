@@ -17,7 +17,7 @@ try {
     PushNotifications = pushNotifications.PushNotifications;
   }
 } catch (error) {
-  console.log('ℹ️ Capacitor não disponível, usando apenas notificações web');
+
 }
 
 /**
@@ -42,7 +42,7 @@ class PushNotificationService {
       this.notificationSound = new Audio('/sounds/notification.mp3');
       this.notificationSound.volume = 0.5;
     } catch (error) {
-      console.log('ℹ️ Som de notificação não disponível');
+
     }
   }
 
@@ -52,7 +52,7 @@ class PushNotificationService {
   playNotificationSound() {
     if (this.notificationSound) {
       this.notificationSound.play().catch(err => {
-        console.log('Não foi possível tocar o som:', err);
+
       });
     }
   }
@@ -77,11 +77,10 @@ class PushNotificationService {
    */
   async initialize(userId) {
     if (this.initialized && this.currentUserId === userId) {
-      console.log('✅ Push notifications já inicializado');
+
       return;
     }
 
-    console.log('🚀 Inicializando push notifications:', userId);
     this.currentUserId = userId;
 
     try {
@@ -91,10 +90,10 @@ class PushNotificationService {
         await this.initializeWeb(userId);
       }
       this.initialized = true;
-      console.log('✅ Push notifications OK');
+
     } catch (error) {
       console.error('❌ Erro:', error);
-      console.info('📱 App continuará sem notificações push');
+
     }
   }
 
@@ -103,7 +102,7 @@ class PushNotificationService {
    */
   async initializeNative(userId) {
     if (!PushNotifications) {
-      console.warn('⚠️ PushNotifications não disponível');
+
       return;
     }
 
@@ -118,17 +117,16 @@ class PushNotificationService {
       await PushNotifications.register();
 
       await PushNotifications.addListener('registration', async (token) => {
-        console.log('📱 Token:', token.value);
+
         await this.saveToken(userId, token.value);
-        console.log('✅ Notificações ativadas');
+
       });
 
       await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        console.log('🔔 Notificação recebida:', notification);
-        
+
         // NAO mostrar notificacao se estiver na pagina de mensagens E app ativo
         if (this.isOnMessagesPage() && this.isWindowActive()) {
-          console.log('🔕 Usuario esta na pagina de mensagens - notificacao suprimida');
+
           return;
         }
         
@@ -155,8 +153,7 @@ class PushNotificationService {
    */
   async initializeWeb(userId) {
     try {
-      console.log('🌐 Init web notifications...');
-      
+
       if (!('Notification' in window)) {
         toast.info('Navegador não suporta notificações');
         return;
@@ -171,7 +168,7 @@ class PushNotificationService {
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
-          console.log('✅ Permissão de notificações concedida');
+
           // NAO mostrar notificacao de teste ao inicializar
         } else {
           toast.warn('Notificações desativadas');
@@ -185,7 +182,7 @@ class PushNotificationService {
       const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
       
       if (!vapidKey) {
-        console.info('💡 VAPID key não configurada - modo local');
+
         this.setupLocalNotifications();
         return;
       }
@@ -195,7 +192,7 @@ class PushNotificationService {
         
         if (token) {
           await this.saveToken(userId, token);
-          console.log('✅ Token de notificações salvo');
+
         } else {
           this.setupLocalNotifications();
         }
@@ -205,7 +202,7 @@ class PushNotificationService {
           
           // NAO mostrar notificacao se estiver na pagina de mensagens E janela ativa
           if (this.isOnMessagesPage() && this.isWindowActive()) {
-            console.log('🔕 Usuario esta na pagina de mensagens - notificacao suprimida');
+
             return;
           }
           
@@ -229,7 +226,7 @@ class PushNotificationService {
         });
 
       } catch (tokenError) {
-        console.warn('⚠️ Erro token:', tokenError);
+
         this.setupLocalNotifications();
       }
 
@@ -242,7 +239,7 @@ class PushNotificationService {
    * Notificações locais (desenvolvimento)
    */
   setupLocalNotifications() {
-    console.log('🔧 Notificações locais ativadas (modo dev)');
+
     // NAO mostrar notificacao de teste
   }
 
@@ -299,8 +296,6 @@ class PushNotificationService {
           fcmTokens: [tokenData]
         }, { merge: true });
       }
-
-      console.log('✅ Token salvo');
 
     } catch (error) {
       console.error('❌ Erro salvar token:', error);

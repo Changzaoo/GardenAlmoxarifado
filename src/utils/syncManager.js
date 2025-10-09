@@ -40,7 +40,6 @@ class SyncManager {
    */
   async startSync() {
     if (this.isSyncing) {
-      console.log('⏳ Sincronização já em andamento...');
       return;
     }
 
@@ -51,13 +50,10 @@ class SyncManager {
       const pendingOps = await offlineStorage.getPendingSync();
       
       if (pendingOps.length === 0) {
-        console.log('✅ Nenhuma operação pendente para sincronizar');
         this.isSyncing = false;
         this.notifyListeners({ type: 'sync_complete', operations: 0 });
         return;
       }
-
-      console.log(`🔄 Iniciando sincronização de ${pendingOps.length} operação(ões)...`);
       const toastId = toast.loading(`Sincronizando ${pendingOps.length} operação(ões)...`);
 
       let successCount = 0;
@@ -113,8 +109,6 @@ class SyncManager {
           autoClose: 5000
         });
       }
-
-      console.log(`✅ Sincronização concluída: ${successCount} sucesso, ${errorCount} erros`);
       this.notifyListeners({
         type: 'sync_complete',
         operations: successCount,
@@ -134,8 +128,6 @@ class SyncManager {
    * Processa uma operação individual
    */
   async processOperation(op) {
-    console.log(`🔄 Processando: ${op.operation} em ${op.collection}`, op.data);
-
     const collectionRef = collection(db, op.collection);
 
     switch (op.operation) {
@@ -144,8 +136,6 @@ class SyncManager {
           ...op.data,
           createdAt: serverTimestamp()
         });
-        console.log(`✅ Documento adicionado: ${newDoc.id}`);
-        
         // Atualizar ID no cache local se necessário
         if (op.data.id && op.data.id !== newDoc.id) {
           await this.updateLocalId(op.collection, op.data.id, newDoc.id);
@@ -158,13 +148,11 @@ class SyncManager {
           ...op.data,
           updatedAt: serverTimestamp()
         });
-        console.log(`✅ Documento atualizado: ${op.data.id}`);
         break;
 
       case 'delete':
         const deleteRef = doc(db, op.collection, op.data.id);
         await deleteDoc(deleteRef);
-        console.log(`✅ Documento deletado: ${op.data.id}`);
         break;
 
       default:
@@ -194,7 +182,6 @@ class SyncManager {
         await offlineStorage.deleteFromCache(store, oldId);
         item.id = newId;
         await offlineStorage.saveToCache(store, item);
-        console.log(`🔄 ID atualizado: ${oldId} → ${newId}`);
       }
     } catch (error) {
       console.error('Erro ao atualizar ID local:', error);

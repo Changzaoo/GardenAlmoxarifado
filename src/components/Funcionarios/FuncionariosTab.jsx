@@ -40,7 +40,6 @@ import ModalEditar from './components/ModalEditar';
 import ModalConfirmacao from './components/ModalConfirmacao';
 import ModalDetalhesEstatisticas from './components/ModalDetalhesEstatisticas';
 import DetalhesHorasModal from '../WorkPonto/DetalhesHorasModal';
-import BannerResetHoras from './BannerResetHoras';
 import ModalCorrecaoPontos from './components/ModalCorrecaoPontos';
 import ModalComprovantes from '../Comprovantes/ModalComprovantes';
 import ModalComprovantesBatch from '../Comprovantes/ModalComprovantesBatch';
@@ -743,9 +742,6 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
 
       {/* Container Principal */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Banner de Aviso - Reset de Horas */}
-        <BannerResetHoras />
-
         {/* Formulário de Adição (aparece quando botão é clicado) */}
         {podeCriarFuncionario && !readonly && mostrarFormulario && (
           <motion.div 
@@ -818,17 +814,6 @@ const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFunci
                       : 'Comece adicionando seu primeiro funcionário ao sistema e construa sua equipe dos sonhos!'
                   }
                 </p>
-                {!filtroAtual.includes('demitidos') && !searchTerm && !isFuncionario && !readonly && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 shadow-lg"
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Adicionar Funcionário
-                  </motion.button>
-                )}
               </div>
             </motion.div>
           ) : (

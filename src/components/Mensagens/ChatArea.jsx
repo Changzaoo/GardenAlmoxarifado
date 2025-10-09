@@ -46,7 +46,7 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
         await updateDoc(conversaRef, {
           [`naoLidas.${usuario.id}`]: 0
         });
-        console.log(`🔄 Badge zerado ao abrir conversa ${conversa.id}`);
+
       } catch (error) {
         console.error('❌ Erro ao zerar badge:', error);
       }
@@ -58,7 +58,7 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
   // Carregar mensagens
   useEffect(() => {
     if (!conversa?.id) {
-      console.log('ChatArea: Aguardando conversa');
+
       setCarregando(false);
       return;
     }
@@ -98,8 +98,6 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
         await updateDoc(conversaRef, {
           [`naoLidas.${usuario.id}`]: 0
         });
-        
-        console.log(`✅ Contador zerado para conversa ${conversa.id}`);
 
         // Depois, marcar as mensagens individuais como lidas
         const mensagensNaoLidas = mensagens.filter(
@@ -108,8 +106,6 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
         );
 
         if (mensagensNaoLidas.length === 0) return;
-
-        console.log(`📬 Marcando ${mensagensNaoLidas.length} mensagens como lidas`);
 
         const batch = writeBatch(db);
         
@@ -122,7 +118,7 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
         });
 
         await batch.commit();
-        console.log('✅ Mensagens marcadas como lidas');
+
       } catch (error) {
         console.error('❌ Erro ao marcar mensagens como lidas:', error);
       }
@@ -160,7 +156,6 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
 
       // Adicionar mensagem
       const mensagemDoc = await addDoc(collection(db, 'mensagens'), novaMensagem);
-      console.log('✅ Mensagem enviada:', mensagemDoc.id);
 
       // Atualizar última mensagem da conversa
       const conversaRef = doc(db, 'conversas', conversa.id);
@@ -194,7 +189,7 @@ const ChatArea = ({ conversa, usuario, onVoltar }) => {
               { id: mensagemDoc.id, texto: conteudo },
               nomeRemetente
             );
-            console.log(`🔔 Notificação enviada para ${participanteId}`);
+
           } catch (error) {
             console.error(`❌ Erro ao notificar ${participanteId}:`, error);
           }

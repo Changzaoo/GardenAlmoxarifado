@@ -294,7 +294,6 @@ export const PermissionChecker = {
 
     // Outros veem apenas do seu setor
     if (!usuario.setorId) {
-      console.warn('Usuário sem setorId definido:', usuario);
       return [];
     }
 

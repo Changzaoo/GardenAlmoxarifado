@@ -42,8 +42,7 @@ export const useMensagens = () => {
    * Configura listener para notificações de mensagens
    */
   const setupMessageNotificationListener = useCallback((userId) => {
-    console.log('🔔 Configurando listener de notificações...');
-    
+
     try {
       const { collection, query, where, orderBy, onSnapshot } = require('firebase/firestore');
       const { db } = require('../firebaseConfig');
@@ -66,7 +65,6 @@ export const useMensagens = () => {
         });
       });
 
-      console.log('✅ Listener de notificações configurado');
     } catch (error) {
       console.error('❌ Erro ao configurar listener de notificações:', error);
     }
@@ -76,15 +74,12 @@ export const useMensagens = () => {
    * Cria listeners globais para todas as conversas (receber mensagens em tempo real)
    */
   const setupGlobalMessageListeners = useCallback((conversas) => {
-    console.log('🌐 Configurando listeners globais para', conversas.length, 'conversas');
 
     conversas.forEach(conversa => {
       // Se já existe listener para essa conversa, não criar outro
       if (unsubscribeGlobalListeners.current[conversa.id]) {
         return;
       }
-
-      console.log('👂 Criando listener global para conversa:', conversa.id);
 
       // Criar listener apenas para a última mensagem (otimização)
       const mensagensRef = collection(db, 'conversas', conversa.id, 'mensagens');
@@ -103,18 +98,14 @@ export const useMensagens = () => {
             const ultimaMensagemId = ultimasMensagensCache.current[conversa.id];
             
             if (ultimaMensagemId !== novaMensagem.id) {
-              console.log('📩 NOVA MENSAGEM RECEBIDA em tempo real!', conversa.id);
-              console.log('De:', novaMensagem.remetenteId);
-              console.log('Texto preview:', novaMensagem.textoOriginal || novaMensagem.texto?.substring(0, 30));
-              
+
               // Atualizar cache
               ultimasMensagensCache.current[conversa.id] = novaMensagem.id;
               
               // Se não for do usuário atual e não estiver na conversa ativa
               if (novaMensagem.remetenteId !== usuario.id) {
                 // FORÇAR ATUALIZAÇÃO DA LISTA DE CONVERSAS
-                console.log('🔄 Forçando atualização da lista de conversas...');
-                
+
                 // Atualizar o estado das conversas para triggerar re-render
                 setConversas(prevConversas => {
                   // Encontrar a conversa que recebeu a mensagem
@@ -136,14 +127,11 @@ export const useMensagens = () => {
                   // Remover do lugar atual e adicionar no topo
                   novasConversas.splice(conversaIndex, 1);
                   novasConversas.unshift(conversaAtualizada);
-                  
-                  console.log('✅ Lista de conversas atualizada! Nova ordem:', novasConversas.map(c => c.id));
-                  
+
                   // Atualizar total de não lidas
                   const total = novasConversas.reduce((acc, conv) => acc + (conv.naoLidas || 0), 0);
                   setTotalNaoLidas(total);
-                  console.log('🔔 Total de não lidas atualizado para:', total);
-                  
+
                   return novasConversas;
                 });
                 
@@ -152,7 +140,7 @@ export const useMensagens = () => {
                   try {
                     const audio = new Audio('/sounds/notification.mp3');
                     audio.volume = 0.3;
-                    audio.play().catch(e => console.log('Som não disponível'));
+                    audio.play();
                   } catch (e) {
                     // Ignorar
                   }
@@ -170,7 +158,7 @@ export const useMensagens = () => {
     // Limpar listeners de conversas que não existem mais
     Object.keys(unsubscribeGlobalListeners.current).forEach(conversaId => {
       if (!conversas.find(c => c.id === conversaId)) {
-        console.log('🧹 Limpando listener obsoleto:', conversaId);
+
         unsubscribeGlobalListeners.current[conversaId]();
         delete unsubscribeGlobalListeners.current[conversaId];
         delete ultimasMensagensCache.current[conversaId];
@@ -183,14 +171,13 @@ export const useMensagens = () => {
    * Manipula notificação de nova mensagem
    */
   const handleNewMessageNotification = useCallback((notificacao) => {
-    console.log('🔔 Nova notificação de mensagem:', notificacao);
 
     const { titulo, mensagem, remetente, dados } = notificacao;
     const conversaId = dados?.conversaId;
 
     // Verificar se usuário está na conversa ativa
     if (conversaAtivaRef.current?.id === conversaId) {
-      console.log('🔕 Usuário já está nesta conversa, não mostrar notificação');
+
       return;
     }
 
@@ -200,7 +187,7 @@ export const useMensagens = () => {
     const isWindowActive = document.hasFocus() && !document.hidden;
 
     if (isOnMessagesPage && isWindowActive) {
-      console.log('🔕 Usuário está na página de mensagens ativa, apenas toast');
+
       toast.info(`${remetente}: ${mensagem}`, {
         icon: '💬',
         autoClose: 4000,
@@ -218,11 +205,10 @@ export const useMensagens = () => {
     if ('Notification' in window && Notification.permission === 'granted') {
       // Tentar usar Service Worker para notificação (melhor para mobile)
       if ('serviceWorker' in navigator && navigator.serviceWorker) {
-        console.log('📱 Enviando notificação via Service Worker...');
-        
+
         navigator.serviceWorker.ready.then((registration) => {
           if (!registration || !registration.showNotification) {
-            console.warn('⚠️ Registration.showNotification não disponível');
+
             showWebNotification(remetente, mensagem, conversaId);
             return;
           }
@@ -247,7 +233,7 @@ export const useMensagens = () => {
             ],
             silent: false
           }).then(() => {
-            console.log('✅ Notificação enviada via Service Worker');
+
           }).catch(err => {
             console.error('❌ Erro ao enviar notificação via SW:', err);
             // Fallback para notificação web normal
@@ -267,7 +253,7 @@ export const useMensagens = () => {
       try {
         const audio = new Audio('/sounds/notification.mp3');
         audio.volume = 0.5;
-        audio.play().catch(e => console.log('Som não disponível'));
+        audio.play();
       } catch (e) {
         // Ignorar erro de som
       }
@@ -286,7 +272,7 @@ export const useMensagens = () => {
 
     // Função helper para notificação web (fallback)
     function showWebNotification(remetente, mensagem, conversaId) {
-      console.log('🌐 Mostrando notificação web (fallback)...');
+
       const notification = new Notification(remetente || 'Nova Mensagem', {
         body: mensagem,
         icon: '/logo192.png',
@@ -315,7 +301,7 @@ export const useMensagens = () => {
 
   useEffect(() => {
     if (!usuario) {
-      console.log('Nenhum usuario logado');
+
       setLoading(false);
       return;
     }
@@ -328,23 +314,19 @@ export const useMensagens = () => {
       return;
     }
 
-    console.log('useMensagens: Inicializando para usuario:', usuario.id);
-    console.log('Nome:', usuario.nome);
-    console.log('Email:', usuario.email);
-
     // Tentar recuperar backup do localStorage
     try {
       const backup = localStorage.getItem('conversas_backup');
       if (backup) {
         const conversasBackup = JSON.parse(backup);
         if (conversasBackup && conversasBackup.length > 0) {
-          console.log('RECUPERANDO', conversasBackup.length, 'conversas do backup');
+
           conversasBackupRef.current = conversasBackup;
           setConversas(conversasBackup); // Mostrar imediatamente
         }
       }
     } catch (e) {
-      console.warn('Nao foi possivel recuperar backup:', e);
+
     }
 
     // Atualizar status para online ao montar
@@ -357,36 +339,26 @@ export const useMensagens = () => {
 
     // Escutar conversas do usuario
     setLoading(true);
-    console.log('=================================================');
-    console.log('CRIANDO LISTENER DE CONVERSAS para usuario:', usuario.id);
-    console.log('=================================================');
-    
+
     unsubscribeConversas.current = mensagensService.listenToConversations(
       usuario.id,
       (novasConversas) => {
-        console.log('=================================================');
-        console.log('CALLBACK DE CONVERSAS EXECUTADO');
-        console.log('Quantidade:', novasConversas.length);
-        console.log('IDs das conversas:', novasConversas.map(c => c.id));
-        console.log('Conversas completas:', novasConversas);
-        
+
         // PROTECAO: Se novasConversas for vazio mas backup tem conversas, usar backup
         if (novasConversas.length === 0 && conversasBackupRef.current.length > 0) {
-          console.warn('ALERTA: Listener retornou array vazio mas backup tem conversas!');
-          console.warn('Backup tem', conversasBackupRef.current.length, 'conversas');
-          console.warn('USANDO BACKUP ao inves de limpar!');
+
           novasConversas = conversasBackupRef.current;
         }
         
         // Atualizar backup
         if (novasConversas.length > 0) {
-          console.log('Atualizando backup com', novasConversas.length, 'conversas');
+
           conversasBackupRef.current = novasConversas;
           // Salvar tambem no localStorage como ultima linha de defesa
           try {
             localStorage.setItem('conversas_backup', JSON.stringify(novasConversas));
           } catch (e) {
-            console.warn('Nao foi possivel salvar backup no localStorage:', e);
+
           }
         }
         
@@ -398,46 +370,40 @@ export const useMensagens = () => {
           }
           return true;
         });
-        
-        console.log('Chamando setConversas com', conversasFiltradas.length, 'conversas (filtradas de', novasConversas.length, ')');
+
         console.trace('Stack trace do callback');
-        console.log('=================================================');
-        
+
         setConversas(conversasFiltradas);
         setLoading(false);
         atualizarTotalNaoLidas(conversasFiltradas);
         
         // Configurar listeners globais para todas as conversas
         setupGlobalMessageListeners(novasConversas);
-        
-        console.log('setConversas EXECUTADO');
-        console.log('setLoading(false) EXECUTADO');
+
       }
     );
-    
-    console.log('Listener de conversas CRIADO e ARMAZENADO no ref');
 
     // Atualizar status para offline ao desmontar
     return () => {
-      console.log('Limpeza do useMensagens hook');
+
       if (unsubscribeConversas.current) {
-        console.log('Desconectando listener de conversas');
+
         unsubscribeConversas.current();
         unsubscribeConversas.current = null;
       }
       if (unsubscribeMensagens.current) {
-        console.log('Desconectando listener de mensagens');
+
         unsubscribeMensagens.current();
         unsubscribeMensagens.current = null;
       }
       if (unsubscribeNotificacoes.current) {
-        console.log('Desconectando listener de notificações');
+
         unsubscribeNotificacoes.current();
         unsubscribeNotificacoes.current = null;
       }
       // Limpar listeners globais
       if (unsubscribeGlobalListeners.current) {
-        console.log('Desconectando listeners globais de mensagens');
+
         Object.values(unsubscribeGlobalListeners.current).forEach(unsubscribe => {
           if (typeof unsubscribe === 'function') {
             unsubscribe();
@@ -458,19 +424,14 @@ export const useMensagens = () => {
 
   // MONITOR: Rastrear mudanças no totalNaoLidas
   useEffect(() => {
-    console.log('🔔🔔🔔 TOTAL NÃO LIDAS MUDOU:', totalNaoLidas);
+
   }, [totalNaoLidas]);
 
   // MONITOR: Rastrear TODAS as mudancas no estado conversas
   useEffect(() => {
-    console.log('###############################################');
-    console.log('ESTADO CONVERSAS MUDOU!');
-    console.log('Quantidade atual:', conversas.length);
-    console.log('IDs:', conversas.map(c => c.id));
-    console.log('Backup tem:', conversasBackupRef.current.length);
+
     console.trace('Stack trace da mudanca');
-    console.log('###############################################');
-    
+
     // ALERTA CRITICO: Se conversas ficarem vazias mas backup tem dados
     if (conversas.length === 0 && conversasBackupRef.current.length > 0) {
       console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
@@ -482,7 +443,7 @@ export const useMensagens = () => {
       
       // Restaurar do backup
       setTimeout(() => {
-        console.log('Restaurando conversas do backup...');
+
         setConversas(conversasBackupRef.current);
       }, 100);
     }
@@ -494,41 +455,32 @@ export const useMensagens = () => {
    * Seleciona uma conversa para abrir
    */
   const selecionarConversa = useCallback((conversa) => {
-    console.log('===============================================');
-    console.log('selecionarConversa CHAMADO');
-    console.log('Conversa solicitada:', conversa.id);
-    console.log('Conversa ativa no ref:', conversaAtivaRef.current?.id);
-    console.log('Conversa ativa no state:', conversaAtiva?.id);
+
     console.trace('Stack trace da chamada:');
-    console.log('===============================================');
-    
+
     // Se for a mesma conversa, nao fazer nada
     if (conversaAtivaRef.current?.id === conversa.id) {
-      console.log('Mesma conversa ja esta ativa, IGNORANDO');
-      console.log('===============================================');
+
       return;
     }
-    
-    console.log('Conversa diferente, procedendo...');
-    
+
     // Parar de escutar mensagens antigas
     if (unsubscribeMensagens.current) {
-      console.log('Desconectando listener de mensagens anterior');
+
       unsubscribeMensagens.current();
       unsubscribeMensagens.current = null;
     }
 
     // Atualizar ref antes de atualizar estado
-    console.log('Atualizando conversaAtivaRef.current para:', conversa.id);
+
     conversaAtivaRef.current = conversa;
-    
-    console.log('Chamando setConversaAtiva');
+
     setConversaAtiva(conversa);
     
     // ATUALIZAR CONTADOR LOCALMENTE (UX instantâneo)
     const naoLidasAntes = conversa.naoLidas || 0;
     if (naoLidasAntes > 0) {
-      console.log('🔔 Atualizando contador local instantaneamente...');
+
       setConversas(prevConversas => {
         return prevConversas.map(c => {
           if (c.id === conversa.id) {
@@ -540,11 +492,11 @@ export const useMensagens = () => {
       
       // Atualizar total de não lidas
       setTotalNaoLidas(prev => Math.max(0, prev - naoLidasAntes));
-      console.log('✅ Contador local atualizado! Decrementado:', naoLidasAntes);
+
     }
     
     // ZERAR CONTADOR NO FIREBASE (em background)
-    console.log('🔔 Zerando contador no Firebase...');
+
     mensagensService.clearUnreadCount(conversa.id, usuario.id).catch(err => {
       console.error('Erro ao zerar contador:', err);
     });
@@ -553,26 +505,17 @@ export const useMensagens = () => {
     marcarNotificacoesComoLidas(conversa.id);
     
     // NAO limpar mensagens - sera feito pelo listener
-    console.log('AGUARDANDO mensagens do listener (nao limpando array)');
 
     // Escutar mensagens da nova conversa
-    console.log('Criando listener de mensagens para conversa:', conversa.id);
-    
+
     unsubscribeMensagens.current = mensagensService.listenToMessages(
       conversa.id,
       usuario.id,
       LIMITS.MESSAGES_PER_PAGE,
       (novasMensagens) => {
-        console.log('=================================================');
-        console.log('CALLBACK DO LISTENER EXECUTADO');
-        console.log('Para conversa:', conversa.id);
-        console.log('Quantidade de mensagens:', novasMensagens.length);
-        console.log('IDs:', novasMensagens.map(m => m.id));
-        console.log('FORCANDO setMensagens com', novasMensagens.length, 'mensagens');
+
         setMensagens(novasMensagens);
-        console.log('setMensagens EXECUTADO COM SUCESSO');
-        console.log('=================================================');
-        
+
         // Marcar como lidas
         const mensagensNaoLidas = novasMensagens
           .filter(msg => 
@@ -658,7 +601,7 @@ export const useMensagens = () => {
       );
       
       // ATUALIZAR LISTA DE CONVERSAS LOCALMENTE (UX instantâneo)
-      console.log('📤 Mensagem enviada! Atualizando lista de conversas...');
+
       setConversas(prevConversas => {
         const conversaIndex = prevConversas.findIndex(c => c.id === conversaId);
         if (conversaIndex === -1) return prevConversas;
@@ -673,8 +616,7 @@ export const useMensagens = () => {
         // Mover para o topo
         novasConversas.splice(conversaIndex, 1);
         novasConversas.unshift(conversaAtualizada);
-        
-        console.log('✅ Lista atualizada após envio!');
+
         return novasConversas;
       });
     } catch (error) {
@@ -701,7 +643,7 @@ export const useMensagens = () => {
       );
       
       // ATUALIZAR LISTA DE CONVERSAS LOCALMENTE (UX instantâneo)
-      console.log('📤 Arquivo enviado! Atualizando lista de conversas...');
+
       setConversas(prevConversas => {
         const conversaIndex = prevConversas.findIndex(c => c.id === conversaId);
         if (conversaIndex === -1) return prevConversas;
@@ -719,8 +661,7 @@ export const useMensagens = () => {
         // Mover para o topo
         novasConversas.splice(conversaIndex, 1);
         novasConversas.unshift(conversaAtualizada);
-        
-        console.log('✅ Lista atualizada após envio de arquivo!');
+
         return novasConversas;
       });
     } catch (error) {
@@ -824,7 +765,7 @@ export const useMensagens = () => {
   const carregarMensagensAntigas = useCallback(async () => {
     if (!conversaAtiva) return;
     // Implementar paginacao aqui
-    console.log('Carregando mensagens antigas...');
+
   }, [conversaAtiva]);
 
   /**
@@ -905,12 +846,7 @@ export const useMensagens = () => {
    */
   const atualizarTotalNaoLidas = useCallback((conversas) => {
     const total = conversas.reduce((acc, conv) => acc + (conv.naoLidas || 0), 0);
-    console.log('🔔 Total de não lidas atualizado:', total);
-    console.log('📊 Conversas com não lidas:', conversas.filter(c => c.naoLidas > 0).map(c => ({
-      id: c.id,
-      nome: c.nome,
-      naoLidas: c.naoLidas
-    })));
+
     setTotalNaoLidas(total);
   }, []);
 
@@ -950,7 +886,7 @@ export const useMensagens = () => {
       );
 
       await Promise.all(promises);
-      console.log('✅ Notificações marcadas como lidas');
+
     } catch (error) {
       console.error('❌ Erro ao marcar notificações como lidas:', error);
     }

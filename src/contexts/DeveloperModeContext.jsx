@@ -62,7 +62,7 @@ export const DeveloperModeProvider = ({ children }) => {
   }, [isDeveloperMode, devStats.activatedAt]);
 
   const enableDeveloperMode = () => {
-    console.log('🔓 Modo Desenvolvedor ATIVADO');
+
     setIsDeveloperMode(true);
     setDevStats({
       activatedAt: new Date(),
@@ -72,7 +72,7 @@ export const DeveloperModeProvider = ({ children }) => {
   };
 
   const disableDeveloperMode = () => {
-    console.log('🔒 Modo Desenvolvedor DESATIVADO');
+
     setIsDeveloperMode(false);
     setDevStats({
       activatedAt: null,

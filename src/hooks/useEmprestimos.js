@@ -14,9 +14,9 @@ export const useEmprestimos = () => {
 
     const carregarEmprestimos = () => {
       try {
-        console.log('Iniciando carregamento de empréstimos...');
+
         unsubscribe = emprestimosCollection.onSnapshot((lista) => {
-          console.log('Empréstimos carregados (brutos):', lista);
+
           if (Array.isArray(lista)) {
             // Garantir que cada item tenha as propriedades necessárias
             const emprestimosValidos = lista.map(emp => {
@@ -47,7 +47,7 @@ export const useEmprestimos = () => {
                 ...emp // Manter outros campos que possam existir
               };
             });
-            console.log('Empréstimos processados:', emprestimosValidos);
+
             setEmprestimos(emprestimosValidos);
           } else {
             console.error('Lista de empréstimos não é um array:', lista);

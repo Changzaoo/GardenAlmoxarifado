@@ -50,7 +50,7 @@ export const useAppUpdate = () => {
       });
       
       if (!response.ok) {
-        console.warn('Não foi possível verificar atualizações');
+
         return false;
       }
 
@@ -65,10 +65,7 @@ export const useAppUpdate = () => {
       const hasUpdate = isNewerVersion(serverVersion, localVersionRef.current);
       
       if (hasUpdate) {
-        console.log('✨ Nova versão disponível!', {
-          atual: localVersionRef.current,
-          nova: serverVersion
-        });
+
         setNewVersion(serverVersion);
         setUpdateAvailable(true);
         

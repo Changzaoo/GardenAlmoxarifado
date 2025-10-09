@@ -83,7 +83,6 @@ const ModalDadosUsuario = ({ usuario, onClose }) => {
         });
       }
     } catch (error) {
-      console.log('Não encontrado em workflow-cfe2e/usuarios');
     }
 
     // Verificar em funcionarios (workflow-cfe2e)
@@ -103,7 +102,6 @@ const ModalDadosUsuario = ({ usuario, onClose }) => {
         });
       }
     } catch (error) {
-      console.log('Não encontrado em workflow-cfe2e/funcionarios');
     }
 
     // Verificar em workflowbr1
@@ -123,7 +121,6 @@ const ModalDadosUsuario = ({ usuario, onClose }) => {
         });
       }
     } catch (error) {
-      console.log('Não encontrado em workflowbr1/usuarios');
     }
 
     return {

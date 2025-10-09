@@ -26,10 +26,7 @@ export const useAndroidTheme = (currentTheme) => {
         if (Capacitor.getPlatform() === 'android') {
           try {
             await ThemeManager.setTheme({ theme: currentTheme });
-            console.log(`✅ Tema Android atualizado via plugin: ${currentTheme}`);
           } catch (pluginError) {
-            console.warn('⚠️ Plugin customizado não disponível, usando fallback:', pluginError);
-            
             // Fallback para StatusBar padrão
             // Mantém a cor azul fixa independente do tema
             await StatusBar.setStyle({
@@ -54,8 +51,6 @@ export const useAndroidTheme = (currentTheme) => {
 
         // 3. Atualizar Splash Screen (na próxima abertura)
         updateSplashScreenConfig(isDark);
-
-        console.log(`✅ Tema aplicado: ${currentTheme}`);
       } catch (error) {
         console.error('❌ Erro ao aplicar tema:', error);
       }
@@ -133,7 +128,6 @@ export const hideSplashScreen = async () => {
     await SplashScreen.hide({
       fadeOutDuration: 300,
     });
-    console.log('✅ Splash screen escondido');
   } catch (error) {
     console.error('❌ Erro ao esconder splash screen:', error);
   }
@@ -152,7 +146,6 @@ export const showSplashScreen = async () => {
       autoHide: false,
       fadeInDuration: 200,
     });
-    console.log('✅ Splash screen mostrado');
   } catch (error) {
     console.error('❌ Erro ao mostrar splash screen:', error);
   }

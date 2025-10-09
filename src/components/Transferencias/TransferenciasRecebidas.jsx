@@ -35,7 +35,7 @@ const TransferenciasRecebidas = ({ usuario }) => {
               id: doc.id,
               ...doc.data()
             }));
-            console.log('TransferenciasRecebidas - Transferências encontradas:', transferenciasData);
+
             setTransferencias(transferenciasData);
             setError(null);
             setIsLoading(false);
@@ -88,12 +88,9 @@ const TransferenciasRecebidas = ({ usuario }) => {
           }
         };
 
-        console.log('Criando novo empréstimo após transferência:', novoEmprestimo);
-
         // Usar o hook para adicionar o empréstimo
         const novoEmprestimoComId = await adicionarEmprestimo(novoEmprestimo);
-        console.log('Novo empréstimo criado:', novoEmprestimoComId);
-        
+
         // Obter e atualizar o empréstimo original
         const emprestimoOriginalSnap = await getDoc(emprestimoRef);
         if (emprestimoOriginalSnap.exists()) {
@@ -109,7 +106,7 @@ const TransferenciasRecebidas = ({ usuario }) => {
           
           // Se não sobrarem ferramentas, finalizar o empréstimo
           if (ferramentasRestantes.length === 0) {
-            console.log('Finalizando empréstimo original - todas as ferramentas foram transferidas');
+
             await updateDoc(emprestimoRef, {
               status: 'finalizado',
               dataFinalizacao: dataAtual,
@@ -117,7 +114,7 @@ const TransferenciasRecebidas = ({ usuario }) => {
               ferramentas: [] // Limpar array de ferramentas
             });
           } else {
-            console.log('Atualizando empréstimo original com ferramentas restantes:', ferramentasRestantes);
+
             await updateDoc(emprestimoRef, {
               ferramentas: ferramentasRestantes,
               observacoes: `${emprestimoOriginal.observacoes || ''}\nFerramentas transferidas para ${transferencia.funcionarioDestino} em ${formatarData(new Date())}`
@@ -136,11 +133,6 @@ const TransferenciasRecebidas = ({ usuario }) => {
           acao: aceitar ? 'Transferência aceita' : 'Transferência recusada',
           usuario: usuario.nome
         }]
-      });
-
-      console.log('Transferência processada com sucesso:', {
-        id: transferencia.id,
-        status: aceitar ? 'aceita' : 'recusada'
       });
 
       // Atualizar lista local

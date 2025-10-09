@@ -275,8 +275,6 @@ export const AuthProvider = ({ children }) => {
       cookieNames.forEach(cookieName => {
         document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/;SameSite=Strict`;
       });
-      
-      console.log('✅ Cookies de autenticação removidos no logout');
     } catch (error) {
       console.error('❌ Erro ao remover cookies no logout:', error);
     }
@@ -319,7 +317,6 @@ export const AuthProvider = ({ children }) => {
       if (usuarioAtualizado.authKey) {
         delete usuarioAtualizado.authKey;
         delete usuarioAtualizado.authKeyUpdatedAt;
-        console.warn('� Campo authKey removido por questões de segurança');
       }
     }
 

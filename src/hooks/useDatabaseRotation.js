@@ -70,8 +70,6 @@ export const useDatabaseRotation = (options = {}) => {
         syncServiceRef.current = createSyncService(sourceDb, targetDb);
       }
 
-      console.log(`🔄 Iniciando sincronização: ${activeDatabase} → ${activeDatabase === 'primary' ? 'backup' : 'primary'}`);
-
       // Sincronizar todas as coleções
       const result = await syncServiceRef.current.syncAllCollections(
         collections,
@@ -88,8 +86,6 @@ export const useDatabaseRotation = (options = {}) => {
           }
         }
       );
-
-      console.log('✅ Sincronização concluída:', result);
 
       return result;
 
@@ -112,7 +108,7 @@ export const useDatabaseRotation = (options = {}) => {
    */
   const executeRotation = useCallback(async () => {
     if (isRotating) {
-      console.warn('⚠️ Rotação já em andamento');
+
       return;
     }
 
@@ -122,8 +118,6 @@ export const useDatabaseRotation = (options = {}) => {
       if (onRotationStart) {
         onRotationStart(activeDatabase);
       }
-
-      console.log(`🔄 Iniciando rotação do database: ${activeDatabase}`);
 
       // Sincronizar antes de alternar (se habilitado)
       let syncResult = null;
@@ -155,8 +149,6 @@ export const useDatabaseRotation = (options = {}) => {
         history.shift();
       }
       localStorage.setItem('rotationHistory', JSON.stringify(history));
-
-      console.log(`✅ Rotação concluída: ${activeDatabase} → ${newDatabase}`);
 
       if (onRotationComplete) {
         onRotationComplete(newDatabase, historyEntry);
@@ -194,7 +186,7 @@ export const useDatabaseRotation = (options = {}) => {
    */
   const checkRotation = useCallback(async () => {
     if (dbManager.needsRotation() && autoRotate) {
-      console.log('⏰ Tempo de rotação atingido, executando rotação automática');
+
       await executeRotation();
     }
   }, [autoRotate, executeRotation]);
@@ -203,7 +195,7 @@ export const useDatabaseRotation = (options = {}) => {
    * 🔄 Forçar rotação manual
    */
   const forceRotation = useCallback(async () => {
-    console.log('🔄 Rotação manual iniciada');
+
     return await executeRotation();
   }, [executeRotation]);
 
@@ -211,7 +203,7 @@ export const useDatabaseRotation = (options = {}) => {
    * 🔄 Forçar sincronização manual
    */
   const forceSync = useCallback(async () => {
-    console.log('🔄 Sincronização manual iniciada');
+
     return await syncDatabases();
   }, [syncDatabases]);
 
@@ -253,7 +245,7 @@ export const useDatabaseRotation = (options = {}) => {
    */
   useEffect(() => {
     const unsubscribe = dbManager.addListener((newDatabase) => {
-      console.log(`📡 Database alterado: ${newDatabase}`);
+
       setActiveDatabase(newDatabase);
       setLastRotation(dbManager.lastRotation);
       calculateNextRotation();

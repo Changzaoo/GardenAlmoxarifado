@@ -152,8 +152,7 @@ class MensagensService {
    * Busca conversas de um usuário
    */
   listenToConversations(userId, callback) {
-    console.log('🔍 Buscando conversas para usuário:', userId);
-    
+
     const q = query(
       this.conversasRef,
       where('participantes', 'array-contains', userId),
@@ -162,12 +161,12 @@ class MensagensService {
 
     return onSnapshot(q, 
       (snapshot) => {
-        console.log('📦 Snapshot recebido:', snapshot.size, 'conversas');
+
         const conversas = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
-        console.log('📋 Conversas processadas:', conversas);
+
         callback(conversas);
       },
       (error) => {
@@ -203,8 +202,7 @@ class MensagensService {
    */
   async sendMessage(conversaId, remetenteId, texto, tipo = MESSAGE_TYPE.TEXTO, anexoUrl = null) {
     try {
-      console.log('📨 sendMessage chamado:', { conversaId, remetenteId, texto, tipo });
-      
+
       // Verificar bloqueio
       const bloqueado = await this.isBlocked(conversaId, remetenteId);
       if (bloqueado) {
@@ -213,8 +211,7 @@ class MensagensService {
       }
 
       const mensagensRef = collection(db, `conversas/${conversaId}/mensagens`);
-      console.log('📁 Referência de mensagens:', `conversas/${conversaId}/mensagens`);
-      
+
       const novaMensagem = {
         texto: texto || '',
         remetenteId,
@@ -228,12 +225,10 @@ class MensagensService {
         entregueA: [remetenteId]
       };
 
-      console.log('💾 Salvando mensagem no Firestore...');
       const docRef = await addDoc(mensagensRef, novaMensagem);
-      console.log('✅ Mensagem salva com ID:', docRef.id);
 
       // Atualizar última mensagem na conversa
-      console.log('🔄 Atualizando última mensagem...');
+
       await this.updateLastMessage(conversaId, {
         id: docRef.id,
         texto: tipo === MESSAGE_TYPE.TEXTO ? texto : `📎 ${tipo}`,
@@ -242,10 +237,9 @@ class MensagensService {
       });
 
       // Incrementar contador de não lidas para outros participantes
-      console.log('📊 Incrementando contador de não lidas...');
+
       await this.incrementUnreadCount(conversaId, remetenteId);
 
-      console.log('🎉 Mensagem enviada completamente!');
       return {
         id: docRef.id,
         ...novaMensagem

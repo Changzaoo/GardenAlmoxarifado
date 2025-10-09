@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, LogIn, LogOut, Coffee, ArrowRightLeft, Clock, CheckCircle, AlertTriangle, TrendingUp, Award, FileText, Edit2, Utensils, RefreshCw } from 'lucide-react';
+import { Calendar, LogIn, LogOut, Coffee, ArrowRightLeft, Clock, CheckCircle, AlertTriangle, TrendingUp, Award, FileText, Edit2, Utensils, RefreshCw, AlertCircle } from 'lucide-react';
 import { collection, addDoc, query, where, onSnapshot, doc, getDoc, getDocs, deleteDoc, doc as firestoreDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useAuth } from '../hooks/useAuth';
@@ -7,6 +7,8 @@ import { useToast } from './ToastProvider';
 import { validarTolerancia, podeBaterPonto, calcularSaldoDia } from '../utils/pontoUtils';
 import { obterHorariosEsperados } from '../utils/escalaUtils';
 import ComprovantesPontoModal from './Comprovantes/ComprovantesPontoModal';
+import TimePickerCustom from './WorkPonto/TimePickerCustom';
+import { getAjustesMes, registrarAjuste, podeAjustar, onAjustesMesChange } from '../services/ajustesPontoService';
 
 // Utilitário para formatar hora
 function formatHora(date) {
@@ -48,8 +50,6 @@ const WorkPontoTab = () => {
   
   // Debug: verificar inicialização
   useEffect(() => {
-    console.log('🔥 Firebase DB inicializado:', !!db);
-    console.log('👤 Usuário logado:', usuario);
   }, []);
   
   const [registros, setRegistros] = useState([
@@ -102,6 +102,32 @@ const WorkPontoTab = () => {
     voltaAlmoco: '',
     saida: ''
   });
+  
+  // Estados para sistema de ajustes mensais
+  const [ajustesMes, setAjustesMes] = useState({
+    ajustesUsados: 0,
+    ajustesRestantes: 4,
+    historico: []
+  });
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Verificar se é admin
+  useEffect(() => {
+    if (usuario) {
+      setIsAdmin(usuario.nivel === 0 || usuario.nivel === '0');
+    }
+  }, [usuario]);
+
+  // Carregar ajustes do mês atual
+  useEffect(() => {
+    if (!usuario?.id) return;
+    
+    const unsubscribe = onAjustesMesChange(usuario.id, (ajustes) => {
+      setAjustesMes(ajustes);
+    });
+    
+    return () => unsubscribe();
+  }, [usuario?.id]);
 
   // Relógio em tempo real
   useEffect(() => {
@@ -253,17 +279,14 @@ const WorkPontoTab = () => {
             setTipoEscala(data.tipoEscala);
             const horarios = obterHorariosEsperados(data.tipoEscala, new Date());
             setHorariosEsperados(horarios);
-            console.log('✅ Horários esperados carregados:', horarios);
           } else {
             // Se não tem tipoEscala, usar padrão M (07:20-16:20)
-            console.log('⚠️ Funcionário sem tipoEscala, usando padrão M');
             setTipoEscala('M');
             const horarios = obterHorariosEsperados('M', new Date());
             setHorariosEsperados(horarios);
           }
         } else {
           // Se não encontrar na collection, usar escala padrão
-          console.log('⚠️ Funcionário não encontrado no Firestore, usando escala padrão M');
           setTipoEscala('M');
           const horarios = obterHorariosEsperados('M', new Date());
           setHorariosEsperados(horarios);
@@ -282,26 +305,18 @@ const WorkPontoTab = () => {
 
   // Carregar registros do dia atual
   useEffect(() => {
-    console.log('🔍 Usuario atual:', usuario);
     if (!usuario?.id && !usuario?.uid) {
-      console.warn('⚠️ Usuário sem ID!');
       return;
     }
 
     const userId = usuario.id || usuario.uid;
-    console.log('✅ UserID encontrado:', userId);
     const inicioDia = getInicioDia();
-    
-    console.log('🔍 Carregando pontos para usuário:', userId);
-
     const q = query(
       collection(db, 'pontos'),
       where('funcionarioId', '==', String(userId))
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('📋 Total de pontos encontrados:', snapshot.docs.length);
-      
       const pontosHoje = {
         entrada: null,
         saida_almoco: null,
@@ -322,14 +337,12 @@ const WorkPontoTab = () => {
         // Verificar se a data é válida
         const dataObj = new Date(data.data);
         if (isNaN(dataObj.getTime())) {
-          console.warn('⚠️ Ponto com data inválida:', doc.id, data.data);
           return;
         }
 
         // Verificar se o horário é válido
         const hora = formatHora(data.data);
         if (hora === '--:--' || hora === '00:00' || hora === '10:10') {
-          console.warn('⚠️ Ponto com horário inválido/problemático:', doc.id, hora);
           return;
         }
 
@@ -342,29 +355,15 @@ const WorkPontoTab = () => {
         }
         
         const dataPonto = formatData(data.data);
-        
-        console.log('📌 Ponto VÁLIDO encontrado:', {
-          tipo: data.tipo,
-          data: dataPonto,
-          horario: hora,
-          hoje: hoje
-        });
-        
         // Apenas pontos de hoje e apenas se ainda não foi registrado
         if (dataPonto === hoje && !pontosHoje[data.tipo]) {
           pontosHoje[data.tipo] = dataObj;
-          console.log(`✅ ${data.tipo} registrado para hoje:`, hora);
         } else if (dataPonto !== hoje) {
-          console.log(`📅 Ponto de outra data ignorado:`, dataPonto);
         }
       });
-
-      console.log('✅ Pontos de hoje consolidados:', pontosHoje);
-
       setRegistros((prev) =>
         prev.map((r) => {
           const novoHorario = pontosHoje[r.tipo] || null;
-          console.log(`🎯 Atualizando card ${r.tipo}:`, novoHorario ? formatHora(novoHorario) : 'null');
           return {
             ...r,
             horario: novoHorario,
@@ -383,7 +382,6 @@ const WorkPontoTab = () => {
         
         const saldo = calcularSaldoDia(registrosParaCalculo, horariosEsperados);
         setSaldoDia(saldo);
-        console.log('💰 Saldo do dia calculado:', saldo);
       }
     });
 
@@ -393,13 +391,10 @@ const WorkPontoTab = () => {
   // Carregar histórico dos últimos 30 dias
   useEffect(() => {
     if (!usuario?.id && !usuario?.uid) {
-      console.warn('⚠️ Histórico: Usuário sem ID!');
       return;
     }
 
     const userId = usuario.id || usuario.uid;
-    console.log('📜 Carregando histórico para:', userId);
-
     const q = query(
       collection(db, 'pontos'),
       where('funcionarioId', '==', String(userId))
@@ -414,21 +409,18 @@ const WorkPontoTab = () => {
         .filter((ponto) => {
           // Remover pontos inválidos (sem data, sem tipo, ou sem horário válido)
           if (!ponto.data || !ponto.tipo) {
-            console.warn('🗑️ Histórico: Removendo ponto sem data/tipo:', ponto.id);
             return false;
           }
           
           // Verificar se a data é válida
           const dataValida = new Date(ponto.data);
           if (isNaN(dataValida.getTime())) {
-            console.warn('🗑️ Histórico: Removendo ponto com data inválida:', ponto.id, ponto.data);
             return false;
           }
           
           // Verificar se tem horário válido (não é 00:00:00, --:-- ou 10:10)
           const hora = formatHora(ponto.data);
           if (hora === '--:--' || hora === '00:00' || hora === '10:10') {
-            console.warn('🗑️ Histórico: Removendo ponto com horário inválido/problemático:', ponto.id, hora);
             return false;
           }
 
@@ -439,25 +431,12 @@ const WorkPontoTab = () => {
             console.warn('🗑️ Histórico: Removendo ponto muito antigo (>30 dias):', ponto.id, formatData(ponto.data));
             return false;
           }
-          
-          console.log('✅ Histórico: Ponto válido mantido:', {
-            id: ponto.id,
-            tipo: ponto.tipo,
-            data: formatData(ponto.data),
-            hora: hora
-          });
-          
           return true;
         });
       
       // Ordenar por data mais recente
       pontos.sort((a, b) => new Date(b.data) - new Date(a.data));
-      
-      console.log('📜 Histórico filtrado:', pontos.length, 'registros válidos');
-      console.log('📜 Dados do histórico:', pontos);
-      
       if (pontos.length === 0) {
-        console.log('✨ Nenhum ponto válido encontrado. O histórico está vazio.');
       }
       
       setHistorico(pontos);
@@ -546,16 +525,6 @@ const WorkPontoTab = () => {
           
           if (horarioEsperadoDate) {
             const validacao = validarTolerancia(horarioEsperadoDate, agora);
-            
-            console.log('⏰ Validação de tolerância:', {
-              tipo,
-              esperado: horarioEsperadoStr,
-              atual: formatHora(agora),
-              diferenca: validacao.diferencaMinutos,
-              dentroTolerancia: validacao.dentroTolerancia,
-              tipoValidacao: validacao.tipo
-            });
-            
             // Se estiver fora da tolerância, avisar mas permitir
             if (!validacao.dentroTolerancia) {
               const msgTipo = validacao.tipo === 'adiantado' ? 'adiantado' : 'atrasado';
@@ -588,19 +557,7 @@ const WorkPontoTab = () => {
         data: agora.toISOString(),
         timestamp: agora.getTime(),
       };
-      
-      console.log('⏰ Batendo ponto:', {
-        tipo,
-        horario: horaAtual,
-        usuario: pontoData.funcionarioNome
-      });
-      
-      const docRef = await addDoc(collection(db, 'pontos'), pontoData);
-      console.log('✅ Ponto registrado com sucesso!', {
-        id: docRef.id,
-        tipo,
-        horario: formatHora(agora)
-      });
+      await addDoc(collection(db, 'pontos'), pontoData);
       
       // Toast sem emoji conforme solicitado
       showToast(`Ponto registrado: ${registroAtual?.label} às ${formatHora(agora)}`, 'success');
@@ -898,20 +855,20 @@ const WorkPontoTab = () => {
             </div>
             
             {/* Campo de Almoço - Clicável para editar */}
-            <div 
-              className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all group"
-              onClick={() => !editandoAlmoco && setEditandoAlmoco(true)}
-            >
-              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold flex items-center justify-center gap-1">
+            <div className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">
                 Almoço
-                {!editandoAlmoco && <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500" />}
               </div>
               {editandoAlmoco ? (
-                <input
-                  type="time"
+                <TimePickerCustom
                   value={horariosPersonalizados.almoco || horariosEsperados.almoco || '12:00'}
-                  onChange={(e) => {
-                    const novoHorario = e.target.value;
+                  onChange={(novoHorario) => {
+                    setHorariosPersonalizados(prev => ({
+                      ...prev,
+                      almoco: novoHorario
+                    }));
+                  }}
+                  onSave={(novoHorario) => {
                     const novosHorarios = {
                       ...horariosPersonalizados,
                       almoco: novoHorario
@@ -921,37 +878,41 @@ const WorkPontoTab = () => {
                       ...horariosEsperados,
                       almoco: novoHorario
                     });
-                    // Salvar no localStorage
                     localStorage.setItem(`horariosPersonalizados_${usuario?.id}`, JSON.stringify(novosHorarios));
                     showToast('✓ Horário de almoço atualizado!', 'success');
                     setEditandoAlmoco(false);
                   }}
-                  onBlur={() => setTimeout(() => setEditandoAlmoco(false), 200)}
-                  autoFocus
-                  className="w-full text-xl font-bold text-orange-600 dark:text-orange-400 font-mono bg-orange-50 dark:bg-orange-900/30 border-2 border-orange-400 dark:border-orange-600 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  onCancel={() => setEditandoAlmoco(false)}
+                  label="Horário do Almoço"
+                  color="orange"
                 />
               ) : (
-                <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">
-                  {horariosPersonalizados.almoco || horariosEsperados.almoco || '12:00'}
-                </div>
+                <button
+                  onClick={() => setEditandoAlmoco(true)}
+                  className="w-full text-center group"
+                >
+                  <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono group-hover:scale-105 transition-transform">
+                    {horariosPersonalizados.almoco || horariosEsperados.almoco || '12:00'}
+                  </div>
+                </button>
               )}
             </div>
             
             {/* Campo de Retorno - Clicável para editar */}
-            <div 
-              className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:ring-2 hover:ring-green-400 transition-all group"
-              onClick={() => !editandoRetorno && setEditandoRetorno(true)}
-            >
-              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold flex items-center justify-center gap-1">
+            <div className="bg-white dark:bg-blue-900/30 rounded-lg p-4 text-center shadow-sm">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">
                 Retorno
-                {!editandoRetorno && <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-green-500" />}
               </div>
               {editandoRetorno ? (
-                <input
-                  type="time"
+                <TimePickerCustom
                   value={horariosPersonalizados.retorno || horariosEsperados.retorno || '13:00'}
-                  onChange={(e) => {
-                    const novoHorario = e.target.value;
+                  onChange={(novoHorario) => {
+                    setHorariosPersonalizados(prev => ({
+                      ...prev,
+                      retorno: novoHorario
+                    }));
+                  }}
+                  onSave={(novoHorario) => {
                     const novosHorarios = {
                       ...horariosPersonalizados,
                       retorno: novoHorario
@@ -961,19 +922,23 @@ const WorkPontoTab = () => {
                       ...horariosEsperados,
                       retorno: novoHorario
                     });
-                    // Salvar no localStorage
                     localStorage.setItem(`horariosPersonalizados_${usuario?.id}`, JSON.stringify(novosHorarios));
                     showToast('✓ Horário de retorno atualizado!', 'success');
                     setEditandoRetorno(false);
                   }}
-                  onBlur={() => setTimeout(() => setEditandoRetorno(false), 200)}
-                  autoFocus
-                  className="w-full text-xl font-bold text-green-600 dark:text-green-400 font-mono bg-green-50 dark:bg-green-900/30 border-2 border-green-400 dark:border-green-600 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
+                  onCancel={() => setEditandoRetorno(false)}
+                  label="Horário do Retorno"
+                  color="green"
                 />
               ) : (
-                <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">
-                  {horariosPersonalizados.retorno || horariosEsperados.retorno || '13:00'}
-                </div>
+                <button
+                  onClick={() => setEditandoRetorno(true)}
+                  className="w-full text-center group"
+                >
+                  <div className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono group-hover:scale-105 transition-transform">
+                    {horariosPersonalizados.retorno || horariosEsperados.retorno || '13:00'}
+                  </div>
+                </button>
               )}
             </div>
             

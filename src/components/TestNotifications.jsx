@@ -70,10 +70,8 @@ const TestNotifications = () => {
       'VAPID Key': process.env.REACT_APP_FIREBASE_VAPID_KEY ? '✅ Configurada' : '❌ Não configurada'
     };
 
-    console.log('🔍 Informações de Notificações:', info);
-    
     Object.entries(info).forEach(([key, value]) => {
-      console.log(`  ${key}: ${value}`);
+
     });
 
     toast.info('Veja o console (F12) para detalhes');

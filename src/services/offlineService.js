@@ -34,7 +34,7 @@ class OfflineService {
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('✅ IndexedDB inicializado');
+
         resolve(this.db);
       };
 
@@ -59,7 +59,6 @@ class OfflineService {
           cacheStore.createIndex('timestamp', 'timestamp', { unique: false });
         }
 
-        console.log('📦 Stores do IndexedDB criados');
       };
     });
   }
@@ -69,14 +68,14 @@ class OfflineService {
    */
   setupOnlineListener() {
     window.addEventListener('online', () => {
-      console.log('🌐 Conexão restaurada!');
+
       this.isOnline = true;
       this.notifyListeners('online');
       this.syncPendingOperations();
     });
 
     window.addEventListener('offline', () => {
-      console.log('📴 Sem conexão! Modo offline ativado.');
+
       this.isOnline = false;
       this.notifyListeners('offline');
     });
@@ -124,18 +123,17 @@ class OfflineService {
       const request = store.add(data);
 
       request.onsuccess = async () => {
-        console.log('💾 Operação salva para sincronização:', operation.type);
-        
+
         // Tentar sincronizar via Bluetooth se disponível
         try {
           const { default: bluetoothMeshService } = await import('./bluetoothMeshService');
           if (bluetoothMeshService.isConnected) {
-            console.log('📡 Tentando sincronizar via Bluetooth...');
+
             await bluetoothMeshService.syncWithPeer();
           }
         } catch (error) {
           // Bluetooth não disponível ou erro, continuar normalmente
-          console.log('ℹ️ Bluetooth não disponível para sincronização');
+
         }
         
         resolve(request.result);
@@ -193,7 +191,7 @@ class OfflineService {
           const updateRequest = store.put(data);
 
           updateRequest.onsuccess = () => {
-            console.log('✅ Operação marcada como sincronizada:', id);
+
             resolve();
           };
 
@@ -243,18 +241,15 @@ class OfflineService {
     }
 
     this.syncInProgress = true;
-    console.log('🔄 Iniciando sincronização de operações pendentes...');
 
     try {
       const operations = await this.getPendingOperations();
       
       if (operations.length === 0) {
-        console.log('✅ Nenhuma operação pendente para sincronizar');
+
         this.syncInProgress = false;
         return;
       }
-
-      console.log(`📤 Sincronizando ${operations.length} operações...`);
 
       let syncedCount = 0;
       let errorCount = 0;
@@ -270,8 +265,6 @@ class OfflineService {
         }
       }
 
-      console.log(`✅ Sincronização completa: ${syncedCount} sucesso, ${errorCount} erros`);
-      
       // Notificar listeners sobre sincronização
       this.notifyListeners('synced', { syncedCount, errorCount });
 
@@ -306,7 +299,7 @@ class OfflineService {
         break;
 
       default:
-        console.warn('Tipo de operação desconhecido:', type);
+
     }
   }
 
@@ -364,7 +357,7 @@ class OfflineService {
 
         // Verificar se expirou
         if (Date.now() > cached.expiresAt) {
-          console.log('⏰ Cache expirado:', key);
+
           resolve(null);
           return;
         }
@@ -406,7 +399,7 @@ class OfflineService {
           
           cursor.continue();
         } else {
-          console.log(`🧹 ${deletedCount} itens de cache expirados removidos`);
+
           resolve(deletedCount);
         }
       };

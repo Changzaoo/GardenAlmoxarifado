@@ -39,10 +39,7 @@ export function register(config) {
         // Add some additional logging to localhost, pointing developers to the
         // service worker/PWA documentation.
         navigator.serviceWorker.ready.then(() => {
-          console.log(
-            'This web app is being served cache-first by a service ' +
-              'worker. To learn more, visit https://cra.link/PWA'
-          );
+
         });
       } else {
         // Is not localhost. Just register service worker
@@ -52,12 +49,12 @@ export function register(config) {
 
     // Adiciona um listener para detectar mudanças de conexão
     window.addEventListener('online', function(e) {
-      console.log('Online');
+
       // Aqui você pode adicionar lógica para sincronizar dados
     });
 
     window.addEventListener('offline', function(e) {
-      console.log('Offline');
+
       // Aqui você pode adicionar lógica para modo offline
     });
   }
@@ -69,9 +66,7 @@ async function subscribeToPush(registration) {
       userVisibleOnly: true,
       applicationServerKey: process.env.REACT_APP_VAPID_PUBLIC_KEY
     });
-    
-    console.log('Push Notification subscription:', subscription);
-    
+
     // Aqui você pode enviar a subscription para seu servidor
     // para armazenar e usar para enviar notificações push
     
@@ -106,10 +101,6 @@ function registerValidSW(swUrl, config) {
               // At this point, the updated precached content has been fetched,
               // but the previous service worker will still serve the older
               // content until all client tabs are closed.
-              console.log(
-                'New content is available and will be used when all ' +
-                  'tabs for this page are closed. See https://cra.link/PWA.'
-              );
 
               // Execute callback
               if (config && config.onUpdate) {
@@ -119,7 +110,6 @@ function registerValidSW(swUrl, config) {
               // At this point, everything has been precached.
               // It's the perfect time to display a
               // "Content is cached for offline use." message.
-              console.log('Content is cached for offline use.');
 
               // Execute callback
               if (config && config.onSuccess) {
@@ -159,7 +149,7 @@ function checkValidServiceWorker(swUrl, config) {
       }
     })
     .catch(() => {
-      console.log('No internet connection found. App is running in offline mode.');
+
     });
 }
 

@@ -113,16 +113,6 @@ const NovoItem = ({ adicionarItem }) => {
       criadoPor: usuario?.username || 'Sistema',
       criadoEm: new Date().toISOString()
     };
-
-    console.log('🌱 Criando novo item com informações da empresa e setor:', {
-      nome: itemComEmpresaSetor.nome,
-      empresa: itemComEmpresaSetor.empresa,
-      setor: itemComEmpresaSetor.setor,
-      empresaId: itemComEmpresaSetor.empresaId,
-      setorId: itemComEmpresaSetor.setorId,
-      criadoPor: itemComEmpresaSetor.criadoPor
-    });
-
     // Preparar dados para a animação
     setDadosAnimacao({
       item: {
@@ -300,5 +290,4 @@ const NovoItem = ({ adicionarItem }) => {
 };
 
 export default NovoItem;
-
 

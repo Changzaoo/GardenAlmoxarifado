@@ -32,7 +32,7 @@ class BluetoothMeshService {
     this.permissionGranted = false;
     
     if (!this.isSupported) {
-      console.warn('⚠️ Web Bluetooth não é suportado neste navegador');
+
     }
   }
 
@@ -48,26 +48,23 @@ class BluetoothMeshService {
    * Verificar se Bluetooth está disponível
    */
   async isBluetoothAvailable() {
-    console.log('🔍 Verificando disponibilidade Bluetooth...');
-    console.log('- this.isSupported:', this.isSupported);
-    console.log('- navigator.bluetooth:', navigator.bluetooth);
-    
+
     if (!this.isSupported) {
-      console.warn('❌ Bluetooth não suportado: navigator.bluetooth não existe');
+
       return false;
     }
     
     try {
       // Verificar se getAvailability existe
       if (!navigator.bluetooth.getAvailability) {
-        console.warn('⚠️ getAvailability não disponível, assumindo true');
+
         // Em alguns navegadores/dispositivos, getAvailability não existe
         // mas o Bluetooth funciona. Então retornamos true.
         return true;
       }
       
       const availability = await navigator.bluetooth.getAvailability();
-      console.log('✅ Bluetooth availability:', availability);
+
       return availability;
     } catch (error) {
       console.error('❌ Erro ao verificar disponibilidade do Bluetooth:', error);
@@ -84,12 +81,10 @@ class BluetoothMeshService {
       throw new Error('Bluetooth não é suportado neste dispositivo');
     }
 
-    console.log('📱 Solicitando permissão de Bluetooth...');
-
     try {
       // Verificar se já tem permissão
       if (this.permissionGranted) {
-        console.log('✅ Permissão já concedida');
+
         return true;
       }
 
@@ -116,16 +111,15 @@ class BluetoothMeshService {
    */
   startAutoScan() {
     if (!this.isSupported) {
-      console.warn('⚠️ Varredura automática não disponível: Bluetooth não suportado');
+
       return;
     }
 
     if (this.autoScanEnabled) {
-      console.log('ℹ️ Varredura automática já está ativa');
+
       return;
     }
 
-    console.log('🔍 Iniciando varredura automática (a cada 5 minutos)...');
     this.autoScanEnabled = true;
 
     // Executar primeira varredura imediatamente
@@ -134,7 +128,7 @@ class BluetoothMeshService {
     // Configurar varreduras periódicas
     this.scanInterval = setInterval(() => {
       if (this.autoScanEnabled && !this.isConnected) {
-        console.log('🔄 Executando varredura automática...');
+
         this.performQuickScan();
       }
     }, this.SCAN_INTERVAL_MS);
@@ -152,7 +146,7 @@ class BluetoothMeshService {
     }
 
     this.autoScanEnabled = false;
-    console.log('⏹️ Varredura automática parada');
+
     this.notifyListeners('autoScanStopped');
   }
 
@@ -165,7 +159,7 @@ class BluetoothMeshService {
     }
 
     try {
-      console.log('📡 Varredura rápida iniciada...');
+
       this.notifyListeners('scanStarted');
 
       // Web Bluetooth não permite scan passivo em background
@@ -174,7 +168,7 @@ class BluetoothMeshService {
       const pendingCount = await offlineService.getPendingCount();
 
       if (pendingCount > 0) {
-        console.log(`📦 ${pendingCount} operações pendentes detectadas`);
+
         this.notifyListeners('deviceNearbyWithData', { 
           pendingCount,
           message: 'Dispositivos próximos podem ter dados para sincronizar'
@@ -199,11 +193,11 @@ class BluetoothMeshService {
     try {
       // Tentar reconectar ao último dispositivo conhecido
       if (this.device && !this.device.gatt.connected) {
-        console.log('🔄 Tentando reconectar ao dispositivo anterior...');
+
         await this.connect();
       }
     } catch (error) {
-      console.log('ℹ️ Reconexão automática não disponível:', error.message);
+
     }
   }
 
@@ -216,8 +210,7 @@ class BluetoothMeshService {
     }
 
     try {
-      console.log('🔍 Procurando dispositivos Workflow próximos...');
-      
+
       this.device = await navigator.bluetooth.requestDevice({
         filters: [
           { services: [this.SERVICE_UUID] }
@@ -225,11 +218,9 @@ class BluetoothMeshService {
         optionalServices: [this.SERVICE_UUID]
       });
 
-      console.log('📱 Dispositivo encontrado:', this.device.name);
-      
       // Adicionar listener para desconexão
       this.device.addEventListener('gattserverdisconnected', () => {
-        console.log('🔌 Dispositivo desconectado');
+
         this.isConnected = false;
         this.notifyListeners('disconnected');
       });
@@ -250,19 +241,15 @@ class BluetoothMeshService {
     }
 
     try {
-      console.log('🔗 Conectando ao dispositivo...');
-      
+
       // Conectar ao servidor GATT
       this.server = await this.device.gatt.connect();
-      console.log('✅ Servidor GATT conectado');
 
       // Obter serviço
       this.service = await this.server.getPrimaryService(this.SERVICE_UUID);
-      console.log('✅ Serviço Workflow encontrado');
 
       // Obter característica
       this.characteristic = await this.service.getCharacteristic(this.CHARACTERISTIC_UUID);
-      console.log('✅ Característica de dados encontrada');
 
       this.isConnected = true;
       this.notifyListeners('connected', { device: this.device.name });
@@ -293,7 +280,6 @@ class BluetoothMeshService {
 
     try {
       await this.characteristic.startNotifications();
-      console.log('👂 Escutando notificações do peer');
 
       this.characteristic.addEventListener('characteristicvaluechanged', (event) => {
         this.handleIncomingData(event.target.value);
@@ -313,8 +299,6 @@ class BluetoothMeshService {
       const jsonString = decoder.decode(dataView);
       const data = JSON.parse(jsonString);
 
-      console.log('📥 Dados recebidos do peer:', data);
-
       // Processar operações recebidas
       if (data.type === 'sync') {
         this.processSyncData(data.operations);
@@ -333,11 +317,9 @@ class BluetoothMeshService {
    */
   async processSyncData(operations) {
     if (!operations || operations.length === 0) {
-      console.log('ℹ️ Nenhuma operação para processar');
+
       return;
     }
-
-    console.log(`📦 Processando ${operations.length} operações do peer`);
 
     // Importar offlineService dinamicamente
     const { default: offlineService } = await import('./offlineService');
@@ -354,12 +336,11 @@ class BluetoothMeshService {
       }
     }
 
-    console.log(`✅ ${savedCount} operações salvas localmente`);
     this.notifyListeners('syncCompleted', { receivedCount: savedCount });
 
     // Se estiver online, sincronizar com Firebase
     if (navigator.onLine) {
-      console.log('🌐 Online detectado, sincronizando com Firebase...');
+
       await offlineService.syncPendingOperations();
     }
   }
@@ -386,7 +367,6 @@ class BluetoothMeshService {
         await this.characteristic.writeValue(chunk);
       }
 
-      console.log('📤 Dados enviados para peer');
       return true;
     } catch (error) {
       console.error('❌ Erro ao enviar dados:', error);
@@ -398,7 +378,6 @@ class BluetoothMeshService {
    * Sincronizar operações pendentes com peer
    */
   async syncWithPeer() {
-    console.log('🔄 Iniciando sincronização com peer...');
 
     // Importar offlineService
     const { default: offlineService } = await import('./offlineService');
@@ -407,8 +386,7 @@ class BluetoothMeshService {
     const pendingOps = await offlineService.getPendingOperations();
 
     if (pendingOps.length === 0) {
-      console.log('ℹ️ Nenhuma operação pendente para sincronizar');
-      
+
       // Solicitar operações do peer
       await this.sendData({
         type: 'request',
@@ -418,8 +396,6 @@ class BluetoothMeshService {
       return;
     }
 
-    console.log(`📤 Enviando ${pendingOps.length} operações para peer`);
-
     try {
       await this.sendData({
         type: 'sync',
@@ -427,7 +403,6 @@ class BluetoothMeshService {
         timestamp: Date.now()
       });
 
-      console.log('✅ Sincronização concluída');
       this.notifyListeners('syncSent', { sentCount: pendingOps.length });
     } catch (error) {
       console.error('❌ Erro na sincronização:', error);
@@ -439,7 +414,7 @@ class BluetoothMeshService {
    * Responder a solicitação de sincronização
    */
   async handleSyncRequest() {
-    console.log('📨 Solicitação de sincronização recebida');
+
     await this.syncWithPeer();
   }
 
@@ -449,7 +424,7 @@ class BluetoothMeshService {
   disconnect() {
     if (this.device && this.device.gatt.connected) {
       this.device.gatt.disconnect();
-      console.log('🔌 Desconectado do dispositivo');
+
     }
 
     this.device = null;
@@ -469,8 +444,6 @@ class BluetoothMeshService {
       throw new Error('Web Bluetooth não é suportado');
     }
 
-    console.log('🔍 Escaneando dispositivos Workflow próximos...');
-    
     try {
       // Nota: Web Bluetooth não permite scan passivo
       // Usuário precisa escolher dispositivo manualmente
@@ -507,7 +480,7 @@ class BluetoothMeshService {
    */
   setAutoSync(enabled) {
     this.autoSync = enabled;
-    console.log(`🔄 Auto-sincronização ${enabled ? 'ativada' : 'desativada'}`);
+
   }
 
   /**

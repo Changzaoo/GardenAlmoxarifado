@@ -14,8 +14,6 @@ import { NIVEIS_PERMISSAO } from '../constants/permissoes';
  */
 export async function identificarUsuariosAntigos() {
   try {
-    console.log('🔍 Iniciando identificação de usuários antigos...');
-    
     const usuariosSnapshot = await getDocs(collection(db, 'usuario'));
     
     const analise = {
@@ -78,13 +76,6 @@ export async function identificarUsuariosAntigos() {
         analise.ok.push(usuario);
       }
     });
-
-    console.log('✅ Análise concluída:', {
-      total: analise.total,
-      migrados: analise.migrados,
-      precisamMigracao: analise.precisamMigracao.length
-    });
-
     return analise;
   } catch (error) {
     console.error('❌ Erro ao identificar usuários:', error);
@@ -97,8 +88,6 @@ export async function identificarUsuariosAntigos() {
  */
 export async function migrarUsuario(usuarioId, opcoes = {}) {
   try {
-    console.log(`🔄 Migrando usuário: ${usuarioId}`);
-    
     const usuarioRef = doc(db, 'usuarios', usuarioId);
     const dadosAtualizacao = {};
 
@@ -106,33 +95,27 @@ export async function migrarUsuario(usuarioId, opcoes = {}) {
     if (opcoes.senha && opcoes.criptografarSenha) {
       dadosAtualizacao.senha = await encryptPassword(opcoes.senha);
       dadosAtualizacao.senhaVersion = 2;
-      console.log('✅ Senha criptografada');
     }
 
     // 2. Adicionar empresa se fornecida
     if (opcoes.empresaId) {
       dadosAtualizacao.empresaId = opcoes.empresaId;
       dadosAtualizacao.empresaNome = opcoes.empresaNome || await buscarNomeEmpresa(opcoes.empresaId);
-      console.log(`✅ Empresa atribuída: ${dadosAtualizacao.empresaNome}`);
     }
 
     // 3. Adicionar setor se fornecido
     if (opcoes.setorId) {
       dadosAtualizacao.setorId = opcoes.setorId;
       dadosAtualizacao.setorNome = opcoes.setorNome || await buscarNomeSetor(opcoes.setorId);
-      console.log(`✅ Setor atribuído: ${dadosAtualizacao.setorNome}`);
     }
 
     // 4. Adicionar cargo se fornecido
     if (opcoes.cargo) {
       dadosAtualizacao.cargo = opcoes.cargo;
-      console.log(`✅ Cargo atribuído: ${opcoes.cargo}`);
     }
 
     // 5. Atualizar no Firebase
     await updateDoc(usuarioRef, dadosAtualizacao);
-    console.log(`✅ Usuário ${usuarioId} migrado com sucesso`);
-
     return { success: true, dadosAtualizacao };
   } catch (error) {
     console.error(`❌ Erro ao migrar usuário ${usuarioId}:`, error);
@@ -145,13 +128,10 @@ export async function migrarUsuario(usuarioId, opcoes = {}) {
  */
 export async function migrarTodosAutomaticamente(empresaPadraoId, setorPadraoId) {
   try {
-    console.log('🚀 Iniciando migração automática de todos os usuários...');
-
     // 1. Identificar usuários que precisam de migração
     const analise = await identificarUsuariosAntigos();
     
     if (analise.precisamMigracao.length === 0) {
-      console.log('✅ Nenhum usuário precisa de migração!');
       return {
         success: true,
         migrados: 0,
@@ -191,7 +171,6 @@ export async function migrarTodosAutomaticamente(empresaPadraoId, setorPadraoId)
         if (usuario.problemas.includes('senha_nao_criptografada')) {
           // ATENÇÃO: Não podemos migrar senhas sem conhecer a senha original
           // Este campo será pulado e precisará ser atualizado manualmente
-          console.warn(`⚠️ ${usuario.nome} tem senha não criptografada - precisa atualização manual`);
         }
 
         await migrarUsuario(usuario.id, opcoes);
@@ -203,9 +182,6 @@ export async function migrarTodosAutomaticamente(empresaPadraoId, setorPadraoId)
         console.error(`❌ Erro ao migrar ${usuario.nome}:`, error);
       }
     }
-
-    console.log(`✅ Migração concluída: ${migrados} migrados, ${erros} erros`);
-
     return {
       success: true,
       migrados,
@@ -224,8 +200,6 @@ export async function migrarTodosAutomaticamente(empresaPadraoId, setorPadraoId)
  */
 export async function criarEmpresaPadrao() {
   try {
-    console.log('📝 Verificando empresa padrão...');
-
     // Verificar se já existe uma empresa "Zendaya Jardinagem"
     const empresasSnapshot = await getDocs(collection(db, 'empresas'));
     let empresaExistente = null;
@@ -238,7 +212,6 @@ export async function criarEmpresaPadrao() {
     });
 
     if (empresaExistente) {
-      console.log('✅ Empresa padrão já existe:', empresaExistente.id);
       return empresaExistente;
     }
 
@@ -250,8 +223,6 @@ export async function criarEmpresaPadrao() {
     };
 
     const empresaRef = await addDoc(collection(db, 'empresas'), novaEmpresa);
-    console.log('✅ Empresa padrão criada:', empresaRef.id);
-
     return { id: empresaRef.id, ...novaEmpresa };
   } catch (error) {
     console.error('❌ Erro ao criar empresa padrão:', error);
@@ -264,8 +235,6 @@ export async function criarEmpresaPadrao() {
  */
 export async function criarSetoresPadroes(empresaId) {
   try {
-    console.log('📝 Verificando setores padrões...');
-
     const setoresSnapshot = await getDocs(collection(db, 'setores'));
     const setoresExistentes = {};
 
@@ -281,7 +250,6 @@ export async function criarSetoresPadroes(empresaId) {
 
     for (const nomeSetor of setoresPadrao) {
       if (setoresExistentes[nomeSetor]) {
-        console.log(`✅ Setor "${nomeSetor}" já existe`);
         setoresCriados[nomeSetor] = setoresExistentes[nomeSetor];
       } else {
         const novoSetor = {
@@ -292,7 +260,6 @@ export async function criarSetoresPadroes(empresaId) {
         };
 
         const setorRef = await addDoc(collection(db, 'setores'), novoSetor);
-        console.log(`✅ Setor "${nomeSetor}" criado`);
         setoresCriados[nomeSetor] = { id: setorRef.id, ...novoSetor };
       }
     }
@@ -309,8 +276,6 @@ export async function criarSetoresPadroes(empresaId) {
  */
 export async function executarMigracaoCompleta() {
   try {
-    console.log('🚀🚀🚀 INICIANDO MIGRAÇÃO COMPLETA 🚀🚀🚀');
-
     // 1. Criar empresa padrão
     const empresa = await criarEmpresaPadrao();
 
@@ -320,9 +285,6 @@ export async function executarMigracaoCompleta() {
     // 3. Migrar usuários (usar setor "Jardim" como padrão)
     const setorPadrao = setores['Jardim'];
     const resultado = await migrarTodosAutomaticamente(empresa.id, setorPadrao.id);
-
-    console.log('🎉🎉🎉 MIGRAÇÃO COMPLETA CONCLUÍDA 🎉🎉🎉');
-
     return {
       success: true,
       empresa,
@@ -373,7 +335,6 @@ export async function gerarRelatorioUsuarios() {
     console.table(relatorio.problemas);
     
     if (relatorio.usuariosProblematicos.length > 0) {
-      console.log('\n⚠️ USUÁRIOS COM PROBLEMAS:');
       console.table(relatorio.usuariosProblematicos);
     }
 

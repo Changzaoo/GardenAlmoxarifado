@@ -2,10 +2,6 @@ import React from 'react';
 import { Trophy, Package, CheckCircle, Star } from 'lucide-react';
 
 const DetalhamentoPontosTab = ({ stats }) => {
-  console.log('📊 DetalhamentoPontosTab - stats recebido:', stats);
-  console.log('📊 Pontos:', stats?.pontos);
-  console.log('📊 Detalhes:', stats?.pontos?.detalhes);
-  
   return (
     <div className="space-y-6">
       {/* Cards de Detalhamento */}

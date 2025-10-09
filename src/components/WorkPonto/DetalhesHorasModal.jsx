@@ -4,6 +4,7 @@ import {
   X, 
   Clock,
   Edit3,
+  Edit2,
   RefreshCw,
   Calendar,
   CheckCircle,
@@ -17,6 +18,7 @@ import { db } from '../../firebaseConfig';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ToastProvider';
 import ModalComprovantes from '../Comprovantes/ModalComprovantes';
+import TimePickerCustom from './TimePickerCustom';
 
 const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome }) => {
   const { usuario } = useAuth();
@@ -46,29 +48,32 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
     saida: ''
   });
   const [campoFocado, setCampoFocado] = useState(null);
+  const [campoParaEditar, setCampoParaEditar] = useState(null); // Qual campo está sendo editado inline
   const [mostrarComprovantes, setMostrarComprovantes] = useState(false);
+  const [valorEdicao, setValorEdicao] = useState(''); // Valor temporário durante edição
+  const [carregandoPontos, setCarregandoPontos] = useState(true); // Loading state
 
   // Buscar pontos do dia em tempo real - BUSCAR POR NOME
   useEffect(() => {
     if (!isOpen || !targetUserName) {
+      setPontoDia(null);
+      setCarregandoPontos(false);
       return;
     }
 
-    console.log('🔍 [DetalhesHoras] Buscando pontos para:', targetUserName, 'Data:', dataSelecionada.toLocaleDateString('pt-BR'));
+    setCarregandoPontos(true);
     
-    // Buscar por NOME do funcionário (mais confiável)
+    // Buscar por NOME do funcionário
     const q = query(
       collection(db, 'pontos'),
       where('funcionarioNome', '==', targetUserName)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('📦 [DetalhesHoras] Documentos encontrados:', snapshot.docs.length);
+      setCarregandoPontos(false);
       
-      // Usar data selecionada ao invés de hoje
+      // Data selecionada no formato ISO
       const dataStr = dataSelecionada.toISOString().split('T')[0];
-      
-      console.log('📅 [DetalhesHoras] Data selecionada (ISO):', dataStr);
       
       const pontosDia = {
         entrada: null,
@@ -77,12 +82,13 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
         saida: null
       };
 
+      // Processar apenas os documentos relevantes
       snapshot.docs.forEach((doc) => {
         const pontoData = doc.data();
         
-        if (!pontoData || !pontoData.tipo) return;
+        if (!pontoData?.tipo) return;
         
-        // Converter a data do ponto - priorizar timestamp
+        // Converter a data do ponto
         let dataPonto;
         if (pontoData.timestamp && typeof pontoData.timestamp === 'number') {
           dataPonto = new Date(pontoData.timestamp);
@@ -102,10 +108,8 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
         
         if (isNaN(dataPonto.getTime())) return;
         
-        // Usar formato YYYY-MM-DD para comparação consistente
+        // Comparar datas no formato YYYY-MM-DD
         const dataPontoStr = dataPonto.toISOString().split('T')[0];
-        
-        console.log(`🔍 [DetalhesHoras] Comparando: ${dataPontoStr} === ${dataStr}? ${dataPontoStr === dataStr} (Tipo: ${pontoData.tipo})`);
         
         // Apenas pontos da data selecionada
         if (dataPontoStr === dataStr) {
@@ -113,8 +117,6 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
             hour: '2-digit',
             minute: '2-digit'
           });
-
-          console.log(`✓ Ponto do dia encontrado: ${pontoData.tipo} às ${hora}`);
 
           if (hora === '--:--' || hora === '00:00') return;
 
@@ -135,7 +137,6 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
         }
       });
 
-      console.log('✅ [DetalhesHoras] Pontos consolidados:', pontosDia);
       setPontoDia(pontosDia);
     }, (error) => {
       console.error('❌ Erro ao buscar pontos do dia:', error);
@@ -231,89 +232,18 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
     }
   }, [isOpen, pontoDia, dataSelecionada]);
 
-  // Carregar pontos quando abre modal de edição OU quando muda a data
+  // Carregar pontos quando abre modal de edição - Usar dados já carregados do pontoDia
   useEffect(() => {
-    if (!mostrarModalEdicao || !dataEdicao || !targetUserName) return;
-
-    const carregarPontosDia = async () => {
-      try {
-        console.log('🔄 Carregando pontos para edição. Data:', dataEdicao);
-        
-        const q = query(
-          collection(db, 'pontos'),
-          where('funcionarioNome', '==', targetUserName)
-        );
-
-        const snapshot = await getDocs(q);
-        
-        const pontosDoDia = snapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(ponto => {
-            let dataPonto;
-            if (ponto.timestamp) {
-              dataPonto = new Date(ponto.timestamp);
-            } else if (ponto.data) {
-              dataPonto = new Date(ponto.data);
-            } else {
-              return false;
-            }
-            
-            const dataPontoStr = dataPonto.toISOString().split('T')[0];
-            return dataPontoStr === dataEdicao;
-          });
-
-        console.log('📋 Pontos encontrados para edição:', pontosDoDia.length);
-
-        // Sempre resetar os pontos primeiro
-        const pontosOrganizados = {
-          entrada: '',
-          saidaAlmoco: '',
-          voltaAlmoco: '',
-          saida: ''
-        };
-
-        pontosDoDia.forEach(ponto => {
-          let dataPontoObj;
-          if (ponto.timestamp) {
-            dataPontoObj = new Date(ponto.timestamp);
-          } else if (ponto.data) {
-            dataPontoObj = new Date(ponto.data);
-          } else {
-            return;
-          }
-          
-          const hora = dataPontoObj.toLocaleTimeString('pt-BR', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: false 
-          });
-
-          switch(ponto.tipo) {
-            case 'entrada':
-              pontosOrganizados.entrada = hora;
-              break;
-            case 'saida_almoco':
-              pontosOrganizados.saidaAlmoco = hora;
-              break;
-            case 'retorno_almoco':
-              pontosOrganizados.voltaAlmoco = hora;
-              break;
-            case 'saida':
-              pontosOrganizados.saida = hora;
-              break;
-          }
-        });
-
-        console.log('✅ Pontos organizados:', pontosOrganizados);
-        setPontosEdicao(pontosOrganizados);
-      } catch (error) {
-        console.error('Erro ao carregar pontos:', error);
-        showToast('Erro ao carregar pontos', 'error');
-      }
+    if (!mostrarModalEdicao || !pontoDia) return;
+    // Usar os dados já carregados em tempo real do pontoDia
+    const pontosOrganizados = {
+      entrada: pontoDia.entrada || '',
+      saidaAlmoco: pontoDia.saidaAlmoco || '',
+      voltaAlmoco: pontoDia.voltaAlmoco || '',
+      saida: pontoDia.saida || ''
     };
-
-    carregarPontosDia();
-  }, [mostrarModalEdicao, dataEdicao, targetUserName, showToast]);
+    setPontosEdicao(pontosOrganizados);
+  }, [mostrarModalEdicao, pontoDia]);
 
   // Funções de navegação entre dias
   const irParaDiaAnterior = () => {
@@ -337,9 +267,9 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
     return dataSelecionada.toDateString() === hoje.toDateString();
   };
 
-  // Buscar todos os pontos do mês para o calendário
+  // Buscar todos os pontos do mês para o calendário - APENAS quando calendário for aberto
   const buscarPontosDoMes = async () => {
-    if (!targetUserName || !isOpen) return;
+    if (!targetUserName || !isOpen || !mostrarCalendario) return;
 
     try {
       const primeiroDia = new Date(dataSelecionada.getFullYear(), dataSelecionada.getMonth(), 1);
@@ -351,14 +281,11 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
       );
 
       const snapshot = await getDocs(q);
-      const pontos = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
+      
       // Agrupar por dia e calcular saldo
       const pontosPorDia = {};
-      pontos.forEach(ponto => {
+      snapshot.docs.forEach(doc => {
+        const ponto = doc.data();
         const data = ponto.data?.toDate ? ponto.data.toDate() : new Date(ponto.timestamp || ponto.data);
         
         // Filtrar apenas pontos do mês atual
@@ -400,11 +327,11 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
 
       setPontosDoMes(Object.values(pontosPorDia));
     } catch (error) {
-      console.error('Erro ao buscar pontos do mês:', error);
+      console.error('❌ Erro ao buscar pontos do mês:', error);
     }
   };
 
-  // Atualizar pontos do mês quando mudar o mês ou abrir o calendário
+  // Atualizar pontos do mês APENAS quando calendário estiver aberto
   useEffect(() => {
     if (mostrarCalendario && isOpen) {
       buscarPontosDoMes();
@@ -430,10 +357,162 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
     });
   };
 
+  // Função para iniciar edição inline de um campo específico
+  const iniciarEdicaoInline = (campo, valorAtual) => {
+    setCampoParaEditar(campo);
+    setValorEdicao(valorAtual || '');
+  };
+
+  // Função para cancelar edição inline
+  const cancelarEdicaoInline = () => {
+    setCampoParaEditar(null);
+    setValorEdicao('');
+  };
+
+  // Função para salvar edição inline de um campo específico
+  const salvarEdicaoInline = async (campo, novoValor) => {
+    if (!campo || !dataSelecionada || !targetUserId || !targetUserName) {
+      console.error('❌ Dados inválidos:', { campo, dataSelecionada, targetUserId, targetUserName });
+      showToast('Erro: dados inválidos', 'error');
+      setCampoParaEditar(null);
+      return;
+    }
+
+    // Garantir que o valor está no formato correto
+    const valorParaSalvar = novoValor !== undefined ? novoValor : valorEdicao;
+    const dataEdicaoStr = dataSelecionada.toISOString().split('T')[0];
+
+    try {
+      // Remover ponto antigo deste tipo
+      const tipoMap = {
+        entrada: 'entrada',
+        saidaAlmoco: 'saida_almoco',
+        voltaAlmoco: 'retorno_almoco',
+        saida: 'saida'
+      };
+      
+      const tipoPonto = tipoMap[campo];
+      
+      const q = query(
+        collection(db, 'pontos'),
+        where('funcionarioNome', '==', targetUserName),
+        where('tipo', '==', tipoPonto)
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      // Filtrar pontos do dia selecionado
+      const pontosParaRemover = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        let dataPonto;
+        if (data.timestamp) {
+          dataPonto = new Date(data.timestamp);
+        } else if (data.data) {
+          dataPonto = new Date(data.data);
+        } else {
+          return false;
+        }
+        const dataPontoStr = dataPonto.toISOString().split('T')[0];
+        return dataPontoStr === dataEdicaoStr;
+      });
+
+      // Remover pontos antigos
+      for (const doc of pontosParaRemover) {
+        await deleteDoc(doc.ref);
+      }
+
+      // Se o valor não está vazio, adicionar novo ponto
+      if (valorParaSalvar && valorParaSalvar.trim() !== '' && valorParaSalvar !== '--:--') {
+        // Validar formato - aceita tanto "7:20" quanto "07:20"
+        const valorTrimmed = valorParaSalvar.trim();
+        const horaMatch = valorTrimmed.match(/^(\d{1,2}):(\d{1,2})$/);
+        
+        if (!horaMatch) {
+          console.error('❌ Formato inválido:', valorTrimmed, '- Esperado: HH:MM ou H:M');
+          showToast('Formato inválido. Use HH:MM', 'error');
+          setCampoParaEditar(null);
+          setValorEdicao('');
+          return;
+        }
+
+        // Converter para números e garantir 2 dígitos
+        let [hora, minuto] = valorTrimmed.split(':').map(Number);
+        // Validar se são números válidos
+        if (isNaN(hora) || isNaN(minuto)) {
+          console.error('❌ NaN detectado:', { hora, minuto, valorOriginal: valorTrimmed });
+          showToast('Horário inválido: valores não numéricos', 'error');
+          setCampoParaEditar(null);
+          setValorEdicao('');
+          return;
+        }
+
+        // Validar ranges
+        if (hora < 0 || hora > 23 || minuto < 0 || minuto > 59) {
+          console.error('❌ Valores fora do range:', { hora, minuto });
+          showToast(`Horário inválido: hora deve ser 0-23, minuto 0-59`, 'error');
+          setCampoParaEditar(null);
+          setValorEdicao('');
+          return;
+        }
+
+        // Garantir 2 dígitos
+        const horaFormatada = String(hora).padStart(2, '0');
+        const minutoFormatado = String(minuto).padStart(2, '0');
+        const [ano, mes, dia] = dataEdicaoStr.split('-').map(Number);
+        
+        if (isNaN(ano) || isNaN(mes) || isNaN(dia)) {
+          console.error('❌ Data inválida:', { dataEdicaoStr, ano, mes, dia });
+          showToast('Data inválida', 'error');
+          setCampoParaEditar(null);
+          setValorEdicao('');
+          return;
+        }
+        const data = new Date(ano, mes - 1, dia, hora, minuto, 0, 0);
+
+        if (isNaN(data.getTime())) {
+          console.error('❌ Data criada é NaN:', { 
+            input: { ano, mes, dia, hora, minuto },
+            data: data.toString(),
+            timestamp: data.getTime()
+          });
+          showToast('Erro ao criar data', 'error');
+          setCampoParaEditar(null);
+          setValorEdicao('');
+          return;
+        }
+
+        const novoPonto = {
+          funcionarioId: String(targetUserId),
+          funcionarioNome: String(targetUserName),
+          tipo: tipoPonto,
+          data: data.toISOString(),
+          timestamp: data.getTime()
+        };
+        await addDoc(collection(db, 'pontos'), novoPonto);
+        showToast('✅ Ponto atualizado!', 'success');
+      } else {
+        showToast('Ponto removido', 'success');
+      }
+
+      // Limpar edição
+      setCampoParaEditar(null);
+      setValorEdicao('');
+    } catch (error) {
+      console.error('❌ ERRO CAPTURADO ao salvar:');
+      console.error('  Mensagem:', error.message);
+      console.error('  Stack:', error.stack);
+      console.error('  Error completo:', error);
+      
+      showToast('Erro ao salvar: ' + error.message, 'error');
+      
+      // Limpar estado mesmo com erro
+      setCampoParaEditar(null);
+      setValorEdicao('');
+    }
+  };
+
   const abrirModalEdicao = () => {
     try {
-      console.log('🔧 Abrindo modal de edição...', { dataSelecionada, targetUserName });
-      
       if (!dataSelecionada) {
         console.error('❌ Data selecionada não definida');
         showToast('Erro: data não definida', 'error');
@@ -441,8 +520,6 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
       }
       
       const dataFormatada = dataSelecionada.toISOString().split('T')[0];
-      console.log('📅 Data formatada:', dataFormatada);
-      
       setDataEdicao(dataFormatada);
       setMostrarModalEdicao(true);
     } catch (error) {
@@ -464,22 +541,24 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
       return;
     }
 
+    // Limpar valores inválidos - campos vazios serão ignorados (ponto não batido)
+    const pontosLimpos = {
+      entrada: pontosEdicao.entrada && pontosEdicao.entrada.trim() !== '' && pontosEdicao.entrada !== '--:--' ? pontosEdicao.entrada.trim() : '',
+      saidaAlmoco: pontosEdicao.saidaAlmoco && pontosEdicao.saidaAlmoco.trim() !== '' && pontosEdicao.saidaAlmoco !== '--:--' ? pontosEdicao.saidaAlmoco.trim() : '',
+      voltaAlmoco: pontosEdicao.voltaAlmoco && pontosEdicao.voltaAlmoco.trim() !== '' && pontosEdicao.voltaAlmoco !== '--:--' ? pontosEdicao.voltaAlmoco.trim() : '',
+      saida: pontosEdicao.saida && pontosEdicao.saida.trim() !== '' && pontosEdicao.saida !== '--:--' ? pontosEdicao.saida.trim() : ''
+    };
     // Verificar se pelo menos um ponto foi preenchido
-    const temPontoPreenchido = Object.values(pontosEdicao).some(
+    const temPontoPreenchido = Object.values(pontosLimpos).some(
       hora => hora && hora.trim() !== ''
     );
     
     if (!temPontoPreenchido) {
-      showToast('Preencha pelo menos um horário', 'error');
+      showToast('Preencha pelo menos um horário válido', 'error');
       return;
     }
 
     try {
-      console.log('💾 Iniciando salvamento de pontos...');
-      console.log('📅 Data da edição:', dataEdicao);
-      console.log('👤 Funcionário:', targetUserName, '(ID:', targetUserId, ')');
-      console.log('⏰ Pontos a salvar:', pontosEdicao);
-
       // Remover pontos antigos do dia selecionado
       const q = query(
         collection(db, 'pontos'),
@@ -487,8 +566,6 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
       );
       
       const snapshot = await getDocs(q);
-      console.log('📦 Total de documentos encontrados:', snapshot.docs.length);
-      
       const pontosParaRemover = snapshot.docs.filter(doc => {
         const data = doc.data();
         let dataPonto;
@@ -502,90 +579,97 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
         const dataPontoStr = dataPonto.toISOString().split('T')[0];
         const match = dataPontoStr === dataEdicao;
         if (match) {
-          console.log('🗑️ Removendo ponto:', data.tipo, 'de', dataPontoStr);
         }
         return match;
       });
-
-      console.log('🗑️ Total de pontos a remover:', pontosParaRemover.length);
-
       // Remover pontos antigos
       for (const doc of pontosParaRemover) {
         try {
           await deleteDoc(doc.ref);
-          console.log('✅ Ponto removido:', doc.id);
         } catch (deleteError) {
           console.error('❌ Erro ao deletar ponto:', doc.id, deleteError);
           throw new Error(`Erro ao remover ponto antigo: ${deleteError.message}`);
         }
       }
 
-      // Adicionar novos pontos
+      // Adicionar novos pontos (usando pontos limpos)
       const pontosParaAdicionar = [
-        { tipo: 'entrada', hora: pontosEdicao.entrada },
-        { tipo: 'saida_almoco', hora: pontosEdicao.saidaAlmoco },
-        { tipo: 'retorno_almoco', hora: pontosEdicao.voltaAlmoco },
-        { tipo: 'saida', hora: pontosEdicao.saida },
+        { tipo: 'entrada', hora: pontosLimpos.entrada },
+        { tipo: 'saida_almoco', hora: pontosLimpos.saidaAlmoco },
+        { tipo: 'retorno_almoco', hora: pontosLimpos.voltaAlmoco },
+        { tipo: 'saida', hora: pontosLimpos.saida },
       ];
 
       let pontosAdicionados = 0;
+      let pontosIgnorados = 0;
+      
       for (const ponto of pontosParaAdicionar) {
-        if (ponto.hora && ponto.hora.trim() !== '') {
-          try {
-            // Validar formato da hora
-            const horaMatch = ponto.hora.match(/^(\d{2}):(\d{2})$/);
-            if (!horaMatch) {
-              console.error('❌ Formato de hora inválido:', ponto.hora);
-              throw new Error(`Formato de hora inválido: ${ponto.hora}. Use HH:MM`);
-            }
-
-            const [hora, minuto] = ponto.hora.split(':').map(Number);
-            
-            // Validar valores de hora e minuto
-            if (hora < 0 || hora > 23) {
-              throw new Error(`Hora inválida: ${hora}. Deve estar entre 0 e 23`);
-            }
-            if (minuto < 0 || minuto > 59) {
-              throw new Error(`Minuto inválido: ${minuto}. Deve estar entre 0 e 59`);
-            }
-            
-            // Criar data usando o formato correto para evitar problemas de fuso horário
-            const [ano, mes, dia] = dataEdicao.split('-').map(Number);
-            const data = new Date(ano, mes - 1, dia, hora, minuto, 0, 0);
-
-            // Validar se a data foi criada corretamente
-            if (isNaN(data.getTime())) {
-              throw new Error(`Data inválida criada: ${dataEdicao} ${ponto.hora}`);
-            }
-
-            const novoPonto = {
-              funcionarioId: String(targetUserId),
-              funcionarioNome: String(targetUserName),
-              tipo: ponto.tipo,
-              data: data.toISOString(),
-              timestamp: data.getTime()
-            };
-
-            console.log(`➕ Adicionando ponto: ${ponto.tipo} às ${ponto.hora}`);
-            console.log('   Objeto completo:', JSON.stringify(novoPonto, null, 2));
-            
-            const docRef = await addDoc(collection(db, 'pontos'), novoPonto);
-            console.log('✅ Ponto adicionado com ID:', docRef.id);
-            pontosAdicionados++;
-          } catch (addError) {
-            console.error(`❌ Erro ao adicionar ponto ${ponto.tipo}:`, addError);
-            throw new Error(`Erro ao adicionar ${ponto.tipo}: ${addError.message}`);
+        // Pular se hora estiver vazia, for "--:--" ou inválida (ponto não batido)
+        if (!ponto.hora || ponto.hora.trim() === '' || ponto.hora === '--:--') {
+          pontosIgnorados++;
+          continue;
+        }
+        
+        try {
+          // Validar formato da hora
+          const horaMatch = ponto.hora.match(/^(\d{2}):(\d{2})$/);
+          if (!horaMatch) {
+            console.error('❌ Formato de hora inválido:', ponto.hora);
+            throw new Error(`Formato de hora inválido: ${ponto.hora}. Use HH:MM`);
           }
+
+          const [hora, minuto] = ponto.hora.split(':').map(Number);
+          
+          // Validar valores de hora e minuto
+          if (isNaN(hora) || isNaN(minuto)) {
+            throw new Error(`Valores inválidos na hora: ${ponto.hora}`);
+          }
+          
+          if (hora < 0 || hora > 23) {
+            throw new Error(`Hora inválida: ${hora}. Deve estar entre 0 e 23`);
+          }
+          if (minuto < 0 || minuto > 59) {
+            throw new Error(`Minuto inválido: ${minuto}. Deve estar entre 0 e 59`);
+          }
+          
+          // Criar data usando o formato correto para evitar problemas de fuso horário
+          const [ano, mes, dia] = dataEdicao.split('-').map(Number);
+          
+          if (isNaN(ano) || isNaN(mes) || isNaN(dia)) {
+            throw new Error(`Data inválida: ${dataEdicao}`);
+          }
+          
+          const data = new Date(ano, mes - 1, dia, hora, minuto, 0, 0);
+
+          // Validar se a data foi criada corretamente
+          if (isNaN(data.getTime())) {
+            throw new Error(`Data inválida criada: ${dataEdicao} ${ponto.hora}`);
+          }
+
+          const novoPonto = {
+            funcionarioId: String(targetUserId),
+            funcionarioNome: String(targetUserName),
+            tipo: ponto.tipo,
+            data: data.toISOString(),
+            timestamp: data.getTime()
+          };
+          const docRef = await addDoc(collection(db, 'pontos'), novoPonto);
+          pontosAdicionados++;
+        } catch (addError) {
+          console.error(`❌ Erro ao adicionar ponto ${ponto.tipo}:`, addError);
+          throw new Error(`Erro ao adicionar ${ponto.tipo}: ${addError.message}`);
         }
       }
 
       if (pontosAdicionados === 0) {
-        showToast('Nenhum ponto foi salvo. Verifique os horários preenchidos.', 'warning');
+        showToast('Nenhum ponto foi salvo. Todos os campos estão vazios (pontos não batidos).', 'warning');
         return;
       }
-
-      console.log('✅ Pontos adicionados:', pontosAdicionados);
-      showToast(`✅ Pontos atualizados com sucesso! ${pontosAdicionados} registro(s) salvo(s).`, 'success');
+      const mensagem = pontosIgnorados > 0 
+        ? `✅ ${pontosAdicionados} ponto(s) salvo(s). ${pontosIgnorados} não batido(s) (ignorados).`
+        : `✅ Pontos atualizados com sucesso! ${pontosAdicionados} registro(s) salvo(s).`;
+      
+      showToast(mensagem, 'success');
       setMostrarModalEdicao(false);
       
       // Recarregar dados após salvar
@@ -807,7 +891,7 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
 
               {/* Conteúdo */}
               <div className="p-6 space-y-6">
-                {!pontoDia ? (
+                {carregandoPontos ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="text-center">
                       <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-3" />
@@ -816,6 +900,18 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         Buscando pontos de {targetUserName}
+                      </p>
+                    </div>
+                  </div>
+                ) : !pontoDia ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Nenhum ponto registrado
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Nesta data ainda não há registros
                       </p>
                     </div>
                   </div>
@@ -861,22 +957,14 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                         )}
                       </div>
                   
-                      {/* Botões de Ações */}
-                      <div className="grid grid-cols-2 gap-3 mt-4">
-                        <button
-                          onClick={abrirModalEdicao}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all backdrop-blur-sm border border-white/30 hover:scale-105 transform"
-                        >
-                          <Edit3 className="w-5 h-5" />
-                          <span className="hidden sm:inline">Corrigir</span>
-                        </button>
-                        
+                      {/* Botão de Ações */}
+                      <div className="mt-4">
                         <button
                           onClick={() => setMostrarComprovantes(true)}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all backdrop-blur-sm border border-white/30 hover:scale-105 transform"
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all backdrop-blur-sm border border-white/30 hover:scale-105 transform"
                         >
                           <FileText className="w-5 h-5" />
-                          <span className="hidden sm:inline">Comprovante</span>
+                          <span>Gerar Comprovante</span>
                         </button>
                       </div>
                     </div>
@@ -909,129 +997,129 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                         </div>
                     
                         <div className="grid grid-cols-2 gap-4">
-                          <button
-                            onClick={() => {
-                              const hoje = new Date().toISOString().split('T')[0];
-                              setDataEdicao(hoje);
-                              setMostrarModalEdicao(true);
-                            }}
-                            className={`bg-white dark:bg-gray-700 rounded-lg p-4 border-2 transition-all hover:scale-105 cursor-pointer ${
-                              pontoDia.entrada 
-                                ? 'border-green-500 shadow-lg shadow-green-500/20 hover:shadow-green-500/40' 
-                                : 'border-gray-200 dark:border-gray-600 opacity-60 hover:opacity-80'
-                            }`}
-                          >
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                          <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border-2 border-green-500 shadow-lg shadow-green-500/20">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between">
                               <span>1º Ponto - Entrada</span>
-                              <div className="flex items-center gap-1">
-                                {pontoDia.entrada && <CheckCircle className="w-4 h-4 text-green-500" />}
-                                <Edit3 className="w-3 h-3 text-gray-400" />
-                              </div>
+                              {pontoDia.entrada && <CheckCircle className="w-4 h-4 text-green-500" />}
                             </div>
-                            <div className={`text-2xl font-bold font-mono ${
-                              pontoDia.entrada 
-                                ? 'text-green-600 dark:text-green-400' 
-                                : 'text-gray-400 dark:text-gray-500'
-                            }`}>
-                              {pontoDia.entrada || '--:--'}
-                            </div>
-                            {!pontoDia.entrada && (
-                              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">Clique para registrar</div>
+                            
+                            {campoParaEditar === 'entrada' ? (
+                              <TimePickerCustom
+                                value={valorEdicao}
+                                onChange={(value) => setValorEdicao(value)}
+                                onSave={(value) => salvarEdicaoInline('entrada', value)}
+                                onCancel={cancelarEdicaoInline}
+                                label="1º Ponto - Entrada"
+                                color="green"
+                              />
+                            ) : (
+                              <button
+                                onClick={() => iniciarEdicaoInline('entrada', pontoDia.entrada)}
+                                className="w-full text-left group"
+                              >
+                                <div className={`text-2xl font-bold font-mono group-hover:scale-105 transition-transform ${
+                                  pontoDia.entrada 
+                                    ? 'text-green-600 dark:text-green-400' 
+                                    : 'text-gray-400 dark:text-gray-500'
+                                }`}>
+                                  {pontoDia.entrada || '--:--'}
+                                </div>
+                              </button>
                             )}
-                          </button>
+                          </div>
 
-                          <button
-                            onClick={() => {
-                              const hoje = new Date().toISOString().split('T')[0];
-                              setDataEdicao(hoje);
-                              setMostrarModalEdicao(true);
-                            }}
-                            className={`bg-white dark:bg-gray-700 rounded-lg p-4 border-2 transition-all hover:scale-105 cursor-pointer ${
-                              pontoDia.saidaAlmoco 
-                                ? 'border-orange-500 shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40' 
-                                : 'border-gray-200 dark:border-gray-600 opacity-60 hover:opacity-80'
-                            }`}
-                          >
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                          <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border-2 border-orange-500 shadow-lg shadow-orange-500/20">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between">
                               <span>2º Ponto - Saída Almoço</span>
-                              <div className="flex items-center gap-1">
-                                {pontoDia.saidaAlmoco && <CheckCircle className="w-4 h-4 text-orange-500" />}
-                                <Edit3 className="w-3 h-3 text-gray-400" />
-                              </div>
+                              {pontoDia.saidaAlmoco && <CheckCircle className="w-4 h-4 text-orange-500" />}
                             </div>
-                            <div className={`text-2xl font-bold font-mono ${
-                              pontoDia.saidaAlmoco 
-                                ? 'text-orange-600 dark:text-orange-400' 
-                                : 'text-gray-400 dark:text-gray-500'
-                            }`}>
-                              {pontoDia.saidaAlmoco || '--:--'}
-                            </div>
-                            {!pontoDia.saidaAlmoco && (
-                              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">Clique para registrar</div>
+                            
+                            {campoParaEditar === 'saidaAlmoco' ? (
+                              <TimePickerCustom
+                                value={valorEdicao}
+                                onChange={(value) => setValorEdicao(value)}
+                                onSave={(value) => salvarEdicaoInline('saidaAlmoco', value)}
+                                onCancel={cancelarEdicaoInline}
+                                label="2º Ponto - Saída Almoço"
+                                color="orange"
+                              />
+                            ) : (
+                              <button
+                                onClick={() => iniciarEdicaoInline('saidaAlmoco', pontoDia.saidaAlmoco)}
+                                className="w-full text-left group"
+                              >
+                                <div className={`text-2xl font-bold font-mono group-hover:scale-105 transition-transform ${
+                                  pontoDia.saidaAlmoco 
+                                    ? 'text-orange-600 dark:text-orange-400' 
+                                    : 'text-gray-400 dark:text-gray-500'
+                                }`}>
+                                  {pontoDia.saidaAlmoco || '--:--'}
+                                </div>
+                              </button>
                             )}
-                          </button>
+                          </div>
 
-                          <button
-                            onClick={() => {
-                              const hoje = new Date().toISOString().split('T')[0];
-                              setDataEdicao(hoje);
-                              setMostrarModalEdicao(true);
-                            }}
-                            className={`bg-white dark:bg-gray-700 rounded-lg p-4 border-2 transition-all hover:scale-105 cursor-pointer ${
-                              pontoDia.voltaAlmoco 
-                                ? 'border-blue-500 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40' 
-                                : 'border-gray-200 dark:border-gray-600 opacity-60 hover:opacity-80'
-                            }`}
-                          >
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                          <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border-2 border-blue-500 shadow-lg shadow-blue-500/20">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between">
                               <span>3º Ponto - Volta Almoço</span>
-                              <div className="flex items-center gap-1">
-                                {pontoDia.voltaAlmoco && <CheckCircle className="w-4 h-4 text-blue-500" />}
-                                <Edit3 className="w-3 h-3 text-gray-400" />
-                              </div>
+                              {pontoDia.voltaAlmoco && <CheckCircle className="w-4 h-4 text-blue-500" />}
                             </div>
-                            <div className={`text-2xl font-bold font-mono ${
-                              pontoDia.voltaAlmoco 
-                                ? 'text-blue-600 dark:text-blue-400' 
-                                : 'text-gray-400 dark:text-gray-500'
-                            }`}>
-                              {pontoDia.voltaAlmoco || '--:--'}
-                            </div>
-                            {!pontoDia.voltaAlmoco && (
-                              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">Clique para registrar</div>
+                            
+                            {campoParaEditar === 'voltaAlmoco' ? (
+                              <TimePickerCustom
+                                value={valorEdicao}
+                                onChange={(value) => setValorEdicao(value)}
+                                onSave={(value) => salvarEdicaoInline('voltaAlmoco', value)}
+                                onCancel={cancelarEdicaoInline}
+                                label="3º Ponto - Volta Almoço"
+                                color="blue"
+                              />
+                            ) : (
+                              <button
+                                onClick={() => iniciarEdicaoInline('voltaAlmoco', pontoDia.voltaAlmoco)}
+                                className="w-full text-left group"
+                              >
+                                <div className={`text-2xl font-bold font-mono group-hover:scale-105 transition-transform ${
+                                  pontoDia.voltaAlmoco 
+                                    ? 'text-blue-600 dark:text-blue-400' 
+                                    : 'text-gray-400 dark:text-gray-500'
+                                }`}>
+                                  {pontoDia.voltaAlmoco || '--:--'}
+                                </div>
+                              </button>
                             )}
-                          </button>
+                          </div>
 
-                          <button
-                            onClick={() => {
-                              const hoje = new Date().toISOString().split('T')[0];
-                              setDataEdicao(hoje);
-                              setMostrarModalEdicao(true);
-                            }}
-                            className={`bg-white dark:bg-gray-700 rounded-lg p-4 border-2 transition-all hover:scale-105 cursor-pointer ${
-                              pontoDia.saida 
-                                ? 'border-red-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/40' 
-                                : 'border-gray-200 dark:border-gray-600 opacity-60 hover:opacity-80'
-                            }`}
-                          >
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                          <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border-2 border-red-500 shadow-lg shadow-red-500/20">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between">
                               <span>4º Ponto - Saída</span>
-                              <div className="flex items-center gap-1">
-                                {pontoDia.saida && <CheckCircle className="w-4 h-4 text-red-500" />}
-                                <Edit3 className="w-3 h-3 text-gray-400" />
-                              </div>
+                              {pontoDia.saida && <CheckCircle className="w-4 h-4 text-red-500" />}
                             </div>
-                            <div className={`text-2xl font-bold font-mono ${
-                              pontoDia.saida 
-                                ? 'text-red-600 dark:text-red-400' 
-                                : 'text-gray-400 dark:text-gray-500'
-                            }`}>
-                              {pontoDia.saida || '--:--'}
-                            </div>
-                            {!pontoDia.saida && (
-                              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">Clique para registrar</div>
+                            
+                            {campoParaEditar === 'saida' ? (
+                              <TimePickerCustom
+                                value={valorEdicao}
+                                onChange={(value) => setValorEdicao(value)}
+                                onSave={(value) => salvarEdicaoInline('saida', value)}
+                                onCancel={cancelarEdicaoInline}
+                                label="4º Ponto - Saída"
+                                color="red"
+                              />
+                            ) : (
+                              <button
+                                onClick={() => iniciarEdicaoInline('saida', pontoDia.saida)}
+                                className="w-full text-left group"
+                              >
+                                <div className={`text-2xl font-bold font-mono group-hover:scale-105 transition-transform ${
+                                  pontoDia.saida 
+                                    ? 'text-red-600 dark:text-red-400' 
+                                    : 'text-gray-400 dark:text-gray-500'
+                                }`}>
+                                  {pontoDia.saida || '--:--'}
+                                </div>
+                              </button>
                             )}
-                          </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1075,11 +1163,24 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                   </button>
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-                  <p className="text-sm text-blue-800 dark:text-blue-300">
-                    💡 <strong>Dica:</strong> Deixe o campo vazio para remover um registro de ponto.
-                  </p>
-                </div>
+                {campoParaEditar ? (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                      ✏️ <strong>Editando apenas:</strong> {
+                        campoParaEditar === 'entrada' ? '1º Ponto - Entrada' :
+                        campoParaEditar === 'saidaAlmoco' ? '2º Ponto - Saída Almoço' :
+                        campoParaEditar === 'voltaAlmoco' ? '3º Ponto - Volta Almoço' :
+                        '4º Ponto - Saída'
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-blue-800 dark:text-blue-300">
+                      💡 <strong>Dica:</strong> Deixe o campo vazio para remover um registro de ponto.
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   <div>
@@ -1095,34 +1196,73 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className={`transition-all ${campoFocado === 'entrada' ? 'scale-105' : ''}`}>
+                    <div className={`transition-all ${
+                      campoFocado === 'entrada' ? 'scale-105' : ''
+                    } ${
+                      campoParaEditar && campoParaEditar !== 'entrada' ? 'opacity-40' : ''
+                    }`}>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-green-500"></div>
                         1º - Entrada
+                        {campoParaEditar === 'entrada' && (
+                          <span className="ml-auto text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">Editando</span>
+                        )}
                       </label>
                       <input
                         type="time"
-                        value={pontosEdicao.entrada}
-                        onChange={(e) => setPontosEdicao({ ...pontosEdicao, entrada: e.target.value })}
+                        value={pontosEdicao.entrada || ''}
+                        onChange={(e) => {
+                          const valor = e.target.value || '';
+                          setPontosEdicao({ ...pontosEdicao, entrada: valor });
+                        }}
                         onFocus={() => setCampoFocado('entrada')}
                         onBlur={() => setCampoFocado(null)}
-                        className="w-full px-4 py-3 border-2 border-green-300 dark:border-green-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all font-mono text-lg"
-                        autoFocus={!pontoDia?.entrada}
+                        disabled={campoParaEditar && campoParaEditar !== 'entrada'}
+                        className={`w-full px-4 py-3 border-2 rounded-lg font-mono text-lg transition-all ${
+                          campoParaEditar === 'entrada'
+                            ? 'border-yellow-500 ring-4 ring-yellow-500/30 bg-yellow-50 dark:bg-yellow-900/20'
+                            : 'border-green-300 dark:border-green-600 bg-white dark:bg-gray-800'
+                        } ${
+                          campoParaEditar && campoParaEditar !== 'entrada'
+                            ? 'cursor-not-allowed opacity-50'
+                            : ''
+                        } text-gray-900 dark:text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20`}
+                        autoFocus={campoParaEditar === 'entrada' || (!campoParaEditar && !pontoDia?.entrada)}
                       />
                     </div>
 
-                    <div className={`transition-all ${campoFocado === 'saidaAlmoco' ? 'scale-105' : ''}`}>
+                    <div className={`transition-all ${
+                      campoFocado === 'saidaAlmoco' ? 'scale-105' : ''
+                    } ${
+                      campoParaEditar && campoParaEditar !== 'saidaAlmoco' ? 'opacity-40' : ''
+                    }`}>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-orange-500"></div>
                         2º - Saída Almoço
+                        {campoParaEditar === 'saidaAlmoco' && (
+                          <span className="ml-auto text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">Editando</span>
+                        )}
                       </label>
                       <input
                         type="time"
-                        value={pontosEdicao.saidaAlmoco}
-                        onChange={(e) => setPontosEdicao({ ...pontosEdicao, saidaAlmoco: e.target.value })}
+                        value={pontosEdicao.saidaAlmoco || ''}
+                        onChange={(e) => {
+                          const valor = e.target.value || '';
+                          setPontosEdicao({ ...pontosEdicao, saidaAlmoco: valor });
+                        }}
                         onFocus={() => setCampoFocado('saidaAlmoco')}
                         onBlur={() => setCampoFocado(null)}
-                        className="w-full px-4 py-3 border-2 border-orange-300 dark:border-orange-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all font-mono text-lg"
+                        disabled={campoParaEditar && campoParaEditar !== 'saidaAlmoco'}
+                        className={`w-full px-4 py-3 border-2 rounded-lg font-mono text-lg transition-all ${
+                          campoParaEditar === 'saidaAlmoco'
+                            ? 'border-yellow-500 ring-4 ring-yellow-500/30 bg-yellow-50 dark:bg-yellow-900/20'
+                            : 'border-orange-300 dark:border-orange-600 bg-white dark:bg-gray-800'
+                        } ${
+                          campoParaEditar && campoParaEditar !== 'saidaAlmoco'
+                            ? 'cursor-not-allowed opacity-50'
+                            : ''
+                        } text-gray-900 dark:text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20`}
+                        autoFocus={campoParaEditar === 'saidaAlmoco'}
                       />
                     </div>
 
@@ -1133,8 +1273,11 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                       </label>
                       <input
                         type="time"
-                        value={pontosEdicao.voltaAlmoco}
-                        onChange={(e) => setPontosEdicao({ ...pontosEdicao, voltaAlmoco: e.target.value })}
+                        value={pontosEdicao.voltaAlmoco || ''}
+                        onChange={(e) => {
+                          const valor = e.target.value || '';
+                          setPontosEdicao({ ...pontosEdicao, voltaAlmoco: valor });
+                        }}
                         onFocus={() => setCampoFocado('voltaAlmoco')}
                         onBlur={() => setCampoFocado(null)}
                         className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-lg"
@@ -1148,8 +1291,11 @@ const DetalhesHorasModal = ({ isOpen, onClose, funcionarioId, funcionarioNome })
                       </label>
                       <input
                         type="time"
-                        value={pontosEdicao.saida}
-                        onChange={(e) => setPontosEdicao({ ...pontosEdicao, saida: e.target.value })}
+                        value={pontosEdicao.saida || ''}
+                        onChange={(e) => {
+                          const valor = e.target.value || '';
+                          setPontosEdicao({ ...pontosEdicao, saida: valor });
+                        }}
                         onFocus={() => setCampoFocado('saida')}
                         onBlur={() => setCampoFocado(null)}
                         className="w-full px-4 py-3 border-2 border-red-300 dark:border-red-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all font-mono text-lg"

@@ -67,8 +67,6 @@ export const bruteForcePassword = (targetHash, targetSalt) => {
     'sistema', 'Sistema123', 'empresa', 'Empresa123'
   ];
 
-  console.log(`🔍 Testando ${testPasswords.length} senhas possíveis...`);
-  
   for (const password of testPasswords) {
     const computedHash = CryptoJS.SHA512(password + targetSalt + APP_SECRET).toString();
     
@@ -117,37 +115,8 @@ if (typeof window !== 'undefined') {
     generateHash,
     bruteForcePassword,
     testPassword,
-    analyzeHash,
-    // Exemplo de uso:
-    help: () => {
-      console.log(`
-🔧 Utilitário de Debug de Senhas
-
-Funções disponíveis:
-
-1. passwordDebug.generateHash("senha")
-   - Gera um hash para a senha fornecida
-
-2. passwordDebug.testPassword("senha", "hash", "salt")
-   - Testa se uma senha gera o hash fornecido
-
-3. passwordDebug.bruteForcePassword("hash", "salt")
-   - Tenta descobrir a senha usando força bruta
-
-4. passwordDebug.analyzeHash("hash", "salt")
-   - Mostra informações sobre o hash
-
-Exemplo:
-  passwordDebug.bruteForcePassword(
-    "861a97d64f1222bed7be2ed5fb683351469a4f03219b133b691754a5ba21cf11e22a91c92064251e4119e4c97972b195a879dd4c0889fb82814a6f3df6bd7d17",
-    "6cb062ef5bed7bd85ffd16fc19847b11"
-  );
-      `);
-    }
+    analyzeHash
   };
-  
-  console.log('🔧 Utilitário de Debug de Senhas carregado!');
-  console.log('Digite passwordDebug.help() para ver as funções disponíveis.');
 }
 
 export default {

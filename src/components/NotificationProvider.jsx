@@ -32,7 +32,7 @@ export const NotificationProvider = ({ children }) => {
     if (audioRef.current && soundEnabled) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(err => {
-        console.log('Erro ao tocar som de notificação:', err);
+
       });
     }
   }, [soundEnabled]);
@@ -89,8 +89,6 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (!usuario?.id) return;
 
-    console.log('NotificationProvider: Monitorando notificações para', usuario.id);
-
     const q = query(
       collection(db, 'notificacoes'),
       where('usuarioId', '==', usuario.id),
@@ -117,8 +115,7 @@ export const NotificationProvider = ({ children }) => {
           
           // Verificar se já foi processada
           if (isNew && !processedNotifications.current.has(notif.id) && !notif.lida) {
-            console.log('NotificationProvider: Nova notificação detectada!', notif);
-            
+
             // Marcar como processada
             processedNotifications.current.add(notif.id);
             
@@ -174,7 +171,7 @@ export const NotificationProvider = ({ children }) => {
         timestamp: serverTimestamp(),
         dados
       });
-      console.log('Notificação criada:', { usuarioId, tipo, titulo });
+
     } catch (error) {
       console.error('Erro ao criar notificação:', error);
     }

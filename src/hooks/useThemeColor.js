@@ -45,8 +45,7 @@ export const useThemeColor = (currentTheme) => {
         // mas mantém legibilidade
         statusBarMeta.setAttribute('content', theme === 'dark' ? 'black-translucent' : 'default');
       }
-      
-      console.log(`🎨 Theme color atualizado: ${newColor} (tema: ${theme})`);
+
     };
     
     // Atualizar imediatamente

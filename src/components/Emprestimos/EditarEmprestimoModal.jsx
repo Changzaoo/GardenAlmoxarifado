@@ -64,7 +64,6 @@ const EditarEmprestimoModal = ({ emprestimo, onClose, onSave }) => {
       }))
     };
 
-    console.log('Salvando empréstimo atualizado:', emprestimoAtualizado);
     onSave(emprestimoAtualizado);
     onClose();
   };
@@ -137,6 +136,4 @@ const EditarEmprestimoModal = ({ emprestimo, onClose, onSave }) => {
 };
 
 export default EditarEmprestimoModal;
-
-
 

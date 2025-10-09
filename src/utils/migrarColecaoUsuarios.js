@@ -14,8 +14,7 @@ import { collection, getDocs, doc, setDoc, deleteDoc, writeBatch } from 'firebas
  */
 export async function verificarStatusMigracao() {
   try {
-    console.log('🔍 Verificando status da migração...');
-    
+
     const usuariosAntigos = await getDocs(collection(db, 'usuarios'));
     const usuariosNovos = await getDocs(collection(db, 'usuario'));
     
@@ -41,12 +40,7 @@ export async function verificarStatusMigracao() {
         }))
       }
     };
-    
-    console.log('📊 Status:', {
-      'usuarios (antiga)': status.colecaoAntiga.total,
-      'usuario (nova)': status.colecaoNova.total
-    });
-    
+
     return status;
   } catch (error) {
     console.error('❌ Erro ao verificar status:', error);
@@ -62,13 +56,12 @@ export async function verificarStatusMigracao() {
  */
 export async function migrarUsuariosParaUsuario(deleteOldCollection = false) {
   try {
-    console.log('🚀 Iniciando migração de usuarios → usuario...');
-    
+
     // 1. Verificar status antes da migração
     const statusAntes = await verificarStatusMigracao();
     
     if (statusAntes.colecaoAntiga.total === 0) {
-      console.log('⚠️ Nenhum documento encontrado na coleção "usuarios"');
+
       return {
         sucesso: false,
         mensagem: 'Nenhum documento para migrar',
@@ -83,17 +76,13 @@ export async function migrarUsuariosParaUsuario(deleteOldCollection = false) {
     let migrados = 0;
     let erros = 0;
     const detalhes = [];
-    
-    console.log(`📦 Encontrados ${usuariosAntigos.size} documentos para migrar`);
-    
+
     // 3. Migrar documento por documento
     for (const docSnapshot of usuariosAntigos.docs) {
       try {
         const docId = docSnapshot.id;
         const docData = docSnapshot.data();
-        
-        console.log(`📝 Migrando: ${docData.nome || docData.email} (${docId})`);
-        
+
         // Copiar para nova coleção mantendo o mesmo ID
         await setDoc(doc(db, 'usuario', docId), docData);
         
@@ -104,8 +93,7 @@ export async function migrarUsuariosParaUsuario(deleteOldCollection = false) {
           email: docData.email,
           status: 'sucesso'
         });
-        
-        console.log(`✅ Migrado: ${docData.nome || docData.email}`);
+
       } catch (error) {
         erros++;
         console.error(`❌ Erro ao migrar documento ${docSnapshot.id}:`, error);
@@ -119,17 +107,10 @@ export async function migrarUsuariosParaUsuario(deleteOldCollection = false) {
     
     // 4. Verificar status após migração
     const statusDepois = await verificarStatusMigracao();
-    
-    console.log('📊 Resultado da migração:', {
-      migrados,
-      erros,
-      'usuarios (antes)': statusAntes.colecaoAntiga.total,
-      'usuario (depois)': statusDepois.colecaoNova.total
-    });
-    
+
     // 5. Opcionalmente, apagar coleção antiga
     if (deleteOldCollection && migrados > 0 && erros === 0) {
-      console.log('🗑️ Apagando coleção antiga "usuarios"...');
+
       await apagarColecaoAntiga();
     }
     
@@ -162,8 +143,7 @@ export async function migrarUsuariosParaUsuario(deleteOldCollection = false) {
  */
 async function apagarColecaoAntiga() {
   try {
-    console.log('⚠️ ATENÇÃO: Apagando coleção "usuarios"...');
-    
+
     const usuariosAntigos = await getDocs(collection(db, 'usuarios'));
     
     // Usar batch para operações mais eficientes
@@ -192,8 +172,7 @@ async function apagarColecaoAntiga() {
     for (const batch of batches) {
       await batch.commit();
     }
-    
-    console.log(`✅ Coleção "usuarios" apagada (${usuariosAntigos.size} documentos)`);
+
   } catch (error) {
     console.error('❌ Erro ao apagar coleção antiga:', error);
     throw error;
@@ -206,8 +185,7 @@ async function apagarColecaoAntiga() {
  */
 export async function sincronizarColecoes() {
   try {
-    console.log('🔄 Sincronizando coleções...');
-    
+
     const [usuariosAntigos, usuariosNovos] = await Promise.all([
       getDocs(collection(db, 'usuarios')),
       getDocs(collection(db, 'usuario'))
@@ -224,12 +202,10 @@ export async function sincronizarColecoes() {
         const docData = docSnapshot.data();
         await setDoc(doc(db, 'usuario', docSnapshot.id), docData);
         sincronizados++;
-        console.log(`✅ Sincronizado: ${docData.nome || docData.email}`);
+
       }
     }
-    
-    console.log(`✅ Sincronização concluída: ${sincronizados} novos usuários copiados`);
-    
+
     return {
       sucesso: true,
       mensagem: sincronizados > 0 

@@ -152,9 +152,6 @@ const RecuperarSenhaModal = ({ onClose, onSuccess }) => {
         authKeyUpdatedAt: new Date(),
         dataAlteracaoSenha: new Date().toISOString()
       });
-
-      console.log('🔑 Campo authKey atualizado na recuperação de senha com a senha digitada');
-
       if (onSuccess) {
         onSuccess();
       }

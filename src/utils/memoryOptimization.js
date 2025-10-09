@@ -124,12 +124,6 @@ export const logMemoryUsage = () => {
   
   if (performance.memory) {
     const { usedJSHeapSize, totalJSHeapSize, jsHeapSizeLimit } = performance.memory;
-    console.log('🧠 Memory Usage:', {
-      used: `${(usedJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
-      total: `${(totalJSHeapSize / 1024 / 1024).toFixed(2)} MB`,
-      limit: `${(jsHeapSizeLimit / 1024 / 1024).toFixed(2)} MB`,
-      percentage: `${((usedJSHeapSize / jsHeapSizeLimit) * 100).toFixed(2)}%`
-    });
   }
 };
 

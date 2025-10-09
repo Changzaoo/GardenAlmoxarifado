@@ -23,8 +23,7 @@ import {
  */
 async function buscarOuCriarEmpresaZendaya() {
   try {
-    console.log('🔍 Buscando empresa Zendaya...');
-    
+
     const empresasRef = collection(db, 'empresas');
     const q = query(empresasRef, where('nome', '==', 'Zendaya'));
     const snapshot = await getDocs(q);
@@ -32,12 +31,12 @@ async function buscarOuCriarEmpresaZendaya() {
     if (!snapshot.empty) {
       const empresaDoc = snapshot.docs[0];
       const empresa = { id: empresaDoc.id, ...empresaDoc.data() };
-      console.log('✅ Empresa Zendaya encontrada:', empresa.id);
+
       return empresa;
     }
     
     // Criar empresa Zendaya se não existir
-    console.log('📝 Criando empresa Zendaya...');
+
     const novaEmpresa = {
       nome: 'Zendaya',
       cnpj: '',
@@ -49,8 +48,7 @@ async function buscarOuCriarEmpresaZendaya() {
     };
     
     const docRef = await addDoc(empresasRef, novaEmpresa);
-    console.log('✅ Empresa Zendaya criada:', docRef.id);
-    
+
     return { id: docRef.id, ...novaEmpresa };
   } catch (error) {
     console.error('❌ Erro ao buscar/criar empresa Zendaya:', error);
@@ -65,8 +63,7 @@ async function buscarOuCriarEmpresaZendaya() {
  */
 async function buscarOuCriarSetorJardim(empresaId) {
   try {
-    console.log('🔍 Buscando setor Jardim...');
-    
+
     const setoresRef = collection(db, 'setores');
     const q = query(
       setoresRef, 
@@ -78,12 +75,12 @@ async function buscarOuCriarSetorJardim(empresaId) {
     if (!snapshot.empty) {
       const setorDoc = snapshot.docs[0];
       const setor = { id: setorDoc.id, ...setorDoc.data() };
-      console.log('✅ Setor Jardim encontrado:', setor.id);
+
       return setor;
     }
     
     // Criar setor Jardim se não existir
-    console.log('📝 Criando setor Jardim...');
+
     const novoSetor = {
       nome: 'Jardim',
       empresaId: empresaId,
@@ -94,8 +91,7 @@ async function buscarOuCriarSetorJardim(empresaId) {
     };
     
     const docRef = await addDoc(setoresRef, novoSetor);
-    console.log('✅ Setor Jardim criado:', docRef.id);
-    
+
     return { id: docRef.id, ...novoSetor };
   } catch (error) {
     console.error('❌ Erro ao buscar/criar setor Jardim:', error);
@@ -188,9 +184,7 @@ function converterUsuarioParaFuncionario(usuario, empresa, setor) {
  */
 export async function exportarUsuariosParaFuncionarios(atualizarExistentes = false) {
   try {
-    console.log('🚀 Iniciando exportação de usuários para funcionários...');
-    console.log('📋 Configuração:', { atualizarExistentes });
-    
+
     // 1. Buscar/Criar empresa Zendaya
     const empresa = await buscarOuCriarEmpresaZendaya();
     
@@ -198,15 +192,13 @@ export async function exportarUsuariosParaFuncionarios(atualizarExistentes = fal
     const setor = await buscarOuCriarSetorJardim(empresa.id);
     
     // 3. Buscar todos os usuários
-    console.log('📥 Buscando usuários...');
+
     const usuariosSnapshot = await getDocs(collection(db, 'usuario'));
     const usuarios = usuariosSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    
-    console.log(`📊 ${usuarios.length} usuários encontrados`);
-    
+
     if (usuarios.length === 0) {
       return {
         sucesso: true,
@@ -227,8 +219,7 @@ export async function exportarUsuariosParaFuncionarios(atualizarExistentes = fal
     
     for (const usuario of usuarios) {
       try {
-        console.log(`\n👤 Processando: ${usuario.nome || usuario.email}`);
-        
+
         // Verificar se já existe como funcionário
         const funcionarioExistente = await verificarFuncionarioExistente(
           usuario.email,
@@ -236,7 +227,7 @@ export async function exportarUsuariosParaFuncionarios(atualizarExistentes = fal
         );
         
         if (funcionarioExistente && !atualizarExistentes) {
-          console.log(`⏭️ Já existe: ${usuario.nome} - Ignorando`);
+
           ignorados++;
           detalhes.push({
             usuario: usuario.nome || usuario.email,
@@ -255,8 +246,7 @@ export async function exportarUsuariosParaFuncionarios(atualizarExistentes = fal
             ...funcionarioData,
             dataCriacao: funcionarioExistente.dataCriacao // Preservar data original
           });
-          
-          console.log(`✅ Atualizado: ${usuario.nome}`);
+
           atualizados++;
           detalhes.push({
             usuario: usuario.nome || usuario.email,
@@ -266,8 +256,7 @@ export async function exportarUsuariosParaFuncionarios(atualizarExistentes = fal
         } else {
           // Criar novo
           const docRef = await addDoc(collection(db, 'funcionarios'), funcionarioData);
-          
-          console.log(`✨ Criado: ${usuario.nome} - ID: ${docRef.id}`);
+
           criados++;
           detalhes.push({
             usuario: usuario.nome || usuario.email,
@@ -288,15 +277,7 @@ export async function exportarUsuariosParaFuncionarios(atualizarExistentes = fal
     }
     
     // 5. Resultado final
-    console.log('\n' + '='.repeat(50));
-    console.log('📊 RESULTADO DA EXPORTAÇÃO');
-    console.log('='.repeat(50));
-    console.log(`✨ Criados: ${criados}`);
-    console.log(`🔄 Atualizados: ${atualizados}`);
-    console.log(`⏭️ Ignorados: ${ignorados}`);
-    console.log(`❌ Erros: ${erros}`);
-    console.log('='.repeat(50));
-    
+
     const mensagem = erros === 0
       ? `✅ Exportação concluída com sucesso!\n\n✨ ${criados} funcionários criados\n🔄 ${atualizados} funcionários atualizados\n⏭️ ${ignorados} já existentes`
       : `⚠️ Exportação concluída com erros.\n\n✨ ${criados} criados\n🔄 ${atualizados} atualizados\n⏭️ ${ignorados} ignorados\n❌ ${erros} erros`;
@@ -339,8 +320,7 @@ export async function exportarUsuariosParaFuncionarios(atualizarExistentes = fal
  */
 export async function verificarStatusExportacao() {
   try {
-    console.log('🔍 Verificando status da exportação...');
-    
+
     const [usuariosSnap, funcionariosSnap, empresasSnap, setoresSnap] = await Promise.all([
       getDocs(collection(db, 'usuario')),
       getDocs(collection(db, 'funcionarios')),
@@ -384,15 +364,7 @@ export async function verificarStatusExportacao() {
         nome: setoresSnap.docs[0].data().nome
       }
     };
-    
-    console.log('📊 Status:', {
-      usuarios: status.usuarios.total,
-      funcionarios: status.funcionarios.total,
-      migrados: status.funcionarios.migrados,
-      empresa: status.empresa?.nome || 'Não criada',
-      setor: status.setor?.nome || 'Não criado'
-    });
-    
+
     return status;
     
   } catch (error) {

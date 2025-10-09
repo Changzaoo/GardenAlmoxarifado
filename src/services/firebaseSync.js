@@ -44,8 +44,7 @@ export class FirebaseSyncService {
       error: '❌',
       warning: '⚠️'
     }[type] || 'ℹ️';
-    
-    console.log(`${emoji} [FirebaseSync] ${message}`, data || '');
+
   }
 
   /**

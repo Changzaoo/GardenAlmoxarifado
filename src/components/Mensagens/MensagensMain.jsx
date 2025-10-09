@@ -43,12 +43,7 @@ const MensagensMain = () => {
 
   // MONITOR: Rastrear mudancas nas conversas vindas do hook
   useEffect(() => {
-    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-    console.log('MensagensMain - Conversas do hook MUDARAM');
-    console.log('Quantidade:', conversas.length);
-    console.log('IDs:', conversas.map(c => c.id));
-    console.log('Loading:', loading);
-    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+
   }, [conversas, loading]);
 
   // Inicializar sistema avançado de notificações
@@ -56,11 +51,11 @@ const MensagensMain = () => {
     if (usuario?.id) {
       notificationManager.initialize(usuario.id)
         .then(result => {
-          console.log('✅ Sistema de notificações inicializado:', result);
+
           if (result.permission === 'granted') {
-            console.log('🔔 Permissão de notificações concedida');
+
           } else {
-            console.log('🔕 Permissão de notificações:', result.permission);
+
           }
         })
         .catch(err => {
@@ -76,7 +71,7 @@ const MensagensMain = () => {
   }, [usuario?.id]);
 
   const handleSelectConversa = (conversa) => {
-    console.log('🖱️ MensagensMain.handleSelectConversa chamado para:', conversa.id);
+
     console.trace('📍 Stack trace da chamada:'); // Ver de onde veio a chamada
     selecionarConversa(conversa);
     setShowChat(true);
@@ -116,11 +111,11 @@ const MensagensMain = () => {
         await updateDoc(conversaRef, {
           [`deletadaPara.${usuario.id}`]: true
         });
-        console.log(`✅ Conversa ${conversaId} apagada para ${usuario.id}`);
+
       } else if (tipo === 'all') {
         // Apagar para todos (apenas conversas individuais)
         await deleteDoc(conversaRef);
-        console.log(`✅ Conversa ${conversaId} deletada completamente`);
+
       }
 
       // Se era a conversa ativa, limpar

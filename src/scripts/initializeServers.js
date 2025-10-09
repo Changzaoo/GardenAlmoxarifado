@@ -62,8 +62,6 @@ const defaultServers = [
 
 export const initializeDefaultServers = async () => {
   try {
-    console.log('🚀 Inicializando servidores padrão...');
-    
     const serversRef = collection(db, 'servers');
     
     for (const server of defaultServers) {
@@ -78,10 +76,7 @@ export const initializeDefaultServers = async () => {
       };
       
       const docRef = await addDoc(serversRef, serverData);
-      console.log(`✅ Servidor "${server.name}" criado com ID: ${docRef.id}`);
     }
-    
-    console.log('🎉 Todos os servidores foram inicializados com sucesso!');
     return { success: true, count: defaultServers.length };
     
   } catch (error) {

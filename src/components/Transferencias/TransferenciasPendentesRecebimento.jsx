@@ -21,7 +21,7 @@ const TransferenciasPendentesRecebimento = ({ usuario }) => {
         id: doc.id,
         ...doc.data()
       }));
-      console.log('Transferências pendentes para recebimento:', docs);
+
       setTransferencias(docs);
     });
 
@@ -45,7 +45,6 @@ const TransferenciasPendentesRecebimento = ({ usuario }) => {
         });
       }
 
-      console.log('Transferência aceita com sucesso');
     } catch (error) {
       console.error('Erro ao aceitar transferência:', error);
     }
@@ -58,7 +57,7 @@ const TransferenciasPendentesRecebimento = ({ usuario }) => {
         status: 'recusado',
         dataRecusa: new Date().toISOString()
       });
-      console.log('Transferência recusada com sucesso');
+
     } catch (error) {
       console.error('Erro ao recusar transferência:', error);
     }

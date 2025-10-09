@@ -119,7 +119,6 @@ class CSRFProtection {
 
       // Verificar se token expirou
       if (Date.now() - timestamp > CSRF_CONFIG.TOKEN_LIFETIME) {
-        console.warn('🛡️ Token CSRF expirado');
         return false;
       }
 
@@ -157,9 +156,6 @@ class CSRFProtection {
     this.currentToken = this.generateToken();
     this.tokenExpiry = Date.now() + CSRF_CONFIG.TOKEN_LIFETIME;
     this.saveToken();
-    
-    console.log('🛡️ Novo token CSRF gerado');
-    
     // Atualizar meta tag se existir
     this.updateMetaTag();
   }
@@ -173,7 +169,6 @@ class CSRFProtection {
   validateOperation(operation, providedToken) {
     // Verificar se operação requer proteção
     if (!CSRF_CONFIG.PROTECTED_OPERATIONS.includes(operation)) {
-      console.warn(`⚠️ Operação '${operation}' não está na lista de operações protegidas`);
       return true; // Não requer proteção
     }
 
@@ -193,8 +188,6 @@ class CSRFProtection {
       console.error(`🚨 CSRF: Token não corresponde ao esperado para '${operation}'`);
       return false;
     }
-
-    console.log(`✅ CSRF: Token válido para operação '${operation}'`);
     return true;
   }
 
@@ -204,7 +197,6 @@ class CSRFProtection {
    */
   rotateAfterOperation(operation) {
     if (CSRF_CONFIG.PROTECTED_OPERATIONS.includes(operation)) {
-      console.log(`🔄 Rotacionando token CSRF após '${operation}'`);
       this.refreshToken();
     }
   }
@@ -277,7 +269,6 @@ class CSRFProtection {
 
     // Rotacionar token a cada hora
     this.rotationTimeout = setInterval(() => {
-      console.log('🔄 Rotação automática de token CSRF');
       this.refreshToken();
     }, CSRF_CONFIG.TOKEN_LIFETIME);
   }
@@ -314,7 +305,6 @@ class CSRFProtection {
             this.currentToken = data.token;
             this.tokenExpiry = data.expiry;
             this.updateMetaTag();
-            console.log('🔄 Token CSRF sincronizado de outra tab');
           }
         } catch (error) {
           console.error('Erro ao sincronizar token CSRF:', error);
@@ -384,7 +374,6 @@ class CSRFProtection {
   protectOperation(operation) {
     if (!CSRF_CONFIG.PROTECTED_OPERATIONS.includes(operation)) {
       CSRF_CONFIG.PROTECTED_OPERATIONS.push(operation);
-      console.log(`🛡️ Operação '${operation}' agora requer proteção CSRF`);
     }
   }
 }

@@ -14,8 +14,6 @@ import { NIVEIS_PERMISSAO } from '../constants/permissoes';
  * Diagnosticar usuários admin com níveis incorretos
  */
 export async function diagnosticarAdmins() {
-  console.log('🔍 Iniciando diagnóstico de usuários admin...');
-  
   const problemas = [];
   const databases = [
     { nome: 'Principal (db)', db: db },
@@ -24,8 +22,6 @@ export async function diagnosticarAdmins() {
   
   for (const database of databases) {
     try {
-      console.log(`📊 Verificando base: ${database.nome}`);
-      
       const usuariosRef = collection(database.db, 'usuarios');
       const snapshot = await getDocs(usuariosRef);
       
@@ -34,15 +30,6 @@ export async function diagnosticarAdmins() {
         
         // Verificar se é admin pelo email
         if (usuario.email === 'admin') {
-          console.log(`👤 Admin encontrado em ${database.nome}:`, {
-            id: usuario.id,
-            nome: usuario.nome,
-            email: usuario.email,
-            nivel: usuario.nivel,
-            nivelTipo: typeof usuario.nivel,
-            isCorreto: usuario.nivel === NIVEIS_PERMISSAO.ADMIN
-          });
-          
           if (usuario.nivel !== NIVEIS_PERMISSAO.ADMIN) {
             problemas.push({
               database: database.nome,
@@ -55,13 +42,6 @@ export async function diagnosticarAdmins() {
         
         // Verificar se há usuários com nível 4 (sistema antigo de admin)
         if (usuario.nivel === 4 && usuario.email !== 'admin') {
-          console.log(`⚠️ Usuário com nível 4 (admin antigo) em ${database.nome}:`, {
-            id: usuario.id,
-            nome: usuario.nome,
-            email: usuario.email,
-            nivel: usuario.nivel
-          });
-          
           problemas.push({
             database: database.nome,
             db: database.db,
@@ -86,14 +66,10 @@ export async function diagnosticarAdmins() {
  * Corrigir usuários admin com níveis incorretos
  */
 export async function corrigirAdmins(problemas) {
-  console.log('🔧 Iniciando correção de usuários admin...');
-  
   const correcoesRealizadas = [];
   
   for (const problema of problemas) {
     try {
-      console.log(`🔄 Corrigindo ${problema.usuario.nome} em ${problema.database}...`);
-      
       const usuarioRef = doc(problema.db, 'usuarios', problema.usuario.id);
       
       // Se é o admin principal, corrigir para nível 0
@@ -103,9 +79,6 @@ export async function corrigirAdmins(problemas) {
           nivelCorrigidoEm: new Date().toISOString(),
           observacao: 'Nível corrigido automaticamente para sistema reversivo'
         });
-        
-        console.log(`✅ Admin corrigido: ${problema.usuario.nivel} → ${NIVEIS_PERMISSAO.ADMIN}`);
-        
         correcoesRealizadas.push({
           usuario: problema.usuario.nome,
           database: problema.database,
@@ -122,9 +95,6 @@ export async function corrigirAdmins(problemas) {
           nivelCorrigidoEm: new Date().toISOString(),
           observacao: 'Migrado do sistema antigo (4) para novo sistema (0)'
         });
-        
-        console.log(`✅ Admin migrado: ${problema.usuario.nivel} → ${NIVEIS_PERMISSAO.ADMIN}`);
-        
         correcoesRealizadas.push({
           usuario: problema.usuario.nome,
           database: problema.database,
@@ -155,16 +125,10 @@ export async function corrigirAdmins(problemas) {
  * Executar diagnóstico completo e correção automática
  */
 export async function diagnosticarECorrigirAdmins() {
-  console.log('🚀 Iniciando diagnóstico e correção automática de admins...');
-  
   try {
     // 1. Diagnosticar problemas
     const { totalProblemas, problemas } = await diagnosticarAdmins();
-    
-    console.log(`📊 Diagnóstico concluído: ${totalProblemas} problemas encontrados`);
-    
     if (totalProblemas === 0) {
-      console.log('✅ Nenhum problema encontrado com usuários admin');
       return { 
         success: true, 
         problemas: 0, 
@@ -174,13 +138,9 @@ export async function diagnosticarECorrigirAdmins() {
     
     // 2. Corrigir problemas encontrados
     const correcoes = await corrigirAdmins(problemas);
-    
-    console.log('📋 Resumo das correções:');
     correcoes.forEach(correcao => {
       if (correcao.status === 'sucesso' || correcao.status === 'migrado') {
-        console.log(`✅ ${correcao.usuario}: ${correcao.nivelAnterior} → ${correcao.nivelNovo}`);
       } else {
-        console.log(`❌ ${correcao.usuario}: Erro - ${correcao.erro}`);
       }
     });
     
@@ -203,8 +163,6 @@ export async function diagnosticarECorrigirAdmins() {
  * Verificar consistência do sistema de níveis
  */
 export async function verificarConsistenciaNiveis() {
-  console.log('🔍 Verificando consistência do sistema de níveis...');
-  
   const estatisticas = {
     [NIVEIS_PERMISSAO.ADMIN]: 0,           // 0
     [NIVEIS_PERMISSAO.GERENTE_GERAL]: 0,   // 1  
@@ -234,20 +192,8 @@ export async function verificarConsistenciaNiveis() {
         });
       }
     });
-    
-    console.log('📊 Estatísticas de níveis:');
-    console.log(`Admin (0): ${estatisticas[0]} usuários`);
-    console.log(`Gerente Geral (1): ${estatisticas[1]} usuários`);
-    console.log(`Gerente Setor (2): ${estatisticas[2]} usuários`);
-    console.log(`Supervisor (3): ${estatisticas[3]} usuários`);
-    console.log(`Funcionário (4): ${estatisticas[4]} usuários`);
-    console.log(`Terceirizado (5): ${estatisticas[5]} usuários`);
-    console.log(`Temporário (6): ${estatisticas[6]} usuários`);
-    
     if (estatisticas.niveisInvalidos.length > 0) {
-      console.log(`⚠️ Níveis inválidos encontrados: ${estatisticas.niveisInvalidos.length}`);
       estatisticas.niveisInvalidos.forEach(user => {
-        console.log(`  - ${user.nome} (${user.email}): nível ${user.nivel}`);
       });
     }
     

@@ -30,7 +30,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (!user || !user.uid) {
-      console.warn('Chat: usuário ou user.uid não definido');
+
       return;
     }
 

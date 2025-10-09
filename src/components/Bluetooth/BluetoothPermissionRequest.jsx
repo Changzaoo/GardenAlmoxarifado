@@ -37,7 +37,7 @@ const BluetoothPermissionRequest = () => {
   const startAutoScan = () => {
     try {
       bluetoothMeshService.startAutoScan();
-      console.log('✅ Varredura automática iniciada');
+
     } catch (error) {
       console.error('❌ Erro ao iniciar varredura automática:', error);
     }
@@ -58,8 +58,7 @@ const BluetoothPermissionRequest = () => {
       
       // Fechar dialog
       setShowRequest(false);
-      
-      console.log('✅ Permissão de Bluetooth concedida');
+
     } catch (error) {
       console.error('❌ Erro ao solicitar permissão:', error);
       localStorage.setItem('bluetooth-permission-asked', 'denied');

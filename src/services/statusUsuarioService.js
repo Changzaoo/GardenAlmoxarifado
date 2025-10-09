@@ -32,7 +32,6 @@ class StatusUsuarioService {
     }
 
     this.usuarioId = usuarioId;
-    console.log(`🟢 StatusService: Iniciando para usuário ${usuarioId}`);
 
     // Definir como online ao iniciar
     await this.atualizarStatus(STATUS_USUARIO.ONLINE);
@@ -51,7 +50,6 @@ class StatusUsuarioService {
    * Para o monitoramento de status
    */
   async parar() {
-    console.log('⏸️ StatusService: Parando monitoramento');
 
     // Limpar intervalo
     if (this.intervalId) {
@@ -87,7 +85,6 @@ class StatusUsuarioService {
         ultimaVez: serverTimestamp()
       });
 
-      console.log(`✅ Status atualizado para: ${novoStatus}`);
     } catch (error) {
       console.error('❌ Erro ao atualizar status:', error);
     }
@@ -112,7 +109,6 @@ class StatusUsuarioService {
       window.addEventListener(evento, registrarAtividade, { passive: true });
     });
 
-    console.log('👂 Monitorando atividade do usuário');
   }
 
   /**
@@ -123,7 +119,6 @@ class StatusUsuarioService {
       this.verificarEAtualizarStatus();
     }, this.INTERVALO_ATUALIZACAO);
 
-    console.log('⏰ Atualização automática de status iniciada');
   }
 
   /**
@@ -174,16 +169,15 @@ class StatusUsuarioService {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         // Aba oculta - pode marcar como ausente após um tempo
-        console.log('👁️ Aba oculta');
+
       } else {
         // Aba visível novamente - marcar como online
-        console.log('👁️ Aba visível');
+
         this.ultimaAtividade = Date.now();
         this.atualizarStatus(STATUS_USUARIO.ONLINE);
       }
     });
 
-    console.log('🚪 Eventos de saída configurados');
   }
 
   /**

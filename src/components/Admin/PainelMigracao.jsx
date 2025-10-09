@@ -28,7 +28,7 @@ export default function PainelMigracao() {
     try {
       const resultado = await identificarUsuariosAntigos();
       setAnalise(resultado);
-      console.log('✅ Identificação concluída:', resultado);
+
     } catch (error) {
       console.error('❌ Erro ao identificar:', error);
       alert('Erro ao identificar usuários: ' + error.message);

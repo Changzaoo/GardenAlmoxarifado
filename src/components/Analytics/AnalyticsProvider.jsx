@@ -3,8 +3,7 @@ import React from 'react';
 const AnalyticsProvider = ({ children }) => {
   const trackEvent = (eventName, eventData = {}) => {
     // Aqui você pode implementar a lógica real de tracking
-    console.log('Event tracked:', eventName, eventData);
-    
+
     // Exemplo de implementação:
     try {
       // Adicionar timestamp ao evento
@@ -21,7 +20,7 @@ const AnalyticsProvider = ({ children }) => {
       // Por exemplo, Firebase Analytics, Google Analytics, etc.
       
       // Por enquanto, apenas logamos no console
-      console.log('Full event data:', eventWithTimestamp);
+
     } catch (error) {
       console.error('Error tracking event:', error);
     }

@@ -130,7 +130,6 @@ const useSecurityBlock = () => {
   const handleKeyDown = useCallback((e) => {
     // Se for admin, permite todas as teclas
     if (isAdmin) {
-      console.log('Admin detected, allowing all keys');
       return true;
     }
 
@@ -179,7 +178,6 @@ const useSecurityBlock = () => {
         .then(() => {
           // Feedback visual para o admin
           alert('HTML copiado para a área de transferência!');
-          console.log('HTML copiado:', htmlDoElemento);
         })
         .catch(err => {
           console.error('Erro ao copiar HTML:', err);
@@ -194,8 +192,6 @@ const useSecurityBlock = () => {
   }, [isAdmin]);
 
   useEffect(() => {
-    console.log('Security block effect running, isAdmin:', isAdmin);
-    
     if (!isAdmin) {
       // Adicionar listeners apenas se não for admin
       window.addEventListener('keydown', handleKeyDown);
@@ -238,8 +234,6 @@ const CookieManager = {
       
       // Criar cookie com configurações de segurança
       document.cookie = `${name}=${encodeURIComponent(cookieValue)};expires=${expiresString};path=/;SameSite=Strict`;
-      
-      console.log(`Cookie ${name} definido com sucesso`);
       return true;
     } catch (error) {
       console.error('Erro ao definir cookie:', error);
@@ -280,7 +274,6 @@ const CookieManager = {
   removeCookie: (name) => {
     try {
       document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/;SameSite=Strict`;
-      console.log(`Cookie ${name} removido com sucesso`);
       return true;
     } catch (error) {
       console.error('Erro ao remover cookie:', error);
@@ -329,8 +322,6 @@ const AuthProvider = ({ children }) => {
         // Verificar se cookies estão habilitados
         const cookiesOK = CookieManager.areCookiesEnabled();
         setCookiesEnabled(cookiesOK);
-        console.log('Cookies habilitados:', cookiesOK);
-        
         // Verificar se existe usuário salvo nos cookies
         await verificarUsuarioSalvo();
         
@@ -358,12 +349,9 @@ const AuthProvider = ({ children }) => {
     
     const setupFirebaseListener = () => {
       try {
-        console.log('🔄 Configurando listener em tempo real para usuários no Firebase Backup...');
         unsubscribe = onSnapshot(
           collection(backupDb, 'usuarios'), 
           async (snapshot) => {
-            console.log('📡 Atualização em tempo real de usuários recebida do Firebase Backup');
-            
             const usuariosCarregados = snapshot.docs.map(doc => {
               const data = doc.data();
               return { 
@@ -394,22 +382,14 @@ const AuthProvider = ({ children }) => {
                 bio: data.bio || null
               };
             });
-            
-            console.log(`✅ ${usuariosCarregados.length} usuários sincronizados`);
             setUsuarios(usuariosCarregados);
             
             // Se o usuário logado foi atualizado, atualizar estado
             if (usuario) {
               const usuarioAtualizado = usuariosCarregados.find(u => u.id === usuario.id);
               if (usuarioAtualizado) {
-                console.log('👤 Dados do usuário logado atualizados');
-                
                 // 🔐 PROTEÇÃO ESPECIAL: Se usuário atual é admin (nível 0), manter nível 0
                 if (usuario.nivel === 0 && usuarioAtualizado.nivel !== 0) {
-                  console.log('⚠️ BLOQUEANDO alteração de nível admin:', {
-                    nivelAtual: usuario.nivel,
-                    nivelNovo: usuarioAtualizado.nivel
-                  });
                   usuarioAtualizado.nivel = 0; // Forçar manter nível admin
                 }
                 
@@ -419,7 +399,6 @@ const AuthProvider = ({ children }) => {
             
             // Se não houver usuários, criar usuário admin padrão
             if (usuariosCarregados.length === 0) {
-              console.log('⚠️ Nenhum usuário encontrado, criando admin...');
               await criarUsuarioAdmin();
             }
           }, 
@@ -428,8 +407,6 @@ const AuthProvider = ({ children }) => {
             setFirebaseStatus('error');
           }
         );
-        
-        console.log('✅ Listener configurado com sucesso');
       } catch (error) {
         console.error('❌ Erro ao configurar listener:', error);
         setFirebaseStatus('error');
@@ -451,31 +428,20 @@ const AuthProvider = ({ children }) => {
   const verificarUsuarioSalvo = async () => {
     try {
       if (!cookiesEnabled && !CookieManager.areCookiesEnabled()) {
-        console.log('Cookies não habilitados, não é possível verificar usuário salvo');
         return;
       }
 
       const usuarioSalvo = CookieManager.getCookie(COOKIE_NAMES.USUARIO);
       const lembrarLogin = CookieManager.getCookie(COOKIE_NAMES.LEMBRAR);
       const dataExpiracao = CookieManager.getCookie(COOKIE_NAMES.EXPIRACAO);
-      
-      console.log('Verificando cookies:', { 
-        usuario: !!usuarioSalvo, 
-        lembrar: lembrarLogin, 
-        expira: dataExpiracao 
-      });
-      
       if (usuarioSalvo) {
         // Verificar se não expirou
         if (dataExpiracao && new Date() > new Date(dataExpiracao)) {
-          console.log('Login expirado, limpando cookies');
           limparDadosLogin();
           return;
         }
         // Validar estrutura dos dados do usuário
         if (usuarioSalvo && typeof usuarioSalvo === 'object' && usuarioSalvo.id && usuarioSalvo.usuario) {
-          console.log('🔄 Usuário encontrado nos cookies, revalidando dados no Firebase...');
-          
           // Revalidar dados no Firebase para garantir que estão atualizados
           try {
             const usuariosRef = collection(dbWorkflowBR1, 'usuarios');
@@ -485,26 +451,13 @@ const AuthProvider = ({ children }) => {
             if (!querySnapshot.empty) {
               const doc = querySnapshot.docs[0];
               const usuarioAtualizado = { id: doc.id, ...doc.data() };
-              
-              console.log('✅ Dados atualizados do Firebase:', {
-                nome: usuarioAtualizado.nome,
-                nivel: usuarioAtualizado.nivel,
-                nivelTipo: typeof usuarioAtualizado.nivel,
-                cookieNivel: usuarioSalvo.nivel,
-                cookieNivelTipo: typeof usuarioSalvo.nivel,
-                isAdmin: usuarioAtualizado.nivel === NIVEIS_PERMISSAO.ADMIN,
-                NIVEIS_PERMISSAO_ADMIN: NIVEIS_PERMISSAO.ADMIN
-              });
-              
               // CORREÇÃO TEMPORÁRIA: Se é o usuário admin e tem nível incorreto, corrigir
               if (usuarioAtualizado.usuario === 'admin' && usuarioAtualizado.nivel !== NIVEIS_PERMISSAO.ADMIN) {
-                console.log('🔧 CORRIGINDO: Admin tem nível incorreto, ajustando para 0...');
                 usuarioAtualizado.nivel = NIVEIS_PERMISSAO.ADMIN;
                 
                 // Atualizar também no Firebase
                 try {
                   await updateDoc(doc.ref, { nivel: NIVEIS_PERMISSAO.ADMIN });
-                  console.log('✅ Nível do admin corrigido no Firebase');
                 } catch (error) {
                   console.error('❌ Erro ao corrigir nível do admin no Firebase:', error);
                 }
@@ -512,10 +465,6 @@ const AuthProvider = ({ children }) => {
               
               // 🔐 PROTEÇÃO ESPECIAL: Se usuário salvo é admin (nível 0), garantir que permanece admin
               if (usuarioSalvo?.nivel === 0 && usuarioAtualizado.nivel !== 0) {
-                console.log('⚠️ PROTEÇÃO ADMIN: Impedindo alteração de nível admin:', {
-                  nivelSalvo: usuarioSalvo.nivel,
-                  nivelAtualizado: usuarioAtualizado.nivel
-                });
                 usuarioAtualizado.nivel = 0; // Forçar manter nível admin
               }
               
@@ -527,7 +476,6 @@ const AuthProvider = ({ children }) => {
                 salvarDadosLogin(usuarioAtualizado, true);
               }
             } else {
-              console.log('❌ Usuário não encontrado no Firebase, usando dados dos cookies');
               setUsuario(usuarioSalvo);
             }
           } catch (error) {
@@ -536,11 +484,9 @@ const AuthProvider = ({ children }) => {
             setUsuario(usuarioSalvo);
           }
         } else {
-          console.log('❌ Dados do usuário nos cookies inválidos, limpando');
           limparDadosLogin();
         }
       } else {
-        console.log('Nenhum usuário salvo encontrado nos cookies');
       }
     } catch (error) {
       console.error('Erro ao verificar usuário salvo nos cookies:', error);
@@ -554,7 +500,6 @@ const AuthProvider = ({ children }) => {
       CookieManager.removeCookie(COOKIE_NAMES.USUARIO);
       CookieManager.removeCookie(COOKIE_NAMES.LEMBRAR);
       CookieManager.removeCookie(COOKIE_NAMES.EXPIRACAO);
-      console.log('✅ Dados de login removidos dos cookies');
     } catch (error) {
       console.error('Erro ao limpar dados de login:', error);
     }
@@ -564,7 +509,6 @@ const AuthProvider = ({ children }) => {
   const salvarDadosLogin = (usuarioData, lembrarLogin) => {
     try {
       if (!cookiesEnabled) {
-        console.warn('Cookies não habilitados, não é possível salvar login');
         return false;
       }
 
@@ -589,7 +533,6 @@ const AuthProvider = ({ children }) => {
         const sucessoExpiracao = CookieManager.setCookie(COOKIE_NAMES.EXPIRACAO, dataExpiracao.toISOString(), 30);
         
         if (sucessoUsuario && sucessoLembrar && sucessoExpiracao) {
-          console.log('✅ Dados de login salvos nos cookies com sucesso');
           return true;
         } else {
           console.error('❌ Falha ao salvar alguns dados nos cookies');
@@ -608,7 +551,6 @@ const AuthProvider = ({ children }) => {
 
   const carregarUsuarios = async () => {
     try {
-      console.log('📥 Carregando usuários do Firebase Backup...');
       const snapshot = await getDocs(collection(backupDb, 'usuarios'));
       const usuariosCarregados = snapshot.docs.map(doc => {
         const data = doc.data();
@@ -643,22 +585,10 @@ const AuthProvider = ({ children }) => {
           bio: data.bio || null
         };
       });
-      
-      console.log(`✅ ${usuariosCarregados.length} usuários carregados do Firebase`);
-      console.log('Usuários:', usuariosCarregados.map(u => ({ 
-        usuario: u.usuario, 
-        nome: u.nome, 
-        nivel: u.nivel,
-        ativo: u.ativo,
-        temSenha: !!u.senha,
-        temSenhaHash: !!u.senhaHash
-      })));
-      
       setUsuarios(usuariosCarregados);
       
       // Se não houver usuários, criar usuário admin padrão
       if (usuariosCarregados.length === 0) {
-        console.log('⚠️ Nenhum usuário encontrado, criando admin padrão...');
         await criarUsuarioAdmin();
       }
       
@@ -706,10 +636,6 @@ const AuthProvider = ({ children }) => {
 
     try {
       const docRef = await addDoc(collection(db, 'usuarios'), adminPadrao);
-      console.log('✅ Usuário admin criado no Firebase com ID:', docRef.id);
-      console.log('� Usuário: admin');
-      console.log('🔑 Senha: admin@362*');
-      
       // Recarregar usuários após criar admin
       await carregarUsuarios();
     } catch (error) {
@@ -762,30 +688,22 @@ const AuthProvider = ({ children }) => {
     ];
     
     setUsuarios(usuariosLocais);
-    console.log('Usuários locais carregados como fallback');
   };
 
   const login = async (usuario, senha, lembrarLogin = false) => {
     try {
       // ✅ REFATORADO: Usar authService
-      console.log('🔐 [AuthService] Iniciando autenticação:', { usuario, senhaLength: senha.length });
-      
       const resultado = await authenticateUser(usuario, senha);
       
       if (!resultado.success) {
-        console.log('❌ [AuthService] Autenticação falhou:', resultado.error);
         return { success: false, message: resultado.error };
       }
-      
-      console.log('✅ [AuthService] Autenticação bem-sucedida!');
       const usuarioAutenticado = resultado.user;
       
       // Salvar sessão
       saveUserSession(usuarioAutenticado, lembrarLogin);
       salvarDadosLogin(usuarioAutenticado, true);
       setUsuario(usuarioAutenticado);
-      
-      console.log('✅ [AuthService] Sessão salva com sucesso');
       return { success: true };
       
     } catch (error) {
@@ -807,8 +725,6 @@ const AuthProvider = ({ children }) => {
       }
 
       // ✅ REFATORADO: Usar passwordService para criar usuário
-      console.log('💾 [PasswordService] Criando novo usuário...');
-      
       const userData = {
         ...dadosUsuario,
         ativo: true,
@@ -820,8 +736,6 @@ const AuthProvider = ({ children }) => {
 
       try {
         const userId = await createUserWithPassword(userData, senha);
-        console.log('✅ [PasswordService] Usuário criado com sucesso:', userId);
-        
         // Buscar usuário criado para retornar
         const usuarioComId = { id: userId, ...userData };
         return { success: true, usuario: usuarioComId };
@@ -838,19 +752,14 @@ const AuthProvider = ({ children }) => {
 
   const atualizarUsuario = async (id, dadosAtualizados) => {
     try {
-      console.log('🔄 [PasswordService] Iniciando atualização de usuário:', { id, dadosAtualizados });
-      
       // Verificar permissão para editar usuário
       const usuarioAlvo = usuarios.find(u => u.id === id);
       if (!PermissionChecker.canEditUser(usuario.nivel, usuario.id, id, usuarioAlvo?.nivel)) {
-        console.log('❌ Sem permissão para editar usuário');
         return { success: false, message: 'Sem permissão para editar este usuário' };
       }
 
       // ✅ REFATORADO: Se a senha foi alterada, usar passwordService
       if (dadosAtualizados.senha) {
-        console.log('🔐 [PasswordService] Atualizando senha com novo sistema...');
-        
         try {
           // Atualizar senha usando passwordService
           // Isso cria authKey + senhaHash + senhaSalt automaticamente
@@ -862,11 +771,6 @@ const AuthProvider = ({ children }) => {
             ...passwordObj, // Contém authKey, senhaHash, senhaSalt
             senha: dadosAtualizados.senha // Manter para exibição
           };
-          
-          console.log('✅ [PasswordService] Senha atualizada com sucesso!');
-          console.log('   - authKey: definido para login');
-          console.log('   - senhaHash: hash SHA-512 criado');
-          console.log('   - senhaSalt: salt gerado');
         } catch (error) {
           console.error('❌ [PasswordService] Erro ao atualizar senha:', error);
           return { success: false, message: 'Erro ao atualizar senha: ' + error.message };
@@ -878,11 +782,7 @@ const AuthProvider = ({ children }) => {
       if (dadosParaFirebase.senha) {
         delete dadosParaFirebase.senha; // Remove senha em texto plano do Firebase
       }
-
-      console.log('💾 Salvando alterações no Firebase Backup...');
       await updateDoc(doc(backupDb, 'usuarios', id), dadosParaFirebase);
-      console.log('✅ Dados salvos no Firebase Backup com sucesso!');
-      
       // Atualizar lista local de usuários
       setUsuarios(prevUsuarios => {
         return prevUsuarios.map(u => {
@@ -892,8 +792,6 @@ const AuthProvider = ({ children }) => {
           return u;
         });
       });
-      console.log('✅ Lista local de usuários atualizada');
-      
       // Se for o usuário logado, atualizar também o estado do usuário atual
       if (usuario && usuario.id === id) {
         const usuarioAtualizado = { ...usuario, ...dadosAtualizados };
@@ -935,9 +833,6 @@ const AuthProvider = ({ children }) => {
       await updateDoc(doc(backupDb, 'usuarios', usuarioAlvo), {
         preferencias: preferenciasNovas
       });
-
-      console.log('✅ Preferências atualizadas no Firebase Backup:', preferenciasNovas);
-
       // Se for o usuário logado, atualizar estado local
       if (usuario && usuario.id === usuarioAlvo) {
         const usuarioAtualizado = { 
@@ -977,9 +872,6 @@ const AuthProvider = ({ children }) => {
         menuConfig: novoMenuConfig,
         menuPersonalizado: true
       });
-
-      console.log('✅ Menu personalizado atualizado no Firebase Backup');
-
       // Se for o usuário logado, atualizar estado local
       if (usuario && usuario.id === usuarioAlvo) {
         const usuarioAtualizado = { 
@@ -1015,9 +907,7 @@ const AuthProvider = ({ children }) => {
     }
 
     try {
-      console.log('🗑️ Removendo usuário do Firebase Backup...');
       await deleteDoc(doc(backupDb, 'usuarios', id));
-      console.log('✅ Usuário removido com sucesso do Firebase Backup');
       return { success: true };
     } catch (error) {
       console.error('❌ Erro ao remover usuário:', error);
@@ -1057,7 +947,6 @@ const AuthProvider = ({ children }) => {
 
 // Componente de Status do Firebase
 
-
 // Componente de Login
 const LoginForm = () => {
   const [formData, setFormData] = useState({ usuario: '', senha: '', lembrar: false });
@@ -1072,7 +961,6 @@ const LoginForm = () => {
   // Verificar suporte a cookies ao carregar componente
   useEffect(() => {
     if (!cookiesEnabled) {
-      console.warn('Cookies não habilitados - função "Lembrar de mim" não funcionará');
     }
   }, [cookiesEnabled]);
 
@@ -1092,7 +980,6 @@ const LoginForm = () => {
       if (!resultado.success) {
         setErro(resultado.message);
       } else {
-        console.log('✅ Login realizado com sucesso');
       }
     } catch (error) {
       console.error('Erro no login:', error);
@@ -1140,7 +1027,6 @@ const LoginForm = () => {
             <OfflineLogo src="/logo.png" alt="Logo WorkFlow" className="w-full h-full object-contain relative z-10" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">WorkFlow</h1>
-          
 
         </div>
 
@@ -1188,8 +1074,6 @@ const LoginForm = () => {
               </button>
             </div>
           </div>
-
-
 
           {!cookiesEnabled && (
             <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg text-sm">
@@ -1674,7 +1558,6 @@ const AlmoxarifadoSistema = () => {
     if (usuario?.id) {
       const cached = localStorage.getItem(`favorito_${usuario.id}`);
       if (cached) {
-        console.log('⚡ Favorito carregado do localStorage na inicialização:', cached);
         return cached;
       }
     }
@@ -1710,12 +1593,9 @@ const AlmoxarifadoSistema = () => {
   // ===== SISTEMA DE CLIQUE LONGO PARA DESKTOP =====
   const startDesktopLongPress = (abaId) => {
     if (isMobile) return; // Só para desktop
-    
-    console.log('🖱️ Iniciando long press para:', abaId);
     setDesktopLongPressItem(abaId);
     
     const timer = setTimeout(() => {
-      console.log('🎯 Long press ativado para:', abaId);
       setDesktopEditMode(true);
       setShowMenuConfig(true);
       
@@ -1729,8 +1609,6 @@ const AlmoxarifadoSistema = () => {
   };
 
   const stopDesktopLongPress = () => {
-    console.log('🛑 Parando long press, timer existe:', !!desktopLongPressTimer);
-    
     if (desktopLongPressTimer) {
       clearTimeout(desktopLongPressTimer);
       setDesktopLongPressTimer(null);
@@ -1744,8 +1622,6 @@ const AlmoxarifadoSistema = () => {
 
   const handleDesktopItemClick = (abaId) => {
     // Sempre navegar para a aba clicada, independente do modo
-    console.log('🖱️ Clique em aba:', abaId, 'Modo edição:', desktopEditMode);
-    
     setAbaAtiva(abaId);
     if (isMobile) {
       setMenuOpen(false);
@@ -1777,7 +1653,6 @@ const AlmoxarifadoSistema = () => {
       estado.timestamp = new Date().toISOString();
       
       localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
-      console.log(`💾 Estado do formulário "${abaId}" salvo:`, dados);
     } catch (error) {
       console.error('Erro ao salvar estado do formulário:', error);
     }
@@ -1813,7 +1688,6 @@ const AlmoxarifadoSistema = () => {
       estado.timestamp = new Date().toISOString();
       
       localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
-      console.log('💾 Estado salvo:', { abaAtiva, scrollPosition: estado.scrollPosition });
     } catch (error) {
       console.error('Erro ao salvar estado:', error);
     }
@@ -1827,7 +1701,6 @@ const AlmoxarifadoSistema = () => {
       const estadoSalvo = localStorage.getItem(STORAGE_KEY);
       if (estadoSalvo) {
         const estado = JSON.parse(estadoSalvo);
-        console.log('📂 Estado carregado:', estado);
         return estado;
       }
     } catch (error) {
@@ -1855,13 +1728,6 @@ const AlmoxarifadoSistema = () => {
         
         // Verificar se mudou o nível de permissão
         if (dadosAtualizados.nivel !== nivelAnterior) {
-          console.log('⚡ Nível de permissão alterado:', {
-            antes: nivelAnterior,
-            depois: dadosAtualizados.nivel,
-            labelAntes: NIVEIS_LABELS[nivelAnterior],
-            labelDepois: NIVEIS_LABELS[dadosAtualizados.nivel]
-          });
-          
           // Verificar se usuário já viu o alerta para este nível
           const alertKey = `permission_alert_seen_${usuario.id}_${dadosAtualizados.nivel}`;
           const jaViu = localStorage.getItem(alertKey);
@@ -1882,7 +1748,6 @@ const AlmoxarifadoSistema = () => {
             });
             setShowPermissionAlert(true);
           } else {
-            console.log('✅ Usuário já viu o alerta de mudança de permissão');
           }
           
           // Atualizar referência do nível
@@ -1904,7 +1769,6 @@ const AlmoxarifadoSistema = () => {
       
       // Se inventário está vazio, popula com inventarioInicial
       if (itens.length === 0 && PermissionChecker.canManageOperational(usuario?.nivel)) {
-        console.log('Populando inventário inicial...');
         for (const item of inventarioInicial) {
           const { id, ...rest } = item;
           await addDoc(collection(db, 'inventario'), rest);
@@ -2028,15 +1892,12 @@ const AlmoxarifadoSistema = () => {
   // Função para obter detalhes de quem está com cada item
   const obterDetalhesEmprestimos = (itemNome) => {
     try {
-      console.log('Buscando detalhes para:', itemNome);
       const nomeNormalizado = itemNome.trim().toLowerCase();
       let quantidadeEmUso = 0;
       const detalhes = [];
 
       // Filtra apenas empréstimos ativos
       const emprestimosAtivos = emprestimos.filter(emp => emp.status === 'emprestado');
-      console.log('Empréstimos ativos encontrados:', emprestimosAtivos.length);
-
       emprestimosAtivos.forEach(emp => {
         if (emp.ferramentas && Array.isArray(emp.ferramentas)) {
           const ferramentasDoItem = emp.ferramentas.filter(f => {
@@ -2045,7 +1906,6 @@ const AlmoxarifadoSistema = () => {
           });
 
           if (ferramentasDoItem.length > 0) {
-            console.log('Encontrado em empréstimo:', emp.id);
             ferramentasDoItem.forEach(f => {
               const quantidade = typeof f === 'string' ? 1 : (f.quantidade || 1);
               quantidadeEmUso += quantidade;
@@ -2063,12 +1923,6 @@ const AlmoxarifadoSistema = () => {
       });
 
       // Log detalhado para debug
-      console.log(`Estado atual de "${itemNome}":`, {
-        nomeNormalizado,
-        quantidadeEmUso,
-        detalhes
-      });
-      
       return detalhes;
     } catch (error) {
       console.error('Erro ao obter detalhes dos empréstimos:', error);
@@ -2079,8 +1933,6 @@ const AlmoxarifadoSistema = () => {
   // Função de diagnóstico para verificar inconsistências no inventário
   const diagnosticarInventario = async () => {
     try {
-      console.log('🔍 Iniciando diagnóstico completo do inventário...');
-      
       // Recarrega dados do Firestore
       const [inventarioSnapshot, emprestimosSnapshot] = await Promise.all([
         getDocs(collection(db, 'inventario')),
@@ -2096,10 +1948,6 @@ const AlmoxarifadoSistema = () => {
         id: doc.id,
         ...doc.data()
       }));
-      
-      console.log(`📦 Total de itens no inventário: ${itensInventario.length}`);
-      console.log(`📋 Total de empréstimos ativos: ${emprestimosAtivos.length}`);
-      
       // Analisa cada item
       const resultados = [];
       
@@ -2159,7 +2007,6 @@ const AlmoxarifadoSistema = () => {
       }
       
       if (resultados.length > 0) {
-        console.log(`⚠️ Encontradas ${resultados.length} inconsistências:`);
         console.table(resultados.map(r => ({
           Item: r.nome,
           'Disp. Registrado': r.estado.registrado.disponivel,
@@ -2174,7 +2021,6 @@ const AlmoxarifadoSistema = () => {
           inconsistencias: resultados
         };
       } else {
-        console.log('✅ Nenhuma inconsistência encontrada! Inventário está correto.');
         return {
           temInconsistencias: false,
           mensagem: 'Inventário está consistente'
@@ -2191,8 +2037,6 @@ const AlmoxarifadoSistema = () => {
   // Função para corrigir estado específico de um item
   const corrigirEstadoItem = async (itemNome) => {
     try {
-      console.log(`🔧 Iniciando correção de estado para: ${itemNome}`);
-      
       // Normaliza o nome do item
       const nomeNormalizado = itemNome.trim().toLowerCase();
       
@@ -2209,20 +2053,11 @@ const AlmoxarifadoSistema = () => {
       );
       
       if (!itemInventario) {
-        console.log('❌ Item não encontrado no inventário:', itemNome);
         return {
           sucesso: false,
           erro: 'Item não encontrado'
         };
       }
-      
-      console.log('📦 Item encontrado:', {
-        nome: itemInventario.nome,
-        quantidadeTotal: itemInventario.quantidade,
-        disponivelAtual: itemInventario.disponivel || 0,
-        emUsoAtual: itemInventario.emUso || 0
-      });
-      
       // Recarrega empréstimos do Firestore
       const emprestimosQuery = query(
         collection(db, 'emprestimos'),
@@ -2233,9 +2068,6 @@ const AlmoxarifadoSistema = () => {
         id: doc.id,
         ...doc.data()
       }));
-      
-      console.log(`🔍 Verificando ${emprestimosAtivos.length} empréstimos ativos`);
-      
       // Calcula quantos estão em uso nos empréstimos ativos
       let quantidadeEmUso = 0;
       const detalhesEmprestimos = [];
@@ -2262,10 +2094,6 @@ const AlmoxarifadoSistema = () => {
           }
         }
       });
-      
-      console.log('📋 Empréstimos ativos encontrados:', detalhesEmprestimos);
-      console.log(`📊 Total em uso calculado: ${quantidadeEmUso}`);
-      
       // Calcula o disponível correto
       const disponivelCorreto = Math.max(0, itemInventario.quantidade - quantidadeEmUso);
       
@@ -2275,32 +2103,11 @@ const AlmoxarifadoSistema = () => {
         disponivel: disponivelCorreto,
         ultimaCorrecao: new Date().toISOString()
       };
-      
-      console.log(`✅ Corrigindo estado de "${itemNome}":`, {
-        antes: {
-          disponivel: itemInventario.disponivel || 0,
-          emUso: itemInventario.emUso || 0
-        },
-        depois: {
-          disponivel: disponivelCorreto,
-          emUso: quantidadeEmUso
-        },
-        quantidade: itemInventario.quantidade,
-        emprestimosAtivos: detalhesEmprestimos.length
-      });
-      
       await updateDoc(doc(db, 'inventario', itemInventario.id), atualizacao);
       
       // Verifica se a correção foi aplicada
       const itemVerificacao = await getDoc(doc(db, 'inventario', itemInventario.id));
       const dadosVerificacao = itemVerificacao.data();
-      
-      console.log('✔️ Verificação pós-correção:', {
-        nome: dadosVerificacao.nome,
-        disponivel: dadosVerificacao.disponivel,
-        emUso: dadosVerificacao.emUso
-      });
-      
       return {
         sucesso: true,
         detalhes: detalhesEmprestimos,
@@ -2327,15 +2134,10 @@ const AlmoxarifadoSistema = () => {
   // Função para debug do estado atual dos empréstimos
   const debugEmprestimos = () => {
     if (!emprestimos || emprestimos.length === 0) {
-      console.log('Nenhum empréstimo carregado');
       return;
     }
 
     const emprestimosAtivos = emprestimos.filter(e => e.status === 'emprestado');
-    console.log('Estado atual dos empréstimos:');
-    console.log('Total:', emprestimos.length);
-    console.log('Ativos:', emprestimosAtivos.length);
-
     // Debug específico para facas de bolso
     const emprestimosFacas = emprestimosAtivos.filter(e => 
       e.ferramentas && Array.isArray(e.ferramentas) &&
@@ -2346,21 +2148,12 @@ const AlmoxarifadoSistema = () => {
     );
 
     if (emprestimosFacas.length > 0) {
-      console.log('Empréstimos de facas de bolso:');
       emprestimosFacas.forEach(emp => {
-        const facas = emp.ferramentas.find(f => {
+        emp.ferramentas.find(f => {
           const nome = typeof f === 'string' ? f : f.nome;
           return nome.trim().toLowerCase() === 'faca de bolso';
         });
-        console.log({
-          id: emp.id,
-          colaborador: emp.colaborador,
-          status: emp.status,
-          quantidade: typeof facas === 'string' ? 1 : (facas.quantidade || 1)
-        });
       });
-    } else {
-      console.log('Nenhum empréstimo ativo de facas de bolso encontrado');
     }
   };
   
@@ -2373,12 +2166,8 @@ const AlmoxarifadoSistema = () => {
         unsubscribe = onSnapshot(collection(db, 'emprestimos'), (snapshot) => {
           try {
             const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log('Empréstimos carregados:', lista.length);
-            
             // Debug de empréstimos ativos
             const emprestimosAtivos = lista.filter(e => e.status === 'emprestado');
-            console.log('Empréstimos ativos:', emprestimosAtivos.length);
-            
             // Debug específico para facas de bolso
             const emprestimosFacas = emprestimosAtivos.filter(e => 
               e.ferramentas && Array.isArray(e.ferramentas) &&
@@ -2390,24 +2179,13 @@ const AlmoxarifadoSistema = () => {
             );
             
             if (emprestimosFacas.length > 0) {
-              console.log('Empréstimos de facas de bolso encontrados:', emprestimosFacas.length);
               emprestimosFacas.forEach(emp => {
                 const facas = emp.ferramentas.filter(f => {
                   const nome = typeof f === 'string' ? f : f.nome;
                   return nome.trim().toLowerCase() === 'faca de bolso';
                 });
-                console.log('Detalhes do empréstimo:', {
-                  colaborador: emp.colaborador,
-                  status: emp.status,
-                  facas: facas
-                });
               });
             }
-            console.log('Dados dos empréstimos:', {
-              quantidade: lista.length,
-              primeiro: lista[0],
-              ultimo: lista[lista.length - 1]
-            });
             setEmprestimos(lista);
             setEmprestimosCarregados(true);
           } catch (error) {
@@ -2468,7 +2246,6 @@ const AlmoxarifadoSistema = () => {
             usuario?.nome || 'Responsável',
             { emprestimoId: docRef.id }
           );
-          console.log('Notificação de empréstimo enviada para:', funcionario.nome);
         }
       } catch (notifError) {
         console.error('Erro ao enviar notificação de empréstimo:', notifError);
@@ -2550,12 +2327,6 @@ const AlmoxarifadoSistema = () => {
   // Função para atualizar a disponibilidade das ferramentas
   const atualizarDisponibilidadeFerramentas = async (ferramentas, operacao) => {
     try {
-      console.log('🔄 Atualizando disponibilidade:', {
-        ferramentas,
-        operacao,
-        timestamp: new Date().toISOString()
-      });
-
       for (const ferramenta of ferramentas) {
         // Trata tanto string quanto objeto com nome/quantidade
         const nome = typeof ferramenta === 'string' ? ferramenta : ferramenta.nome;
@@ -2563,8 +2334,6 @@ const AlmoxarifadoSistema = () => {
         
         // Normaliza o nome para busca
         const nomeNormalizado = nome.trim().toLowerCase();
-        console.log(`📦 Processando ferramenta: "${nome}" (${quantidade} unidades)`);
-        
         // Busca o item no inventário
         const querySnapshot = await getDocs(collection(db, 'inventario'));
         const itensInventario = querySnapshot.docs.map(doc => ({
@@ -2577,13 +2346,6 @@ const AlmoxarifadoSistema = () => {
         );
         
         if (itemInventario) {
-          console.log('📊 Estado atual:', {
-            nome: itemInventario.nome,
-            quantidade: itemInventario.quantidade,
-            disponivel: itemInventario.disponivel || 0,
-            emUso: itemInventario.emUso || 0
-          });
-
           // CORREÇÃO: Calcula valores corretamente
           let novaDisponibilidade, novoEmUso;
           
@@ -2611,26 +2373,12 @@ const AlmoxarifadoSistema = () => {
             emUso: novoEmUso,
             ultimaAtualizacao: new Date().toISOString()
           };
-
-          console.log('✅ Atualizando para:', atualizacao);
-          console.log(`📈 Diferença: ${operacao === 'devolver' ? '+' : '-'}${quantidade} | Disponível: ${itemInventario.disponivel || 0} → ${novaDisponibilidade} | Em Uso: ${itemInventario.emUso || 0} → ${novoEmUso}`);
-          
           await updateDoc(doc(db, 'inventario', itemInventario.id), atualizacao);
           
           // Verifica se a atualização foi bem-sucedida
-          const itemAtualizado = await getDoc(doc(db, 'inventario', itemInventario.id));
-          const dadosAtualizados = itemAtualizado.data();
-          console.log('✔️ Verificação pós-atualização:', {
-            nome: dadosAtualizados.nome,
-            disponivel: dadosAtualizados.disponivel,
-            emUso: dadosAtualizados.emUso
-          });
-        } else {
-          console.warn(`⚠️ Item não encontrado no inventário: ${nome}`);
+          await getDoc(doc(db, 'inventario', itemInventario.id));
         }
       }
-      
-      console.log('✅ Atualização de disponibilidade concluída com sucesso');
     } catch (error) {
       console.error('❌ Erro ao atualizar disponibilidade:', error);
       throw error;
@@ -2642,12 +2390,6 @@ const AlmoxarifadoSistema = () => {
   // Função para marcar empréstimo como devolvido
   const devolverFerramentas = async (id, atualizarDisponibilidade, devolvidoPorTerceiros = false, atualizacaoParcial = null) => {
     try {
-      console.log('Iniciando devolução:', {
-        id,
-        devolvidoPorTerceiros,
-        parcial: !!atualizacaoParcial
-      });
-
       const emprestimoRef = doc(db, 'emprestimos', id);
       const emprestimoSnapshot = await getDoc(emprestimoRef);
       
@@ -2656,27 +2398,14 @@ const AlmoxarifadoSistema = () => {
       }
 
       const emprestimo = emprestimoSnapshot.data();
-      console.log('Empréstimo encontrado:', {
-        id: emprestimoSnapshot.id,
-        colaborador: emprestimo.colaborador,
-        status: emprestimo.status,
-        ferramentas: emprestimo.ferramentas
-      });
-
       if (atualizacaoParcial) {
-        console.log('Processando devolução parcial:', atualizacaoParcial);
-        
         // Filtra as ferramentas que serão devolvidas
         const ferramentasDevolvidas = emprestimo.ferramentas.filter(
           f => !atualizacaoParcial.ferramentas.find(nf => {
             const idMatch = nf.id === f.id;
-            console.log(`Comparando ferramentas: ${f.nome || f} - permanece: ${idMatch}`);
             return idMatch;
           })
         );
-        
-        console.log('Ferramentas a devolver:', ferramentasDevolvidas);
-        
         // Atualiza disponibilidade das ferramentas devolvidas
         await atualizarDisponibilidadeFerramentas(ferramentasDevolvidas, 'devolver');
         
@@ -2685,12 +2414,8 @@ const AlmoxarifadoSistema = () => {
           ...atualizacaoParcial,
           dataUltimaAtualizacao: new Date().toISOString()
         };
-        
-        console.log('Atualizando empréstimo para:', atualizacao);
         await updateDoc(emprestimoRef, atualizacao);
       } else {
-        console.log('Processando devolução completa');
-        
         // Atualiza disponibilidade de todas as ferramentas
         await atualizarDisponibilidadeFerramentas(emprestimo.ferramentas, 'devolver');
         
@@ -2704,13 +2429,8 @@ const AlmoxarifadoSistema = () => {
           funcionarioId: emprestimo.funcionarioId || emprestimo.colaboradorId || null,
           funcionarioNome: emprestimo.funcionarioNome || emprestimo.colaborador || emprestimo.nomeFuncionario || null
         };
-        
-        console.log('Atualizando empréstimo para:', atualizacao);
         await updateDoc(emprestimoRef, atualizacao);
       }
-      
-      console.log('Devolução concluída com sucesso');
-      
       // Recarrega o estado do item após a devolução
       for (const ferramenta of emprestimo.ferramentas) {
         const nome = typeof ferramenta === 'string' ? ferramenta : ferramenta.nome;
@@ -2759,55 +2479,42 @@ const AlmoxarifadoSistema = () => {
       throw new Error('Sem permissão para remover funcionários');
     }
     try {
-      console.log('🗑️ Removendo funcionário:', id);
-      
       // Buscar funcionário para ver de qual(is) coleção(ões) ele veio
       const funcionario = funcionarios.find(f => f.id === id);
       const origens = funcionario?.origens || [];
       const idsRelacionados = funcionario?.idsRelacionados || [id];
-      
-      console.log('📋 Funcionário tem origens:', origens);
-      console.log('🔗 IDs relacionados:', idsRelacionados);
-      
       // Deletar de todas as coleções de origem
       const promises = [];
       
       // 1️⃣ Deletar da coleção 'funcionarios'
       if (origens.includes('funcionarios') || !origens.length) {
-        console.log('🗑️ Deletando de "funcionarios"...');
         promises.push(
           deleteDoc(doc(db, 'funcionarios', id))
-            .then(() => console.log('✅ Deletado de "funcionarios"'))
-            .catch(error => console.warn('⚠️ Erro ao deletar de "funcionarios":', error))
+
         );
       }
       
       // 2️⃣ Deletar da coleção 'usuarios' (PLURAL)
       if (origens.includes('usuarios')) {
-        console.log('🗑️ Deletando de "usuarios" (plural)...');
         // Buscar o ID correto nesta coleção
         const usuarioId = idsRelacionados.find(idRel => idRel !== id) || id;
         promises.push(
           deleteDoc(doc(db, 'usuarios', usuarioId))
-            .then(() => console.log('✅ Deletado de "usuarios"'))
-            .catch(error => console.warn('⚠️ Erro ao deletar de "usuarios":', error))
+
         );
       }
       
       // 3️⃣ Deletar da coleção 'usuario' (SINGULAR - legado)
       if (origens.includes('usuario')) {
-        console.log('🗑️ Deletando de "usuario" (singular)...');
         const usuarioId = idsRelacionados.find(idRel => idRel !== id) || id;
         promises.push(
           deleteDoc(doc(db, 'usuario', usuarioId))
-            .then(() => console.log('✅ Deletado de "usuario"'))
-            .catch(error => console.warn('⚠️ Erro ao deletar de "usuario":', error))
+
         );
       }
       
       // 4️⃣ Fallback: tentar deletar de todas se não tiver origens definidas
       if (!origens.length) {
-        console.log('⚠️ Sem origens definidas, tentando deletar de todas as coleções como fallback...');
         idsRelacionados.forEach(idRel => {
           promises.push(
             deleteDoc(doc(db, 'usuarios', idRel))
@@ -2824,8 +2531,6 @@ const AlmoxarifadoSistema = () => {
       
       // Executar todas as deleções
       await Promise.allSettled(promises);
-      console.log('✅ Funcionário removido de todas as coleções');
-      
     } catch (error) {
       console.error('❌ Erro ao remover funcionário:', error);
       throw error;
@@ -2837,16 +2542,10 @@ const AlmoxarifadoSistema = () => {
       throw new Error('Sem permissão para atualizar funcionários');
     }
     try {
-      console.log('🔄 Atualizando funcionário:', id, dados);
-      
       // Buscar funcionário para ver de qual(is) coleção(ões) ele veio
       const funcionario = funcionarios.find(f => f.id === id);
       const origens = funcionario?.origens || [];
       const idsRelacionados = funcionario?.idsRelacionados || [id];
-      
-      console.log('📋 Funcionário tem origens:', origens);
-      console.log('🔗 IDs relacionados:', idsRelacionados);
-      
       // Preparar dados para salvar (sem campos internos de controle)
       const dadosParaSalvar = { ...dados };
       delete dadosParaSalvar.origens;
@@ -2858,54 +2557,45 @@ const AlmoxarifadoSistema = () => {
       // 1️⃣ Tentar atualizar na coleção 'funcionarios'
       if (origens.includes('funcionarios') || !origens.length) {
         try {
-          console.log('💾 Salvando em "funcionarios"...');
           promises.push(updateDoc(doc(db, 'funcionarios', id), dadosParaSalvar));
         } catch (error) {
-          console.warn('⚠️ Erro ao salvar em "funcionarios":', error);
         }
       }
       
       // 2️⃣ Tentar atualizar na coleção 'usuarios' (PLURAL)
       if (origens.includes('usuarios')) {
         try {
-          console.log('💾 Salvando em "usuarios" (plural)...');
           // Buscar o ID correto nesta coleção
           const usuarioId = idsRelacionados.find(idRel => idRel !== id) || id;
           promises.push(updateDoc(doc(db, 'usuarios', usuarioId), dadosParaSalvar));
         } catch (error) {
-          console.warn('⚠️ Erro ao salvar em "usuarios":', error);
         }
       }
       
       // 3️⃣ Tentar atualizar na coleção 'usuario' (SINGULAR - legado)
       if (origens.includes('usuario')) {
         try {
-          console.log('💾 Salvando em "usuario" (singular)...');
           // Buscar o ID correto nesta coleção
           const usuarioId = idsRelacionados.find(idRel => idRel !== id) || id;
           promises.push(updateDoc(doc(db, 'usuario', usuarioId), dadosParaSalvar));
         } catch (error) {
-          console.warn('⚠️ Erro ao salvar em "usuario":', error);
         }
       }
       
       // Se não tem origens definidas, tentar em todas as 3 coleções
       if (!origens.length) {
-        console.log('⚠️ Sem origens definidas, tentando todas as coleções...');
         idsRelacionados.forEach(idRel => {
           promises.push(
-            updateDoc(doc(db, 'usuarios', idRel), dadosParaSalvar).catch(e => console.log('Não existe em usuarios:', idRel))
+            updateDoc(doc(db, 'usuarios', idRel), dadosParaSalvar)
           );
           promises.push(
-            updateDoc(doc(db, 'usuario', idRel), dadosParaSalvar).catch(e => console.log('Não existe em usuario:', idRel))
+            updateDoc(doc(db, 'usuario', idRel), dadosParaSalvar)
           );
         });
       }
       
       // Executar todas as atualizações em paralelo
       await Promise.allSettled(promises);
-      console.log('✅ Funcionário atualizado em todas as coleções disponíveis!');
-      
       return true;
     } catch (error) {
       console.error('❌ Erro ao atualizar funcionário:', error);
@@ -3209,8 +2899,6 @@ const AlmoxarifadoSistema = () => {
     // Verificar se usuário tem permissão para a aba favorita
     if (favorita && favorita.permissao && typeof favorita.permissao === 'function') {
       if (!favorita.permissao()) {
-        console.log(`⚠️ Usuário sem permissão para página favorita: ${favorita.id}`);
-        
       // Buscar primeira aba com permissão, priorizando páginas mais importantes
       // Para funcionários, priorizar Meu Perfil e Dashboard
       const abaasPriorizadas = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO 
@@ -3218,7 +2906,6 @@ const AlmoxarifadoSistema = () => {
         : ['dashboard', 'meu-perfil', 'gerenciamento-inventario', 'funcionarios'];        for (const abaId of abaasPriorizadas) {
           const aba = abasComPermissao.find(a => a.id === abaId);
           if (aba && (!aba.permissao || aba.permissao())) {
-            console.log(`✅ Usando fallback priorizado: ${abaId}`);
             return aba;
           }
         }
@@ -3232,12 +2919,10 @@ const AlmoxarifadoSistema = () => {
         });
         
         if (abaDisponivel) {
-          console.log(`✅ Usando fallback geral: ${abaDisponivel.id}`);
           return abaDisponivel;
         }
         
         // Último recurso: retornar a primeira aba (mesmo sem permissão)
-        console.warn('⚠️ Nenhuma aba com permissão encontrada, usando primeira aba');
         return abasComPermissao[0];
       }
     }
@@ -3248,16 +2933,12 @@ const AlmoxarifadoSistema = () => {
   // Carregar estado ao montar componente - APÓS favorito ser carregado
   useEffect(() => {
     if (!usuario?.id || permissaoAlterada || !favoritoCarregado) return;
-    
-    console.log('🎯 Inicializando página inicial (favorito carregado)...');
-    
     // Só restaura estado se NÃO houver mudança de permissão pendente
     const estadoSalvo = carregarEstadoApp();
     if (estadoSalvo && estadoSalvo.abaAtiva) {
       // Verificar se a aba salva ainda existe e usuário tem permissão
       const abaSalva = abas.find(aba => aba.id === estadoSalvo.abaAtiva);
       if (abaSalva && (!abaSalva.permissao || abaSalva.permissao())) {
-        console.log('🔄 Restaurando última página:', estadoSalvo.abaAtiva);
         setAbaAtiva(estadoSalvo.abaAtiva);
         
         // Restaurar posição de scroll
@@ -3268,7 +2949,6 @@ const AlmoxarifadoSistema = () => {
         }, 100);
         return;
       } else {
-        console.log('⚠️ Página salva inválida ou sem permissão:', estadoSalvo.abaAtiva);
       }
     }
     
@@ -3276,7 +2956,6 @@ const AlmoxarifadoSistema = () => {
     const abaFavorita = getAbaFavorita();
     const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'dashboard';
     const paginaInicial = abaFavorita ? abaFavorita.id : fallbackPadrao;
-    console.log('⭐ Iniciando com página favorita:', paginaInicial);
     setAbaAtiva(paginaInicial);
     
   }, [usuario?.id, carregarEstadoApp, permissaoAlterada, favoritoCarregado, abas]);
@@ -3303,12 +2982,9 @@ const AlmoxarifadoSistema = () => {
         const favoritoCache = localStorage.getItem(`favorito_${usuario.id}`);
         
         if (favoritoCache) {
-          console.log('⚡ Favorito carregado do cache:', favoritoCache);
           setItemFavorito(favoritoCache);
           setFavoritoCarregado(true); // Marca como carregado imediatamente
         }
-        
-        console.log('🔄 Carregando configuração do menu...');
         const usuarioDoc = await getDoc(doc(db, 'usuarios', usuario.id));
         const dados = usuarioDoc.data();
         const menuConfig = dados?.menuConfig;
@@ -3319,7 +2995,6 @@ const AlmoxarifadoSistema = () => {
         localStorage.setItem(`favorito_${usuario.id}`, favorito);
         
         if (menuConfig && menuConfig.length > 0) {
-          console.log('✅ Configuração carregada:', { menuConfig, favorito });
           setMenuPersonalizado(menuConfig);
           setItemFavorito(favorito);
           setFavoritoCarregado(true);
@@ -3327,7 +3002,6 @@ const AlmoxarifadoSistema = () => {
           // Salvar no cache local também
           localStorage.setItem(`menuConfig_${usuario.id}`, JSON.stringify(menuConfig));
         } else {
-          console.log('📝 Criando configuração padrão...');
           // Configuração padrão: primeiros 4 itens visíveis
           // TODAS as abas podem ser configuradas no menu
           const configPadrao = abas.map((aba, index) => ({
@@ -3354,12 +3028,6 @@ const AlmoxarifadoSistema = () => {
   // Definir página inicial como favorita ao carregar o sistema (apenas uma vez)
   useEffect(() => {
     if (favoritoCarregado && itemFavorito && usuario?.id && !paginaInicialDefinida) {
-      console.log('🏠 Definindo página inicial como favorita:', {
-        itemFavorito,
-        nivelUsuario: usuario?.nivel,
-        abaAtiva: abaAtiva
-      });
-      
       // Iniciar fase de redirecionamento
       setIsRedirecting(true);
       
@@ -3367,20 +3035,17 @@ const AlmoxarifadoSistema = () => {
       const abaFavorita = abas.find(aba => aba.id === itemFavorito);
       if (abaFavorita && abaFavorita.permissao && abaFavorita.permissao()) {
         setAbaAtiva(itemFavorito);
-        console.log('✅ Redirecionado para página favorita:', itemFavorito);
       } else {
         // Se não tiver permissão, usar fallback
         const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
         const abaFallback = abas.find(aba => aba.id === fallbackPadrao);
         if (abaFallback && abaFallback.permissao && abaFallback.permissao()) {
           setAbaAtiva(fallbackPadrao);
-          console.log('✅ Redirecionado para fallback:', fallbackPadrao);
         } else {
           // Fallback final: primeira aba disponível
           const primeiraAbaDisponivel = abas.find(aba => aba.permissao && aba.permissao());
           if (primeiraAbaDisponivel) {
             setAbaAtiva(primeiraAbaDisponivel.id);
-            console.log('⚠️ Usando primeira aba disponível:', primeiraAbaDisponivel.id);
           }
         }
       }
@@ -3412,7 +3077,6 @@ const AlmoxarifadoSistema = () => {
         setAbaAtiva(currentAba => {
           // Se já foi definida, não fazer nada
           if (currentAba) {
-            console.log('✅ Aba já definida, cancelando timeout:', currentAba);
             return currentAba;
           }
           
@@ -3420,13 +3084,11 @@ const AlmoxarifadoSistema = () => {
           const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
           const abaFallback = abas.find(aba => aba.id === fallbackPadrao);
           if (abaFallback && abaFallback.permissao && abaFallback.permissao()) {
-            console.log('⚠️ Timeout - Usando fallback de emergência:', fallbackPadrao);
             return fallbackPadrao;
           } else {
             // Se nem o fallback funcionar, usar primeira aba disponível
             const primeiraAbaDisponivel = abas.find(aba => aba.permissao && aba.permissao());
             if (primeiraAbaDisponivel) {
-              console.log('⚠️ Timeout - Usando primeira aba disponível:', primeiraAbaDisponivel.id);
               return primeiraAbaDisponivel.id;
             }
           }
@@ -3444,11 +3106,6 @@ const AlmoxarifadoSistema = () => {
     
     try {
       const favoritoFinal = novoFavorito || itemFavorito;
-      console.log('💾 Salvando configuração...', { 
-        menuConfig: novaConfig, 
-        itemFavorito: favoritoFinal 
-      });
-      
       await updateDoc(doc(backupDb, 'usuarios', usuario.id), {
         menuConfig: novaConfig,
         itemFavorito: favoritoFinal
@@ -3462,9 +3119,6 @@ const AlmoxarifadoSistema = () => {
       localStorage.setItem(`menuConfig_${usuario.id}`, JSON.stringify(novaConfig));
       
       setMenuConfigSaved(true);
-      
-      console.log('✅ Configuração salva no Firebase Backup e cache local com sucesso!');
-      
       // Remove mensagem após 2 segundos
       setTimeout(() => setMenuConfigSaved(false), 2000);
     } catch (error) {
@@ -3564,11 +3218,6 @@ const AlmoxarifadoSistema = () => {
   // Debug: Monitorar mudanças no menuPersonalizado e itemFavorito
   useEffect(() => {
     if (menuPersonalizado) {
-      console.log('🔍 Estado do menu:', { 
-        menuPersonalizado, 
-        itemFavorito,
-        visíveis: menuPersonalizado.filter(m => m.visivel).length 
-      });
     }
   }, [menuPersonalizado, itemFavorito]);
 
@@ -3581,8 +3230,6 @@ const AlmoxarifadoSistema = () => {
     // Se a aba tem função de permissão e o usuário não tem acesso
     if (abaAtual && abaAtual.permissao && typeof abaAtual.permissao === 'function') {
       if (!abaAtual.permissao()) {
-        console.log(`⚠️ Usuário não tem permissão para acessar "${abaAtiva}", redirecionando...`);
-        
         // Buscar primeira aba com permissão
         const abaComPermissao = abas.find(aba => {
           if (aba.permissao && typeof aba.permissao === 'function') {
@@ -3609,11 +3256,9 @@ const AlmoxarifadoSistema = () => {
       corrigirTodoInventario: async () => {
         const diagnostico = await diagnosticarInventario();
         if (diagnostico.temInconsistencias) {
-          console.log('🔧 Corrigindo inconsistências automaticamente...');
           const resultados = [];
           
           for (const item of diagnostico.inconsistencias) {
-            console.log(`⚙️ Corrigindo ${item.nome}...`);
             const resultado = await corrigirEstadoItem(item.nome);
             resultados.push({
               item: item.nome,
@@ -3621,12 +3266,9 @@ const AlmoxarifadoSistema = () => {
               correcao: resultado.correcaoAplicada
             });
           }
-          
-          console.log('✅ Correção completa!');
           console.table(resultados);
           return resultados;
         } else {
-          console.log('✅ Nenhuma correção necessária');
           return [];
         }
       }
@@ -3638,23 +3280,11 @@ const AlmoxarifadoSistema = () => {
       carregarFormulario: carregarEstadoFormulario,
       limparEstado: () => {
         localStorage.removeItem(STORAGE_KEY);
-        console.log('�️ Estado do aplicativo limpo');
       },
       verEstado: () => {
         const estado = localStorage.getItem(STORAGE_KEY);
-        console.log('📋 Estado atual:', estado ? JSON.parse(estado) : null);
       }
     };
-    
-    console.log('🛠️ Funções disponíveis no console:');
-    console.log('  - window.workflowDebug.diagnosticarInventario()');
-    console.log('  - window.workflowDebug.corrigirEstadoItem("nome do item")');
-    console.log('  - window.workflowDebug.corrigirTodoInventario()');
-    console.log('  - window.workflowPersistence.salvarFormulario("abaId", {dados})');
-    console.log('  - window.workflowPersistence.carregarFormulario("abaId")');
-    console.log('  - window.workflowPersistence.limparEstado()');
-    console.log('  - window.workflowPersistence.verEstado()');
-    
     return () => {
       delete window.workflowDebug;
       delete window.workflowPersistence;
@@ -4285,8 +3915,6 @@ const AlmoxarifadoSistema = () => {
         userId={usuario.id}
       />
 
-
-
       <main className={`${isMobile ? 'pt-16 pb-20' : `${menuRecolhido ? 'pl-16' : 'pl-80'} transition-all duration-300 ease-in-out`} w-full h-screen overflow-hidden bg-white dark:bg-black`}>
         <div className={`h-full ${abaAtiva === 'mensagens' ? '' : 'max-w-5xl mx-auto px-4 overflow-y-auto'}`}>
           <div className={abaAtiva === 'mensagens' ? 'h-full' : 'py-3'}>
@@ -4782,6 +4410,7 @@ const AlmoxarifadoSistema = () => {
                   })}
                   {(() => {
                     const abaFavorita = getAbaFavorita();
+                    if (!abaFavorita || !abaFavorita.icone) return null;
                     const IconeFavorito = abaFavorita.icone;
                     return (
                       <div className="flex flex-col items-center p-2 flex-1 relative">
@@ -4895,15 +4524,12 @@ const AlmoxarifadoSistema = () => {
                 onClick={() => {
                   setShowPermissionAlert(false);
                   setAbaAtiva('notificacoes');
-                  console.log('🔔 Redirecionando para notificações após alteração de permissão');
-                  
                   // Marcar no localStorage que o usuário já viu o alerta
                   localStorage.setItem(`permission_alert_seen_${usuario.id}_${permissionAlertData.newLevel}`, 'true');
                   
                   // Após 1 segundo, limpar flag para permitir restauração de estado
                   setTimeout(() => {
                     setPermissaoAlterada(false);
-                    console.log('✅ Flag de permissão alterada limpa. Sistema pode restaurar estado normal.');
                   }, 1000);
                 }}
                 className="w-full py-3.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold text-lg shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
@@ -4931,11 +4557,8 @@ const App = () => {
   // Aguardar a inicialização completa antes de mostrar conteúdo
   useEffect(() => {
     if (!loading) {
-      console.log('🎯 Sistema carregado, iniciando transição suave...');
-      
       // Aguardar um pouco para garantir que a barra chegou a 100%
       const delayInicial = setTimeout(() => {
-        console.log('✅ Iniciando fade-out da tela de loading...');
         setSistemaInicializado(true);
         
         // Iniciar fade-out
@@ -4943,7 +4566,6 @@ const App = () => {
         
         // Aguardar animação de fade-out antes de mostrar conteúdo
         setTimeout(() => {
-          console.log('🚀 Mostrando conteúdo principal...');
           setMostrarConteudo(true);
         }, 600); // Tempo para completar fade-out
       }, 800); // Delay inicial após loading = false

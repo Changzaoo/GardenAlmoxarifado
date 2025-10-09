@@ -30,6 +30,14 @@ const NotificationIcon = ({ tipo }) => {
       return <Package className="w-5 h-5 text-green-500" />;
     case 'ferramenta':
       return <Package className="w-5 h-5 text-orange-500" />;
+    case 'correction_start':
+      return <Clock className="w-5 h-5 text-blue-500" />;
+    case 'correction_complete':
+      return <CheckCheck className="w-5 h-5 text-green-500" />;
+    case 'correction_error':
+      return <AlertCircle className="w-5 h-5 text-red-500" />;
+    case 'correction':
+      return <Users className="w-5 h-5 text-purple-500" />;
     default:
       return <Bell className="w-5 h-5 text-gray-500" />;
   }
@@ -53,17 +61,11 @@ const NotificationsPage = ({ onNavigate }) => {
   // Buscar tarefas atribuídas ao funcionário
   useEffect(() => {
     if (!usuario?.id) {
-      console.log('NotificationsPage: Usuário não autenticado');
+
       return;
     }
 
     const buscaPor = usuario.nome || usuario.id;
-    console.log('NotificationsPage: Buscando tarefas para usuário:', {
-      id: usuario.id,
-      nome: usuario.nome,
-      email: usuario.email,
-      buscandoPor: buscaPor
-    });
 
     const tarefasRef = collection(db, 'tarefas');
     
@@ -75,12 +77,10 @@ const NotificationsPage = ({ onNavigate }) => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('NotificationsPage: Snapshot recebido, docs:', snapshot.docs.length);
-      console.log('NotificationsPage: Buscando com critério:', buscaPor);
-      
+
       const tarefasData = snapshot.docs.map(doc => {
         const data = doc.data();
-        console.log('Tarefa encontrada:', { id: doc.id, ...data });
+
         return {
           id: doc.id,
           ...data
@@ -93,8 +93,7 @@ const NotificationsPage = ({ onNavigate }) => {
         const dateB = b.dataCriacao ? new Date(b.dataCriacao).getTime() : 0;
         return dateB - dateA; // Mais recentes primeiro
       });
-      
-      console.log('NotificationsPage: Tarefas ordenadas:', tarefasData.length);
+
       setTarefas(tarefasData);
     }, (error) => {
       console.error('NotificationsPage: Erro ao carregar tarefas:', error);

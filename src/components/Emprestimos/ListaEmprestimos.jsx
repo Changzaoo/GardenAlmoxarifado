@@ -260,7 +260,6 @@ const ListaEmprestimos = ({
       return;
     }
 
-    console.log('Abrindo modal de devolução para empréstimo:', emprestimoParaDevolver);
     setSelectedEmprestimo(emprestimoParaDevolver);
     setShowDevolucaoModal(true);
   };
@@ -316,7 +315,6 @@ const ListaEmprestimos = ({
       
       // Atualiza a disponibilidade das ferramentas
       await atualizarDisponibilidade();
-
 
     } catch (error) {
       console.error('Erro ao devolver ferramentas:', error);
@@ -374,7 +372,7 @@ const ListaEmprestimos = ({
 
       // Se todas as ferramentas foram selecionadas, faz devolução total
       if (ferramentasDevolvidas.length === emprestimoAtual.ferramentas.length) {
-        console.log('Devolução total do empréstimo');
+
         if (typeof devolverFerramentas === 'function') {
           await devolverFerramentas(
             emprestimoId,
@@ -384,8 +382,7 @@ const ListaEmprestimos = ({
         }
       } else {
         // Devolução parcial - remove apenas as ferramentas selecionadas
-        console.log('Devolução parcial - ferramentas:', ferramentasDevolvidas);
-        
+
         // Compara ferramentas de forma mais robusta (por nome ou referência)
         const ferramentasRestantes = emprestimoAtual.ferramentas.filter(
           ferramenta => {
@@ -444,7 +441,7 @@ const ListaEmprestimos = ({
   };
 
   const handleEditarEmprestimo = (emprestimo) => {
-    console.log('Iniciando edição do empréstimo:', emprestimo);
+
     // Faz uma cópia profunda do empréstimo para evitar referências
     const emprestimoParaEditar = JSON.parse(JSON.stringify(emprestimo));
     setEmprestimoParaEditar(emprestimoParaEditar);
@@ -452,7 +449,7 @@ const ListaEmprestimos = ({
   };
 
   const handleGerarComprovante = (emprestimo) => {
-    console.log('📄 Gerando comprovante para empréstimo:', emprestimo);
+
     setEmprestimoParaComprovante(emprestimo);
     setShowComprovanteModal(true);
   };
@@ -473,8 +470,6 @@ const ListaEmprestimos = ({
       if (!ferramentasValidas) {
         throw new Error('Dados de ferramentas inválidos');
       }
-
-      console.log('Salvando edições do empréstimo:', emprestimoEditado);
 
       const dataAtualizacao = new Date().toISOString();
 
@@ -504,8 +499,6 @@ const ListaEmprestimos = ({
       const emprestimoRef = doc(db, 'emprestimos', emprestimoEditado.id);
       await updateDoc(emprestimoRef, emprestimoAtualizado);
 
-      console.log('Empréstimo atualizado com sucesso');
-
       // Atualiza a disponibilidade das ferramentas se necessário
       await atualizarDisponibilidade();
 
@@ -519,7 +512,7 @@ const ListaEmprestimos = ({
   };
 
   const handleTransferirFerramentas = (emprestimo) => {
-    console.log('Abrindo modal de transferência:', { emprestimo });
+
     // Faz uma cópia profunda do empréstimo para evitar referências
     const emprestimoParaTransferir = JSON.parse(JSON.stringify(emprestimo));
     setEmprestimoParaTransferencia(emprestimoParaTransferir);
@@ -533,8 +526,6 @@ const ListaEmprestimos = ({
         console.error('Dados inválidos para transferência');
         return;
       }
-
-      console.log('Iniciando transferência de ferramentas:', { ferramentas, funcionarioDestino, observacao });
 
       // Fecha o modal e prepara os dados para animação
       setShowTransferenciaModal(false);
@@ -567,8 +558,6 @@ const ListaEmprestimos = ({
       if (!dadosTransferencia) return;
 
       const { emprestimoOrigem, funcionarioDestino, ferramentasOriginais, observacao } = dadosTransferencia;
-
-      console.log('Finalizando transferência de ferramentas:', { ferramentas: ferramentasOriginais, funcionarioDestino, observacao });
 
       const dataTransferencia = new Date().toISOString();
       
@@ -623,8 +612,6 @@ const ListaEmprestimos = ({
 
       // Adiciona o novo empréstimo ao Firestore
       await addDoc(collection(db, 'emprestimos'), emprestimoDaTransferencia);
-
-      console.log('Transferência concluída com sucesso');
 
       // Atualiza a disponibilidade das ferramentas se necessário
       await atualizarDisponibilidade();
@@ -1343,6 +1330,4 @@ const ListaEmprestimos = ({
 };
 
 export default ListaEmprestimos;
-
-
 

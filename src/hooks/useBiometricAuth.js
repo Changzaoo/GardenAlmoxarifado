@@ -22,9 +22,6 @@ export const useBiometricAuth = () => {
       const result = await BiometricAuth.checkBiometry();
       setIsAvailable(result.isAvailable);
       setBiometricType(result.biometryType);
-      
-      console.log('Biometria disponível:', result.isAvailable);
-      console.log('Tipo de biometria:', result.biometryType);
     } catch (error) {
       console.error('Erro ao verificar biometria:', error);
       setIsAvailable(false);
@@ -56,7 +53,6 @@ export const useBiometricAuth = () => {
       setIsAuthenticating(false);
 
       if (result) {
-        console.log('Autenticação biométrica bem-sucedida');
         return {
           success: true,
           data: result

@@ -23,8 +23,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
   const carregarUsuarios = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Carregando usuários para Nova Conversa...');
-      
+
       const todosUsuarios = new Map(); // Chave: userId principal
       const emailIndex = new Map(); // Índice: email -> userId principal
       const nomeIndex = new Map(); // Índice: nome normalizado -> userId principal
@@ -92,8 +91,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
               userId
             ]))
           });
-          
-          console.log(`🔗 Mesclando usuário "${nome || email}" (${origem}) com ID existente ${userIdFinal}`);
+
         } else {
           // Novo usuário
           todosUsuarios.set(userIdFinal, {
@@ -120,8 +118,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
               nomeIndex.set(nomeNormalizado, userIdFinal);
             }
           }
-          
-          console.log(`➕ Novo usuário "${nome || email}" (${origem}) com ID ${userIdFinal}`);
+
         }
       };
       
@@ -129,8 +126,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
       try {
         const usuariosRef = collection(db, 'usuarios');
         const usuariosSnapshot = await getDocs(usuariosRef);
-        console.log(`✅ Encontrados ${usuariosSnapshot.size} documentos na coleção "usuarios"`);
-        
+
         usuariosSnapshot.docs.forEach(doc => {
           if (doc.id !== usuarioAtual?.id) {
             adicionarUsuario(doc.id, doc.data(), 'usuarios');
@@ -144,8 +140,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
       try {
         const funcionariosRef = collection(db, 'funcionarios');
         const funcionariosSnapshot = await getDocs(funcionariosRef);
-        console.log(`✅ Encontrados ${funcionariosSnapshot.size} documentos na coleção "funcionarios"`);
-        
+
         funcionariosSnapshot.docs.forEach(doc => {
           const data = doc.data();
           const userId = data.userId || doc.id;
@@ -161,8 +156,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
       try {
         const usuarioRef = collection(db, 'usuario');
         const usuarioSnapshot = await getDocs(usuarioRef);
-        console.log(`✅ Encontrados ${usuarioSnapshot.size} documentos na coleção "usuario" (singular)`);
-        
+
         usuarioSnapshot.docs.forEach(doc => {
           if (doc.id !== usuarioAtual?.id) {
             adicionarUsuario(doc.id, doc.data(), 'usuario');
@@ -173,14 +167,7 @@ const NovaConversa = ({ isOpen, onClose, onIniciarConversa, onCriarGrupo, usuari
       }
       
       const usuariosArray = Array.from(todosUsuarios.values());
-      console.log(`✅ Total de usuários únicos carregados: ${usuariosArray.length}`);
-      console.log('👥 Usuários unificados:', usuariosArray.map(u => ({
-        nome: u.nome,
-        email: u.email,
-        origens: u.origens,
-        ids: u.idsRelacionados
-      })));
-      
+
       setUsuarios(usuariosArray);
     } catch (error) {
       console.error('❌ Erro geral ao carregar usuários:', error);

@@ -5,25 +5,125 @@
  * Utiliza passwordService para criar senha segura (authKey + senhaHash + senhaSalt).
  */
 
-import React, { useState } from 'react';
-import { User, Mail, Lock, ArrowLeft, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { User, Mail, Lock, ArrowLeft, CheckCircle, AlertCircle, Eye, EyeOff, QrCode } from 'lucide-react';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { backupDb } from '../../config/firebaseDual';
 import { createUserWithPassword } from '../../services/passwordService';
 import { isValidEmail, validatePasswordStrength } from '../../services/authService';
 
 const CriarConta = ({ onVoltar, onSucesso }) => {
+  const location = useLocation();
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     senha: '',
-    confirmarSenha: ''
+    confirmarSenha: '',
+    empresaId: '',
+    empresaNome: '',
+    setorId: '',
+    setorNome: ''
   });
   
   const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState(false);
+  const [qrCodeToken, setQrCodeToken] = useState(null);
+  const [qrCodeInfo, setQrCodeInfo] = useState(null);
+
+  // Verificar se há token de QR Code na URL ou no state
+  useEffect(() => {
+    // Prioridade 1: Dados vindos do state (via QRCodeScanner)
+    if (location.state?.qrToken) {
+      setQrCodeToken(location.state.qrToken);
+      
+      // Se os dados já estão no state, usar diretamente
+      if (location.state.empresaId) {
+        setFormData(prev => ({
+          ...prev,
+          empresaId: location.state.empresaId || '',
+          empresaNome: location.state.empresaNome || '',
+          setorId: location.state.setorId || '',
+          setorNome: location.state.setorNome || ''
+        }));
+        setQrCodeInfo({
+          id: location.state.qrId,
+          token: location.state.qrToken,
+          tipo: 'criacao_conta'
+        });
+        return;
+      }
+      
+      validarQRCode(location.state.qrToken);
+      return;
+    }
+    
+    // Prioridade 2: Token na URL (backup)
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+    
+    if (token) {
+      setQrCodeToken(token);
+      validarQRCode(token);
+    }
+  }, [location]);
+
+  // Validar e buscar informações do QR Code
+  const validarQRCode = async (token) => {
+    try {
+      const qrCodesRef = collection(backupDb, 'qr_codes_auth');
+      const q = query(qrCodesRef, where('token', '==', token));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        setErro('QR Code inválido ou expirado');
+        console.error('❌ QR Code não encontrado');
+        return;
+      }
+
+      const qrCodeDoc = snapshot.docs[0];
+      const qrCodeData = qrCodeDoc.data();
+
+      // Verificar se já foi usado
+      if (qrCodeData.usado) {
+        setErro('Este QR Code já foi utilizado');
+        console.error('❌ QR Code já usado');
+        return;
+      }
+
+      // Verificar expiração (24 horas)
+      const agora = new Date();
+      const criacao = qrCodeData.criadoEm?.toDate();
+      const diferencaHoras = (agora - criacao) / (1000 * 60 * 60);
+
+      if (diferencaHoras > 24) {
+        setErro('QR Code expirado');
+        console.error('❌ QR Code expirado');
+        return;
+      }
+      // Preencher formulário com dados do QR Code
+      if (qrCodeData.empresaId && qrCodeData.empresaNome) {
+        setFormData(prev => ({
+          ...prev,
+          empresaId: qrCodeData.empresaId,
+          empresaNome: qrCodeData.empresaNome,
+          setorId: qrCodeData.setorId || '',
+          setorNome: qrCodeData.setorNome || ''
+        }));
+      }
+
+      setQrCodeInfo({
+        id: qrCodeDoc.id,
+        ...qrCodeData
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao validar QR Code:', error);
+      setErro('Erro ao validar QR Code');
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -102,14 +202,27 @@ const CriarConta = ({ onVoltar, onSucesso }) => {
         email: formData.email.trim().toLowerCase(),
         nivel: 1, // Funcionário padrão
         ativo: false, // Aguarda aprovação do admin
-        empresaId: '',
-        setorId: '',
+        empresaId: formData.empresaId || '', // Preenche se veio do QR Code
+        setorId: formData.setorId || '', // Preenche se veio do QR Code
         cargo: ''
       };
 
       const userId = await createUserWithPassword(userData, formData.senha);
+      // Se foi criado através de QR Code, marcar como usado
+      if (qrCodeInfo && qrCodeInfo.id) {
+        try {
+          const qrCodeDocRef = doc(backupDb, 'qr_codes_auth', qrCodeInfo.id);
+          await updateDoc(qrCodeDocRef, {
+            usado: true,
+            usadoEm: new Date(),
+            usadoPor: userId
+          });
+        } catch (error) {
+          console.error('⚠️ Erro ao marcar QR Code como usado:', error);
+          // Não bloqueia o fluxo de criação de conta
+        }
+      }
 
-      console.log('✅ Conta criada com sucesso:', userId);
       setSucesso(true);
 
       // Redirecionar após 3 segundos
@@ -178,6 +291,24 @@ const CriarConta = ({ onVoltar, onSucesso }) => {
             Criar Conta
           </h2>
         </div>
+
+        {/* Indicador de QR Code */}
+        {qrCodeInfo && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center text-green-700 dark:text-green-400">
+              <QrCode size={20} className="mr-2" />
+              <span className="text-sm font-medium">
+                QR Code validado com sucesso
+              </span>
+            </div>
+            {(formData.empresaNome || formData.setorNome) && (
+              <div className="mt-2 text-xs text-green-600 dark:text-green-500">
+                {formData.empresaNome && <div>Empresa: {formData.empresaNome}</div>}
+                {formData.setorNome && <div>Setor: {formData.setorNome}</div>}
+              </div>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleCriarConta} className="space-y-4">
           {/* Nome */}

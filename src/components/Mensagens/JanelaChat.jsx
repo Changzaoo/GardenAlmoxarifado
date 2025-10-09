@@ -32,19 +32,16 @@ const JanelaChat = ({
 
   // Atualizar mensagens locais quando props mudarem
   useEffect(() => {
-    console.log('🪟 JanelaChat - Mensagens recebidas via props:', mensagens?.length || 0);
-    console.log('🆔 IDs das mensagens:', mensagens?.map(m => m.id) || []);
-    console.log('📦 Array completo de mensagens:', mensagens);
-    
+
     if (mensagens && mensagens.length > 0) {
-      console.log('✅ Atualizando mensagensLocal com', mensagens.length, 'mensagens');
+
       setMensagensLocal(mensagens);
       mensagensRef.current = mensagens; // Backup no ref
     } else if (mensagens && mensagens.length === 0 && mensagensRef.current.length > 0) {
-      console.log('⚠️ Props com array vazio mas ref tem mensagens! Mantendo as do ref');
+
       // NÃO limpar se já temos mensagens
     } else {
-      console.log('📭 Sem mensagens ainda');
+
     }
     
     scrollToBottom();

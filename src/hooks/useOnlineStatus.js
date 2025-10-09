@@ -10,7 +10,6 @@ export const useOnlineStatus = () => {
 
   useEffect(() => {
     const handleOnline = () => {
-      console.log('🟢 Conexão restaurada');
       setIsOnline(true);
       setWasOffline(true);
       
@@ -19,7 +18,6 @@ export const useOnlineStatus = () => {
     };
 
     const handleOffline = () => {
-      console.log('🔴 Conexão perdida - Modo offline ativado');
       setIsOnline(false);
     };
 
@@ -33,11 +31,9 @@ export const useOnlineStatus = () => {
       if (online !== isOnline) {
         setIsOnline(online);
         if (online) {
-          console.log('🟢 Conexão detectada (verificação periódica)');
           setWasOffline(true);
           setTimeout(() => setWasOffline(false), 3000);
         } else {
-          console.log('🔴 Desconexão detectada (verificação periódica)');
         }
       }
     }, 5000); // Verifica a cada 5 segundos

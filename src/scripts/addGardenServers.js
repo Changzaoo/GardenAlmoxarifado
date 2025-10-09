@@ -50,13 +50,8 @@ const serversToAdd = [
 
 export const addGardenServers = async () => {
   try {
-    console.log('🚀 Verificando servidores existentes...');
-    
     const serversRef = collection(db, 'servers');
     const snapshot = await getDocs(serversRef);
-    
-    console.log(`📊 Servidores existentes: ${snapshot.size}`);
-    
     // Se já existem servidores, não adicionar duplicados
     const existingProjects = new Set();
     snapshot.forEach(doc => {
@@ -70,7 +65,6 @@ export const addGardenServers = async () => {
     
     for (const server of serversToAdd) {
       if (existingProjects.has(server.projectId)) {
-        console.log(`⏭️ Servidor "${server.name}" (${server.projectId}) já existe, pulando...`);
         continue;
       }
       
@@ -85,14 +79,11 @@ export const addGardenServers = async () => {
       };
       
       const docRef = await addDoc(serversRef, serverData);
-      console.log(`✅ Servidor "${server.name}" criado com ID: ${docRef.id}`);
       addedCount++;
     }
     
     if (addedCount === 0) {
-      console.log('ℹ️ Nenhum servidor novo foi adicionado (já existem)');
     } else {
-      console.log(`🎉 ${addedCount} servidor(es) adicionado(s) com sucesso!`);
     }
     
     return { success: true, added: addedCount, existing: snapshot.size };

@@ -27,8 +27,6 @@ const AutoSyncIndicator = () => {
 
     // Listener para eventos de sync
     const unsubscribe = autoSyncService.addSyncListener((event) => {
-      console.log('🔔 Evento de sync:', event);
-
       switch (event.type) {
         case 'sync_start':
           setSyncState({

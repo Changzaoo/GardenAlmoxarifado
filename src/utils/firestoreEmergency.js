@@ -10,18 +10,11 @@ import { db } from '../firebaseConfig';
  */
 export const limparCacheFirestore = async () => {
   try {
-    console.log('🔄 Limpando cache do Firestore...');
-    
     // 1. Terminar todas as conexões ativas
     await terminate(db);
-    console.log('✅ Conexões terminadas');
-    
     // 2. Limpar IndexedDB
     await clearIndexedDbPersistence(db);
-    console.log('✅ Cache limpo');
-    
     // 3. Recarregar a página
-    console.log('🔄 Recarregando página...');
     window.location.reload();
     
   } catch (error) {
@@ -32,7 +25,6 @@ export const limparCacheFirestore = async () => {
       const databases = await window.indexedDB.databases();
       for (const dbInfo of databases) {
         if (dbInfo.name?.includes('firestore')) {
-          console.log(`🗑️ Deletando banco: ${dbInfo.name}`);
           window.indexedDB.deleteDatabase(dbInfo.name);
         }
       }
@@ -60,9 +52,6 @@ export const detectarECorrigirErroFirestore = () => {
       errorMessage.includes('INTERNAL ASSERTION FAILED') &&
       (errorMessage.includes('Unexpected state') || errorMessage.includes('ID: ca9') || errorMessage.includes('ID: b815'))
     ) {
-      console.warn('🚨 ERRO CRÍTICO DO FIRESTORE DETECTADO!');
-      console.warn('🔄 Iniciando limpeza automática...');
-      
       // Limpar cache automaticamente
       limparCacheFirestore();
       

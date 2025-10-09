@@ -24,14 +24,9 @@ const MensagensTab = () => {
   // Carregar funcionários/usuários de TODAS as coleções
   useEffect(() => {
     if (!usuario?.id) {
-      console.log('MensagensTab: Usuário não definido');
+
       return;
     }
-
-    console.log('🔍 MensagensTab: Carregando usuários para mensagens...', { 
-      usuarioId: usuario.id, 
-      nivel: usuario.nivel 
-    });
 
     const unsubscribers = [];
     const todosUsuariosMap = new Map(); // Usar Map para evitar duplicatas
@@ -39,7 +34,7 @@ const MensagensTab = () => {
     // 1️⃣ Carregar da coleção 'usuarios' (sistema novo - PLURAL)
     const qUsuarios = query(collection(db, 'usuarios'));
     const unsubUsuarios = onSnapshot(qUsuarios, (snapshot) => {
-      console.log(`📦 Carregados ${snapshot.docs.length} usuários da coleção 'usuarios'`);
+
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         if (doc.id !== usuario.id && data.ativo !== false) {
@@ -59,7 +54,7 @@ const MensagensTab = () => {
     // 2️⃣ Carregar da coleção 'usuario' (sistema legado - SINGULAR)
     const qUsuario = query(collection(db, 'usuario'));
     const unsubUsuario = onSnapshot(qUsuario, (snapshot) => {
-      console.log(`📦 Carregados ${snapshot.docs.length} usuários da coleção 'usuario'`);
+
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         if (doc.id !== usuario.id && data.ativo !== false && !todosUsuariosMap.has(doc.id)) {
@@ -79,7 +74,7 @@ const MensagensTab = () => {
     // 3️⃣ Carregar da coleção 'funcionarios'
     const qFuncionarios = query(collection(db, 'funcionarios'));
     const unsubFuncionarios = onSnapshot(qFuncionarios, (snapshot) => {
-      console.log(`📦 Carregados ${snapshot.docs.length} usuários da coleção 'funcionarios'`);
+
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         if (doc.id !== usuario.id && !data.demitido && !todosUsuariosMap.has(doc.id)) {
@@ -99,7 +94,7 @@ const MensagensTab = () => {
     // Função para atualizar a lista final
     const atualizarListaFinal = () => {
       const listaFinal = Array.from(todosUsuariosMap.values());
-      console.log(`✅ Total de usuários disponíveis para mensagens: ${listaFinal.length}`);
+
       setFuncionarios(listaFinal);
     };
 
@@ -111,7 +106,7 @@ const MensagensTab = () => {
   // Carregar conversas do usuário (ou todas se for admin)
   useEffect(() => {
     if (!usuario?.id) {
-      console.log('MensagensTab: Aguardando usuário para carregar conversas');
+
       setCarregando(false);
       return;
     }
@@ -176,7 +171,7 @@ const MensagensTab = () => {
                 }
                 
                 // Se não encontrou em nenhuma, retornar placeholder
-                console.warn(`Participante ${participanteId} não encontrado`);
+
                 return {
                   id: participanteId,
                   nome: 'Usuário',

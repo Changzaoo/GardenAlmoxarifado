@@ -45,7 +45,6 @@ async function createBackup() {
       content: Buffer.from(JSON.stringify(backupContent, null, 2)).toString('base64')
     });
 
-    console.log('Backup criado com sucesso:', backupPath);
   } catch (error) {
     console.error('Erro ao criar backup:', error);
   }

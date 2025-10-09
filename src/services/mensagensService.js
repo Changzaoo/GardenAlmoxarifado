@@ -153,8 +153,7 @@ class MensagensService {
    * Busca conversas de um usuário (limitado para otimização de memória)
    */
   listenToConversations(userId, callback) {
-    console.log('🔍 Buscando conversas para usuário:', userId);
-    
+
     const q = query(
       this.conversasRef,
       where('participantes', 'array-contains', userId),
@@ -164,10 +163,9 @@ class MensagensService {
 
     return onSnapshot(q, 
       async (snapshot) => {
-        console.log('📦 Snapshot recebido:', snapshot.size, 'conversas');
-        
+
         if (snapshot.empty) {
-          console.log('📭 Nenhuma conversa encontrada para este usuário');
+
           callback([]);
           return;
         }
@@ -191,16 +189,9 @@ class MensagensService {
                      `Usuário ${outroParticipanteId.substring(0, 8)}`;
               
               photoURL = outroUsuario?.photoURL || outroUsuario?.avatar || null;
-              
-              console.log('👤 Participante buscado:', { 
-                nome, 
-                photoURL, 
-                id: outroParticipanteId,
-                usuarioCompleto: outroUsuario 
-              });
-              
+
               if (!photoURL) {
-                console.warn('⚠️ Usuário sem photoURL:', outroParticipanteId);
+
               }
             }
           }
@@ -221,9 +212,7 @@ class MensagensService {
         });
         
         const conversas = await Promise.all(conversasPromises);
-        
-        console.log('📋 Conversas processadas:', conversas.length);
-        console.log('🔍 Detalhes:', conversas);
+
         callback(conversas);
       },
       (error) => {
@@ -260,8 +249,7 @@ class MensagensService {
    */
   async sendMessage(conversaId, remetenteId, texto, tipo = MESSAGE_TYPE.TEXTO, anexoUrl = null) {
     try {
-      console.log('📨 sendMessage chamado:', { conversaId, remetenteId, tipo });
-      
+
       // Verificar bloqueio
       const bloqueado = await this.isBlocked(conversaId, remetenteId);
       if (bloqueado) {
@@ -279,8 +267,6 @@ class MensagensService {
 
       const conversaData = conversaDoc.data();
       const participantes = conversaData.participantes || [];
-
-      console.log('👥 Participantes:', participantes);
 
       // Mensagem sem criptografia
       const textoOriginal = texto || '';
@@ -304,11 +290,8 @@ class MensagensService {
         conversaId // Adiciona referência à conversa
       };
 
-      console.log('💾 Salvando mensagem no Firestore...');
-      
       // Adicionar mensagem
       const docRef = await addDoc(mensagensRef, novaMensagem);
-      console.log('✅ Mensagem salva com ID:', docRef.id);
 
       // Atualizar última mensagem na conversa (não bloquear envio)
       const previewText = tipo === MESSAGE_TYPE.TEXTO 
@@ -325,8 +308,6 @@ class MensagensService {
         atualizadaEm: serverTimestamp()
       });
 
-      console.log('🔄 Última mensagem atualizada');
-
       // Incrementar contador para outros participantes
       for (const participanteId of participantes) {
         if (participanteId !== remetenteId) {
@@ -335,8 +316,6 @@ class MensagensService {
           });
         }
       }
-
-      console.log('📊 Contador atualizado');
 
       // ENVIAR NOTIFICAÇÕES PUSH para outros participantes
       await this.sendPushNotifications(
@@ -347,8 +326,6 @@ class MensagensService {
         tipo,
         conversaData
       );
-
-      console.log('🎉 Mensagem enviada e criptografada!');
 
       return {
         id: docRef.id,
@@ -367,7 +344,6 @@ class MensagensService {
    */
   async sendPushNotifications(conversaId, remetenteId, participantes, texto, tipo, conversaData) {
     try {
-      console.log('🔔 Enviando notificações push...');
 
       // Buscar informações do remetente
       const remetenteRef = doc(this.usuariosRef, remetenteId);
@@ -424,14 +400,12 @@ class MensagensService {
               }
             });
 
-            console.log(`✅ Notificação criada para ${participanteId}`);
           } catch (error) {
             console.error(`❌ Erro ao enviar notificação para ${participanteId}:`, error);
           }
         });
 
       await Promise.all(notificationPromises);
-      console.log('🔔 Notificações push enviadas!');
 
     } catch (error) {
       console.error('❌ Erro ao enviar notificações:', error);
@@ -469,9 +443,6 @@ class MensagensService {
    * Escuta mensagens em tempo real e descriptografa
    */
   listenToMessages(conversaId, currentUserId, limiteMensagens = LIMITS.MESSAGES_PER_PAGE, callback) {
-    console.log('👂 Escutando mensagens para conversa:', conversaId);
-    console.log('👤 Usuário atual:', currentUserId);
-    console.log('📊 Limite de mensagens:', limiteMensagens);
 
     const mensagensRef = collection(db, `conversas/${conversaId}/mensagens`);
     const q = query(
@@ -482,20 +453,14 @@ class MensagensService {
 
     return onSnapshot(q, 
       async (snapshot) => {
-        console.log('📨 Snapshot de mensagens recebido:', snapshot.size);
-        console.log('🔄 Tipo de mudança:', snapshot.docChanges().map(change => ({
-          type: change.type,
-          id: change.doc.id
-        })));
-        
+
         if (snapshot.empty) {
-          console.log('📭 Nenhuma mensagem encontrada');
+
           callback([]);
           return;
         }
 
         try {
-          console.log('📝 Processando mensagens sem criptografia');
 
           // Processar mensagens e buscar informações dos remetentes
           const mensagensPromises = snapshot.docs.map(async (doc) => {
@@ -519,10 +484,7 @@ class MensagensService {
           });
 
           const mensagens = (await Promise.all(mensagensPromises)).reverse(); // Inverter para mostrar mais antigas primeiro
-          
-          console.log('✅ Mensagens processadas:', mensagens.length);
-          console.log('📝 Primeira mensagem:', mensagens[0]?.texto?.substring(0, 50));
-          console.log('📝 Última mensagem:', mensagens[mensagens.length - 1]?.texto?.substring(0, 50));
+
           callback(mensagens);
         } catch (error) {
           console.error('❌ Erro ao processar mensagens:', error);
@@ -590,7 +552,7 @@ class MensagensService {
       });
 
       await batch.commit();
-      console.log('✅ Mensagens marcadas como lidas com sucesso');
+
     } catch (error) {
       console.error('Erro ao marcar mensagens como lidas:', error);
       throw error;
@@ -613,7 +575,7 @@ class MensagensService {
       await updateDoc(conversaRef, {
         [`participantesInfo.${userId}.naoLidas`]: 0
       });
-      console.log('✅ Contador de não lidas zerado imediatamente');
+
     } catch (error) {
       console.error('Erro ao zerar contador de não lidas:', error);
       throw error;
@@ -666,7 +628,6 @@ class MensagensService {
         });
       }
 
-      console.log('✅ Mensagem apagada para o usuário:', userId);
     } catch (error) {
       console.error('Erro ao apagar mensagem para mim:', error);
       throw error;
@@ -701,7 +662,6 @@ class MensagensService {
         deletadaEm: serverTimestamp()
       });
 
-      console.log('✅ Mensagem apagada para todos');
     } catch (error) {
       console.error('Erro ao apagar mensagem para todos:', error);
       throw error;
@@ -969,8 +929,7 @@ class MensagensService {
    */
   async getUserInfo(userId) {
     try {
-      console.log('🔍 getUserInfo: Buscando informações para userId:', userId);
-      
+
       let dadosUnificados = null;
       const fontesEncontradas = [];
       
@@ -985,7 +944,7 @@ class MensagensService {
             ...userDoc.data()
           };
           fontesEncontradas.push('usuarios');
-          console.log('✅ Usuário encontrado na coleção "usuarios":', dadosUnificados.nome || dadosUnificados.email);
+
         }
       } catch (error) {
         console.error('⚠️ Erro ao buscar em "usuarios":', error);
@@ -1022,7 +981,7 @@ class MensagensService {
           }
           
           fontesEncontradas.push('funcionarios(userId)');
-          console.log('✅ Funcionário encontrado pelo userId:', funcionarioData.nome);
+
         }
       } catch (error) {
         console.error('⚠️ Erro ao buscar em "funcionarios" por userId:', error);
@@ -1057,7 +1016,7 @@ class MensagensService {
           }
           
           fontesEncontradas.push('funcionarios(id)');
-          console.log('✅ Funcionário encontrado diretamente pelo ID:', funcionarioData.nome);
+
         }
       } catch (error) {
         console.error('⚠️ Erro ao buscar em "funcionarios" por ID:', error);
@@ -1090,18 +1049,17 @@ class MensagensService {
           }
           
           fontesEncontradas.push('usuario');
-          console.log('✅ Usuário encontrado na coleção "usuario" (singular):', usuarioData.nome || usuarioData.email);
+
         }
       } catch (error) {
         console.error('⚠️ Erro ao buscar em "usuario":', error);
       }
       
       if (dadosUnificados) {
-        console.log(`✅ Dados unificados de ${fontesEncontradas.length} fonte(s): ${fontesEncontradas.join(', ')}`);
+
         return dadosUnificados;
       }
-      
-      console.warn('❌ Usuário não encontrado em nenhuma coleção:', userId);
+
       return null;
     } catch (error) {
       console.error('❌ Erro ao buscar informações do usuário:', error);

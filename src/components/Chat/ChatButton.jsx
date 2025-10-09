@@ -18,8 +18,7 @@ const ChatButton = ({ isOpen, onClick }) => {
     if ('serviceWorker' in navigator && 'Notification' in window) {
       navigator.serviceWorker.register('/service-worker.js')
         .then(async function(registration) {
-          console.log('Service Worker registrado com sucesso:', registration);
-          
+
           // Solicitar permissão para notificações
           const permission = await Notification.requestPermission();
           if (permission === 'granted') {
@@ -28,16 +27,14 @@ const ChatButton = ({ isOpen, onClick }) => {
               userVisibleOnly: true,
               applicationServerKey: 'YOUR_PUBLIC_VAPID_KEY' // Substitua pela sua chave VAPID pública
             });
-            console.log('Push Notification subscription:', subscription);
+
           }
         })
         .catch(function(error) {
-          console.log('Erro ao registrar Service Worker:', error);
+
         });
     }
 
-    console.log('Iniciando monitor de mensagens para usuário:', usuario.id);
-    
     const mensagensRef = collection(db, 'mensagens');
     const q = query(
       mensagensRef,
@@ -48,7 +45,7 @@ const ChatButton = ({ isOpen, onClick }) => {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const count = snapshot.docs.length;
-      console.log('Mensagens não lidas encontradas:', count);
+
       setUnreadCount(count);
       
       // Atualiza o badge do app em dispositivos móveis
@@ -59,7 +56,7 @@ const ChatButton = ({ isOpen, onClick }) => {
       // Em dispositivos móveis, registra para notificações push se ainda não registrado
       if (isMobile && 'Notification' in window && Notification.permission !== 'granted') {
         Notification.requestPermission().then(permission => {
-          console.log('Permissão de notificação:', permission);
+
         });
       }
 
@@ -100,7 +97,7 @@ const ChatButton = ({ isOpen, onClick }) => {
     });
 
     return () => {
-      console.log('Limpando monitor de mensagens');
+
       unsubscribe();
       if (isMobile && 'clearAppBadge' in navigator) {
         navigator.clearAppBadge().catch(console.error);

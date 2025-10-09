@@ -24,7 +24,7 @@ const CookieManager = {
       ].filter(Boolean).join(';');
       
       document.cookie = cookieSettings;
-      console.log(`Cookie ${name} definido com sucesso`);
+
       return true;
     } catch (error) {
       console.error('Erro ao definir cookie:', error);
@@ -65,7 +65,7 @@ const CookieManager = {
   removeCookie: (name) => {
     try {
       document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/;SameSite=Strict`;
-      console.log(`Cookie ${name} removido com sucesso`);
+
       return true;
     } catch (error) {
       console.error('Erro ao remover cookie:', error);

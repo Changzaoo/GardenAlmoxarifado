@@ -38,8 +38,7 @@ const BluetoothMeshManager = () => {
   // Inicializar automaticamente quando o app carrega
   useEffect(() => {
     if (isSupported) {
-      console.log('🔵 Bluetooth Mesh: Iniciando modo automático...');
-      
+
       // Ativar auto-sync
       setAutoSync(true);
       
@@ -47,15 +46,14 @@ const BluetoothMeshManager = () => {
       if (isAutoScanEnabled === false) {
         startAutoScan();
       }
-      
-      console.log('✅ Bluetooth Mesh: Modo automático ativado');
+
     }
   }, [isSupported]);
 
   // Tentar auto-conectar quando detectar dados próximos
   useEffect(() => {
     if (pendingDataNearby && !isConnected && isSupported) {
-      console.log('📱 Dados próximos detectados, tentando conexão automática...');
+
       // Auto-connect seria ideal, mas Web Bluetooth requer interação do usuário
       // Apenas logamos para o desenvolvedor ver
     }
@@ -107,7 +105,6 @@ const BluetoothMeshManager = () => {
   };
 
   // Debug: sempre logar o estado de suporte
-  console.log('BluetoothMeshManager - isSupported:', isSupported);
 
   // Não mostrar interface se:
   // 1. Bluetooth não for suportado

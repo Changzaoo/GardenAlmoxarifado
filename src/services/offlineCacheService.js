@@ -27,15 +27,11 @@ class OfflineCacheService {
    */
   async preloadCollection(collectionName, collectionQuery = null) {
     try {
-      console.log(`🔄 Pre-loading collection: ${collectionName}...`);
-      
       const collectionRef = collection(db, collectionName);
       const q = collectionQuery || collectionRef;
       
       // getDocs automaticamente armazena no cache do Firestore
       const snapshot = await getDocs(q);
-      
-      console.log(`✅ Cached ${snapshot.size} documents from ${collectionName}`);
       return snapshot.size;
     } catch (error) {
       console.error(`❌ Error caching ${collectionName}:`, error);
@@ -49,8 +45,6 @@ class OfflineCacheService {
    */
   async preloadAllCollections(usuario = null) {
     try {
-      console.log('🚀 Iniciando pre-cache de coleções offline...');
-      
       const collections = [
         'funcionarios',
         'ferramentas',
@@ -70,9 +64,6 @@ class OfflineCacheService {
       
       // Atualizar timestamp do cache
       localStorage.setItem(this.cacheKey, Date.now().toString());
-      
-      console.log(`✅ Pre-cache concluído! ${totalDocs} documentos em cache.`);
-      
       return {
         success: true,
         totalDocs,
@@ -91,7 +82,6 @@ class OfflineCacheService {
    * Atualiza o cache de uma coleção específica
    */
   async updateCache(collectionName) {
-    console.log(`🔄 Atualizando cache de ${collectionName}...`);
     await this.preloadCollection(collectionName);
   }
 
@@ -99,7 +89,6 @@ class OfflineCacheService {
    * Limpa todos os dados de cache
    */
   clearCache() {
-    console.log('🗑️ Limpando cache...');
     localStorage.removeItem(this.cacheKey);
   }
 

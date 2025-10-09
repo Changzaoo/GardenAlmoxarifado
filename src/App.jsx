@@ -32,6 +32,9 @@ import { syncManager } from './utils/syncManager';
 import { autoSyncService } from './utils/autoSyncService';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import AutoSyncIndicator from './components/Sync/AutoSyncIndicator';
+import InitialSyncLoader from './components/InitialSyncLoader';
+import initialSyncService from './services/initialSyncService';
+import BackgroundJobsIndicator from './components/BackgroundJobsIndicator';
 
 // 🆘 CORREÇÃO DE EMERGÊNCIA - Firestore
 import { detectarECorrigirErroFirestore, adicionarBotaoEmergencia } from './utils/firestoreEmergency';
@@ -49,45 +52,52 @@ function AppContent() {
   
   const [showBiometric, setShowBiometric] = useState(false);
   const [biometricChecked, setBiometricChecked] = useState(false);
+  const [isInitialSyncing, setIsInitialSyncing] = useState(true);
+  const [syncComplete, setSyncComplete] = useState(false);
   
   // Hook de status offline
   const { isOnline, wasOffline } = useOnlineStatus();
-  const [hasInitialSynced, setHasInitialSynced] = useState(false);
 
-  // Download automático ao entrar no app
+  // Sincronização inicial ao abrir o app
   useEffect(() => {
-    const performInitialSync = async () => {
-      if (isOnline && !hasInitialSynced) {
-        console.log('🚀 Iniciando download automático de dados...');
-        try {
-          await autoSyncService.downloadAllData({ 
-            showToast: true, 
-            force: false // Respeita intervalo mínimo
-          });
-          setHasInitialSynced(true);
-        } catch (error) {
-          console.error('❌ Erro no download inicial:', error);
-        }
+    const checkInitialSync = async () => {
+      const syncStatus = initialSyncService.checkSyncStatus();
+      
+      if (syncStatus.needsSync) {
+        // Precisa sincronizar
+        setIsInitialSyncing(true);
+      } else {
+        // Dados já em cache
+        setIsInitialSyncing(false);
+        setSyncComplete(true);
       }
     };
 
-    // Executar após 2 segundos para não bloquear a inicialização
-    const timer = setTimeout(performInitialSync, 2000);
-    return () => clearTimeout(timer);
-  }, [isOnline, hasInitialSynced]);
+    checkInitialSync();
+  }, []);
+
+  const handleSyncComplete = (result) => {
+    setIsInitialSyncing(false);
+    setSyncComplete(true);
+    
+    if (result.success) {
+      // Sincronização concluída
+    } else if (result.cached) {
+      // Dados já estavam em cache
+    }
+  };
 
   // Sincronizar quando reconectar (uploads pendentes)
   useEffect(() => {
-    if (isOnline && wasOffline) {
-      console.log('🔄 Reconectado! Iniciando sincronização de pendências...');
+    if (isOnline && wasOffline && syncComplete) {
       syncManager.startSync();
       
-      // Também refazer download para garantir dados atualizados
+      // Re-sincronizar dados do Firebase
       setTimeout(() => {
-        autoSyncService.downloadAllData({ showToast: false, force: true });
-      }, 3000);
+        initialSyncService.performInitialSync(true);
+      }, 2000);
     }
-  }, [isOnline, wasOffline]);
+  }, [isOnline, wasOffline, syncComplete]);
 
   useEffect(() => {
     // Verifica se está em plataforma nativa (Android/iOS)
@@ -120,6 +130,11 @@ function AppContent() {
     setShowBiometric(false);
     setBiometricChecked(true);
   };
+
+  // Mostra tela de sincronização inicial
+  if (isInitialSyncing && isOnline) {
+    return <InitialSyncLoader onComplete={handleSyncComplete} />;
+  }
 
   // Mostra tela de biometria se necessário
   if (showBiometric) {
@@ -154,6 +169,9 @@ function AppContent() {
       
       {/* Indicador de sincronização automática */}
       <AutoSyncIndicator />
+      
+      {/* Indicador de tarefas em segundo plano */}
+      <BackgroundJobsIndicator />
       
       <ToastContainer 
         position="top-right" 

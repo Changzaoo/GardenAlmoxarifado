@@ -24,7 +24,7 @@ export const MessageNotificationProvider = ({ children }) => {
 
   // Log para debug
   useEffect(() => {
-    console.log('MessageNotificationProvider: usuário atual:', usuario);
+
   }, [usuario]);
 
   // Inicializar áudio
@@ -38,7 +38,7 @@ export const MessageNotificationProvider = ({ children }) => {
     if (audioRef.current && soundEnabled) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(err => {
-        console.log('Erro ao tocar som de notificação:', err);
+
       });
     }
   }, [soundEnabled]);
@@ -106,7 +106,7 @@ export const MessageNotificationProvider = ({ children }) => {
   // Função para limpar notificações (placeholder - já limpa automaticamente no listener)
   const clearNotifications = useCallback(() => {
     // Notificações já são limpas automaticamente quando marcadas como lidas
-    console.log('Notificações limpas');
+
   }, []);
 
   // Solicitar permissão para notificações (desktop)
@@ -121,11 +121,10 @@ export const MessageNotificationProvider = ({ children }) => {
     if (!usuario?.id) return;
 
     try {
-      console.log('MessageNotificationContext: Marcando mensagens como lidas para', chatIdOrUserId);
-      
+
       // Buscar todos os chats do usuário
       if (!usuario || !usuario.id) {
-        console.warn('MessageNotificationContext: usuário ou usuario.id não definido');
+
         return;
       }
       
@@ -146,8 +145,7 @@ export const MessageNotificationProvider = ({ children }) => {
                              (chatData.type !== 'group' && participants.includes(chatIdOrUserId));
         
         if (isCorrectChat) {
-          console.log('MessageNotificationContext: Chat encontrado:', chatDoc.id);
-          
+
           // Buscar mensagens não lidas neste chat
           const messagesRef = collection(db, 'chats', chatDoc.id, 'messages');
           const messagesQuery = query(
@@ -157,9 +155,7 @@ export const MessageNotificationProvider = ({ children }) => {
           );
 
           const messagesSnapshot = await getDocs(messagesQuery);
-          
-          console.log('MessageNotificationContext: Marcando', messagesSnapshot.size, 'mensagens como lidas');
-          
+
           // Marcar todas como lidas
           const updatePromises = messagesSnapshot.docs.map(msgDoc => 
             updateDoc(doc(db, 'chats', chatDoc.id, 'messages', msgDoc.id), {
@@ -189,11 +185,9 @@ export const MessageNotificationProvider = ({ children }) => {
   // Monitorar mensagens não lidas
   useEffect(() => {
     if (!usuario?.id) {
-      console.log('MessageNotificationContext: usuário não disponível');
+
       return;
     }
-
-    console.log('MessageNotificationContext: iniciando monitor para usuário', usuario.id);
 
     const unsubscribers = [];
 
@@ -246,26 +240,15 @@ export const MessageNotificationProvider = ({ children }) => {
 
           // Detectar novas mensagens e disparar notificações
           const previousCount = previousMessagesRef.current[countKey] || 0;
-          
-          console.log('MessageNotificationContext: Verificando novas mensagens', {
-            chatId: chatDoc.id,
-            countKey,
-            unreadCount,
-            previousCount,
-            hasNewMessages: unreadCount > previousCount
-          });
-          
+
           if (unreadCount > previousCount && unreadCount > 0) {
             // Nova mensagem recebida
-            console.log('MessageNotificationContext: Nova mensagem detectada!');
-            
+
             // Pegar a mensagem mais recente
             const lastMsg = messagesSnapshot.docs[messagesSnapshot.docs.length - 1];
             if (lastMsg) {
               const msgData = lastMsg.data();
-              
-              console.log('MessageNotificationContext: Dados da mensagem:', msgData);
-              
+
               // Buscar informações do remetente
               const senderId = msgData.senderId;
               let senderName = msgData.senderName || 'Usuário';
@@ -281,9 +264,7 @@ export const MessageNotificationProvider = ({ children }) => {
                   console.error('Erro ao buscar dados do remetente:', error);
                 }
               }
-              
-              console.log('MessageNotificationContext: Tocando som e enviando notificação...');
-              
+
               // Tocar som
               playNotificationSound();
               

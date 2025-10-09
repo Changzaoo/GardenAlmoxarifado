@@ -72,11 +72,6 @@ class SessionManager {
     
     this.saveSession();
     this.startMonitoring();
-    
-    console.log('✅ Sessão iniciada:', {
-      sessionId: this.sessionData.sessionId.substring(0, 8) + '...',
-      timeout: SESSION_CONFIG.INACTIVITY_TIMEOUT / 60000 + ' minutos'
-    });
   }
 
   /**
@@ -205,8 +200,6 @@ class SessionManager {
    * Manipula expiração de sessão
    */
   handleExpiration() {
-    console.warn('⚠️ Sessão expirada por inatividade');
-    
     this.stopMonitoring();
     this.clearSession();
     
@@ -330,8 +323,6 @@ class SessionManager {
    */
   updateConfig(newConfig) {
     Object.assign(SESSION_CONFIG, newConfig);
-    console.warn('⚠️ Configurações de sessão atualizadas:', SESSION_CONFIG);
-    
     // Reiniciar monitoramento com novas configurações
     if (this.checkInterval) {
       this.stopMonitoring();

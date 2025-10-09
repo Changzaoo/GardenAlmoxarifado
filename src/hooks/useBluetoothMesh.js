@@ -21,14 +21,9 @@ export const useBluetoothMesh = () => {
   // Verificar suporte ao carregar
   useEffect(() => {
     const checkSupport = async () => {
-      console.log('🔍 Verificando suporte Bluetooth...');
-      console.log('- navigator.bluetooth:', 'bluetooth' in navigator);
-      console.log('- User Agent:', navigator.userAgent);
-      console.log('- É mobile:', bluetoothMeshService.isMobile);
-      
+
       const available = await bluetoothMeshService.isBluetoothAvailable();
-      console.log('- Bluetooth disponível:', available);
-      
+
       setIsSupported(available);
     };
     checkSupport();
@@ -37,7 +32,6 @@ export const useBluetoothMesh = () => {
   // Listener para eventos do Bluetooth
   useEffect(() => {
     const unsubscribe = bluetoothMeshService.addListener((event, data) => {
-      console.log('🔔 Evento Bluetooth:', event, data);
 
       switch (event) {
         case 'connected':
@@ -61,17 +55,17 @@ export const useBluetoothMesh = () => {
           break;
 
         case 'dataReceived':
-          console.log('📥 Dados recebidos:', data);
+
           break;
 
         case 'autoScanStarted':
           setIsAutoScanEnabled(true);
-          console.log('✅ Varredura automática iniciada');
+
           break;
 
         case 'autoScanStopped':
           setIsAutoScanEnabled(false);
-          console.log('⏹️ Varredura automática parada');
+
           break;
 
         case 'scanStarted':
@@ -81,12 +75,12 @@ export const useBluetoothMesh = () => {
         case 'scanCompleted':
           setIsScanning(false);
           setLastScanTime(new Date());
-          console.log('✅ Varredura concluída');
+
           break;
 
         case 'deviceNearbyWithData':
           setPendingDataNearby(data);
-          console.log('📱 Dispositivos próximos com dados:', data);
+
           break;
 
         case 'scanError':
@@ -112,7 +106,7 @@ export const useBluetoothMesh = () => {
     try {
       await bluetoothMeshService.requestDevice();
       await bluetoothMeshService.connect();
-      console.log('✅ Conectado com sucesso');
+
       return true;
     } catch (error) {
       console.error('❌ Erro ao conectar:', error);
@@ -136,7 +130,7 @@ export const useBluetoothMesh = () => {
     setIsSyncing(true);
     try {
       await bluetoothMeshService.syncWithPeer();
-      console.log('✅ Sincronização concluída');
+
       return true;
     } catch (error) {
       console.error('❌ Erro ao sincronizar:', error);

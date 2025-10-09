@@ -55,8 +55,6 @@ export class MultiDatabaseManager {
         isDefault: true,
         encrypted: false
       });
-
-      console.log('✅ Databases padrão inicializados');
     } catch (error) {
       console.error('❌ Erro ao inicializar databases padrão:', error);
       throw error;
@@ -96,8 +94,6 @@ export class MultiDatabaseManager {
    */
   async addDatabase(id, name, config, metadata = {}) {
     try {
-      console.log(`🔗 Inicializando database: ${name} (${id})`);
-
       // Verificar se já existe
       if (this.databases.has(id)) {
         throw new Error(`Database com ID '${id}' já existe`);
@@ -115,9 +111,7 @@ export class MultiDatabaseManager {
           await enableIndexedDbPersistence(db);
         } catch (err) {
           if (err.code === 'failed-precondition') {
-            console.warn(`⚠️ ${name}: Múltiplas abas abertas, persistência habilitada em apenas uma.`);
           } else if (err.code === 'unimplemented') {
-            console.warn(`⚠️ ${name}: Navegador não suporta persistência offline.`);
           }
         }
       }
@@ -147,9 +141,6 @@ export class MultiDatabaseManager {
           lastError: null
         }
       });
-
-      console.log(`✅ Database ${name} inicializado com sucesso`);
-      
       // Notificar listeners
       this.notifyListeners();
       
@@ -192,9 +183,6 @@ export class MultiDatabaseManager {
 
       // Salvar no localStorage
       this.saveCustomDatabases();
-
-      console.log(`✅ Database ${database.name} removido`);
-      
       // Notificar listeners
       this.notifyListeners();
       
@@ -225,9 +213,6 @@ export class MultiDatabaseManager {
     // Salvar no localStorage
     this.saveActiveDatabaseId(databaseId);
     this.saveLastRotation();
-
-    console.log(`🔄 Database alterado: ${oldDatabase} → ${databaseId}`);
-
     // Notificar listeners
     this.notifyListeners();
 
@@ -241,7 +226,6 @@ export class MultiDatabaseManager {
     const availableDatabases = Array.from(this.databases.keys());
     
     if (availableDatabases.length <= 1) {
-      console.warn('⚠️ Apenas um database disponível para rotação');
       return this.activeDatabase;
     }
 
@@ -366,8 +350,6 @@ export class MultiDatabaseManager {
       for (const dbData of customDatabases) {
         await this.addDatabase(dbData.id, dbData.name, dbData.config, dbData.metadata);
       }
-
-      console.log(`✅ ${customDatabases.length} databases customizados carregados`);
     } catch (error) {
       console.error('❌ Erro ao carregar databases customizados:', error);
     }

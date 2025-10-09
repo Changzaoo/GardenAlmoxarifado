@@ -40,8 +40,6 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
         throw new Error('Funcionário de destino não encontrado');
       }
 
-      console.log('Transferindo para:', funcionarioDestino.nome);
-
       // Atualizar o empréstimo com o novo funcionário
       const emprestimoRef = doc(db, 'emprestimos', emprestimo.id);
       const agora = new Date();
@@ -195,6 +193,4 @@ const TransferirFerramenta = ({ emprestimo, funcionarios, onClose }) => {
 };
 
 export default TransferirFerramenta;
-
-
 

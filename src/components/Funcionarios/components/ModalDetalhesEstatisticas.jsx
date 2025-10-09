@@ -249,11 +249,8 @@ const ModalDetalhesEstatisticas = ({
                 break;
             }
           });
-
-          console.log('✅ Pontos carregados:', pontosOrganizados);
           setPontosEdicao(pontosOrganizados);
         } else {
-          console.log('⚠️ Nenhum ponto encontrado para', dataEdicao);
           // Limpar campos se não houver pontos
           setPontosEdicao({
             entrada: '',
@@ -302,13 +299,6 @@ const ModalDetalhesEstatisticas = ({
       // await updateDoc(doc(db, 'pontos', funcionario.id), {
       //   [dataEdicao]: pontosEdicao
       // });
-
-      console.log('Salvando pontos:', {
-        funcionarioId: funcionario.id,
-        data: dataEdicao,
-        pontos: pontosEdicao
-      });
-
       toast.update(toastId, {
         render: '✓ Pontos salvos com sucesso!',
         type: 'success',

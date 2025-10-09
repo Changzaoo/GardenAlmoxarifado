@@ -11,8 +11,7 @@ import { db } from '../firebaseConfig';
  */
 export const createNotification = async (usuarioId, tipo, titulo, mensagem, dados = {}) => {
   try {
-    console.log('Criando notificação:', { usuarioId, tipo, titulo, mensagem });
-    
+
     await addDoc(collection(db, 'notificacoes'), {
       usuarioId,
       tipo,
@@ -22,8 +21,7 @@ export const createNotification = async (usuarioId, tipo, titulo, mensagem, dado
       timestamp: serverTimestamp(),
       dados
     });
-    
-    console.log('Notificação criada com sucesso!');
+
   } catch (error) {
     console.error('Erro ao criar notificação:', error);
     throw error;

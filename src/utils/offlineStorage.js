@@ -37,7 +37,6 @@ class OfflineStorage {
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('✅ IndexedDB inicializado');
         resolve(this.db);
       };
 
@@ -61,8 +60,6 @@ class OfflineStorage {
               store.createIndex('timestamp', 'timestamp', { unique: false });
               store.createIndex('synced', 'synced', { unique: false });
             }
-            
-            console.log(`📦 Store criado: ${storeName}`);
           }
         });
       };
@@ -87,7 +84,6 @@ class OfflineStorage {
         request.onsuccess = () => {
           savedCount++;
           if (savedCount === dataArray.length) {
-            console.log(`💾 ${savedCount} item(s) salvo(s) em ${storeName}`);
             resolve(savedCount);
           }
         };
@@ -115,7 +111,6 @@ class OfflineStorage {
         // Buscar todos os itens
         const request = store.getAll();
         request.onsuccess = () => {
-          console.log(`📖 ${request.result.length} item(s) carregado(s) de ${storeName}`);
           resolve(request.result);
         };
         request.onerror = () => reject(request.error);
@@ -152,7 +147,6 @@ class OfflineStorage {
 
       const request = store.delete(id);
       request.onsuccess = () => {
-        console.log(`🗑️ Item ${id} removido de ${storeName}`);
         resolve();
       };
       request.onerror = () => reject(request.error);
@@ -171,7 +165,6 @@ class OfflineStorage {
 
       const request = store.clear();
       request.onsuccess = () => {
-        console.log(`🧹 Cache limpo: ${storeName}`);
         resolve();
       };
       request.onerror = () => reject(request.error);
@@ -193,7 +186,6 @@ class OfflineStorage {
     };
 
     await this.saveToCache(STORES.SYNC_QUEUE, syncItem);
-    console.log('📤 Operação adicionada à fila de sincronização:', syncItem);
     return syncItem;
   }
 
@@ -213,7 +205,6 @@ class OfflineStorage {
       item.synced = true;
       item.syncedAt = Date.now();
       await this.saveToCache(STORES.SYNC_QUEUE, item);
-      console.log('✅ Operação sincronizada:', syncId);
     }
   }
 
@@ -233,7 +224,6 @@ class OfflineStorage {
     }
 
     if (toDelete.length > 0) {
-      console.log(`🧹 ${toDelete.length} operações antigas removidas da fila`);
     }
   }
 }

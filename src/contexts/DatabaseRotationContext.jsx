@@ -33,7 +33,7 @@ export const DatabaseRotationProvider = ({ children, ...options }) => {
       'configuracoes'
     ],
     onRotationStart: (fromDb) => {
-      console.log(`🔄 Rotação iniciada de: ${fromDb}`);
+
       setNotification({
         type: 'info',
         title: 'Rotação de Database',
@@ -43,7 +43,7 @@ export const DatabaseRotationProvider = ({ children, ...options }) => {
       setShowNotification(true);
     },
     onRotationComplete: (toDb, history) => {
-      console.log(`✅ Rotação concluída para: ${toDb}`);
+
       setNotification({
         type: 'success',
         title: 'Rotação Concluída',
@@ -57,7 +57,7 @@ export const DatabaseRotationProvider = ({ children, ...options }) => {
       }, 5000);
     },
     onSyncProgress: (current, total, collectionName) => {
-      console.log(`📊 Sincronizando ${collectionName}: ${current}/${total}`);
+
     },
     onError: (error) => {
       console.error('❌ Erro na rotação:', error);

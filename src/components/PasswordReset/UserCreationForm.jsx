@@ -228,10 +228,7 @@ const UserCreationForm = ({ onVoltar, onSucesso }) => {
           
           await uploadBytes(storageRef, formData.fotoPerfil);
           fotoURL = await getDownloadURL(storageRef);
-          
-          console.log('✅ Foto de perfil enviada:', fotoURL);
         } catch (error) {
-          console.warn('⚠️ Erro ao fazer upload da foto, continuando sem ela:', error);
           // Não bloqueia a criação do usuário se falhar o upload
         }
       }
@@ -262,15 +259,6 @@ const UserCreationForm = ({ onVoltar, onSucesso }) => {
       }
 
       await addDoc(usuariosRefBR1, novoUsuario);
-
-      console.log('✅ Usuário criado com sucesso no workflowbr1:', {
-        nome: novoUsuario.nome,
-        email: novoUsuario.email,
-        nivel: novoUsuario.nivel,
-        banco: 'workflowbr1',
-        temFoto: !!fotoURL
-      });
-
       // 5. Sucesso
       setSucesso(true);
 

@@ -518,7 +518,6 @@ const EscalaPage = ({ usuarioAtual }) => {
             };
             
             await setDoc(doc(db, 'presencas', mesAno, 'registros', docId), presencaData);
-            console.log(`✅ Presença registrada automaticamente para funcionário ${funcionarioId} no dia ${dia}`);
           } catch (error) {
             console.error('Erro ao registrar presença automática:', error);
           }
@@ -755,7 +754,6 @@ const EscalaPage = ({ usuarioAtual }) => {
             // Buscar dados do funcionário
             const funcionario = funcionarios.find(f => f.id === funcionarioId);
             if (!funcionario) {
-              console.warn('Funcionário não encontrado:', funcionarioId);
               return;
             }
 
@@ -769,7 +767,6 @@ const EscalaPage = ({ usuarioAtual }) => {
             const horarios = obterHorariosEsperados(tipoEscala, dataCompleta);
 
             if (!horarios) {
-              console.log('Funcionário não trabalha neste dia');
               toast.info('✓ Presença marcada (funcionário não trabalha neste dia)', {
                 position: 'top-right',
                 autoClose: 2000
@@ -792,7 +789,6 @@ const EscalaPage = ({ usuarioAtual }) => {
             
             if (!pontosSnapshot.empty) {
               // Já existem pontos batidos, não sobrescrever
-              console.log(`Funcionário ${funcionario.nome} já possui ${pontosSnapshot.size} ponto(s) batido(s) hoje`);
               toast.info(`✓ Presença marcada (${pontosSnapshot.size} ponto(s) já registrado(s))`, {
                 position: 'top-right',
                 autoClose: 2000

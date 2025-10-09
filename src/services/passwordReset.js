@@ -46,13 +46,6 @@ export const criarCodigoRedefinicao = async (adminId, usuarioEmail = null, valid
     
     const docRef = await addDoc(collection(backupDb, 'codigosRedefinicao'), codigoData);
     
-    console.log('✅ Código de redefinição criado:', {
-      id: docRef.id,
-      codigo: codigo,
-      usuarioEmail: usuarioEmail || 'GENÉRICO',
-      expiraEm: expiraEm.toLocaleString('pt-BR')
-    });
-    
     return {
       success: true,
       codigo: codigo,
@@ -71,8 +64,6 @@ export const criarCodigoRedefinicao = async (adminId, usuarioEmail = null, valid
 // Validar código de redefinição
 export const validarCodigoRedefinicao = async (codigo, usuarioEmail) => {
   try {
-    console.log('🔍 Validando código:', { codigo, usuarioEmail });
-    
     // Buscar código no Firebase
     const q = query(
       collection(backupDb, 'codigosRedefinicao'),
@@ -82,7 +73,6 @@ export const validarCodigoRedefinicao = async (codigo, usuarioEmail) => {
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
-      console.log('❌ Código não encontrado');
       return {
         valido: false,
         motivo: 'Código inválido ou não existe'
@@ -91,16 +81,8 @@ export const validarCodigoRedefinicao = async (codigo, usuarioEmail) => {
     
     const codigoDoc = querySnapshot.docs[0];
     const codigoData = codigoDoc.data();
-    
-    console.log('📋 Código encontrado:', {
-      usado: codigoData.usado,
-      expiraEm: codigoData.expiraEm,
-      usuarioEmail: codigoData.usuarioEmail
-    });
-    
     // Verificar se já foi usado
     if (codigoData.usado) {
-      console.log('❌ Código já foi usado');
       return {
         valido: false,
         motivo: 'Este código já foi utilizado'
@@ -112,7 +94,6 @@ export const validarCodigoRedefinicao = async (codigo, usuarioEmail) => {
     const agora = new Date();
     
     if (agora > expiraEm) {
-      console.log('❌ Código expirado');
       return {
         valido: false,
         motivo: 'Este código expirou'
@@ -121,14 +102,11 @@ export const validarCodigoRedefinicao = async (codigo, usuarioEmail) => {
     
     // Verificar se é específico para um usuário
     if (codigoData.usuarioEmail && codigoData.usuarioEmail !== usuarioEmail) {
-      console.log('❌ Código não pertence a este usuário');
       return {
         valido: false,
         motivo: 'Este código não pode ser usado por este usuário'
       };
     }
-    
-    console.log('✅ Código válido!');
     return {
       valido: true,
       id: codigoDoc.id,
@@ -150,8 +128,6 @@ export const validarCodigoRedefinicao = async (codigo, usuarioEmail) => {
 // Redefinir senha usando código
 export const redefinirSenhaComCodigo = async (usuarioUsername, novaSenha, codigo) => {
   try {
-    console.log('🔄 Iniciando redefinição de senha para:', usuarioUsername);
-    
     // 1. Validar código
     const validacao = await validarCodigoRedefinicao(codigo, usuarioUsername);
     
@@ -168,7 +144,6 @@ export const redefinirSenhaComCodigo = async (usuarioUsername, novaSenha, codigo
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
-      console.log('❌ Usuário não encontrado');
       return {
         success: false,
         message: 'Usuário não encontrado'
@@ -177,11 +152,7 @@ export const redefinirSenhaComCodigo = async (usuarioUsername, novaSenha, codigo
     
     const userDoc = querySnapshot.docs[0];
     const userId = userDoc.id;
-    
-    console.log('✅ Usuário encontrado:', userId);
-    
     // 3. Gerar novo hash SHA-512
-    console.log('🔒 Gerando novo hash SHA-512...');
     const { hash, salt, version, algorithm } = encryptPassword(novaSenha);
     
     // 4. Atualizar senha no Firebase Backup
@@ -193,18 +164,12 @@ export const redefinirSenhaComCodigo = async (usuarioUsername, novaSenha, codigo
       senha: null, // Remove senha em texto plano se existir
       senhaAtualizadaEm: new Date().toISOString()
     });
-    
-    console.log('✅ Senha atualizada no Firebase Backup');
-    
     // 5. Marcar código como usado
     await updateDoc(doc(backupDb, 'codigosRedefinicao', validacao.id), {
       usado: true,
       usadoEm: new Date().toISOString(),
       usadoPor: usuarioEmail
     });
-    
-    console.log('✅ Código marcado como usado');
-    
     return {
       success: true,
       message: 'Senha redefinida com sucesso!'
@@ -264,9 +229,6 @@ export const listarCodigosAtivos = async () => {
 export const revogarCodigo = async (codigoId) => {
   try {
     await deleteDoc(doc(backupDb, 'codigosRedefinicao', codigoId));
-    
-    console.log('✅ Código revogado:', codigoId);
-    
     return {
       success: true,
       message: 'Código revogado com sucesso'
@@ -300,9 +262,6 @@ export const limparCodigosExpirados = async () => {
     });
     
     await Promise.all(promessas);
-    
-    console.log(`✅ ${removidos} código(s) expirado(s) removido(s)`);
-    
     return {
       success: true,
       removidos: removidos,
@@ -321,8 +280,6 @@ export const limparCodigosExpirados = async () => {
 // Criar novo usuário com código de redefinição
 export const criarUsuarioComCodigo = async (nomeCompleto, email, senha, codigo) => {
   try {
-    console.log('👤 Criando usuário com código:', { nomeCompleto, email, codigo });
-    
     // 1. Validar código
     const validacao = await validarCodigoRedefinicao(codigo, email);
     
@@ -345,8 +302,6 @@ export const criarUsuarioComCodigo = async (nomeCompleto, email, senha, codigo) 
     const senhaHash = encryptPassword(senha);
     
     // 4. Preparar dados do usuário (retorna para que o componente faça o registro)
-    console.log('✅ Código validado, dados prontos para registro');
-    
     return {
       success: true,
       codigoId: validacao.id,
@@ -394,13 +349,6 @@ export const criarCodigoCriacaoConta = async (adminId, validadeHoras = 24, empre
     };
     
     const docRef = await addDoc(collection(backupDb, 'codigosCriacaoContas'), codigoData);
-    
-    console.log('✅ Código de criação de conta criado:', {
-      id: docRef.id,
-      codigo: codigo,
-      nivelUsuario: nivelUsuario,
-      expiraEm: expiraEm.toLocaleString('pt-BR')
-    });
     
     return {
       success: true,
@@ -453,9 +401,6 @@ export const listarCodigosCriacaoAtivos = async () => {
     
     // Ordenar por data de criação (mais recentes primeiro)
     codigos.sort((a, b) => new Date(b.criadoEm) - new Date(a.criadoEm));
-    
-    console.log(`📋 ${codigos.length} códigos de criação encontrados`);
-    
     return {
       success: true,
       codigos: codigos
@@ -473,8 +418,6 @@ export const listarCodigosCriacaoAtivos = async () => {
 // Validar código de criação de conta
 export const validarCodigoCriacaoConta = async (codigo) => {
   try {
-    console.log('🔍 Validando código de criação:', codigo);
-    
     // Buscar código no Firebase
     const q = query(
       collection(backupDb, 'codigosCriacaoContas'),
@@ -484,7 +427,6 @@ export const validarCodigoCriacaoConta = async (codigo) => {
     const querySnapshot = await getDocs(q);
     
     if (querySnapshot.empty) {
-      console.log('❌ Código de criação não encontrado');
       return {
         valido: false,
         motivo: 'Código inválido ou não existe'
@@ -493,16 +435,8 @@ export const validarCodigoCriacaoConta = async (codigo) => {
     
     const codigoDoc = querySnapshot.docs[0];
     const codigoData = codigoDoc.data();
-    
-    console.log('📋 Código de criação encontrado:', {
-      usado: codigoData.usado,
-      expiraEm: codigoData.expiraEm,
-      nivelUsuario: codigoData.nivelUsuario
-    });
-    
     // Verificar se já foi usado
     if (codigoData.usado) {
-      console.log('❌ Código de criação já foi usado');
       return {
         valido: false,
         motivo: 'Este código já foi utilizado'
@@ -514,15 +448,11 @@ export const validarCodigoCriacaoConta = async (codigo) => {
     const expiraEm = new Date(codigoData.expiraEm);
     
     if (agora > expiraEm) {
-      console.log('❌ Código de criação expirado');
       return {
         valido: false,
         motivo: 'Código expirado'
       };
     }
-    
-    console.log('✅ Código de criação válido');
-    
     return {
       valido: true,
       id: codigoDoc.id,
@@ -550,9 +480,6 @@ export const marcarCodigoCriacaoUsado = async (codigoId, emailUsuario) => {
       usadoEm: new Date().toISOString(),
       usadoPor: emailUsuario
     });
-    
-    console.log('✅ Código de criação marcado como usado:', codigoId);
-    
     return {
       success: true
     };
@@ -568,8 +495,6 @@ export const marcarCodigoCriacaoUsado = async (codigoId, emailUsuario) => {
 // Criar usuário com código de criação
 export const criarUsuarioComCodigoCriacao = async (codigo, nomeCompleto, email, senha) => {
   try {
-    console.log('👤 Criando usuário com código de criação:', { codigo, email, nome: nomeCompleto });
-    
     // Validar código
     const validacao = await validarCodigoCriacaoConta(codigo);
     
@@ -585,9 +510,6 @@ export const criarUsuarioComCodigoCriacao = async (codigo, nomeCompleto, email, 
     
     // Marcar código como usado
     await marcarCodigoCriacaoUsado(validacao.id, email);
-    
-    console.log('✅ Usuário criado com código de criação - dados preparados');
-    
     return {
       success: true,
       codigoId: validacao.id,

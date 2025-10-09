@@ -104,15 +104,11 @@ export function ThemeListener() {
   const { currentTheme, isDark } = useTheme();
 
   React.useEffect(() => {
-    console.log('Tema mudou para:', currentTheme);
-    
     // Você pode fazer ações específicas quando o tema muda
     if (isDark) {
-      console.log('Modo escuro ativado!');
       // Exemplo: Atualizar configurações de gráficos
       // updateChartColors('dark');
     } else {
-      console.log('Modo claro ativado!');
       // Exemplo: Atualizar configurações de gráficos
       // updateChartColors('light');
     }

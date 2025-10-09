@@ -90,8 +90,6 @@ const getCollectionInfo = async (db, collectionName, dbName) => {
  * 🗂️ Listar todas as coleções de um banco de dados
  */
 export const getCollectionsFromDatabase = async (db, dbName) => {
-  console.log(`📊 Listando coleções do banco ${dbName}...`);
-  
   const collections = [];
   
   // Verificar cada coleção conhecida
@@ -110,8 +108,6 @@ export const getCollectionsFromDatabase = async (db, dbName) => {
  * 🌐 Listar todas as coleções de todos os bancos
  */
 export const getAllCollections = async () => {
-  console.log('🔍 Iniciando scan de todas as coleções...');
-  
   try {
     const [primaryCollections, backupCollections] = await Promise.all([
       getCollectionsFromDatabase(primaryDb, 'Firebase Principal (garden-c0b50)'),
@@ -139,13 +135,6 @@ export const getAllCollections = async () => {
     const totalDatabases = 2;
     const totalCollections = summary.primary.totalCollections + summary.backup.totalCollections;
     const totalDocuments = summary.primary.totalDocuments + summary.backup.totalDocuments;
-    
-    console.log('✅ Scan completo:', {
-      totalDatabases,
-      totalCollections,
-      totalDocuments
-    });
-    
     return {
       ...summary,
       totals: {
@@ -166,8 +155,6 @@ export const getAllCollections = async () => {
  * 🔄 Comparar coleções entre bancos
  */
 export const compareCollections = async () => {
-  console.log('🔍 Comparando coleções entre bancos...');
-  
   const allData = await getAllCollections();
   const { primary, backup } = allData;
   
@@ -201,13 +188,6 @@ export const compareCollections = async () => {
   // Estatísticas da comparação
   const syncedCollections = comparison.filter(c => c.inSync).length;
   const outOfSyncCollections = comparison.filter(c => c.needsSync).length;
-  
-  console.log('📊 Comparação completa:', {
-    total: comparison.length,
-    synced: syncedCollections,
-    outOfSync: outOfSyncCollections
-  });
-  
   return {
     collections: comparison,
     summary: {
@@ -224,8 +204,6 @@ export const compareCollections = async () => {
  * 🔍 Buscar coleção específica
  */
 export const searchCollection = async (collectionName) => {
-  console.log(`🔍 Buscando coleção: ${collectionName}`);
-  
   const [primaryInfo, backupInfo] = await Promise.all([
     getCollectionInfo(primaryDb, collectionName, 'primary'),
     getCollectionInfo(backupDb, collectionName, 'backup')

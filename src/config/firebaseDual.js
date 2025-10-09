@@ -62,9 +62,9 @@ const initializeFirebaseApps = () => {
     // Habilitar persistência no banco principal
     enableIndexedDbPersistence(primaryDb).catch((err) => {
       if (err.code === 'failed-precondition') {
-        console.warn('⚠️ Múltiplas abas abertas, persistência habilitada em apenas uma.');
+
       } else if (err.code === 'unimplemented') {
-        console.warn('⚠️ Navegador não suporta persistência offline.');
+
       }
     });
 
@@ -73,8 +73,6 @@ const initializeFirebaseApps = () => {
     backupDb = getFirestore(backupApp);
     backupAuth = getAuth(backupApp);
     backupStorage = getStorage(backupApp);
-
-    console.log('✅ Firebase Principal e Backup inicializados');
 
     return {
       primaryApp,
@@ -155,8 +153,7 @@ class DatabaseManager {
   // Alternar database
   switchDatabase() {
     const newDb = this.activeDatabase === 'primary' ? 'backup' : 'primary';
-    console.log(`🔄 Alternando database: ${this.activeDatabase} → ${newDb}`);
-    
+
     this.saveActiveDatabase(newDb);
     this.saveLastRotation();
     

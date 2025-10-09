@@ -28,7 +28,6 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
   // Resetar ao abrir
   useEffect(() => {
     if (isOpen) {
-      console.log('🎯 Modal Comprovantes aberto!', { funcionarioNome, funcionarioId });
       setTipoComprovante('');
       setDadosComprovante(null);
     }
@@ -36,19 +35,11 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
 
   // Buscar dados para comprovante diário
   const buscarDadosDiario = async () => {
-    console.log('🔄 Iniciando buscarDadosDiario...');
     setLoading(true);
     try {
       const data = new Date(dataSelecionada);
       const inicioDia = Timestamp.fromDate(new Date(data.setHours(0, 0, 0, 0)));
       const fimDia = Timestamp.fromDate(new Date(data.setHours(23, 59, 59, 999)));
-
-      console.log('📅 Buscando pontos para:', {
-        funcionarioNome,
-        data: data.toLocaleDateString('pt-BR'),
-        inicioDia: inicioDia.toDate(),
-        fimDia: fimDia.toDate()
-      });
 
       // Buscar por nome (mais confiável que ID)
       const q = query(
@@ -60,35 +51,25 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
 
       const snapshot = await getDocs(q);
       const pontos = { entrada: null, saidaAlmoco: null, voltaAlmoco: null, saida: null };
-
-      console.log('📄 [Comprovante Diário] Pontos encontrados:', snapshot.size);
-      
       snapshot.docs.forEach(doc => {
         const ponto = doc.data();
         const timestamp = ponto.data?.toDate ? ponto.data.toDate() : new Date(ponto.timestamp || ponto.data);
-        
-        console.log('⏰ Ponto:', ponto.tipo, timestamp);
-        
         if (ponto.tipo === 'entrada') pontos.entrada = timestamp;
         else if (ponto.tipo === 'saida_almoco') pontos.saidaAlmoco = timestamp;
         else if (ponto.tipo === 'retorno_almoco') pontos.voltaAlmoco = timestamp;
         else if (ponto.tipo === 'saida') pontos.saida = timestamp;
       });
-
-      console.log('✅ Dados processados:', { data, pontos });
       setDadosComprovante({ data, pontos });
     } catch (error) {
       console.error('❌ Erro ao buscar dados diários:', error);
       alert('Erro ao gerar comprovante: ' + error.message);
     } finally {
       setLoading(false);
-      console.log('🏁 buscarDadosDiario finalizado');
     }
   };
 
   // Buscar dados para comprovante semanal
   const buscarDadosSemanal = async () => {
-    console.log('🔄 Iniciando buscarDadosSemanal...');
     setLoading(true);
     try {
       const data = new Date(dataSelecionada);
@@ -110,9 +91,6 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
       );
 
       const snapshot = await getDocs(q);
-      
-      console.log('📅 [Comprovante Semanal] Pontos encontrados:', snapshot.size);
-      
       // Agrupar pontos por dia
       const pontosPorDia = {};
       snapshot.docs.forEach(doc => {
@@ -145,21 +123,17 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
           pontos: { entrada: null, saidaAlmoco: null, voltaAlmoco: null, saida: null }
         });
       }
-
-      console.log('✅ Dados semanais processados:', diasDaSemana.length, 'dias');
       setDadosComprovante(diasDaSemana);
     } catch (error) {
       console.error('❌ Erro ao buscar dados semanais:', error);
       alert('Erro ao gerar comprovante semanal: ' + error.message);
     } finally {
       setLoading(false);
-      console.log('🏁 buscarDadosSemanal finalizado');
     }
   };
 
   // Buscar dados para comprovante mensal
   const buscarDadosMensal = async () => {
-    console.log('🔄 Iniciando buscarDadosMensal...');
     setLoading(true);
     try {
       const inicioMes = new Date(mesAno.ano, mesAno.mes, 1);
@@ -174,9 +148,6 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
       );
 
       const snapshot = await getDocs(q);
-      
-      console.log('📆 [Comprovante Mensal] Pontos encontrados:', snapshot.size);
-      
       // Agrupar pontos por dia
       const pontosPorDia = {};
       snapshot.docs.forEach(doc => {
@@ -198,20 +169,17 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
       });
 
       const diasDoMes = Object.values(pontosPorDia);
-      console.log('✅ Dados mensais processados:', diasDoMes.length, 'dias');
       setDadosComprovante(diasDoMes);
     } catch (error) {
       console.error('❌ Erro ao buscar dados mensais:', error);
       alert('Erro ao gerar comprovante mensal: ' + error.message);
     } finally {
       setLoading(false);
-      console.log('🏁 buscarDadosMensal finalizado');
     }
   };
 
   // Buscar dados para comprovante anual
   const buscarDadosAnual = async () => {
-    console.log('🔄 Iniciando buscarDadosAnual...');
     setLoading(true);
     try {
       const inicioAno = new Date(ano, 0, 1);
@@ -226,9 +194,6 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
       );
 
       const snapshot = await getDocs(q);
-      
-      console.log('📊 [Comprovante Anual] Pontos encontrados:', snapshot.size);
-      
       // Agrupar pontos por dia
       const pontosPorDia = {};
       snapshot.docs.forEach(doc => {
@@ -272,15 +237,12 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
           totalMinutos: Math.round(totalMinutos)
         });
       }
-
-      console.log('✅ Dados anuais processados:', mesesDoAno.length, 'meses');
       setDadosComprovante(mesesDoAno);
     } catch (error) {
       console.error('❌ Erro ao buscar dados anuais:', error);
       alert('Erro ao gerar comprovante anual: ' + error.message);
     } finally {
       setLoading(false);
-      console.log('🏁 buscarDadosAnual finalizado');
     }
   };
 
@@ -290,9 +252,6 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
       console.error('❌ Tipo de comprovante não selecionado');
       return;
     }
-    
-    console.log('🔄 Gerando comprovante:', tipoComprovante);
-    
     switch (tipoComprovante) {
       case 'diario':
         buscarDadosDiario();
@@ -356,7 +315,6 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
                       <button
                         key={tipo.valor}
                         onClick={() => {
-                          console.log('📝 Tipo selecionado:', tipo.valor);
                           setTipoComprovante(tipo.valor);
                         }}
                         className={`p-4 rounded-xl border-2 transition-all ${
@@ -451,7 +409,6 @@ const ModalComprovantes = ({ isOpen, onClose, funcionarioNome, funcionarioId }) 
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('🔘 Botão clicado! Tipo:', tipoComprovante, 'Loading:', loading);
                       if (!loading && tipoComprovante) {
                         gerarComprovante();
                       }

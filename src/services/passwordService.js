@@ -82,13 +82,6 @@ export const updateUserPassword = async (userId, novaSenha) => {
     ...passwordObj,
     dataAlteracaoSenha: serverTimestamp()
   });
-
-  console.log('✅ Senha atualizada no Firebase:', {
-    userId,
-    authKey: passwordObj.authKey,
-    hashLength: passwordObj.senhaHash.length
-  });
-
   return passwordObj;
 };
 
@@ -124,13 +117,6 @@ export const createUserWithPassword = async (userData, senha) => {
   // Cria no Firebase
   const usuariosRef = collection(backupDb, 'usuarios');
   const docRef = await addDoc(usuariosRef, novoUsuario);
-
-  console.log('✅ Usuário criado com senha:', {
-    userId: docRef.id,
-    email: userData.email,
-    authKey: passwordObj.authKey
-  });
-
   return docRef.id;
 };
 
@@ -160,12 +146,6 @@ export const saveRecoveryCode = async (userId, codigo) => {
     codigoRecuperacao: codigo,
     codigoRecuperacaoExpiracao: expiracao.toISOString(),
     codigoRecuperacaoUsado: false
-  });
-
-  console.log('✅ Código de recuperação salvo:', {
-    userId,
-    codigo,
-    expira: expiracao.toLocaleString()
   });
 };
 
@@ -225,9 +205,6 @@ export const resetPasswordWithCode = async (userId, novaSenha) => {
 
   // Marca código como usado
   await markRecoveryCodeAsUsed(userId);
-
-  console.log('✅ Senha resetada com sucesso:', userId);
-
   return passwordObj;
 };
 
@@ -253,11 +230,6 @@ export const updatePasswordFields = async (userId, passwordFields) => {
   await updateDoc(userRef, {
     ...passwordFields,
     dataAlteracaoSenha: serverTimestamp()
-  });
-
-  console.log('✅ Campos de senha atualizados:', {
-    userId,
-    fields: Object.keys(passwordFields)
   });
 };
 

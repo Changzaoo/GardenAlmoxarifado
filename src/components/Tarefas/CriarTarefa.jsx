@@ -62,12 +62,11 @@ const CriarTarefa = ({ onClose }) => {
       
       // Criar notificação para cada funcionário atribuído
       try {
-        console.log('🔔 Criando notificações para funcionários:', formData.funcionariosIds);
+
         for (const funcionarioId of formData.funcionariosIds) {
           const funcionario = funcionariosSelecionados.find(f => f.id === funcionarioId);
           const nomeFuncionario = funcionario ? (funcionario.nome || funcionario.username || funcionario.email) : 'Funcionário';
-          
-          console.log(`📬 Enviando notificação para: ${nomeFuncionario} (ID: ${funcionarioId})`);
+
           await notificarNovaTarefa(
             funcionarioId,
             formData.titulo,
@@ -75,7 +74,7 @@ const CriarTarefa = ({ onClose }) => {
             { id: docRef.id, ...tarefaData }
           );
         }
-        console.log('✅ Todas as notificações foram criadas com sucesso');
+
       } catch (notificationError) {
         console.error('❌ Erro ao criar notificações da tarefa:', notificationError);
         // Não bloqueia a criação da tarefa mesmo se a notificação falhar

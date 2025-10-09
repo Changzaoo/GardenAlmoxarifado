@@ -35,7 +35,6 @@ const AddServerModal = ({ isOpen, onClose, onAdd }) => {
         try {
           const serverData = createServerFromConfig(text);
           setPreview(serverData);
-          console.log('✅ Servidor detectado:', serverData);
         } catch (err) {
           console.error('❌ Erro ao processar:', err);
           setError(err.message);

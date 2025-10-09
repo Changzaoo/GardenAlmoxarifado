@@ -87,7 +87,6 @@ export const authenticateUser = async (usuario, senha) => {
         ultimoLogin: serverTimestamp()
       });
     } catch (error) {
-      console.warn('Não foi possível atualizar ultimoLogin:', error);
       // Não bloqueia o login se falhar
     }
 
@@ -149,7 +148,6 @@ const verificarSenha = async (senhaFornecida, userData) => {
   }
 
   // Nenhum campo de senha encontrado
-  console.warn('Usuário sem campo de senha válido:', userData.usuario);
   return false;
 };
 

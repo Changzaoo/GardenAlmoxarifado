@@ -23,8 +23,7 @@ import {
  */
 export const verificarStatusMigracaoUsuarios = async () => {
   try {
-    console.log('🔍 Verificando status de migração de usuários...');
-    
+
     const usuariosSnapshot = await getDocs(collection(db, 'usuario'));
     const usuarios = usuariosSnapshot.docs.map(doc => ({
       id: doc.id,
@@ -60,10 +59,7 @@ export const verificarStatusMigracaoUsuarios = async () => {
         });
       }
     });
-    
-    console.log('📊 Estatísticas de Migração:', estatisticas);
-    console.log('👥 Usuários que precisam migração:', usuariosParaMigrar);
-    
+
     return {
       sucesso: true,
       estatisticas,
@@ -86,8 +82,7 @@ export const verificarStatusMigracaoUsuarios = async () => {
  * @returns {Object} Dados atualizados do usuário
  */
 export const migrarUsuarioIndividual = (usuario) => {
-  console.log(`🔄 Migrando usuário: ${usuario.nome} (${usuario.email})`);
-  
+
   // Criar modelo base preservando dados existentes
   const dadosBase = {
     ...usuario,
@@ -100,13 +95,13 @@ export const migrarUsuarioIndividual = (usuario) => {
   // Atualizar menuConfig baseado no nível se não existir
   if (!usuario.menuConfig || !Array.isArray(usuario.menuConfig) || usuario.menuConfig.length === 0) {
     usuarioCompleto.menuConfig = atualizarMenuPorNivel(usuario.nivel);
-    console.log(`  ✅ MenuConfig criado para nível ${usuario.nivel}`);
+
   }
   
   // Definir status padrão se não existir
   if (!usuario.status) {
     usuarioCompleto.status = STATUS_USUARIO.OFFLINE;
-    console.log(`  ✅ Status definido como OFFLINE`);
+
   }
   
   // Preservar ultimaVez se existir
@@ -121,7 +116,7 @@ export const migrarUsuarioIndividual = (usuario) => {
   if (!usuario.itemFavorito) camposAdicionados.push('itemFavorito');
   
   if (camposAdicionados.length > 0) {
-    console.log(`  ➕ Campos adicionados: ${camposAdicionados.join(', ')}`);
+
   }
   
   return usuarioCompleto;
@@ -139,9 +134,9 @@ export const executarMigracaoUsuarios = async (opcoes = {}) => {
   } = opcoes;
   
   try {
-    console.log('🚀 Iniciando migração de usuários para o novo modelo...');
+
     if (apenasSimular) {
-      console.log('⚠️ MODO SIMULAÇÃO - Nenhuma alteração será salva no banco');
+
     }
     
     // Buscar usuários
@@ -154,7 +149,7 @@ export const executarMigracaoUsuarios = async (opcoes = {}) => {
     // Filtrar usuários específicos se fornecido
     if (usuariosEspecificos && Array.isArray(usuariosEspecificos)) {
       usuarios = usuarios.filter(u => usuariosEspecificos.includes(u.id));
-      console.log(`🎯 Migrando apenas ${usuarios.length} usuários específicos`);
+
     }
     
     const resultados = {
@@ -176,7 +171,7 @@ export const executarMigracaoUsuarios = async (opcoes = {}) => {
         const validacao = validarModeloUsuario(usuario);
         
         if (validacao.valido) {
-          console.log(`⏭️ Usuário ${usuario.nome} já está no modelo correto`);
+
           resultados.pulos++;
           resultados.detalhes.push({
             id: usuario.id,
@@ -201,7 +196,7 @@ export const executarMigracaoUsuarios = async (opcoes = {}) => {
           // Commit do batch se atingir o limite
           if (operacoesNoBatch >= BATCH_SIZE) {
             await batch.commit();
-            console.log(`📦 Batch de ${operacoesNoBatch} operações commitado`);
+
             operacoesNoBatch = 0;
           }
         }
@@ -214,9 +209,7 @@ export const executarMigracaoUsuarios = async (opcoes = {}) => {
           status: 'sucesso',
           camposAdicionados: validacao.camposFaltando
         });
-        
-        console.log(`✅ Usuário ${usuario.nome} migrado com sucesso`);
-        
+
       } catch (error) {
         console.error(`❌ Erro ao migrar usuário ${usuario.nome}:`, error);
         resultados.erros++;
@@ -232,17 +225,9 @@ export const executarMigracaoUsuarios = async (opcoes = {}) => {
     // Commit do batch restante
     if (!apenasSimular && operacoesNoBatch > 0) {
       await batch.commit();
-      console.log(`📦 Batch final de ${operacoesNoBatch} operações commitado`);
+
     }
-    
-    console.log('🎉 Migração concluída!');
-    console.log('📊 Resultados:', {
-      total: resultados.total,
-      sucesso: resultados.sucesso,
-      pulos: resultados.pulos,
-      erros: resultados.erros
-    });
-    
+
     return {
       sucesso: true,
       resultados,
@@ -265,8 +250,7 @@ export const executarMigracaoUsuarios = async (opcoes = {}) => {
  */
 export const reverterMigracao = async (usuariosIds = null) => {
   try {
-    console.log('⏪ Revertendo migração de usuários...');
-    
+
     const usuariosSnapshot = await getDocs(collection(db, 'usuario'));
     let usuarios = usuariosSnapshot.docs.map(doc => ({
       id: doc.id,
@@ -292,9 +276,7 @@ export const reverterMigracao = async (usuariosIds = null) => {
     }
     
     await batch.commit();
-    
-    console.log(`✅ Migração revertida para ${usuarios.length} usuários`);
-    
+
     return {
       sucesso: true,
       usuariosRevertidos: usuarios.length

@@ -109,8 +109,6 @@ const RankingPontos = () => {
     }
   }, [mesSelected, anoSelected]);
 
-
-
   const filtrarPorPeriodo = (dados) => {
     // Log uma única vez com informações do período
     if (dados.length > 0 && (periodoAtual === 'mes' || periodoAtual === 'ano' || periodoAtual === 'semana')) {
@@ -128,13 +126,7 @@ const RankingPontos = () => {
       }
       
       if (dataLimiteInicio && dataLimiteFim) {
-        console.log('📅 PERÍODO SELECIONADO:', {
-          tipo: periodoAtual,
-          dataInicio: dataLimiteInicio.toLocaleString('pt-BR'),
-          dataFim: dataLimiteFim.toLocaleString('pt-BR'),
-          hoje: new Date().toLocaleString('pt-BR'),
-          totalFuncionarios: dados.length
-        });
+
       }
     }
     
@@ -277,7 +269,7 @@ const RankingPontos = () => {
   useEffect(() => {
     // Só carregar dados quando funcionariosContext estiver disponível
     if (funcionariosContext && funcionariosContext.length > 0) {
-      console.log('🔄 Carregando dados do ranking com contexto atualizado...', funcionariosContext.length, 'funcionários');
+
       carregarDados();
     }
   }, [funcionariosContext]); // Recarregar quando o contexto mudar
@@ -399,8 +391,7 @@ const RankingPontos = () => {
 
   const carregarDados = async () => {
     try {
-      console.log('🔄 RankingPontos: Iniciando carregamento de dados...');
-      
+
       // Buscar empréstimos, tarefas, avaliações E todas as coleções de usuários
       // Funcionários vêm do contexto (FuncionariosProvider) que já unifica as 3 coleções
       const emprestimosRef = collection(db, 'emprestimos');
@@ -419,24 +410,12 @@ const RankingPontos = () => {
         getDocs(usuariosRef),
         getDocs(usuarioRef)
       ]);
-      
-      console.log('📦 RankingPontos: Dados carregados de TODAS as fontes:', {
-        funcionariosContext: funcionariosContext?.length || 0,
-        usuarios_plural: usuariosSnap.size,
-        usuario_singular: usuarioSnap.size,
-        emprestimos: emprestimosSnap.size,
-        tarefas: tarefasSnap.size,
-        avaliacoes: avaliacoesSnap.size,
-        autoavaliacoes: autoavaliacoesSnap.size
-      });
 
       // Processar funcionários - USAR APENAS O CONTEXTO (fonte única de verdade)
       const dadosFuncionarios = {};
       const nomesParaIds = {}; // Mapear nomes para IDs
       const emailsProcessados = new Set(); // Evitar duplicatas por email
-      
-      console.log('📊 Contexto de funcionários disponível:', funcionariosContext?.length || 0);
-      
+
       // Contadores para debug
       let totalProcessados = 0;
       let puladosTerceirizados = 0;
@@ -450,7 +429,7 @@ const RankingPontos = () => {
         
         // IMPORTANTE: Não incluir funcionários demitidos
         if (funcionario.demitido === true) {
-          console.log(`❌ Funcionário demitido não incluído no ranking: ${funcionario.nome}`);
+
           return;
         }
         
@@ -520,18 +499,7 @@ const RankingPontos = () => {
       if (duplicatasContexto.length > 0) {
         console.error('❌ DUPLICATAS NO funcionariosContext:', duplicatasContexto);
       }
-      
-      console.log('✅ Funcionários do contexto processados:', {
-        totalNoContexto: funcionariosContext.length,
-        totalProcessados,
-        puladosTerceirizados,
-        puladosDuplicados,
-        totalNoRanking: Object.keys(dadosFuncionarios).length,
-        comFoto: comFotoContexto,
-        semFoto: totalProcessados - comFotoContexto,
-        duplicatasNoContexto: duplicatasContexto.length
-      });
-      
+
       // PROCESSAR usuários da collection 'usuarios' para:
       // 1. Adicionar usuários que não estão no funcionariosContext
       // 2. Atualizar photoURL de funcionários existentes se usuário tiver foto
@@ -549,7 +517,7 @@ const RankingPontos = () => {
         // IMPORTANTE: Não incluir terceirizados ou demitidos
         if (isTerceirizado || usuario.demitido === true) {
           if (usuario.demitido === true) {
-            console.log(`❌ Usuário demitido não incluído no ranking: ${nome}`);
+
           }
           return;
         }
@@ -559,7 +527,7 @@ const RankingPontos = () => {
           if (usuario.photoURL && !dadosFuncionarios[usuario.id].photoURL) {
             dadosFuncionarios[usuario.id].photoURL = usuario.photoURL;
             fotosAtualizadas++;
-            console.log(`📸 Foto atualizada para: ${dadosFuncionarios[usuario.id].nome}`);
+
           }
           return; // Já foi processado, não adicionar novamente
         }
@@ -567,14 +535,14 @@ const RankingPontos = () => {
         // IMPORTANTE: Verificar duplicata por EMAIL (mesmo com ID diferente)
         if (email && emailsProcessados.has(email)) {
           usuariosPuladosDuplicados++;
-          console.log(`⚠️ Usuário pulado (email duplicado): ${nome} (${email}) - ID: ${usuario.id}`);
+
           // Atualizar foto se o funcionário existente não tiver
           if (usuario.photoURL) {
             const funcExistenteId = Object.values(dadosFuncionarios).find(f => f.email?.toLowerCase() === email)?.id;
             if (funcExistenteId && !dadosFuncionarios[funcExistenteId].photoURL) {
               dadosFuncionarios[funcExistenteId].photoURL = usuario.photoURL;
               fotosAtualizadas++;
-              console.log(`📸 Foto atualizada via email duplicado para: ${dadosFuncionarios[funcExistenteId].nome}`);
+
             }
           }
           return;
@@ -583,14 +551,14 @@ const RankingPontos = () => {
         // IMPORTANTE: Verificar duplicata por NOME (mesmo com ID e email diferentes)
         if (nomeNormalizado && nomesParaIds[nomeNormalizado]) {
           usuariosPuladosDuplicados++;
-          console.log(`⚠️ Usuário pulado (nome duplicado): ${nome} - ID: ${usuario.id} vs ${nomesParaIds[nomeNormalizado]}`);
+
           // Atualizar foto se o funcionário existente não tiver
           if (usuario.photoURL) {
             const funcExistenteId = nomesParaIds[nomeNormalizado];
             if (funcExistenteId && !dadosFuncionarios[funcExistenteId].photoURL) {
               dadosFuncionarios[funcExistenteId].photoURL = usuario.photoURL;
               fotosAtualizadas++;
-              console.log(`📸 Foto atualizada via nome duplicado para: ${dadosFuncionarios[funcExistenteId].nome}`);
+
             }
           }
           return;
@@ -619,19 +587,6 @@ const RankingPontos = () => {
         if (email) {
           emailsProcessados.add(email);
         }
-      });
-      
-      console.log('✅ Total final após processar usuários:', {
-        usuariosAdicionados,
-        usuariosPuladosDuplicados,
-        fotosAtualizadas,
-        totalNoRanking: Object.keys(dadosFuncionarios).length,
-        comFoto: Object.values(dadosFuncionarios).filter(f => f.photoURL).length,
-        semFoto: Object.values(dadosFuncionarios).filter(f => !f.photoURL).length,
-        primeiros5: Object.values(dadosFuncionarios).slice(0, 5).map(f => ({ 
-          nome: f.nome, 
-          temFoto: !!f.photoURL 
-        }))
       });
 
       // Contar ferramentas devolvidas - CORRIGIDO para buscar por ID E nome
@@ -742,8 +697,6 @@ const RankingPontos = () => {
           }
         }
       });
-      
-      console.log(`✅ Avaliações processadas: ${avaliacoesProcessadas}`);
 
       // Processar autoavaliações - MESMO padrão das avaliações
       let autoavaliacoesProcessadas = 0;
@@ -777,8 +730,6 @@ const RankingPontos = () => {
           }
         }
       });
-      
-      console.log(`✅ Autoavaliações processadas: ${autoavaliacoesProcessadas}`);
 
       // Calcular média das avaliações
       Object.values(dadosFuncionarios).forEach(funcionario => {
@@ -810,14 +761,6 @@ const RankingPontos = () => {
       if (duplicatasPrevias.length > 0) {
         console.error('❌ DUPLICATAS EM dadosFuncionarios (ANTES de criar rankingList):', duplicatasPrevias);
       }
-      
-      console.log('📦 Funcionários prontos para ranking:', {
-        total: Object.keys(dadosFuncionarios).length,
-        nomesUnicos: nomesPrevios.size,
-        emailsUnicos: emailsPrevios.size,
-        comFoto: Object.values(dadosFuncionarios).filter(f => f.photoURL).length,
-        duplicatasDetectadas: duplicatasPrevias.length
-      });
 
       // Preparar dados com datas
       const rankingList = Object.values(dadosFuncionarios)
@@ -1044,13 +987,7 @@ const RankingPontos = () => {
             tarefas: funcionarioExistente.tarefas,
             avaliacoes: funcionarioExistente.avaliacoes
           });
-          
-          console.log(`🔗 Dados unidos para: ${func.nome}`, {
-            totalEmprestimos: funcionarioExistente.emprestimos.length,
-            totalTarefas: funcionarioExistente.tarefas.length,
-            totalAvaliacoes: funcionarioExistente.avaliacoes.length,
-            pontuacaoTotal: funcionarioExistente.pontuacao.total
-          });
+
         } else {
           // Primeira vez vendo este nome - adicionar ao mapa
           funcionariosPorNome.set(nomeKey, { ...func });
@@ -1059,23 +996,6 @@ const RankingPontos = () => {
       
       // Converter de volta para array
       const rankingListUnificado = Array.from(funcionariosPorNome.values());
-      
-      console.log('✅ Ranking processado com sucesso:', {
-        totalOriginal: rankingList.length,
-        totalUnificado: rankingListUnificado.length,
-        funcionariosUnidos: rankingList.length - rankingListUnificado.length,
-        funcionariosComFoto: rankingListUnificado.filter(f => f.photoURL).length,
-        primeiros3: rankingListUnificado
-          .sort((a, b) => b.pontuacao.total - a.pontuacao.total)
-          .slice(0, 3)
-          .map(f => ({ 
-            id: f.id,
-            nome: f.nome, 
-            email: f.email,
-            pontos: f.pontuacao.total, 
-            foto: !!f.photoURL 
-          }))
-      });
 
       setRankings(rankingListUnificado);
       setLoading(false);
@@ -1438,14 +1358,7 @@ const RankingPontos = () => {
           const rankingsFiltrados = filtrarPorPeriodo(rankingsPorSetor);
           
           // DEBUG: Logs detalhados de filtragem
-          console.log('🔍 DEBUG RENDERIZAÇÃO:', {
-            totalAntesFiltro: rankingsFiltrados.length,
-            periodo: periodoAtual,
-            mes: mesSelected,
-            ano: anoSelected,
-            semana: semanaSelected
-          });
-          
+
           const comPontuacao = rankingsFiltrados.filter(f => f.pontuacao.total > 0);
           const terceirizados = rankingsFiltrados.filter(f => isFuncionarioTerceirizado(f));
           const terceirizadosComPontos = rankingsFiltrados.filter(f => isFuncionarioTerceirizado(f) && f.pontuacao.total > 0);
@@ -1463,15 +1376,7 @@ const RankingPontos = () => {
               temAtividades: (f.emprestimos?.length || 0) + (f.tarefas?.length || 0) + (f.avaliacoes?.length || 0) > 0
             }))
             .sort((a, b) => b.pontos - a.pontos);
-          
-          console.log('🔍 ANÁLISE DE PONTUAÇÃO:', {
-            totalFuncionarios: rankingsFiltrados.length,
-            comPontuacaoMaiorQueZero: comPontuacao.length,
-            semPontuacao: rankingsFiltrados.length - comPontuacao.length,
-            terceirizados: terceirizados.length,
-            terceirizadosComPontos: terceirizadosComPontos.length
-          });
-          
+
           console.table(todosComPontuacao.slice(0, 30)); // Primeiros 30 funcionários
           
           // Verificar funcionários que têm atividades mas pontuação = 0
@@ -2076,6 +1981,4 @@ const DetalhesPontos = ({ funcionario, periodoAtual, mesSelected, anoSelected, s
 };
 
 export default RankingPontos;
-
-
 

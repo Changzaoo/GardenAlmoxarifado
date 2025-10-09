@@ -50,8 +50,7 @@ export const useDeveloperModeActivator = () => {
       }
       
       // Mostrar toast de confirmação
-      console.log('🔓 MODO DESENVOLVEDOR ATIVADO!');
-      
+
       // Criar notificação visual temporária
       const toast = document.createElement('div');
       toast.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-6 py-3 rounded-lg shadow-2xl z-[10000] animate-bounce';

@@ -30,8 +30,7 @@ export const useAnalytics = () => {
     
     const registrarAcesso = async () => {
       try {
-        console.log('[Analytics] Coletando dados de acesso...');
-        
+
         // Coleta todos os dados
         const analytics = await collectAnalytics();
         
@@ -53,8 +52,7 @@ export const useAnalytics = () => {
 
         // Salva no Firestore
         await addDoc(collection(db, 'analytics_acessos'), dadosCompletos);
-        
-        console.log('[Analytics] Acesso registrado com sucesso!');
+
         registrado.current = true;
 
       } catch (error) {
@@ -80,8 +78,7 @@ export const useAnalytics = () => {
         const resultado = await checkForUpdates();
         
         if (resultado.hasUpdate) {
-          console.log('[Analytics] Nova versão disponível:', resultado.latestVersion);
-          
+
           // Notifica o usuário
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('Atualização Disponível', {
@@ -115,7 +112,7 @@ export const useAnalytics = () => {
 
     const handleMessage = (event) => {
       if (event.data && event.data.type === 'SW_UPDATED') {
-        console.log('[Analytics] Service Worker atualizado para versão:', event.data.version);
+
         mostrarBannerAtualizacao(event.data.version);
       }
     };

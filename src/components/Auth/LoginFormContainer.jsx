@@ -53,15 +53,12 @@ const LoginFormContainer = () => {
       // Pre-carregar dados offline em background (não bloqueia navegação)
       // Só faz cache se for a primeira vez ou se passou mais de 24h
       if (offlineCacheService.needsCacheUpdate()) {
-        console.log('🔄 Iniciando cache de dados para uso offline...');
         // Executa em background, não aguarda
         offlineCacheService.preloadAllCollections(usuario).then(result => {
           if (result.success) {
-            console.log(`✅ Cache offline concluído! ${result.totalDocs} documentos armazenados.`);
           }
         });
       } else {
-        console.log('✅ Cache offline já atualizado recentemente.');
       }
       
       // Navegar imediatamente para a página inicial

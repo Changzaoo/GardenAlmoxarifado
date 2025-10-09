@@ -37,13 +37,11 @@ class FirestoreOfflineAdapter {
     // Monitorar mudanças de conexão
     window.addEventListener('online', () => {
       this.isOnline = true;
-      console.log('🟢 Adapter: Conexão restaurada');
       this.handleReconnection();
     });
     
     window.addEventListener('offline', () => {
       this.isOnline = false;
-      console.log('🔴 Adapter: Modo offline ativado');
     });
   }
 
@@ -80,8 +78,6 @@ class FirestoreOfflineAdapter {
         // Salvar no cache também
         const docData = { ...data, id: docRef.id };
         await offlineStorage.saveToCache(storeName, docData);
-        
-        console.log(`✅ Documento adicionado online: ${docRef.id}`);
         return docRef.id;
       } catch (error) {
         console.error('Erro ao adicionar documento online:', error);
@@ -100,8 +96,6 @@ class FirestoreOfflineAdapter {
       collection: collectionName,
       data: docData
     });
-    
-    console.log(`💾 Documento salvo offline: ${tempId}`);
     return tempId;
   }
 
@@ -128,8 +122,6 @@ class FirestoreOfflineAdapter {
             ...data
           });
         }
-        
-        console.log(`✅ Documento atualizado online: ${docId}`);
         return;
       } catch (error) {
         console.error('Erro ao atualizar documento online:', error);
@@ -151,8 +143,6 @@ class FirestoreOfflineAdapter {
         collection: collectionName,
         data: { id: docId, ...data }
       });
-      
-      console.log(`💾 Documento atualizado offline: ${docId}`);
     }
   }
 
@@ -170,8 +160,6 @@ class FirestoreOfflineAdapter {
         
         // Deletar do cache
         await offlineStorage.deleteFromCache(storeName, docId);
-        
-        console.log(`✅ Documento deletado online: ${docId}`);
         return;
       } catch (error) {
         console.error('Erro ao deletar documento online:', error);
@@ -186,8 +174,6 @@ class FirestoreOfflineAdapter {
       collection: collectionName,
       data: { id: docId }
     });
-    
-    console.log(`💾 Documento marcado para deletar offline: ${docId}`);
   }
 
   /**
@@ -213,8 +199,6 @@ class FirestoreOfflineAdapter {
         
         // Atualizar cache local
         await offlineStorage.saveToCache(storeName, docs);
-        
-        console.log(`✅ ${docs.length} documento(s) carregado(s) online`);
         return docs;
       } catch (error) {
         console.error('Erro ao buscar documentos online:', error);
@@ -246,11 +230,8 @@ class FirestoreOfflineAdapter {
             return true;
         }
       });
-      console.log(`💾 ${filtered.length} documento(s) carregado(s) do cache (filtrado)`);
       return filtered;
     }
-    
-    console.log(`💾 ${docs.length} documento(s) carregado(s) do cache`);
     return docs;
   }
 

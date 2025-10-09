@@ -111,21 +111,15 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
         dadosParaAtualizar.authKey = userData.senha.trim();
         dadosParaAtualizar.authKeyUpdatedAt = new Date();
         dadosParaAtualizar.dataAlteracaoSenha = new Date().toISOString();
-        
-        console.log('🔑 Campo authKey atualizado com a senha digitada pelo usuário');
-        console.log('🔒 Senha criptografada com SHA-512 e authKey configurado');
       }
 
       // 🔄 ATUALIZAR NOS DOIS BANCOS FIREBASE (PRINCIPAL E BACKUP)
       try {
         // Atualizar no Firebase principal
         await updateDoc(doc(db, 'usuarios', usuario.id), dadosParaAtualizar);
-        console.log('✅ Usuário atualizado no Firebase principal');
-        
         // Atualizar no Firebase Backup também (usado pelo sistema de login)
         try {
           await updateDoc(doc(backupDb, 'usuarios', usuario.id), dadosParaAtualizar);
-          console.log('✅ Usuário atualizado no Firebase Backup');
         } catch (backupError) {
           console.warn('⚠️ Erro ao atualizar Firebase Backup (não crítico):', backupError);
           // Não falha a operação se o backup der erro, apenas avisa
@@ -301,6 +295,4 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
 };
 
 export default UserProfileModal;
-
-
 

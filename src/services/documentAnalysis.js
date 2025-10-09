@@ -105,9 +105,6 @@ export const getDocumentsWithPagination = async (db, collectionName, options = {
       searchValue = null,
       includeAnalysis = true
     } = options;
-
-    console.log(`📊 Buscando documentos da coleção: ${collectionName}`);
-
     const collectionRef = collection(db, collectionName);
     let q = collectionRef;
 
@@ -206,8 +203,6 @@ export const getDocumentsWithPagination = async (db, collectionName, options = {
  */
 export const getSpecificDocument = async (db, collectionName, documentId) => {
   try {
-    console.log(`📄 Buscando documento: ${collectionName}/${documentId}`);
-
     const docRef = doc(db, collectionName, documentId);
     const docSnapshot = await getDoc(docRef);
 
@@ -250,9 +245,6 @@ export const searchDocuments = async (db, collectionName, searchTerm, options = 
       searchFields = ['nome', 'title', 'name', 'email', 'id'],
       maxResults = 50
     } = options;
-
-    console.log(`🔍 Buscando "${searchTerm}" na coleção ${collectionName}`);
-
     const collectionRef = collection(db, collectionName);
     const allDocuments = [];
 
@@ -283,7 +275,6 @@ export const searchDocuments = async (db, collectionName, searchTerm, options = 
         });
       } catch (fieldError) {
         // Ignorar erros de campo (campo pode não existir ou não ser indexado)
-        console.warn(`⚠️ Erro ao buscar no campo ${field}:`, fieldError.message);
       }
     }
 
@@ -305,8 +296,6 @@ export const searchDocuments = async (db, collectionName, searchTerm, options = 
  */
 export const getCollectionStatistics = async (db, collectionName, sampleSize = 100) => {
   try {
-    console.log(`📈 Analisando estatísticas da coleção: ${collectionName}`);
-
     const collectionRef = collection(db, collectionName);
     const q = query(collectionRef, limit(sampleSize));
     const snapshot = await getDocs(q);
@@ -412,8 +401,6 @@ export const getCollectionStatistics = async (db, collectionName, sampleSize = 1
  */
 export const compareDocumentBetweenDatabases = async (collectionName, documentId) => {
   try {
-    console.log(`🔄 Comparando documento ${documentId} entre databases`);
-
     const [primaryDoc, backupDoc] = await Promise.all([
       getSpecificDocument(primaryDb, collectionName, documentId),
       getSpecificDocument(backupDb, collectionName, documentId)

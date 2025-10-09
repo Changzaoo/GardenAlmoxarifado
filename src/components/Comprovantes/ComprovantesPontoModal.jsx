@@ -35,7 +35,6 @@ const ComprovantesPontoModal = ({ isOpen, onClose, dados }) => {
           url: window.location.href
         });
       } catch (error) {
-        console.log('Compartilhamento cancelado');
       }
     } else {
       alert('Compartilhamento não suportado neste navegador');

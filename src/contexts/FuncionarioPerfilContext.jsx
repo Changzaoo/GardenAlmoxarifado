@@ -60,15 +60,13 @@ export const FuncionarioPerfilProvider = ({ children }) => {
   const carregarPerfil = async (uid) => {
     try {
       setLoading(true);
-      console.log('📋 Carregando perfil do funcionário:', uid);
 
       const perfilRef = doc(db, 'funcionarios', uid);
       const perfilDoc = await getDoc(perfilRef);
 
       if (perfilDoc.exists()) {
         const dados = perfilDoc.data();
-        console.log('✅ Perfil carregado:', dados);
-        
+
         setPerfil({
           id: uid,
           // Prioridades (essenciais para o sistema)
@@ -108,7 +106,7 @@ export const FuncionarioPerfilProvider = ({ children }) => {
           atualizadoEm: new Date().toISOString()
         });
       } else {
-        console.log('⚠️ Perfil não encontrado, criando novo');
+
         await criarPerfilInicial(uid);
       }
     } catch (error) {
@@ -159,8 +157,7 @@ export const FuncionarioPerfilProvider = ({ children }) => {
 
       await setDoc(doc(db, 'funcionarios', uid), perfilInicial);
       setPerfil({ id: uid, ...perfilInicial });
-      
-      console.log('✅ Perfil inicial criado');
+
     } catch (error) {
       console.error('❌ Erro ao criar perfil inicial:', error);
     }
@@ -172,8 +169,6 @@ export const FuncionarioPerfilProvider = ({ children }) => {
   const atualizarPerfil = async (dadosAtualizados) => {
     try {
       if (!usuarioId) throw new Error('Usuário não autenticado');
-
-      console.log('💾 Atualizando perfil:', dadosAtualizados);
 
       const perfilRef = doc(db, 'funcionarios', usuarioId);
       const dadosComTimestamp = {
@@ -188,7 +183,6 @@ export const FuncionarioPerfilProvider = ({ children }) => {
         ...dadosComTimestamp
       }));
 
-      console.log('✅ Perfil atualizado com sucesso');
       return true;
     } catch (error) {
       console.error('❌ Erro ao atualizar perfil:', error);
@@ -216,8 +210,7 @@ export const FuncionarioPerfilProvider = ({ children }) => {
       const novoValor = (perfil[campo] || 0) + incremento;
 
       await atualizarPerfil({ [campo]: novoValor });
-      
-      console.log(`📊 Estatística atualizada: ${campo} = ${novoValor}`);
+
     } catch (error) {
       console.error('❌ Erro ao atualizar estatística:', error);
     }

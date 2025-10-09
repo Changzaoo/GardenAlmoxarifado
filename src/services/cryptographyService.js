@@ -99,7 +99,7 @@ class CryptographyService {
       // Verificar se parece ser texto criptografado
       // Mensagens criptografadas AES geralmente começam com caracteres específicos
       if (!this.looksLikeEncryptedText(encryptedText)) {
-        console.warn('⚠️ Texto não parece estar criptografado, retornando como está');
+
         return encryptedText;
       }
 
@@ -119,7 +119,7 @@ class CryptographyService {
       console.error('❌ Erro ao descriptografar:', error.message);
       // Se falhar no parse JSON, pode ser mensagem antiga sem formato JSON
       if (error instanceof SyntaxError) {
-        console.log('📝 Tentando retornar texto descriptografado direto (sem JSON)');
+
         try {
           const decrypted = CryptoJS.AES.decrypt(encryptedText, conversationKey);
           const decryptedStr = decrypted.toString(CryptoJS.enc.Utf8);

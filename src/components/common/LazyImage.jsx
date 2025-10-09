@@ -67,7 +67,6 @@ const LazyImage = memo(({
       };
 
       img.onerror = () => {
-        console.warn(`Falha ao carregar imagem: ${src}`);
         setIsLoaded(true); // Marca como carregada mesmo com erro
       };
 

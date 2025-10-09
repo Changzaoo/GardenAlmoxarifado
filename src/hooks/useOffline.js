@@ -23,7 +23,7 @@ export const useOffline = () => {
   // Sincronizar manualmente
   const syncNow = useCallback(async () => {
     if (!isOnline) {
-      console.warn('Não é possível sincronizar offline');
+
       return false;
     }
 
@@ -55,7 +55,7 @@ export const useOffline = () => {
       try {
         // Tentar executar imediatamente
         await offlineService.executeOperation(operation);
-        console.log('✅ Operação executada online:', type);
+
         return true;
       } catch (error) {
         console.error('❌ Erro ao executar online, salvando para depois:', error);
@@ -68,7 +68,7 @@ export const useOffline = () => {
       // Offline: salvar para sincronizar depois
       await offlineService.savePendingOperation(operation);
       await updatePendingCount();
-      console.log('💾 Operação salva offline:', type);
+
       return false;
     }
   }, [isOnline, updatePendingCount]);
@@ -77,7 +77,7 @@ export const useOffline = () => {
   const cacheData = useCallback(async (key, data, ttl) => {
     try {
       await offlineService.cacheData(key, data, ttl);
-      console.log('💾 Dados salvos em cache:', key);
+
     } catch (error) {
       console.error('Erro ao salvar cache:', error);
     }
@@ -88,7 +88,7 @@ export const useOffline = () => {
     try {
       const data = await offlineService.getCachedData(key);
       if (data) {
-        console.log('📦 Dados obtidos do cache:', key);
+
       }
       return data;
     } catch (error) {
@@ -101,7 +101,7 @@ export const useOffline = () => {
   const clearExpiredCache = useCallback(async () => {
     try {
       const deleted = await offlineService.clearExpiredCache();
-      console.log(`🧹 ${deleted} itens de cache removidos`);
+
       return deleted;
     } catch (error) {
       console.error('Erro ao limpar cache:', error);
@@ -115,10 +115,10 @@ export const useOffline = () => {
       setIsOnline(online);
       
       if (status === 'online') {
-        console.log('🌐 Online! Sincronizando automaticamente...');
+
         syncNow();
       } else if (status === 'offline') {
-        console.log('📴 Offline! Operações serão salvas localmente.');
+
       } else if (status === 'synced') {
         updatePendingCount();
       }

@@ -92,8 +92,6 @@ const ServerWorldMap = () => {
 
   // Debug: Verificar servidores carregados
   useEffect(() => {
-    console.log('🗺️ Servidores carregados no mapa:', servers.length);
-    console.log('📋 Lista de servidores:', servers);
   }, [servers]);
 
   useEffect(() => {

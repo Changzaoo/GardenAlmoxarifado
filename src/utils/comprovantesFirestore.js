@@ -27,7 +27,6 @@ export const salvarComprovante = async (tipo, dados) => {
     };
 
     const docRef = await addDoc(collection(db, 'comprovantes'), comprovanteData);
-    console.log('✅ Comprovante salvo com ID:', docRef.id);
     return docRef.id;
   } catch (error) {
     console.error('❌ Erro ao salvar comprovante:', error);

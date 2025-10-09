@@ -119,13 +119,9 @@ const ListaConversas = ({
 
   // MONITOR: Rastrear quando props conversas mudam
   useEffect(() => {
-    console.log('***********************************************');
-    console.log('ListaConversas - Props conversas MUDARAM');
-    console.log('Quantidade recebida:', conversas.length);
-    console.log('IDs:', conversas.map(c => c.id));
-    console.log('Loading:', loading);
+
     console.trace('Stack trace');
-    console.log('***********************************************');
+
   }, [conversas, loading]);
 
   // Memoizar conversas filtradas para evitar recalcular a cada render
@@ -177,13 +173,6 @@ const ListaConversas = ({
   }
 
   // Debug: mostrar informações no console
-  console.log('📊 ListaConversas - Status:', {
-    loading,
-    totalConversas: conversas.length,
-    conversasFiltradas: conversasFiltradas.length,
-    filtro,
-    busca
-  });
 
   // ✅ ConversaItem agora está definido FORA do componente (no início do arquivo)
 

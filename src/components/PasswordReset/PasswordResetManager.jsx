@@ -95,14 +95,12 @@ const PasswordResetManager = () => {
 
   const carregarEmpresas = async () => {
     try {
-      console.log('🏢 Carregando empresas...');
       const empresasRef = collection(db, 'empresas');
       const snapshot = await getDocs(empresasRef);
       const empresasData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      console.log('✅ Empresas carregadas:', empresasData);
       setEmpresas(empresasData);
     } catch (error) {
       console.error('❌ Erro ao carregar empresas:', error);
@@ -111,16 +109,13 @@ const PasswordResetManager = () => {
 
   const carregarSetores = async (empresaId) => {
     try {
-      console.log('📁 Carregando setores para empresa:', empresaId);
       const setoresRef = collection(db, 'setores');
       const snapshot = await getDocs(setoresRef);
       const todosSetores = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      console.log('📋 Todos os setores:', todosSetores);
       const setoresData = todosSetores.filter(setor => setor.empresaId === empresaId);
-      console.log('✅ Setores filtrados:', setoresData);
       setSetores(setoresData);
     } catch (error) {
       console.error('❌ Erro ao carregar setores:', error);
@@ -860,7 +855,6 @@ const PasswordResetManager = () => {
                         <select
                           value={empresaSelecionada}
                           onChange={(e) => {
-                            console.log('Empresa selecionada:', e.target.value);
                             setEmpresaSelecionada(e.target.value);
                             // Limpar setor quando mudar empresa
                             setSetorSelecionado('');
@@ -896,7 +890,6 @@ const PasswordResetManager = () => {
                         <select
                           value={setorSelecionado}
                           onChange={(e) => {
-                            console.log('Setor selecionado:', e.target.value);
                             setSetorSelecionado(e.target.value);
                           }}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500"

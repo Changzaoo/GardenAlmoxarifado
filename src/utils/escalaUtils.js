@@ -83,7 +83,6 @@ export const obterHorariosEsperados = (tipoEscala, data = new Date()) => {
   const escala = HORARIOS_POR_ESCALA[tipoEscala];
   
   if (!escala) {
-    console.warn(`Tipo de escala desconhecido: ${tipoEscala}`);
     return null;
   }
   

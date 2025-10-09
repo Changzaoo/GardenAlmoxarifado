@@ -48,11 +48,10 @@ class NotificationManager {
    */
   async initialize(userId) {
     if (this.initialized && this.currentUserId === userId) {
-      console.log('✅ NotificationManager já inicializado');
+
       return { success: true, message: 'Já inicializado' };
     }
 
-    console.log('🚀 Inicializando NotificationManager para:', userId);
     this.currentUserId = userId;
 
     try {
@@ -82,8 +81,7 @@ class NotificationManager {
       await this.loadPendingNotifications();
 
       this.initialized = true;
-      console.log('✅ NotificationManager inicializado com sucesso');
-      
+
       return { 
         success: true, 
         message: 'Notificações ativadas',
@@ -136,13 +134,13 @@ class NotificationManager {
       const isCapacitor = await this.isCapacitorPlatform();
       
       if (isCapacitor) {
-        console.log('📱 Inicializando notificações mobile com Capacitor');
+
         await this.setupCapacitorNotifications(userId);
         return;
       }
 
       // Web: usar Firebase Cloud Messaging
-      console.log('🌐 Inicializando notificações web com FCM');
+
       const { default: app } = await import('../firebaseConfig');
       this.messaging = getMessaging(app);
 
@@ -150,7 +148,7 @@ class NotificationManager {
       const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
       
       if (!vapidKey) {
-        console.warn('⚠️ VAPID key não configurada - usando modo local');
+
         this.setupLocalMode();
         return;
       }
@@ -160,12 +158,12 @@ class NotificationManager {
       
       if (token) {
         await this.saveToken(userId, token);
-        console.log('📱 Token FCM salvo');
+
       }
 
       // Listener de mensagens em primeiro plano
       onMessage(this.messaging, (payload) => {
-        console.log('📨 Mensagem FCM recebida:', payload);
+
         this.handleFCMMessage(payload);
       });
 
@@ -195,8 +193,6 @@ class NotificationManager {
       const { PushNotifications } = await import('@capacitor/push-notifications');
       const { Capacitor } = await import('@capacitor/core');
 
-      console.log('📱 Plataforma:', Capacitor.getPlatform());
-
       // Solicitar permissão
       let permStatus = await PushNotifications.checkPermissions();
 
@@ -205,17 +201,16 @@ class NotificationManager {
       }
 
       if (permStatus.receive !== 'granted') {
-        console.warn('❌ Permissão de notificações negada');
+
         return;
       }
 
       // Registrar para receber notificações
       await PushNotifications.register();
-      console.log('✅ Push notifications registradas');
 
       // Listener: token FCM recebido
       await PushNotifications.addListener('registration', async (token) => {
-        console.log('📱 Push registration token:', token.value);
+
         await this.saveToken(userId, token.value);
       });
 
@@ -226,13 +221,13 @@ class NotificationManager {
 
       // Listener: notificação recebida (app em primeiro plano)
       await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        console.log('📨 Push recebido:', notification);
+
         this.handleCapacitorNotification(notification);
       });
 
       // Listener: notificação clicada
       await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-        console.log('👆 Notificação clicada:', notification);
+
         const conversaId = notification.notification?.data?.conversaId;
         this.handleNotificationClick(conversaId);
       });
@@ -263,7 +258,7 @@ class NotificationManager {
     }
 
     // App em background ou outra página - notificação já foi mostrada pelo sistema
-    console.log('📬 Notificação recebida pelo sistema:', title);
+
   }
 
   /**
@@ -273,8 +268,7 @@ class NotificationManager {
     if ('serviceWorker' in navigator) {
       try {
         const registration = await navigator.serviceWorker.register('/service-worker.js');
-        console.log('✅ Service Worker registrado:', registration.scope);
-        
+
         // Configurar comunicação com SW
         this.setupServiceWorkerCommunication(registration);
         
@@ -291,8 +285,7 @@ class NotificationManager {
   setupServiceWorkerCommunication(registration) {
     // Listener de mensagens do SW
     navigator.serviceWorker.addEventListener('message', (event) => {
-      console.log('📬 Mensagem do SW:', event.data);
-      
+
       if (event.data.type === 'NOTIFICATION_CLICKED') {
         this.handleNotificationClick(event.data.conversaId);
       }
@@ -325,8 +318,7 @@ class NotificationManager {
 
     // Verificar se está na página de mensagens e aba ativa
     if (this.isOnMessagesPage() && this.isWindowActive()) {
-      console.log('🔕 Usuário está na página - notificação suprimida');
-      
+
       // Apenas tocar som se configurado
       if (this.preferences.sound && this.preferences.playOnFocus) {
         this.playSound('message');
@@ -368,13 +360,13 @@ class NotificationManager {
 
     // Verificar preferências
     if (!this.preferences.enabled || !this.preferences.desktop) {
-      console.log('🔕 Notificações desativadas nas preferências');
+
       return;
     }
 
     // Verificar permissão
     if (Notification.permission !== 'granted') {
-      console.warn('⚠️ Sem permissão para notificações');
+
       return;
     }
 
@@ -449,7 +441,7 @@ class NotificationManager {
       const newCount = currentCount + increment;
       
       navigator.setAppBadge(newCount).catch(err => {
-        console.log('Badge API não suportada:', err);
+
       });
 
       // Atualizar SW também
@@ -496,7 +488,7 @@ class NotificationManager {
       this.sounds.call = new Audio('/sounds/call.mp3');
       this.sounds.call.volume = 0.7;
     } catch (error) {
-      console.log('ℹ️ Sons não disponíveis');
+
     }
   }
 
@@ -510,7 +502,7 @@ class NotificationManager {
     if (sound) {
       sound.currentTime = 0;
       sound.play().catch(err => {
-        console.log('Não foi possível tocar o som:', err);
+
       });
     }
   }
@@ -599,7 +591,7 @@ class NotificationManager {
    * Modo local (desenvolvimento)
    */
   setupLocalMode() {
-    console.log('🔧 Modo local ativado (sem FCM)');
+
   }
 
   /**
@@ -621,7 +613,6 @@ class NotificationManager {
         notificationPreferences: this.preferences
       }, { merge: true });
 
-      console.log('✅ Token FCM salvo no Firestore');
     } catch (error) {
       console.error('❌ Erro ao salvar token:', error);
     }
@@ -638,7 +629,7 @@ class NotificationManager {
       channel.port1.onmessage = (event) => {
         if (event.data.notifications) {
           this.notificationQueue = event.data.notifications;
-          console.log('📬 Notificações pendentes carregadas:', this.notificationQueue.length);
+
         }
       };
 

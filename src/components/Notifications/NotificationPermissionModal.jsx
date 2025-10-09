@@ -38,9 +38,7 @@ const NotificationPermissionModal = () => {
     
     try {
       const permission = await Notification.requestPermission();
-      
-      console.log('🔔 Permissão de notificação:', permission);
-      
+
       // Marcar que já pediu permissão
       localStorage.setItem('hasAskedNotificationPermission', 'true');
       

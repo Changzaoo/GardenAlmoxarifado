@@ -287,7 +287,6 @@ class RateLimiter {
   clearAll() {
     this.attempts.clear();
     localStorage.removeItem(STORAGE_KEY);
-    console.warn('⚠️ Rate limiter limpo - use apenas para debug');
   }
 
   /**

@@ -8,6 +8,7 @@ import {
   UserCheck,
   CheckSquare,
   Plus,
+  Minus,
   Save,
   AlertCircle,
   ChevronDown,
@@ -19,14 +20,17 @@ import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/f
 import { db } from '../../../firebaseConfig';
 import { useToast } from '../../ToastProvider';
 import { obterHorariosEsperados } from '../../../utils/escalaUtils';
+import { backgroundCorrectionService } from '../../../services/backgroundCorrectionService';
+import { useAuth } from '../../../hooks/useAuth';
 
 const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
   const { showToast } = useToast();
+  const { user } = useAuth();
   
   const [etapa, setEtapa] = useState(1); // 1: Seleção, 2: Configuração, 3: Confirmação
   const [modoSelecao, setModoSelecao] = useState('todos'); // todos, parcial, individual
   const [funcionariosSelecionados, setFuncionariosSelecionados] = useState([]);
-  const [tipoCorrecao, setTipoCorrecao] = useState('pontos'); // pontos, horas
+  const [tipoCorrecao, setTipoCorrecao] = useState('pontos'); // pontos, adicionar, descontar
   
   // Configuração de pontos
   const [horariosPontos, setHorariosPontos] = useState({
@@ -42,8 +46,9 @@ const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   
-  // Adição de horas
-  const [horasParaAdicionar, setHorasParaAdicionar] = useState({ horas: 0, minutos: 0 });
+  // Adição/Desconto de horas
+  const [horasParaAjustar, setHorasParaAjustar] = useState({ horas: 0, minutos: 0 });
+  const [motivoAjuste, setMotivoAjuste] = useState('');
   
   const [carregando, setCarregando] = useState(false);
   const [progresso, setProgresso] = useState({ atual: 0, total: 0, porcentagem: 0 });
@@ -80,7 +85,6 @@ const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
       return;
     }
 
-    setCarregando(true);
     try {
       let datasTrabalhadas = [];
       
@@ -93,7 +97,6 @@ const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
         
         if (inicio > fim) {
           showToast('Data inicial deve ser anterior à data final', 'error');
-          setCarregando(false);
           return;
         }
         
@@ -105,106 +108,39 @@ const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
         }
       }
 
-      // Calcular total de registros a serem criados
-      const totalRegistrosEsperados = funcionariosSelecionados.length * datasTrabalhadas.length * 4;
-      setProgresso({ atual: 0, total: totalRegistrosEsperados, porcentagem: 0 });
+      // Calcular total de registros
+      const registrosPorData = tipoCorrecao === 'pontos' ? 4 : 1;
+      const totalRegistrosEsperados = funcionariosSelecionados.length * datasTrabalhadas.length * registrosPorData;
 
-      let totalRegistros = 0;
+      // Configuração para processamento em background
+      const config = {
+        funcionariosSelecionados,
+        datasTrabalhadas,
+        tipoCorrecao,
+        horariosPontos,
+        horasParaAjustar,
+        motivoAjuste,
+        funcionarios
+      };
 
-      for (const funcionarioId of funcionariosSelecionados) {
-        const funcionario = funcionarios.find(f => f.id === funcionarioId);
-        if (!funcionario) continue;
+      // Iniciar processamento em background
+      const jobId = await backgroundCorrectionService.startCorrection(
+        config,
+        user?.id || 'admin'
+      );
 
-        for (const dataStr of datasTrabalhadas) {
-          // Criar data corretamente a partir da string (evitando problemas de timezone)
-          const [ano, mes, dia] = dataStr.split('-').map(Number);
-          const data = new Date(ano, mes - 1, dia);
-          
-          // Verificar se é fim de semana (opcional: pular ou processar)
-          const diaSemana = data.getDay();
-          // if (diaSemana === 0 || diaSemana === 6) continue; // Pular fins de semana
-          
-          if (tipoCorrecao === 'pontos') {
-            // Inserir 4 pontos do dia
-            const tipos = ['entrada', 'saida_almoco', 'retorno_almoco', 'saida'];
-            
-            for (const tipo of tipos) {
-              const [hora, minuto] = horariosPontos[
-                tipo === 'saida_almoco' ? 'saidaAlmoco' : 
-                tipo === 'retorno_almoco' ? 'voltaAlmoco' : tipo
-              ].split(':');
-              
-              // Criar nova data para cada ponto (não mutar a data original)
-              const dataPonto = new Date(ano, mes - 1, dia, parseInt(hora), parseInt(minuto), 0, 0);
-              
-              await addDoc(collection(db, 'pontos'), {
-                funcionarioId: String(funcionarioId),
-                funcionarioNome: funcionario.nome,
-                tipo: tipo,
-                data: Timestamp.fromDate(dataPonto),
-                timestamp: dataPonto.getTime(),
-                corrigido: true,
-                dataCorrecao: Timestamp.now()
-              });
-              
-              totalRegistros++;
-              setProgresso(prev => ({
-                atual: totalRegistros,
-                total: prev.total,
-                porcentagem: Math.round((totalRegistros / prev.total) * 100)
-              }));
-            }
-          } else {
-            // Adicionar horas manualmente
-            const totalMinutos = (horasParaAdicionar.horas * 60) + horasParaAdicionar.minutos;
-            
-            // Distribuir as horas em 4 pontos fictícios (criar novas datas, não mutar)
-            const entrada = new Date(ano, mes - 1, dia, 7, 0, 0, 0);
-            const saidaAlmoco = new Date(entrada.getTime() + Math.floor(totalMinutos / 2) * 60 * 1000);
-            const voltaAlmoco = new Date(saidaAlmoco.getTime() + 60 * 60 * 1000); // 1h de almoço
-            const saida = new Date(voltaAlmoco.getTime() + Math.ceil(totalMinutos / 2) * 60 * 1000);
-            
-            const pontos = [
-              { tipo: 'entrada', data: entrada },
-              { tipo: 'saida_almoco', data: saidaAlmoco },
-              { tipo: 'retorno_almoco', data: voltaAlmoco },
-              { tipo: 'saida', data: saida }
-            ];
-            
-            for (const ponto of pontos) {
-              await addDoc(collection(db, 'pontos'), {
-                funcionarioId: String(funcionarioId),
-                funcionarioNome: funcionario.nome,
-                tipo: ponto.tipo,
-                data: Timestamp.fromDate(ponto.data),
-                timestamp: ponto.data.getTime(),
-                corrigido: true,
-                horasAdicionadas: totalMinutos,
-                dataCorrecao: Timestamp.now()
-              });
-              
-              totalRegistros++;
-              setProgresso(prev => ({
-                atual: totalRegistros,
-                total: prev.total,
-                porcentagem: Math.round((totalRegistros / prev.total) * 100)
-              }));
-            }
-          }
-        }
-      }
-
+      // Notificar usuário
       showToast(
-        `✅ ${totalRegistros} registros criados com sucesso para ${funcionariosSelecionados.length} funcionário(s)!`,
-        'success'
+        `🔄 Correção iniciada em segundo plano! ${totalRegistrosEsperados} registros serão processados. Você será notificado quando concluir.`,
+        'info',
+        5000
       );
       
+      // Fechar modal imediatamente
       onClose();
+      
     } catch (error) {
-      console.error('Erro ao aplicar correção:', error);
-      showToast('Erro ao aplicar correção: ' + error.message, 'error');
-    } finally {
-      setCarregando(false);
+      showToast('Erro ao iniciar correção: ' + error.message, 'error');
     }
   };
 
@@ -343,7 +279,7 @@ const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                     Tipo de Correção
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <button
                       onClick={() => setTipoCorrecao('pontos')}
                       className={`p-4 rounded-xl border-2 transition-all ${
@@ -356,21 +292,35 @@ const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
                         tipoCorrecao === 'pontos' ? 'text-blue-600' : 'text-gray-400'
                       }`} />
                       <div className="font-semibold text-gray-900 dark:text-white">Registrar Pontos</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">4 pontos com horários definidos</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">4 pontos diários</div>
                     </button>
                     <button
-                      onClick={() => setTipoCorrecao('horas')}
+                      onClick={() => setTipoCorrecao('adicionar')}
                       className={`p-4 rounded-xl border-2 transition-all ${
-                        tipoCorrecao === 'horas'
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-300 dark:border-gray-600 hover:border-blue-300'
+                        tipoCorrecao === 'adicionar'
+                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-green-300'
                       }`}
                     >
                       <Plus className={`w-8 h-8 mx-auto mb-2 ${
-                        tipoCorrecao === 'horas' ? 'text-blue-600' : 'text-gray-400'
+                        tipoCorrecao === 'adicionar' ? 'text-green-600' : 'text-gray-400'
                       }`} />
                       <div className="font-semibold text-gray-900 dark:text-white">Adicionar Horas</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Quantidade específica de horas</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Reajuste manual</div>
+                    </button>
+                    <button
+                      onClick={() => setTipoCorrecao('descontar')}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        tipoCorrecao === 'descontar'
+                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-red-300'
+                      }`}
+                    >
+                      <Minus className={`w-8 h-8 mx-auto mb-2 ${
+                        tipoCorrecao === 'descontar' ? 'text-red-600' : 'text-gray-400'
+                      }`} />
+                      <div className="font-semibold text-gray-900 dark:text-white">Descontar Horas</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Reajuste manual</div>
                     </button>
                   </div>
                 </div>
@@ -421,34 +371,48 @@ const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
                   </div>
                 )}
 
-                {tipoCorrecao === 'horas' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                      Quantidade de Horas para Adicionar
-                    </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Horas</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="23"
-                          value={horasParaAdicionar.horas}
-                          onChange={(e) => setHorasParaAdicionar({...horasParaAdicionar, horas: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                        />
+                {(tipoCorrecao === 'adicionar' || tipoCorrecao === 'descontar') && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        {tipoCorrecao === 'adicionar' ? 'Quantidade de Horas para Adicionar' : 'Quantidade de Horas para Descontar'}
+                      </label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Horas</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="999"
+                            value={horasParaAjustar.horas}
+                            onChange={(e) => setHorasParaAjustar({...horasParaAjustar, horas: parseInt(e.target.value) || 0})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Minutos</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={horasParaAjustar.minutos}
+                            onChange={(e) => setHorasParaAjustar({...horasParaAjustar, minutos: parseInt(e.target.value) || 0})}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Minutos</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="59"
-                          value={horasParaAdicionar.minutos}
-                          onChange={(e) => setHorasParaAdicionar({...horasParaAdicionar, minutos: parseInt(e.target.value) || 0})}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                        />
-                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        Motivo do Ajuste <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        value={motivoAjuste}
+                        onChange={(e) => setMotivoAjuste(e.target.value)}
+                        placeholder="Ex: Banco de horas, Horas extras não registradas, Compensação de falta, etc."
+                        rows="3"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+                      />
                     </div>
                   </div>
                 )}
@@ -532,16 +496,26 @@ const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-gray-400">Tipo:</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {tipoCorrecao === 'pontos' ? 'Registrar Pontos' : 'Adicionar Horas'}
+                        {tipoCorrecao === 'pontos' ? 'Registrar Pontos' : 
+                         tipoCorrecao === 'adicionar' ? 'Adicionar Horas' : 'Descontar Horas'}
                       </span>
                     </div>
-                    {tipoCorrecao === 'horas' && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Quantidade:</span>
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {horasParaAdicionar.horas}h {horasParaAdicionar.minutos}m
-                        </span>
-                      </div>
+                    {(tipoCorrecao === 'adicionar' || tipoCorrecao === 'descontar') && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Quantidade:</span>
+                          <span className={`font-semibold ${tipoCorrecao === 'adicionar' ? 'text-green-600' : 'text-red-600'}`}>
+                            {tipoCorrecao === 'descontar' && '-'}
+                            {horasParaAjustar.horas}h {horasParaAjustar.minutos}m
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-gray-600 dark:text-gray-400">Motivo:</span>
+                          <span className="font-semibold text-gray-900 dark:text-white text-right max-w-xs">
+                            {motivoAjuste || 'Não informado'}
+                          </span>
+                        </div>
+                      </>
                     )}
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-gray-400">Período:</span>
@@ -702,6 +676,23 @@ const ModalCorrecaoPontos = ({ isOpen, onClose, funcionarios }) => {
                     if (etapa === 1 && funcionariosSelecionados.length === 0) {
                       showToast('Selecione ao menos um funcionário', 'error');
                       return;
+                    }
+                    if (etapa === 2) {
+                      // Validar campos da etapa 2
+                      if ((tipoCorrecao === 'adicionar' || tipoCorrecao === 'descontar')) {
+                        if (horasParaAjustar.horas === 0 && horasParaAjustar.minutos === 0) {
+                          showToast('Informe a quantidade de horas para ajustar', 'error');
+                          return;
+                        }
+                        if (!motivoAjuste.trim()) {
+                          showToast('Informe o motivo do ajuste', 'error');
+                          return;
+                        }
+                      }
+                      if (tipoPeriodo === 'periodo' && (!dataInicio || !dataFim)) {
+                        showToast('Informe as datas de início e fim', 'error');
+                        return;
+                      }
                     }
                     setEtapa(etapa + 1);
                   } else {

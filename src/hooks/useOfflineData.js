@@ -29,9 +29,7 @@ export const useOfflineData = (storeName, options = {}) => {
       
       if (cachedData && cachedData.length > 0) {
         setData(cachedData);
-        console.log(`📦 Dados carregados do cache: ${storeName} (${cachedData.length} itens)`);
       } else {
-        console.warn(`⚠️ Nenhum dado em cache para: ${storeName}`);
         setData([]);
       }
     } catch (err) {

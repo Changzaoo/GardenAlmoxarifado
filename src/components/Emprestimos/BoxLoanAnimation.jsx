@@ -58,7 +58,6 @@ const BoxLoanAnimation = ({
     hasCompletedRef.current = false;
     
     if (totalTools === 0) {
-      console.warn('BoxLoanAnimation: Nenhuma ferramenta para animar');
       if (onComplete && !hasCompletedRef.current) {
         hasCompletedRef.current = true;
         const timer = setTimeout(() => onComplete(), 200);
@@ -70,21 +69,15 @@ const BoxLoanAnimation = ({
     // Durações fixas - INDEPENDENTE da quantidade de ferramentas
     const successDelay = tipo === 'devolucao' ? 500 : 1000;
     const completeDelay = tipo === 'devolucao' ? 800 : 1400;
-
-    console.log(`🎬 Iniciando animação: ${totalTools} ferramentas do tipo ${tipo} (duração fixa: ${completeDelay}ms)`);
-
     // Timer para mostrar sucesso
     const successTimer = setTimeout(() => {
       setShowSuccess(true);
       generateParticles();
-      console.log('✅ Animação de sucesso iniciada');
     }, successDelay);
 
     // ⚡ TIMER FORÇADO - Garante conclusão SEMPRE em 800ms (devolução) ou 1400ms (empréstimo)
     // Mesmo com internet instável ou problemas no backend
     forceCompleteTimerRef.current = setTimeout(() => {
-      console.log('🏁 Animação finalizada (GARANTIDO - timer forçado)');
-      
       if (!hasCompletedRef.current) {
         hasCompletedRef.current = true;
         

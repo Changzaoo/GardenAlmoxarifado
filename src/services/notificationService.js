@@ -11,7 +11,6 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
  */
 const criarNotificacao = async (usuarioId, tipo, titulo, mensagem, dados = {}) => {
   try {
-    console.log('📬 Criando notificação:', { usuarioId, tipo, titulo });
 
     const notificacao = {
       usuarioId,
@@ -25,7 +24,6 @@ const criarNotificacao = async (usuarioId, tipo, titulo, mensagem, dados = {}) =
     };
 
     const docRef = await addDoc(collection(db, 'notificacoes'), notificacao);
-    console.log('✅ Notificação criada no Firestore:', docRef.id);
 
     await enviarNotificacaoPush(titulo, mensagem, dados);
 
@@ -42,13 +40,12 @@ const criarNotificacao = async (usuarioId, tipo, titulo, mensagem, dados = {}) =
 const enviarNotificacaoPush = async (titulo, mensagem, dados = {}) => {
   try {
     if (!('Notification' in window)) {
-      console.log('⚠️ Navegador não suporta notificações');
+
       return;
     }
 
     if (Notification.permission === 'granted') {
-      console.log('🔔 Enviando notificação push...');
-      
+
       const notification = new Notification(titulo, {
         body: mensagem,
         icon: '/logo192.png',
@@ -72,7 +69,6 @@ const enviarNotificacaoPush = async (titulo, mensagem, dados = {}) => {
         notification.close();
       };
 
-      console.log('✅ Notificação push enviada');
     }
   } catch (error) {
     console.error('❌ Erro ao enviar notificação push:', error);

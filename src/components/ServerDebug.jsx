@@ -12,25 +12,11 @@ const ServerDebug = () => {
   const { servers, loading, error } = useServerManagement();
 
   useEffect(() => {
-    console.log('🐛 Debug - Servidores:', {
-      count: servers.length,
-      loading,
-      error,
-      servers: servers.map(s => ({
-        id: s.id,
-        name: s.name,
-        projectId: s.projectId,
-        region: s.region,
-        lat: s.latitude,
-        lng: s.longitude
-      }))
     });
   }, [servers, loading, error]);
 
   const handleAddServers = async () => {
-    console.log('🚀 Adicionando servidores Garden...');
     const result = await addGardenServers();
-    console.log('📊 Resultado:', result);
   };
 
   return (

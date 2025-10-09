@@ -259,15 +259,6 @@ const TarefasTab = ({
     
     // Debug apenas se não encontrou match
     if (!resultado && showOnlyUserTasks) {
-      console.log('❌ Tarefa NÃO atribuída ao usuário:', {
-        tarefaTitulo: tarefa.titulo,
-        funcionariosIds: tarefa.funcionariosIds,
-        funcionario: tarefa.funcionario,
-        responsavel: tarefa.responsavel,
-        usuarioId,
-        usuarioNome,
-        usuarioEmail
-      });
     }
     
     return resultado;

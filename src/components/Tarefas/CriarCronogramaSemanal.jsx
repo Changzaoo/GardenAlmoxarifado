@@ -183,13 +183,7 @@ const CriarCronogramaSemanal = ({ onClose, onCronogramaCriado }) => {
         
         // Debug para comparar dados
         if (func.nome === 'Vinicius') {
-          console.log('📅 CriarCronogramaSemanal - Vinicius:', {
-            func_original: func,
-            funcionarioCompleto: funcionarioCompleto,
-            cargo_original: func.cargo,
-            cargo_contexto: funcionarioCompleto?.cargo,
-            cargo_final: funcionarioCompleto?.cargo || func.cargo
-          });
+
         }
         
         return {

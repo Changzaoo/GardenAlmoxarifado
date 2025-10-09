@@ -80,13 +80,13 @@ enableIndexedDbPersistence(db, {
   forceOwnership: true // ✅ NOVO: Força esta aba a ser a dona do cache
 }).then(() => {
   persistenceEnabled = true;
-  console.log('✅ Persistência Firestore ativada com sucesso');
+
 }).catch((err) => {
   if (err.code === 'failed-precondition') {
-    console.warn('⚠️ Múltiplas abas abertas detectadas. Feche outras abas para melhor performance.');
+
     // Continua funcionando sem persistência
   } else if (err.code === 'unimplemented') {
-    console.warn('⚠️ Este navegador não suporta persistência.');
+
   } else {
     console.error('❌ Erro ao habilitar persistência:', err);
   }
@@ -113,7 +113,7 @@ if (process.env.NODE_ENV === 'development') {
     connectFirestoreEmulator(db, 'localhost', 8080);
     connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
   } catch (error) {
-    console.warn('Emuladores já conectados ou não disponíveis');
+
   }
 }
 

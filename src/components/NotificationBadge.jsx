@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bell, Archive, MessageCircle, Tool, FileText, ArrowLeftRight } from 'lucide-react';
 import { useNotification } from './NotificationProvider';
+import BackgroundJobsBadge from './BackgroundJobsBadge';
 
 const NotificationIcon = ({ tipo }) => {
   switch (tipo) {
@@ -49,6 +50,8 @@ export const NotificationBadge = () => {
             {unreadCount}
           </span>
         )}
+        {/* Badge de jobs em segundo plano */}
+        <BackgroundJobsBadge />
       </button>
 
       {/* Dropdown de notificações */}

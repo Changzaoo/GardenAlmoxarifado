@@ -160,14 +160,6 @@ const UserCreationForm = ({ onVoltar, onSucesso }) => {
 
       // Salvar no banco workflowbr1
       await addDoc(usuariosRefBR1, novoUsuario);
-
-      console.log('✅ Usuário criado com sucesso no workflowbr1:', {
-        nome: novoUsuario.nome,
-        email: novoUsuario.email,
-        nivel: novoUsuario.nivel,
-        banco: 'workflowbr1'
-      });
-
       // 4. Marcar código como usado (fazer update)
       const { updateDoc, doc } = await import('firebase/firestore');
       const { backupDb } = await import('../../config/firebaseDual');

@@ -68,13 +68,6 @@ const ProfileTab = () => {
     const nomeMatch = f.nome && usuario?.nome && f.nome.toLowerCase() === usuario.nome.toLowerCase();
     
     if (usuarioMatch || idMatch || uidMatch || stringIdMatch || stringUsuarioMatch || nomeMatch) {
-      console.log('🎯 Match encontrado para funcionário:', {
-        funcionario: f.nome,
-        usuario: f.usuario,
-        id: f.id,
-        photoURL: f.photoURL,
-        matchType: usuarioMatch ? 'usuario' : idMatch ? 'id' : uidMatch ? 'uid' : stringIdMatch ? 'stringId' : stringUsuarioMatch ? 'stringUsuario' : 'nome'
-      });
       return true;
     }
     return false;
@@ -84,15 +77,10 @@ const ProfileTab = () => {
   useEffect(() => {
     if (funcionarioInfo) {
       setDadosFuncionario(funcionarioInfo);
-      console.log('✅ Usando dados do FuncionariosProvider:', funcionarioInfo);
       return;
     }
     
     if (!usuario?.usuario) return;
-    
-    console.log('⚠️ funcionarioInfo não encontrado no contexto, buscando diretamente do Firestore...');
-    console.log('Buscando por usuario:', usuario.usuario, 'ID:', usuario.id);
-    
     // Tentar primeiro na coleção 'funcionarios'
     const unsubscribeFuncionarios = onSnapshot(
       query(
@@ -102,10 +90,8 @@ const ProfileTab = () => {
       (snapshot) => {
         if (!snapshot.empty) {
           const dados = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
-          console.log('✅ Dados encontrados em "funcionarios":', dados);
           setDadosFuncionario(dados);
         } else {
-          console.log('⚠️ Não encontrado em "funcionarios", tentando "usuario"...');
         }
       }
     );
@@ -116,17 +102,14 @@ const ProfileTab = () => {
       (docSnap) => {
         if (docSnap.exists()) {
           const dados = { id: docSnap.id, ...docSnap.data() };
-          console.log('✅ Dados encontrados em "usuario":', dados);
           // Só usar se não encontrou em funcionários
           setDadosFuncionario(prev => prev || dados);
         } else {
-          console.log('❌ Nenhum dado encontrado em "usuario"');
         }
       }
     );
     
     return () => {
-      console.log('🧹 Limpando listeners do ProfileTab (funcionarios e usuario)');
       unsubscribeFuncionarios();
       unsubscribeUsuario();
     };
@@ -139,26 +122,7 @@ const ProfileTab = () => {
   // Debug do cargo, foto e usuário
   useEffect(() => {
     const fotoFinal = dadosExibicao?.photoURL || usuario?.photoURL;
-    console.log('👤 USUÁRIO LOGADO (ProfileTab):', {
-      id: usuario?.id,
-      nome: usuario?.nome,
-      usuario: usuario?.usuario,
-      funcionarioInfo: funcionarioInfo,
-      dadosFuncionario: dadosFuncionario,
-      dadosExibicao: dadosExibicao,
-      cargo_funcionarioInfo: funcionarioInfo?.cargo,
-      cargo_dadosFuncionario: dadosFuncionario?.cargo,
-      cargo_dadosExibicao: dadosExibicao?.cargo,
-      photoURL_funcionarioInfo: funcionarioInfo?.photoURL,
-      photoURL_dadosFuncionario: dadosFuncionario?.photoURL,
-      photoURL_dadosExibicao: dadosExibicao?.photoURL,
-      photoURL_usuario: usuario?.photoURL,
-      '🖼️ FOTO QUE SERÁ EXIBIDA': fotoFinal || 'Nenhuma foto disponível'
-    });
-    
     if (!fotoFinal) {
-      console.warn('⚠️ Nenhuma foto encontrada para o usuário:', usuario?.nome);
-      console.warn('Verifique se o funcionário tem photoURL cadastrado no Firestore');
     }
   }, [dadosExibicao, funcionarios, usuario, funcionarioInfo, dadosFuncionario]);
   
@@ -187,9 +151,6 @@ const ProfileTab = () => {
   // Carregar cargo do funcionário
   useEffect(() => {
     if (!usuario?.id) return;
-
-    console.log("Buscando cargo do funcionário:", usuario.id);
-    
     const unsubscribeCargo = onSnapshot(
       query(
         collection(db, 'funcionarios'),
@@ -198,10 +159,8 @@ const ProfileTab = () => {
       (snapshot) => {
         if (!snapshot.empty) {
           const funcionarioData = snapshot.docs[0].data();
-          console.log("Dados do funcionário encontrados:", funcionarioData);
           setCargoFuncionario(funcionarioData.cargo || '');
         } else {
-          console.log("Funcionário não encontrado na coleção");
           setCargoFuncionario('');
         }
       }
@@ -213,8 +172,6 @@ const ProfileTab = () => {
   // Funções de avaliação
   const handleAddAvaliacao = async (estrelas, comentario) => {
     try {
-      console.log('Adicionando avaliação:', { estrelas, comentario, usuario });
-      
       // Verifica se temos o usuário e seus dados
       if (!usuario?.id) {
         throw new Error('Usuário não encontrado');
@@ -254,11 +211,7 @@ const ProfileTab = () => {
           detalhes: 'Avaliação criada manualmente'
         }]
       };
-
-      console.log('Salvando avaliação:', novaAvaliacao);
       const docRef = await addDoc(collection(db, 'avaliacoes'), novaAvaliacao);
-      console.log('Avaliação salva com ID:', docRef.id);
-      
       // Atualiza as estatísticas localmente
       setStats(prevStats => {
         const novoTotal = prevStats.totalAvaliacoes + 1;
@@ -287,14 +240,11 @@ const ProfileTab = () => {
 
   const handleDeleteAvaliacao = async (avaliacaoId) => {
     if (!temPermissaoAvaliacao) {
-      console.log('Usuário sem permissão para excluir avaliações');
       return;
     }
     
     if (window.confirm('Tem certeza que deseja excluir esta avaliação?')) {
       try {
-        console.log('Excluindo avaliação:', avaliacaoId);
-        
         // Em vez de excluir, marca como inativa
         const avaliacaoRef = doc(db, 'avaliacoes', avaliacaoId);
         await updateDoc(avaliacaoRef, {
@@ -302,9 +252,6 @@ const ProfileTab = () => {
           dataExclusao: new Date().toISOString(),
           usuarioExclusao: usuario.usuario
         });
-
-        console.log('Avaliação marcada como inativa');
-
         // A atualização do estado será feita automaticamente pelo onSnapshot
       } catch (error) {
         console.error('Erro ao excluir avaliação:', error);
@@ -316,12 +263,8 @@ const ProfileTab = () => {
   // Carregar avaliações do usuário
   useEffect(() => {
     if (!usuario?.id) {
-      console.log('ID do usuário não disponível ainda');
       return;
     }
-
-    console.log('Carregando avaliações para usuário:', usuario.id);
-
     const avaliacoesRef = collection(db, 'avaliacoes');
     const avaliacoesQuery = query(
       avaliacoesRef,
@@ -330,8 +273,6 @@ const ProfileTab = () => {
     );
 
     const unsubscribe = onSnapshot(avaliacoesQuery, (snapshot) => {
-      console.log('Snapshot de avaliações recebido:', snapshot.size, 'documentos');
-
       const avaliacoesData = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -341,9 +282,6 @@ const ProfileTab = () => {
           data: data.data
         };
       });
-
-      console.log('Avaliações processadas:', avaliacoesData);
-
       // Ordena por data mais recente
       const avaliacoesOrdenadas = avaliacoesData.sort((a, b) => 
         new Date(b.data) - new Date(a.data)
@@ -355,20 +293,12 @@ const ProfileTab = () => {
       if (avaliacoesData.length > 0) {
         const somaEstrelas = avaliacoesData.reduce((sum, av) => sum + av.estrelas, 0);
         const media = somaEstrelas / avaliacoesData.length;
-        
-        console.log('Atualizando estatísticas:', {
-          mediaEstrelas: media,
-          totalAvaliacoes: avaliacoesData.length,
-          somaEstrelas
-        });
-        
         setStats(prevStats => ({
           ...prevStats,
           mediaEstrelas: media,
           totalAvaliacoes: avaliacoesData.length
         }));
       } else {
-        console.log('Nenhuma avaliação encontrada');
         setStats(prevStats => ({
           ...prevStats,
           mediaEstrelas: 0,
@@ -384,10 +314,7 @@ const ProfileTab = () => {
 
   // Carregar empréstimos do usuário
   useEffect(() => {
-    console.log("Iniciando carregamento de empréstimos para usuário:", usuario?.id);
-    
     if (!usuario?.id) {
-      console.log("ID do usuário não disponível ainda");
       return;
     }
 
@@ -401,8 +328,6 @@ const ProfileTab = () => {
           id: doc.id,
           ...doc.data()
         }));
-        console.log("Empréstimos encontrados:", emprestimosData.length);
-        console.log("Detalhes dos empréstimos:", emprestimosData);
         setEmprestimos(emprestimosData);
       }
     );
@@ -413,8 +338,6 @@ const ProfileTab = () => {
   useEffect(() => {
     const fetchUserStats = async () => {
       try {
-        console.log("Buscando estatísticas para usuário:", usuario);
-
         // Buscar tarefas concluídas
         const tarefasRef = collection(db, 'tarefas');
         const tarefasQuery = query(
@@ -426,27 +349,16 @@ const ProfileTab = () => {
         let tarefasConcluidas = 0;
         let somaEstrelas = 0;
         let totalAvaliacoes = 0;
-        
-        console.log("Total de tarefas encontradas:", tarefasSnap.size);
-        
         tarefasSnap.forEach(doc => {
           const tarefa = doc.data();
-          console.log("Tarefa encontrada:", tarefa);
-          
           if (tarefa.status === 'concluida') {
             tarefasConcluidas++;
             if (tarefa.avaliacaoSupervisor) {
-              console.log("Avaliação encontrada:", tarefa.avaliacaoSupervisor);
               somaEstrelas += Number(tarefa.avaliacaoSupervisor);
               totalAvaliacoes++;
             }
           }
         });
-
-        console.log("Tarefas concluídas:", tarefasConcluidas);
-        console.log("Total avaliações:", totalAvaliacoes);
-        console.log("Soma estrelas:", somaEstrelas);
-
         // Buscar empréstimos ativos
         const emprestimosRef = collection(db, 'emprestimos');
         const emprestimosQuery = query(
@@ -458,15 +370,11 @@ const ProfileTab = () => {
         let emprestimosAtivos = 0;
         emprestimosSnap.forEach(doc => {
           const emprestimo = doc.data();
-          console.log("Empréstimo encontrado:", emprestimo);
           if (emprestimo.status === 'ativo' || emprestimo.status === 'emprestado') {
             // Conta todas as ferramentas do empréstimo
             emprestimosAtivos += emprestimo.ferramentas?.length || 0;
           }
         });
-
-        console.log("Ferramentas emprestadas:", emprestimosAtivos);
-
         const mediaEstrelas = totalAvaliacoes > 0 ? (somaEstrelas / totalAvaliacoes) : 0;
         let ferramentasDevolvidas = 0;
         emprestimosSnap.forEach(doc => {

@@ -172,7 +172,6 @@ const BackupMonitoringPageContent = () => {
 
     try {
       // Teste 1: Escrita
-      console.log(`🧪 Iniciando teste de escrita em ${dbName}...`);
       const writeStart = performance.now();
       const testRef = await addDoc(collection(db, 'backup_test'), {
         test: true,
@@ -181,8 +180,6 @@ const BackupMonitoringPageContent = () => {
         createdBy: 'backup-monitoring-test'
       });
       const writeTime = performance.now() - writeStart;
-      console.log(`✅ Escrita concluída: ${testRef.id} em ${writeTime.toFixed(2)}ms`);
-
       results.tests.push({
         name: 'Escrita',
         status: 'success',
@@ -299,15 +296,12 @@ const BackupMonitoringPageContent = () => {
   const loadCollections = async () => {
     setCollectionsLoading(true);
     try {
-      console.log('🔍 Carregando coleções de todos os bancos...');
       const collectionsData = await getAllCollections();
       setCollections(collectionsData);
       
       // Carregar comparação
       const comparisonData = await compareCollections();
       setCollectionsComparison(comparisonData);
-      
-      console.log('✅ Coleções carregadas:', collectionsData.totals);
     } catch (error) {
       console.error('❌ Erro ao carregar coleções:', error);
       alert('Erro ao carregar coleções. Verifique a conexão com o Firebase.');
@@ -384,7 +378,6 @@ const BackupMonitoringPageContent = () => {
    */
   const handleServerAdded = (newServer) => {
     setCustomServers(prev => [...prev, newServer]);
-    console.log('✅ Novo servidor adicionado:', newServer.name);
   };
 
   /**
@@ -870,7 +863,6 @@ const BackupMonitoringPageContent = () => {
           <button
             onClick={() => {
               const info = getInfo();
-              console.log('📊 Info do Sistema:', info);
               alert('Informações enviadas para o console (F12)');
             }}
             className="flex items-center justify-center gap-2 px-6 py-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-all shadow-lg hover:shadow-xl"

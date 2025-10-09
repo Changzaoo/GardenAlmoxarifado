@@ -12,7 +12,6 @@ const ComprovanteModal = ({ isOpen, onClose, tipo, dados }) => {
   useEffect(() => {
     if (isOpen && dados?.id) {
       salvarComprovante(tipo, dados).catch(err => {
-        console.warn('Erro ao salvar comprovante, mas continuando:', err);
       });
     }
   }, [isOpen, tipo, dados]);

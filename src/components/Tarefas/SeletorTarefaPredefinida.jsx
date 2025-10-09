@@ -17,8 +17,7 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
   useEffect(() => {
     try {
       const unsubscribe = carregarTemplatesPersonalizados(templates => {
-        console.log('Templates carregados:', templates); // Para debug
-        setTemplatesPersonalizados(templates);
+
       });
       return () => unsubscribe();
     } catch (error) {
