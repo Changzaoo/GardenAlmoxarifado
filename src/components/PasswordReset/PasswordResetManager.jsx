@@ -185,7 +185,7 @@ const PasswordResetManager = () => {
             usuarioEmail: usuarioObj.email,
             usuarioNome: usuarioObj.nome || usuarioObj.email,
             validadeHoras,
-            criadoPor: usuario.email
+            criadoPor: usuario?.email || usuario?.nome || 'Administrador'
           });
         } else {
           // Criação de conta
@@ -199,7 +199,7 @@ const PasswordResetManager = () => {
             setorId: (nivel >= 1 && nivel <= 3) ? setorSelecionado : null,
             setorNome: (nivel >= 1 && nivel <= 3) ? setorObj?.nome : null,
             validadeHoras,
-            criadoPor: usuario.email
+            criadoPor: usuario?.email || usuario?.nome || 'Administrador'
           });
         }
         
@@ -309,7 +309,7 @@ const PasswordResetManager = () => {
   // Obter códigos atuais baseado na aba ativa
   const codigosAtuais = abaAtiva === 'redefinicao' ? codigosRedefinicao : codigosCriacao;
 
-  // Filtrar códigos
+  // Filtrar códigos tradicionais
   const codigosFiltrados = codigosAtuais.filter(codigo => {
     // Filtro por status
     if (filtro === 'ativos' && codigo.expirado) return false;
@@ -326,12 +326,51 @@ const PasswordResetManager = () => {
 
     return true;
   });
+  
+  // Filtrar QR Codes baseado na aba ativa
+  const qrCodesFiltrados = qrCodesAtivos.filter(qr => {
+    // Filtrar por tipo
+    if (abaAtiva === 'redefinicao' && qr.tipo !== 'redefinicao_senha') return false;
+    if (abaAtiva === 'criacao' && qr.tipo !== 'criacao_conta') return false;
+    
+    // Filtro por status
+    const agora = new Date();
+    const expiraData = new Date(qr.expiraEm);
+    const expirado = qr.usado || agora > expiraData;
+    
+    if (filtro === 'ativos' && expirado) return false;
+    if (filtro === 'expirados' && !expirado) return false;
 
-  // Estatísticas
+    // Filtro por busca
+    if (busca) {
+      const termo = busca.toLowerCase();
+      return (
+        (qr.token && qr.token.toLowerCase().includes(termo)) ||
+        (qr.usuarioEmail && qr.usuarioEmail.toLowerCase().includes(termo)) ||
+        (qr.empresaNome && qr.empresaNome.toLowerCase().includes(termo))
+      );
+    }
+
+    return true;
+  });
+
+  // Estatísticas (códigos tradicionais + QR Codes)
+  const totalQRs = qrCodesAtivos.filter(qr => {
+    if (abaAtiva === 'redefinicao') return qr.tipo === 'redefinicao_senha';
+    if (abaAtiva === 'criacao') return qr.tipo === 'criacao_conta';
+    return false;
+  });
+  
+  const qrsAtivos = totalQRs.filter(qr => {
+    const agora = new Date();
+    const expiraData = new Date(qr.expiraEm);
+    return !qr.usado && agora <= expiraData;
+  });
+  
   const stats = {
-    total: codigosAtuais.length,
-    ativos: codigosAtuais.filter(c => !c.expirado).length,
-    expirados: codigosAtuais.filter(c => c.expirado).length,
+    total: codigosAtuais.length + totalQRs.length,
+    ativos: codigosAtuais.filter(c => !c.expirado).length + qrsAtivos.length,
+    expirados: codigosAtuais.filter(c => c.expirado).length + (totalQRs.length - qrsAtivos.length),
     genericos: codigosAtuais.filter(c => !c.usuarioEmail && !c.expirado).length
   };
 
@@ -501,14 +540,15 @@ const PasswordResetManager = () => {
         </div>
       </div>
 
-      {/* Lista de Códigos */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {codigosFiltrados.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <Key className="w-16 h-16 mx-auto mb-4 opacity-20" />
-            <p>Nenhum código encontrado</p>
+      {/* Lista de Códigos Tradicionais */}
+      {codigosFiltrados.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Key className="w-5 h-5" />
+              Códigos de Texto
+            </h3>
           </div>
-        ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
@@ -604,8 +644,115 @@ const PasswordResetManager = () => {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+      
+      {/* Lista de QR Codes */}
+      {qrCodesFiltrados.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-6 py-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-b border-purple-200 dark:border-purple-700">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              QR Codes Únicos
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+            {qrCodesFiltrados.map((qr) => {
+              const agora = new Date();
+              const expiraData = new Date(qr.expiraEm);
+              const expirado = qr.usado || agora > expiraData;
+              const tempoRestante = Math.max(0, Math.floor((expiraData - agora) / (1000 * 60)));
+              
+              return (
+                <div 
+                  key={qr.id} 
+                  className={`bg-white dark:bg-gray-700 border-2 rounded-xl p-4 transition-all ${
+                    expirado 
+                      ? 'border-red-200 dark:border-red-800 opacity-60' 
+                      : 'border-purple-200 dark:border-purple-700 hover:shadow-lg'
+                  }`}
+                >
+                  {/* Status Badge */}
+                  <div className="flex items-center justify-between mb-3">
+                    {expirado ? (
+                      <span className="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {qr.usado ? 'Usado' : 'Expirado'}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Ativo
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleRevogarQRCode(qr.id)}
+                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      title="Revogar QR Code"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* QR Code Info */}
+                  <div className="space-y-2 text-sm">
+                    {qr.empresaNome && (
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <Building2 className="w-4 h-4 text-purple-500" />
+                        <span className="font-medium">{qr.empresaNome}</span>
+                      </div>
+                    )}
+                    {qr.setorNome && (
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <Briefcase className="w-4 h-4" />
+                        <span>{qr.setorNome}</span>
+                      </div>
+                    )}
+                    {qr.usuarioEmail && (
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <User className="w-4 h-4" />
+                        <span className="truncate">{qr.usuarioEmail}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs">
+                      <Clock className="w-3 h-3" />
+                      {expirado ? (
+                        <span className="text-red-600 dark:text-red-400">Expirado</span>
+                      ) : (
+                        <span>{Math.floor(tempoRestante / 60)}h {tempoRestante % 60}m restantes</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* View QR Code Button */}
+                  {!expirado && (
+                    <button
+                      onClick={() => {
+                        setQrCodeSelecionado(qr);
+                        setMostrarQRCode(true);
+                      }}
+                      className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      Ver QR Code
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      
+      {/* Mensagem quando não há códigos */}
+      {codigosFiltrados.length === 0 && qrCodesFiltrados.length === 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center text-gray-500 dark:text-gray-400">
+          <Key className="w-16 h-16 mx-auto mb-4 opacity-20" />
+          <p className="font-medium">Nenhum código encontrado</p>
+          <p className="text-sm mt-2">Gere novos códigos para começar</p>
+        </div>
+      )}
 
       {/* Modal de Gerar Código */}
       <AnimatePresence>

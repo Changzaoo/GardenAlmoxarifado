@@ -21,6 +21,8 @@ import CriarAdminTemp from './components/Auth/CriarAdminTemp';
 import OfflineIndicator from './components/OfflineIndicator';
 import QRCodeScanner from './components/QRCode/QRCodeScanner';
 import PasswordResetForm from './components/PasswordReset/PasswordResetForm';
+import CriarConta from './components/Auth/CriarConta';
+import { DataProvider } from './context/DataContext';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Componentes das páginas
@@ -188,6 +190,7 @@ function AppContent() {
         <Route path="/login" element={<LoginFormContainer />} />
         <Route path="/criar-admin-temp" element={<CriarAdminTemp />} />
         <Route path="/qr-auth" element={<QRCodeScanner />} />
+        <Route path="/criar-conta" element={<CriarConta onVoltar={() => window.location.href = '/login'} />} />
         <Route path="/redefinir-senha" element={<PasswordResetForm onVoltar={() => window.location.href = '/'} />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<PrivateRoute requiredLevel={1}><Workflow /></PrivateRoute>} />
@@ -203,13 +206,15 @@ function App() {
     <Router>
       <ThemeProvider>
         <AuthProvider>
-          <FuncionariosProvider>
-            <InventarioProvider>
-              <MessageNotificationProvider>
-                <AppContent />
-              </MessageNotificationProvider>
-            </InventarioProvider>
-          </FuncionariosProvider>
+          <DataProvider>
+            <FuncionariosProvider>
+              <InventarioProvider>
+                <MessageNotificationProvider>
+                  <AppContent />
+                </MessageNotificationProvider>
+              </InventarioProvider>
+            </FuncionariosProvider>
+          </DataProvider>
         </AuthProvider>
       </ThemeProvider>
     </Router>

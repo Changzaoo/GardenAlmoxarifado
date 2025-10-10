@@ -1,10 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { storage, db } from '../../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useToast } from '../ToastProvider';
+
+// Import opcional do DataContext
+let DataContext;
+try {
+  const module = require('../../context/DataContext');
+  DataContext = module.DataContext;
+} catch (e) {
+  DataContext = null;
+}
 import FuncionarioProfile from './FuncionarioProfile';
 import { 
   UsersRound, 
@@ -54,7 +63,19 @@ const formatarTelefone = (telefone) => {
   return telefone;
 };
 
-const FuncionariosTab = ({ funcionarios = [], adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
+const FuncionariosTab = ({ funcionarios: funcionariosProps = [], adicionarFuncionario, removerFuncionario, atualizarFuncionario, readonly }) => {
+  // Tentar usar DataContext se disponível
+  let funcionariosGlobal = [];
+  if (DataContext) {
+    try {
+      const context = useContext(DataContext);
+      funcionariosGlobal = context?.usuarios || [];
+    } catch (e) {
+      funcionariosGlobal = [];
+    }
+  }
+  
+  const funcionarios = funcionariosProps.length > 0 ? funcionariosProps : funcionariosGlobal;
   const [novoFuncionario, setNovoFuncionario] = useState({ nome: '', cargo: '', telefone: '' });
   const [showGruposModal, setShowGruposModal] = useState(false);
   const [showUnificarModal, setShowUnificarModal] = useState(false);

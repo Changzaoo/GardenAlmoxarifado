@@ -7,17 +7,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { User, Mail, Lock, ArrowLeft, CheckCircle, AlertCircle, Eye, EyeOff, QrCode } from 'lucide-react';
+import { User, Lock, ArrowLeft, CheckCircle, AlertCircle, Eye, EyeOff, QrCode } from 'lucide-react';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { backupDb } from '../../config/firebaseDual';
 import { createUserWithPassword } from '../../services/passwordService';
-import { isValidEmail, validatePasswordStrength } from '../../services/authService';
+import { validatePasswordStrength } from '../../services/authService';
 
 const CriarConta = ({ onVoltar, onSucesso }) => {
   const location = useLocation();
   const [formData, setFormData] = useState({
     nome: '',
-    email: '',
+    nomePublico: '',
     senha: '',
     confirmarSenha: '',
     empresaId: '',
@@ -141,14 +141,16 @@ const CriarConta = ({ onVoltar, onSucesso }) => {
       return false;
     }
 
-    // Validar email
-    if (!formData.email) {
-      setErro('Por favor, informe seu email');
+    // Validar nome público
+    if (!formData.nomePublico || formData.nomePublico.trim().length < 3) {
+      setErro('Nome público deve ter no mínimo 3 caracteres');
       return false;
     }
 
-    if (!isValidEmail(formData.email)) {
-      setErro('Email inválido');
+    // Validar formato do nome público (sem espaços, apenas letras, números e _)
+    const nomePublicoRegex = /^[a-zA-Z0-9_]+$/;
+    if (!nomePublicoRegex.test(formData.nomePublico)) {
+      setErro('Nome público deve conter apenas letras, números e underline (_)');
       return false;
     }
 
@@ -185,13 +187,13 @@ const CriarConta = ({ onVoltar, onSucesso }) => {
     setLoading(true);
 
     try {
-      // Verificar se email já existe
+      // Verificar se nome público já existe
       const usuariosRef = collection(backupDb, 'usuarios');
-      const q = query(usuariosRef, where('email', '==', formData.email));
+      const q = query(usuariosRef, where('nomePublico', '==', formData.nomePublico.trim().toLowerCase()));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        setErro('Este email já está cadastrado');
+        setErro('Este nome público já está em uso. Escolha outro.');
         setLoading(false);
         return;
       }
@@ -199,7 +201,8 @@ const CriarConta = ({ onVoltar, onSucesso }) => {
       // Criar usuário com passwordService
       const userData = {
         nome: formData.nome.trim(),
-        email: formData.email.trim().toLowerCase(),
+        nomePublico: formData.nomePublico.trim().toLowerCase(),
+        email: '', // Email não é mais obrigatório
         nivel: 1, // Funcionário padrão
         ativo: false, // Aguarda aprovação do admin
         empresaId: formData.empresaId || '', // Preenche se veio do QR Code
@@ -262,7 +265,7 @@ const CriarConta = ({ onVoltar, onSucesso }) => {
           </p>
 
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            Você receberá um email quando sua conta for ativada.
+            Seu nome público: <strong>@{formData.nomePublico}</strong>
           </p>
           
           <button
@@ -311,7 +314,7 @@ const CriarConta = ({ onVoltar, onSucesso }) => {
         )}
 
         <form onSubmit={handleCriarConta} className="space-y-4">
-          {/* Nome */}
+          {/* Nome Completo */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Nome Completo
@@ -329,26 +332,33 @@ const CriarConta = ({ onVoltar, onSucesso }) => {
                 required
               />
             </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Seu nome real (visível apenas para administradores)
+            </p>
           </div>
 
-          {/* Email */}
+          {/* Nome Público (Username) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email
+              Nome Público (Username)
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
-                type="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                name="nomePublico"
+                value={formData.nomePublico}
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="joao@email.com"
+                placeholder="joao_silva"
                 disabled={loading}
                 required
+                maxLength={20}
               />
             </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Apenas letras, números e underline (_). Este será seu nome de exibição.
+            </p>
           </div>
 
           {/* Senha */}

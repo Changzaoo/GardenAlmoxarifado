@@ -1,7 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import initialSyncService from '../services/initialSyncService';
 
+// Import opcional do DataContext
+let DataContext;
+try {
+  const module = require('../context/DataContext');
+  DataContext = module.DataContext;
+} catch (e) {
+  DataContext = null;
+}
+
 const InitialSyncLoader = ({ onComplete }) => {
+  // Tentativa de usar DataContext se disponível
+  let dataLoading = true;
+  if (DataContext) {
+    try {
+      const context = useContext(DataContext);
+      dataLoading = context?.loading ?? true;
+    } catch (e) {
+      dataLoading = true;
+    }
+  }
   const [syncProgress, setSyncProgress] = useState({
     total: 0,
     completed: 0,
@@ -12,6 +31,14 @@ const InitialSyncLoader = ({ onComplete }) => {
   });
 
   useEffect(() => {
+    if (!dataLoading) {
+      // Dados carregados do DataContext
+      if (onComplete) {
+        onComplete({ success: true, cached: false });
+      }
+      return;
+    }
+
     let unsubscribe;
 
     const startSync = async () => {
@@ -39,7 +66,7 @@ const InitialSyncLoader = ({ onComplete }) => {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [onComplete]);
+  }, [onComplete, dataLoading]);
 
   const getStatusText = () => {
     switch (syncProgress.status) {

@@ -4263,22 +4263,29 @@ const AlmoxarifadoSistema = () => {
                   </div>
                 </div>
                 {desktopEditMode && desktopLongPressItem ? (
-                  <button
-                    onClick={() => {
-                      setItemFavorito(desktopLongPressItem);
-                      // Auto-salvar quando em modo de edição desktop
-                      setTimeout(async () => {
-                        await salvarMenuConfig(menuPersonalizado, desktopLongPressItem);
-                        setShowMenuConfig(false);
-                        setDesktopEditMode(false);
-                        setDesktopLongPressItem(null);
-                      }, 300);
-                    }}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg"
-                  >
-                    <Trophy className="w-5 h-5" />
-                    Definir "{abas.find(aba => aba.id === desktopLongPressItem)?.nome}" como Favorita
-                  </button>
+                  (() => {
+                    const abaSelecionada = abas.find(aba => aba.id === desktopLongPressItem);
+                    if (!abaSelecionada) return null;
+                    
+                    return (
+                      <button
+                        onClick={() => {
+                          setItemFavorito(desktopLongPressItem);
+                          // Auto-salvar quando em modo de edição desktop
+                          setTimeout(async () => {
+                            await salvarMenuConfig(menuPersonalizado, desktopLongPressItem);
+                            setShowMenuConfig(false);
+                            setDesktopEditMode(false);
+                            setDesktopLongPressItem(null);
+                          }, 300);
+                        }}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg"
+                      >
+                        <Trophy className="w-5 h-5" />
+                        Definir "{abaSelecionada.nome}" como Favorita
+                      </button>
+                    );
+                  })()
                 ) : (
                   <select
                     value={itemFavorito}
@@ -4301,6 +4308,8 @@ const AlmoxarifadoSistema = () => {
               </h3>
               <div className="space-y-3">
                 {menuPersonalizado && getAbasOrdenadas().map((aba, index) => {
+                    if (!aba || !aba.icone) return null;
+                    
                     const config = menuPersonalizado.find(c => c.id === aba.id);
                     const Icone = aba.icone;
                     const isDragging = draggedItem === index;

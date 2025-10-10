@@ -61,7 +61,7 @@ export const criarQRCodeCriacaoConta = async (dados) => {
       criadoEm: serverTimestamp(),
       expiraEm: expiraEm.toISOString(),
       validadeHoras: dados.validadeHoras || 24,
-      criadoPor: dados.criadoPor,
+      criadoPor: dados.criadoPor || 'Sistema',
       usadoEm: null,
       usadoPor: null
     };
@@ -118,7 +118,7 @@ export const criarQRCodeRedefinicaoSenha = async (dados) => {
       criadoEm: serverTimestamp(),
       expiraEm: expiraEm.toISOString(),
       validadeHoras: dados.validadeHoras || 24,
-      criadoPor: dados.criadoPor,
+      criadoPor: dados.criadoPor || 'Sistema',
       usadoEm: null,
       usadoPor: null
     };

@@ -93,8 +93,9 @@ export const updateUserPassword = async (userId, novaSenha) => {
  * @returns {Promise<string>} ID do documento criado
  */
 export const createUserWithPassword = async (userData, senha) => {
-  if (!userData.email) {
-    throw new Error('Email é obrigatório');
+  // Validar nome ou nomePublico
+  if (!userData.nome && !userData.nomePublico) {
+    throw new Error('Nome ou Nome Público é obrigatório');
   }
 
   if (!senha || senha.length < 6) {

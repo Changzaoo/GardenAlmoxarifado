@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Check, X, Clock, Star, Trash2, MessageSquare, Calendar } from 'lucide-react';
+import { Check, X, Clock, Star, Trash2, MessageSquare, Calendar, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { hasSupervisionPermission, NIVEIS_PERMISSAO } from '../../constants/permissoes';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ToastProvider';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
   const { usuario } = useAuth();
@@ -128,14 +129,14 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
           {/* Status e Prioridade */}
           <div className="flex flex-wrap gap-3">
             <span
-              className={`px-3 py-1 rounded-full text-sm font-medium ${
+              className={`px-4 py-2 rounded-full text-sm font-medium ${
                 tarefa.status === 'pendente'
-                  ? 'bg-yellow-500/10 text-yellow-500'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                   : tarefa.status === 'em_andamento'
-                  ? 'bg-blue-500/10 text-blue-500'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white'
                   : tarefa.status === 'pausada'
-                  ? 'bg-orange-500/10 text-orange-500'
-                  : 'bg-green-500/10 text-green-500'
+                  ? 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300'
+                  : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
               }`}
             >
               {tarefa.status === 'pendente'
@@ -146,12 +147,12 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
                 ? 'Pausada'
                 : 'Concluída'}
             </span>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+            <span className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1.5 ${
               tarefa.prioridade === 'alta'
-                ? 'bg-red-500/10 text-red-500'
-                : tarefa.prioridade === 'media'
-                ? 'bg-yellow-500/10 text-yellow-500'
-                : 'bg-green-500/10 text-green-500'
+                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700'
+                : tarefa.prioridade === 'media' || tarefa.prioridade === 'média'
+                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700'
+                : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700'
             }`}>
               Prioridade {tarefa.prioridade.charAt(0).toUpperCase() + tarefa.prioridade.slice(1)}
             </span>
@@ -173,6 +174,27 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
               })}
             </p>
           </div>
+
+          {/* Criado Por */}
+          {tarefa.criadoPor && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Criado por</h3>
+              <div className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 border-2 border-blue-400 dark:border-blue-500 rounded-full text-white text-sm font-bold shadow-md">
+                {tarefa.criadoPor.fotoUrl ? (
+                  <img 
+                    src={tarefa.criadoPor.fotoUrl} 
+                    alt={tarefa.criadoPor.nome} 
+                    className="w-5 h-5 rounded-full object-cover border-2 border-white"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center border-2 border-white">
+                    <User className="w-3 h-3" />
+                  </div>
+                )}
+                {tarefa.criadoPor.nome}
+              </div>
+            </div>
+          )}
 
           {/* Datas e Tempo */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -220,8 +242,19 @@ const DetalheTarefa = ({ tarefa, onClose, onConcluir, readOnly = false }) => {
               {tarefa.funcionarios?.map((func) => (
                 <span
                   key={func.nome}
-                  className="bg-white dark:bg-gray-700 px-3 py-1 rounded-full text-gray-900 dark:text-white text-sm"
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 border-2 border-blue-400 dark:border-blue-500 px-3 py-2 rounded-full text-white text-sm font-bold shadow-md"
                 >
+                  {func.fotoUrl ? (
+                    <img 
+                      src={func.fotoUrl} 
+                      alt={func.nome || 'Funcionário'} 
+                      className="w-6 h-6 rounded-full object-cover border-2 border-white"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center border-2 border-white">
+                      <User className="w-3.5 h-3.5" />
+                    </div>
+                  )}
                   {func.nome}
                 </span>
               ))}

@@ -41,7 +41,18 @@ const QRCodeDisplay = ({ qrCode, onClose, onRevoke }) => {
   
   const formatarData = (data) => {
     if (!data) return 'N/A';
-    const d = typeof data === 'string' ? new Date(data) : data.toDate();
+    
+    let d;
+    if (typeof data === 'string') {
+      d = new Date(data);
+    } else if (data.toDate && typeof data.toDate === 'function') {
+      d = data.toDate();
+    } else if (data instanceof Date) {
+      d = data;
+    } else {
+      return 'N/A';
+    }
+    
     return d.toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',

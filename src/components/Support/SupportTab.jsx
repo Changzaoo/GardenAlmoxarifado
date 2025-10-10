@@ -1,17 +1,38 @@
 import React, { useState } from 'react';
-import { Search, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
+import { 
+  Search, ChevronDown, ChevronUp, HelpCircle, Package, Users, ShoppingCart, 
+  Wrench, AlertTriangle, XCircle, BarChart3, TrendingUp, ArrowRightLeft, 
+  CheckSquare, Settings, Trophy, Clock, FileText, QrCode, MessageSquare, 
+  FileCheck, Code, Shield, Sparkles, BookOpen, 
+  Star, Info, ExternalLink,
+  CheckCircle2, XOctagon, AlertCircle, Target, Lightbulb, Rocket
+} from 'lucide-react';
 import { NIVEIS_PERMISSAO } from '../../constants/permissoes';
 
 const SupportTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedSection, setExpandedSection] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [activeView, setActiveView] = useState('funcionalidades'); // funcionalidades, faq, primeiros-passos, videos
+
+  // Categorias para filtro
+  const categories = [
+    { id: 'all', nome: 'Todas', icone: Sparkles, cor: 'blue' },
+    { id: 'estoque', nome: 'Estoque', icone: Package, cor: 'blue' },
+    { id: 'pessoas', nome: 'Pessoas', icone: Users, cor: 'blue' },
+    { id: 'relatorios', nome: 'Relatórios', icone: BarChart3, cor: 'blue' },
+    { id: 'admin', nome: 'Administração', icone: Shield, cor: 'blue' },
+  ];
 
   // Dados das funcionalidades do sistema
   const systemModules = [
     {
       id: 'inventario',
       title: 'Inventário',
-      description: 'Gerenciamento completo do inventário de ferramentas',
+      description: 'Gerenciamento completo do inventário de ferramentas e equipamentos',
+      icone: Package,
+      cor: 'blue',
+      categoria: 'estoque',
       features: [
         {
           name: 'Listagem de Ferramentas',
@@ -36,7 +57,10 @@ const SupportTab = () => {
     {
       id: 'emprestimos',
       title: 'Empréstimos',
-      description: 'Sistema de controle de empréstimos de ferramentas',
+      description: 'Sistema de controle de empréstimos de ferramentas para funcionários',
+      icone: ArrowRightLeft,
+      cor: 'blue',
+      categoria: 'estoque',
       features: [
         {
           name: 'Realizar Empréstimo',
@@ -61,7 +85,10 @@ const SupportTab = () => {
     {
       id: 'funcionarios',
       title: 'Funcionários',
-      description: 'Gerenciamento de funcionários e suas permissões',
+      description: 'Gerenciamento de funcionários, equipes e suas permissões',
+      icone: Users,
+      cor: 'blue',
+      categoria: 'pessoas',
       features: [
         {
           name: 'Cadastro de Funcionários',
@@ -86,7 +113,10 @@ const SupportTab = () => {
     {
       id: 'compras',
       title: 'Compras',
-      description: 'Sistema de gestão de compras e requisições',
+      description: 'Sistema de gestão de compras, requisições e aprovações',
+      icone: ShoppingCart,
+      cor: 'blue',
+      categoria: 'estoque',
       features: [
         {
           name: 'Nova Requisição',
@@ -111,7 +141,10 @@ const SupportTab = () => {
     {
       id: 'danificadas',
       title: 'Ferramentas Danificadas',
-      description: 'Controle de ferramentas danificadas ou em manutenção',
+      description: 'Controle de ferramentas danificadas, em manutenção ou com defeito',
+      icone: Wrench,
+      cor: 'blue',
+      categoria: 'estoque',
       features: [
         {
           name: 'Registro de Danos',
@@ -130,7 +163,10 @@ const SupportTab = () => {
     {
       id: 'perdidas',
       title: 'Ferramentas Perdidas',
-      description: 'Gestão de ferramentas perdidas ou extraviadas',
+      description: 'Gestão de ferramentas perdidas, extraviadas ou roubadas',
+      icone: XCircle,
+      cor: 'blue',
+      categoria: 'estoque',
       features: [
         {
           name: 'Registro de Perdas',
@@ -149,7 +185,10 @@ const SupportTab = () => {
     {
       id: 'dashboard',
       title: 'Dashboard',
-      description: 'Painel de controle com indicadores e estatísticas',
+      description: 'Painel de controle com indicadores, estatísticas e KPIs em tempo real',
+      icone: BarChart3,
+      cor: 'blue',
+      categoria: 'relatorios',
       features: [
         {
           name: 'Visão Geral',
@@ -168,7 +207,10 @@ const SupportTab = () => {
     {
       id: 'analytics',
       title: 'Analytics',
-      description: 'Análises avançadas e relatórios detalhados',
+      description: 'Análises avançadas, relatórios detalhados e insights inteligentes',
+      icone: TrendingUp,
+      cor: 'blue',
+      categoria: 'relatorios',
       features: [
         {
           name: 'Relatórios Personalizados',
@@ -187,7 +229,10 @@ const SupportTab = () => {
     {
       id: 'transferencias',
       title: 'Transferências',
-      description: 'Sistema de transferências entre setores',
+      description: 'Sistema de transferências de ferramentas entre setores e unidades',
+      icone: ArrowRightLeft,
+      cor: 'blue',
+      categoria: 'estoque',
       features: [
         {
           name: 'Nova Transferência',
@@ -206,7 +251,10 @@ const SupportTab = () => {
     {
       id: 'tarefas',
       title: 'Tarefas',
-      description: 'Gestão de tarefas e atividades',
+      description: 'Gestão de tarefas, atividades e acompanhamento de projetos',
+      icone: CheckSquare,
+      cor: 'blue',
+      categoria: 'pessoas',
       features: [
         {
           name: 'Criação de Tarefas',
@@ -223,35 +271,323 @@ const SupportTab = () => {
       ]
     },
     {
-      id: 'configuracoes',
-      title: 'Configurações',
-      description: 'Configurações e personalização do sistema',
+      id: 'rankings',
+      title: 'Rankings e Pontos',
+      description: 'Sistema de gamificação com pontos, ranking e conquistas',
+      icone: Trophy,
+      cor: 'blue',
+      categoria: 'pessoas',
       features: [
         {
-          name: 'Preferências',
-          description: 'Ajuste as configurações do sistema',
-          permission: NIVEIS_PERMISSAO.ADMIN,
-          howTo: 'Em Configurações, personalize as opções conforme necessário.'
+          name: 'Visualizar Ranking',
+          description: 'Veja sua posição no ranking geral e por categoria',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Acesse a aba "Rankings" para ver sua posição e pontuação. O ranking é atualizado em tempo real.'
+        },
+        {
+          name: 'Sistema de Pontos',
+          description: 'Ganhe pontos realizando atividades no sistema',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Pontos são ganhos automaticamente: +10 por empréstimo, +5 por devolução, +15 por tarefa concluída, etc.'
+        },
+        {
+          name: 'Conquistas',
+          description: 'Desbloqueie conquistas e badges especiais',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Conquistas aparecem automaticamente quando você atinge marcos específicos.'
+        }
+      ]
+    },
+    {
+      id: 'workponto',
+      title: 'WorkPonto',
+      description: 'Sistema de registro de ponto com ajustes mensais',
+      icone: Clock,
+      cor: 'blue',
+      categoria: 'pessoas',
+      features: [
+        {
+          name: 'Registrar Ponto',
+          description: 'Registre entrada, almoço, retorno e saída',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Na aba "WorkPonto", clique nos botões para registrar cada ponto do dia. O sistema calcula automaticamente atrasos e horas extras.'
+        },
+        {
+          name: 'Ajustar Horários',
+          description: 'Edite horários de almoço e retorno (4 ajustes por mês)',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Clique no ícone de edição ao lado dos horários. Você tem 4 ajustes mensais. Administradores têm ajustes ilimitados.'
+        },
+        {
+          name: 'Visualizar Histórico',
+          description: 'Veja seu histórico de pontos e ajustes realizados',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Role para baixo na aba WorkPonto para ver o histórico completo. Administradores veem antes/depois de cada ajuste.'
+        },
+        {
+          name: 'Contador de Ajustes',
+          description: 'Acompanhe quantos ajustes restam no mês',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Um card amarelo mostra "X/4 ajustes restantes". Reseta automaticamente todo dia 1º.'
+        }
+      ]
+    },
+    {
+      id: 'comprovantes',
+      title: 'Comprovantes',
+      description: 'Gestão e visualização de comprovantes de empréstimos',
+      icone: FileText,
+      cor: 'blue',
+      categoria: 'estoque',
+      features: [
+        {
+          name: 'Visualizar Comprovantes',
+          description: 'Acesse comprovantes de empréstimos realizados',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Na aba "Comprovantes", veja todos os comprovantes gerados. Filtre por data, funcionário ou ferramenta.'
+        },
+        {
+          name: 'Exportar PDF',
+          description: 'Exporte comprovantes em formato PDF',
+          permission: NIVEIS_PERMISSAO.SUPERVISOR,
+          howTo: 'Clique no comprovante desejado e use o botão "Exportar PDF" para baixar.'
+        }
+      ]
+    },
+    {
+      id: 'qrcode',
+      title: 'Scanner QR Code',
+      description: 'Leitura de QR Codes para identificação rápida',
+      icone: QrCode,
+      cor: 'blue',
+      categoria: 'estoque',
+      features: [
+        {
+          name: 'Escanear QR Code',
+          description: 'Use a câmera para ler QR Codes de ferramentas',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Acesse "QR Code Scanner", permita o uso da câmera e aponte para o código.'
+        }
+      ]
+    },
+    {
+      id: 'mensagens',
+      title: 'Mensagens',
+      description: 'Sistema de comunicação interna entre usuários',
+      icone: MessageSquare,
+      cor: 'blue',
+      categoria: 'pessoas',
+      features: [
+        {
+          name: 'Enviar Mensagens',
+          description: 'Envie mensagens para outros usuários',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Na aba "Mensagens", clique em "Nova Mensagem", selecione o destinatário e digite sua mensagem.'
+        },
+        {
+          name: 'Receber Notificações',
+          description: 'Seja notificado de novas mensagens',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Notificações aparecem automaticamente. Um badge vermelho indica mensagens não lidas.'
+        }
+      ]
+    },
+    {
+      id: 'configuracoes',
+      title: 'Configurações',
+      description: 'Configurações gerais e personalização do sistema',
+      icone: Settings,
+      cor: 'blue',
+      categoria: 'admin',
+      features: [
+        {
+          name: 'Tema Claro/Escuro',
+          description: 'Alterne entre modo claro e escuro',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Clique no ícone de lua/sol no canto superior para alternar o tema.'
         },
         {
           name: 'Notificações',
           description: 'Configure alertas e notificações',
-          permission: NIVEIS_PERMISSAO.SUPERVISOR,
-          howTo: 'Ajuste suas preferências de notificação para diferentes eventos.'
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Em Configurações, ajuste suas preferências de notificação.'
+        },
+        {
+          name: 'Personalização de Menu',
+          description: 'Defina sua aba favorita e organize o menu',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Segure pressionado uma aba para defini-la como favorita. Ela aparecerá destacada no menu inferior.'
+        }
+      ]
+    },
+    {
+      id: 'legal',
+      title: 'Documentos Legais',
+      description: 'Termos de uso, políticas e documentação legal',
+      icone: FileCheck,
+      cor: 'blue',
+      categoria: 'admin',
+      features: [
+        {
+          name: 'Visualizar Documentos',
+          description: 'Acesse termos de uso e políticas',
+          permission: NIVEIS_PERMISSAO.FUNCIONARIO,
+          howTo: 'Na aba "Legal", navegue pelos documentos disponíveis.'
+        }
+      ]
+    },
+    {
+      id: 'developer',
+      title: 'Painel de Desenvolvedor',
+      description: 'Ferramentas avançadas para desenvolvedores e debug',
+      icone: Code,
+      cor: 'blue',
+      categoria: 'admin',
+      features: [
+        {
+          name: 'Console de Debug',
+          description: 'Acesse logs e informações técnicas',
+          permission: NIVEIS_PERMISSAO.ADMIN,
+          howTo: 'Disponível apenas para administradores. Acesse via menu de configurações avançadas.'
+        }
+      ]
+    },
+    {
+      id: 'systemadmin',
+      title: 'Administração do Sistema',
+      description: 'Backup, restauração e gerenciamento avançado',
+      icone: Shield,
+      cor: 'blue',
+      categoria: 'admin',
+      features: [
+        {
+          name: 'Backup de Dados',
+          description: 'Realize backup completo do sistema',
+          permission: NIVEIS_PERMISSAO.ADMIN,
+          howTo: 'Em "System Admin", acesse a aba de Backup e clique em "Gerar Backup".'
+        },
+        {
+          name: 'Restaurar Dados',
+          description: 'Restaure o sistema a partir de um backup',
+          permission: NIVEIS_PERMISSAO.ADMIN,
+          howTo: 'Em "System Admin", faça upload do arquivo de backup e confirme a restauração.'
+        },
+        {
+          name: 'Gerenciar Códigos de Reset',
+          description: 'Gere códigos para redefinição de senha',
+          permission: NIVEIS_PERMISSAO.ADMIN,
+          howTo: 'Use a aba "Códigos de Reset" para gerenciar códigos de recuperação.'
         }
       ]
     }
   ];
 
+  // Primeiros Passos
+  const primeiroPassos = [
+    {
+      id: 1,
+      titulo: '1. Fazer Login',
+      descricao: 'Entre no sistema com suas credenciais fornecidas pelo administrador',
+      icone: Users,
+      cor: 'blue',
+      passos: [
+        'Digite seu email e senha na tela de login',
+        'Clique em "Entrar"',
+        'Se esqueceu a senha, clique em "Esqueci minha senha"'
+      ]
+    },
+    {
+      id: 2,
+      titulo: '2. Conhecer o Dashboard',
+      descricao: 'Familiarize-se com os principais indicadores',
+      icone: BarChart3,
+      cor: 'blue',
+      passos: [
+        'Acesse a aba "Dashboard" no menu',
+        'Visualize estatísticas de ferramentas, empréstimos e funcionários',
+        'Use os filtros para personalizar a visualização'
+      ]
+    },
+    {
+      id: 3,
+      titulo: '3. Registrar seu Primeiro Ponto',
+      descricao: 'Aprenda a usar o sistema WorkPonto',
+      icone: Clock,
+      cor: 'blue',
+      passos: [
+        'Acesse "WorkPonto" no menu',
+        'Clique em "Registrar Entrada" ao chegar',
+        'Registre almoço, retorno e saída nos horários corretos',
+        'Lembre-se: você tem 4 ajustes por mês!'
+      ]
+    },
+    {
+      id: 4,
+      titulo: '4. Realizar um Empréstimo',
+      descricao: 'Empreste ferramentas para funcionários',
+      icone: Package,
+      cor: 'blue',
+      passos: [
+        'Vá para a aba "Empréstimos"',
+        'Clique em "Novo Empréstimo"',
+        'Selecione o funcionário e as ferramentas',
+        'Confirme o empréstimo'
+      ]
+    },
+    {
+      id: 5,
+      titulo: '5. Personalizar seu Menu',
+      descricao: 'Organize o menu do jeito que preferir',
+      icone: Star,
+      cor: 'blue',
+      passos: [
+        'Segure pressionado em qualquer aba do menu',
+        'Selecione "Definir como Favorita"',
+        'A aba favorita aparecerá destacada no menu inferior',
+        'Alterne entre tema claro e escuro no topo'
+      ]
+    }
+  ];
+
+
+
   // FAQs do sistema
   const faqs = [
     {
       question: 'Como faço para emprestar uma ferramenta?',
-      answer: 'Para emprestar uma ferramenta, acesse a aba "Empréstimos", clique em "Novo Empréstimo", selecione o funcionário e as ferramentas desejadas. Confirme os detalhes e finalize o empréstimo.'
+      answer: 'Para emprestar uma ferramenta, acesse a aba "Empréstimos", clique em "Novo Empréstimo", selecione o funcionário e as ferramentas desejadas. Confirme os detalhes e finalize o empréstimo.',
+      categoria: 'estoque',
+      relevancia: 'alta'
+    },
+    {
+      question: 'O que acontece quando esgoto meus 4 ajustes mensais de ponto?',
+      answer: 'Quando você usar todos os 4 ajustes do mês, não poderá mais editar seus horários de almoço e retorno até o próximo mês. O contador é resetado automaticamente no dia 1º de cada mês. Administradores têm ajustes ilimitados.',
+      categoria: 'pessoas',
+      relevancia: 'alta'
+    },
+    {
+      question: 'Como os ajustes de ponto funcionam para administradores?',
+      answer: 'Administradores (nível 0) têm ajustes ilimitados e podem editar horários sem restrições. Além disso, eles visualizam um histórico completo mostrando o ponto antes e depois de cada edição realizada por qualquer usuário.',
+      categoria: 'pessoas',
+      relevancia: 'media'
     },
     {
       question: 'O que fazer se uma ferramenta for danificada?',
-      answer: 'Em caso de dano, registre imediatamente na aba "Ferramentas Danificadas". Inclua detalhes sobre o dano e, se possível, anexe fotos. A equipe responsável será notificada.'
+      answer: 'Em caso de dano, registre imediatamente na aba "Ferramentas Danificadas". Inclua detalhes sobre o dano e, se possível, anexe fotos. A equipe responsável será notificada.',
+      categoria: 'estoque',
+      relevancia: 'alta'
+    },
+    {
+      question: 'Como funciona o sistema de ranking e pontos?',
+      answer: 'Você ganha pontos automaticamente por atividades: +10 por empréstimo, +5 por devolução, +15 por tarefa concluída, +20 por verificação de inventário. O ranking é atualizado em tempo real e você pode competir com colegas.',
+      categoria: 'pessoas',
+      relevancia: 'media'
+    },
+    {
+      question: 'Posso personalizar meu menu?',
+      answer: 'Sim! Segure pressionado (long press) em qualquer aba do menu para defini-la como favorita. A aba favorita aparecerá destacada com um ícone de troféu no menu inferior móvel.',
+      categoria: 'admin',
+      relevancia: 'media'
     },
     {
       question: 'Como verificar a disponibilidade de uma ferramenta?',
@@ -307,273 +643,412 @@ const SupportTab = () => {
     }
   ];
 
+  // Filtros
   const filteredModules = systemModules.filter(module => {
-    const moduleMatch = module.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       module.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const featuresMatch = module.features.some(feature => 
-      feature.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      feature.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      feature.howTo.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    return moduleMatch || featuresMatch;
+    const categoryMatch = selectedCategory === 'all' || module.categoria === selectedCategory;
+    const searchMatch = searchTerm === '' || 
+      module.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      module.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      module.features.some(f => 
+        f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    return categoryMatch && searchMatch;
   });
 
-  const filteredFaqs = faqs.filter(faq =>
-    faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredFaqs = faqs.filter(faq => {
+    const categoryMatch = selectedCategory === 'all' || faq.categoria === selectedCategory;
+    const searchMatch = searchTerm === '' ||
+      faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
+    return categoryMatch && searchMatch;
+  });
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Central de Suporte
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Encontre ajuda e documentação sobre todas as funcionalidades do sistema
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* Header com Gradiente */}
+      <div className="mb-8 text-center">
+        <div className="inline-flex items-center gap-3 mb-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">
+          <Sparkles className="w-6 h-6 text-white" />
+          <h1 className="text-2xl font-bold text-white">
+            Central de Ajuda WorkFlow
+          </h1>
+          <Sparkles className="w-6 h-6 text-white" />
+        </div>
+        <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          Tudo que você precisa saber para dominar o sistema de gestão mais completo
         </p>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative mb-8">
-        <input
-          type="text"
-          placeholder="Pesquisar funcionalidades, tutoriais ou FAQs..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-3 pl-12 rounded-lg border border-gray-200 dark:border-gray-600 dark:border-gray-600 bg-white dark:bg-gray-800 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-        <Search className="w-5 h-5 absolute left-4 top-3.5 text-gray-400" />
+      {/* Estatísticas Rápidas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+          <BookOpen className="w-8 h-8 mb-2 opacity-80" />
+          <div className="text-2xl font-bold">{systemModules.length}</div>
+          <div className="text-sm opacity-90">Módulos</div>
+        </div>
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+          <HelpCircle className="w-8 h-8 mb-2 opacity-80" />
+          <div className="text-2xl font-bold">{faqs.length}</div>
+          <div className="text-sm opacity-90">FAQs</div>
+        </div>
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+          <Rocket className="w-8 h-8 mb-2 opacity-80" />
+          <div className="text-2xl font-bold">{primeiroPassos.length}</div>
+          <div className="text-sm opacity-90">Tutoriais</div>
+        </div>
       </div>
 
-      {/* Modules Documentation */}
-      <div className="space-y-6 mb-12">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Funcionalidades do Sistema
-        </h2>
-        {filteredModules.map(module => (
-          <div
-            key={module.id}
-            className="border dark:border-gray-700 rounded-lg overflow-hidden"
+      {/* Navegação por Abas */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        {[
+          { id: 'funcionalidades', label: 'Funcionalidades', icone: BookOpen },
+          { id: 'primeiros-passos', label: 'Primeiros Passos', icone: Rocket },
+          { id: 'faq', label: 'Perguntas Frequentes', icone: HelpCircle },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveView(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
+              activeView === tab.id
+                ? 'bg-blue-500 text-white shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
           >
+            <tab.icone className="w-4 h-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Barra de Busca Aprimorada */}
+      <div className="mb-6">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Buscar por funcionalidades, tutoriais, FAQs..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-6 py-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
+          />
+          {searchTerm && (
             <button
-              onClick={() => setExpandedSection(expandedSection === module.id ? null : module.id)}
-              className="w-full px-6 py-4 flex items-center justify-between bg-gray-50 dark:bg-gray-800"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
             >
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  {module.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  {module.description}
-                </p>
-              </div>
-              {expandedSection === module.id ? (
-                <ChevronUp className="w-5 h-5 text-gray-400" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-gray-400" />
-              )}
+              <XOctagon className="w-5 h-5" />
             </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filtros por Categoria (apenas na view de funcionalidades e FAQs) */}
+      {(activeView === 'funcionalidades' || activeView === 'faq') && (
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
+                selectedCategory === cat.id
+                  ? `bg-${cat.cor}-500 text-white shadow-md`
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              <cat.icone className="w-4 h-4" />
+              {cat.nome}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Conteúdo por View */}
+      <div className="mt-8">
+        {/* VIEW: Funcionalidades */}
+        {activeView === 'funcionalidades' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <BookOpen className="w-6 h-6 text-[#1D9BF0]" />
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Todas as Funcionalidades
+              </h2>
+            </div>
             
-            {expandedSection === module.id && (
-              <div className="px-6 py-4 bg-white dark:bg-gray-800 dark:bg-gray-900">
-                <div className="space-y-6">
-                  {module.features.map((feature, index) => (
-                    <div key={index} className="border-b dark:border-gray-700 last:border-0 pb-6 last:pb-0">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                        {feature.name}
-                      </h4>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-                        {feature.description}
-                      </p>
-                      <div className="text-sm">
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">
-                          Nível de Acesso:
-                        </span>
-                        <span className="ml-2 text-gray-600 dark:text-gray-400">
-                          {Object.entries(NIVEIS_PERMISSAO).find(([key, value]) => value === feature.permission)?.[0] || 'N/A'}
-                        </span>
+            {filteredModules.length === 0 ? (
+              <div className="text-center py-12">
+                <AlertCircle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">Nenhuma funcionalidade encontrada</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredModules.map(module => {
+                  const IconeModulo = module.icone;
+                  return (
+                    <div
+                      key={module.id}
+                      className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-xl transition-all cursor-pointer group"
+                      onClick={() => setExpandedSection(expandedSection === module.id ? null : module.id)}
+                    >
+                      <div className={`bg-gradient-to-r from-${module.cor}-500 to-${module.cor}-600 p-4 flex items-center gap-3`}>
+                        <div className="bg-white/20 p-2 rounded-lg">
+                          <IconeModulo className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-white">{module.title}</h3>
+                          <p className="text-white/90 text-sm">{module.description}</p>
+                        </div>
+                        {expandedSection === module.id ? (
+                          <ChevronUp className="w-5 h-5 text-white" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-white group-hover:animate-bounce" />
+                        )}
                       </div>
-                      <div className="mt-2 text-sm">
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">
-                          Como fazer:
-                        </span>
-                        <p className="mt-1 text-gray-600 dark:text-gray-400">
-                          {feature.howTo}
-                        </p>
-                      </div>
+                      
+                      {expandedSection === module.id && (
+                        <div className="p-6 bg-white dark:bg-gray-800 space-y-4">
+                          {module.features.map((feature, idx) => (
+                            <div key={idx} className="border-l-4 border-blue-500 pl-4 py-2">
+                              <div className="flex items-start gap-3">
+                                <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                                    {feature.name}
+                                  </h4>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                    {feature.description}
+                                  </p>
+                                  <div className="flex items-center gap-2 text-xs mb-2">
+                                    <Shield className="w-4 h-4 text-[#1D9BF0]" />
+                                    <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                      {Object.entries(NIVEIS_PERMISSAO).find(([k, v]) => v === feature.permission)?.[0] || 'N/A'}
+                                    </span>
+                                  </div>
+                                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                                    <div className="flex items-start gap-2">
+                                      <Lightbulb className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                                        {feature.howTo}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* VIEW: Primeiros Passos */}
+        {activeView === 'primeiros-passos' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Rocket className="w-6 h-6 text-[#1D9BF0]" />
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Primeiros Passos no Sistema
+              </h2>
+            </div>
+            
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-6 rounded-xl mb-6 border-2 border-blue-200 dark:border-blue-700">
+              <div className="flex items-start gap-3">
+                <Info className="w-6 h-6 text-[#1D9BF0] flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-2">Bem-vindo ao WorkFlow!</h3>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    Siga estes passos para começar a usar o sistema de forma eficiente. 
+                    Cada tutorial irá guiá-lo pelas funcionalidades essenciais.
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+            </div>
 
-      {/* FAQs */}
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Perguntas Frequentes
-        </h2>
-        {filteredFaqs.map((faq, index) => (
-          <div
-            key={index}
-            className="border dark:border-gray-700 rounded-lg overflow-hidden"
-          >
-            <button
-              onClick={() => setExpandedSection(expandedSection === `faq-${index}` ? null : `faq-${index}`)}
-              className="w-full px-6 py-4 flex items-center justify-between bg-white dark:bg-gray-800 dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <div className="flex items-center space-x-3">
-                <HelpCircle className="w-5 h-5 text-blue-500" />
-                <span className="text-gray-900 dark:text-white font-medium">
-                  {faq.question}
-                </span>
-              </div>
-              {expandedSection === `faq-${index}` ? (
-                <ChevronUp className="w-5 h-5 text-gray-400" />
-              ) : (
-                <ChevronDown className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
-            
-            {expandedSection === `faq-${index}` && (
-              <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900">
-                <p className="text-gray-600 dark:text-gray-400">
-                  {faq.answer}
-                </p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Dicas */}
-      <div className="space-y-6 mb-12">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Dicas Rápidas
-        </h2>
-        <div className="grid grid-cols-1 gap-4">
-          <div className="border dark:border-gray-700 rounded-lg p-4">
-            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li>• Use filtros para encontrar itens rapidamente</li>
-              <li>• Mantenha o mouse sobre ícones para ver dicas</li>
-              <li>• Clique duplo em itens para edição rápida</li>
-              <li>• Arraste colunas para reorganizar tabelas</li>
-              <li>• Use o modo escuro para trabalhar à noite</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Resolução de Problemas */}
-      <div className="space-y-6 mb-12">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Resolução de Problemas Comuns
-        </h2>
-        <div className="space-y-4">
-          <div className="border dark:border-gray-700 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 dark:text-white mb-3">Problemas de Login</h3>
-            <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-              <li>
-                <strong>Esqueceu a senha?</strong>
-                <p>Clique em "Esqueci minha senha" na tela de login ou contate o administrador do sistema para redefinição.</p>
-              </li>
-              <li>
-                <strong>Conta bloqueada?</strong>
-                <p>Após 5 tentativas incorretas de senha, a conta é bloqueada por segurança. Aguarde 15 minutos ou contate o suporte.</p>
-              </li>
-              <li>
-                <strong>Erro de autenticação?</strong>
-                <p>Verifique sua conexão com a internet e limpe o cache do navegador. Se o problema persistir, contate o suporte.</p>
-              </li>
-            </ul>
-          </div>
-
-          <div className="border dark:border-gray-700 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 dark:text-white mb-3">Problemas com Empréstimos</h3>
-            <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-              <li>
-                <strong>Não consegue emprestar uma ferramenta?</strong>
-                <p>Verifique se a ferramenta está disponível e se você tem as permissões necessárias.</p>
-              </li>
-              <li>
-                <strong>Erro na devolução?</strong>
-                <p>Certifique-se de que todas as informações estão corretas e que o sistema está online.</p>
-              </li>
-              <li>
-                <strong>Divergência no inventário?</strong>
-                <p>Reporte a divergência ao supervisor para correção manual do estoque.</p>
-              </li>
-            </ul>
-          </div>
-
-          <div className="border dark:border-gray-700 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 dark:text-white mb-3">Problemas Técnicos</h3>
-            <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-              <li>
-                <strong>Sistema lento?</strong>
-                <p>Limpe o cache do navegador, verifique sua conexão e feche abas desnecessárias.</p>
-              </li>
-              <li>
-                <strong>Erro ao gerar relatório?</strong>
-                <p>Tente reduzir o período de dados ou filtrar menos informações. Se persistir, use a exportação em partes.</p>
-              </li>
-              <li>
-                <strong>Notificações não aparecem?</strong>
-                <p>Verifique as permissões do navegador e suas configurações de notificação no sistema.</p>
-              </li>
-            </ul>
-          </div>
-
-          <div className="border dark:border-gray-700 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 dark:text-white mb-3">Dicas de Prevenção</h3>
-            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li>• Mantenha seu navegador atualizado</li>
-              <li>• Faça logout ao final do expediente</li>
-              <li>• Não compartilhe suas credenciais</li>
-              <li>• Reporte problemas imediatamente</li>
-              <li>• Faça backup de relatórios importantes</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Links Importantes */}
-      <div className="space-y-6 mb-12">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Links Importantes
-        </h2>
-        <div className="border dark:border-gray-700 rounded-lg p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
-                    Manual do Usuário
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
-                    Política de Segurança
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
-                    Termos de Uso
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
-                    Tutoriais em Vídeo
-                  </a>
-                </li>
-              </ul>
+            <div className="grid grid-cols-1 gap-6">
+              {primeiroPassos.map((passo, idx) => {
+                const IconePasso = passo.icone;
+                return (
+                  <div
+                    key={passo.id}
+                    className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-xl transition-all"
+                  >
+                    <div className={`bg-gradient-to-r from-${passo.cor}-500 to-${passo.cor}-600 p-5 flex items-center gap-4`}>
+                      <div className="bg-white/20 p-3 rounded-xl">
+                        <IconePasso className="w-8 h-8 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-white mb-1">{passo.titulo}</h3>
+                        <p className="text-white/90">{passo.descricao}</p>
+                      </div>
+                      <div className="text-3xl font-bold text-white/30">{passo.id}</div>
+                    </div>
+                    
+                    <div className="p-6 bg-white dark:bg-gray-800">
+                      <div className="space-y-3">
+                        {passo.passos.map((step, stepIdx) => (
+                          <div key={stepIdx} className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                              {stepIdx + 1}
+                            </div>
+                            <p className="text-gray-700 dark:text-gray-300 flex-1">{step}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
+        )}
+
+        {/* VIEW: FAQs */}
+        {activeView === 'faq' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <HelpCircle className="w-6 h-6 text-[#1D9BF0]" />
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Perguntas Frequentes
+              </h2>
+            </div>
+
+            {filteredFaqs.length === 0 ? (
+              <div className="text-center py-12">
+                <AlertCircle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">Nenhuma pergunta encontrada</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredFaqs.map((faq, index) => (
+                  <div
+                    key={index}
+                    className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-lg transition-all"
+                  >
+                    <button
+                      onClick={() => setExpandedSection(expandedSection === `faq-${index}` ? null : `faq-${index}`)}
+                      className="w-full px-6 py-4 flex items-center justify-between bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 flex-1 text-left">
+                        <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
+                          <HelpCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span className="text-gray-900 dark:text-white font-semibold">
+                          {faq.question}
+                        </span>
+                      </div>
+                      {expandedSection === `faq-${index}` ? (
+                        <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      )}
+                    </button>
+                    
+                    {expandedSection === `faq-${index}` && (
+                      <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {faq.answer}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+
+      {/* Rodapé com Dicas e Links */}
+      <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Dicas Rápidas */}
+        <div className="border-2 border-blue-200 dark:border-blue-700 rounded-xl p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
+          <div className="flex items-center gap-2 mb-4">
+            <Lightbulb className="w-5 h-5 text-blue-600" />
+            <h3 className="font-bold text-gray-900 dark:text-white">Dicas Rápidas</h3>
+          </div>
+          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <span>Use filtros para encontrar itens rapidamente</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <span>Mantenha o mouse sobre ícones para ver dicas</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <span>Use o modo escuro para trabalhar à noite</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <span>Pressione F1 para abrir esta ajuda</span>
+            </li>
+          </ul>
         </div>
+
+        {/* Boas Práticas */}
+        <div className="border-2 border-blue-200 dark:border-blue-700 rounded-xl p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
+          <div className="flex items-center gap-2 mb-4">
+            <Target className="w-5 h-5 text-[#1D9BF0]" />
+            <h3 className="font-bold text-gray-900 dark:text-white">Boas Práticas</h3>
+          </div>
+          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <li className="flex items-start gap-2">
+              <Shield className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <span>Não compartilhe suas credenciais</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Shield className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <span>Faça logout ao final do expediente</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Shield className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <span>Mantenha seu navegador atualizado</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Shield className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <span>Reporte problemas imediatamente</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Suporte */}
+        <div className="border-2 border-blue-200 dark:border-blue-700 rounded-xl p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
+          <div className="flex items-center gap-2 mb-4">
+            <HelpCircle className="w-5 h-5 text-[#1D9BF0]" />
+            <h3 className="font-bold text-gray-900 dark:text-white">Precisa de Ajuda?</h3>
+          </div>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+            Nossa equipe está pronta para ajudá-lo!
+          </p>
+          <div className="space-y-2">
+            <a
+              href="mailto:suporte@workflow.com"
+              className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              <ExternalLink className="w-4 h-4" />
+              suporte@workflow.com
+            </a>
+            <a
+              href="#"
+              className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Central de Documentação
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Versão e Copyright */}
+      <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 pb-6">
+        <p>WorkFlow System v2.0.0 | © 2025 Todos os direitos reservados</p>
+        <p className="mt-2">Desenvolvido com ❤️ para otimizar sua gestão</p>
       </div>
     </div>
   );

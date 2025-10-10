@@ -129,6 +129,20 @@ const WorkPontoTab = () => {
     return () => unsubscribe();
   }, [usuario?.id]);
 
+  // Aplicar horários personalizados aos horariosEsperados
+  useEffect(() => {
+    if (!horariosEsperados) return;
+    
+    // Se tem horários personalizados salvos, aplicar ao horariosEsperados
+    if (horariosPersonalizados.almoco || horariosPersonalizados.retorno) {
+      setHorariosEsperados(prev => ({
+        ...prev,
+        almoco: horariosPersonalizados.almoco || prev?.almoco,
+        retorno: horariosPersonalizados.retorno || prev?.retorno
+      }));
+    }
+  }, [horariosPersonalizados.almoco, horariosPersonalizados.retorno]);
+
   // Relógio em tempo real
   useEffect(() => {
     const interval = setInterval(() => {
@@ -803,6 +817,41 @@ const WorkPontoTab = () => {
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
           <Clock className="w-6 h-6" /> Registro de Ponto
         </h2>
+
+        {/* Contador de Ajustes (apenas para não-admin) */}
+        {!isAdmin && ajustesMes && (
+          <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-800/50 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div>
+                  <div className="font-semibold text-yellow-900 dark:text-yellow-100">
+                    Ajustes de Horário
+                  </div>
+                  <div className="text-xs text-yellow-700 dark:text-yellow-300">
+                    Você pode ajustar seus horários até 4 vezes por mês
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className={`text-3xl font-bold ${
+                  ajustesMes.ajustesRestantes === 0 
+                    ? 'text-red-600 dark:text-red-400' 
+                    : ajustesMes.ajustesRestantes === 1 
+                      ? 'text-orange-600 dark:text-orange-400'
+                      : 'text-yellow-900 dark:text-yellow-100'
+                }`}>
+                  {ajustesMes.ajustesRestantes}/4
+                </div>
+                <div className="text-xs text-yellow-700 dark:text-yellow-300">
+                  restantes
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Layout responsivo: coluna em mobile, linha em desktop */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -868,7 +917,23 @@ const WorkPontoTab = () => {
                       almoco: novoHorario
                     }));
                   }}
-                  onSave={(novoHorario) => {
+                  onSave={async (novoHorario) => {
+                    // Verificar se pode ajustar (exceto admin)
+                    if (!isAdmin) {
+                      const pode = await podeAjustar(usuario.id);
+                      if (!pode) {
+                        showToast('❌ Você já usou todos os 4 ajustes permitidos este mês', 'error');
+                        setEditandoAlmoco(false);
+                        return;
+                      }
+                    }
+
+                    // Salvar horários originais para histórico
+                    const pontosOriginais = {
+                      almoco: horariosPersonalizados.almoco || horariosEsperados.almoco,
+                      retorno: horariosPersonalizados.retorno || horariosEsperados.retorno
+                    };
+
                     const novosHorarios = {
                       ...horariosPersonalizados,
                       almoco: novoHorario
@@ -879,7 +944,31 @@ const WorkPontoTab = () => {
                       almoco: novoHorario
                     });
                     localStorage.setItem(`horariosPersonalizados_${usuario?.id}`, JSON.stringify(novosHorarios));
-                    showToast('✓ Horário de almoço atualizado!', 'success');
+
+                    // Registrar ajuste (exceto admin)
+                    if (!isAdmin) {
+                      try {
+                        const resultado = await registrarAjuste(
+                          usuario.id,
+                          'edicao_horario_almoco',
+                          {
+                            horarioAnterior: pontosOriginais.almoco,
+                            horarioNovo: novoHorario,
+                            campo: 'almoco',
+                            data: new Date().toISOString()
+                          },
+                          pontosOriginais
+                        );
+                        showToast(`✓ Horário de almoço atualizado! (${resultado.ajustesRestantes} ajustes restantes)`, 'success');
+                      } catch (error) {
+                        showToast('❌ Erro ao registrar ajuste: ' + error.message, 'error');
+                        setEditandoAlmoco(false);
+                        return;
+                      }
+                    } else {
+                      showToast('✓ Horário de almoço atualizado! (Admin)', 'success');
+                    }
+                    
                     setEditandoAlmoco(false);
                   }}
                   onCancel={() => setEditandoAlmoco(false)}
@@ -912,7 +1001,23 @@ const WorkPontoTab = () => {
                       retorno: novoHorario
                     }));
                   }}
-                  onSave={(novoHorario) => {
+                  onSave={async (novoHorario) => {
+                    // Verificar se pode ajustar (exceto admin)
+                    if (!isAdmin) {
+                      const pode = await podeAjustar(usuario.id);
+                      if (!pode) {
+                        showToast('❌ Você já usou todos os 4 ajustes permitidos este mês', 'error');
+                        setEditandoRetorno(false);
+                        return;
+                      }
+                    }
+
+                    // Salvar horários originais para histórico
+                    const pontosOriginais = {
+                      almoco: horariosPersonalizados.almoco || horariosEsperados.almoco,
+                      retorno: horariosPersonalizados.retorno || horariosEsperados.retorno
+                    };
+
                     const novosHorarios = {
                       ...horariosPersonalizados,
                       retorno: novoHorario
@@ -923,7 +1028,31 @@ const WorkPontoTab = () => {
                       retorno: novoHorario
                     });
                     localStorage.setItem(`horariosPersonalizados_${usuario?.id}`, JSON.stringify(novosHorarios));
-                    showToast('✓ Horário de retorno atualizado!', 'success');
+
+                    // Registrar ajuste (exceto admin)
+                    if (!isAdmin) {
+                      try {
+                        const resultado = await registrarAjuste(
+                          usuario.id,
+                          'edicao_horario_retorno',
+                          {
+                            horarioAnterior: pontosOriginais.retorno,
+                            horarioNovo: novoHorario,
+                            campo: 'retorno',
+                            data: new Date().toISOString()
+                          },
+                          pontosOriginais
+                        );
+                        showToast(`✓ Horário de retorno atualizado! (${resultado.ajustesRestantes} ajustes restantes)`, 'success');
+                      } catch (error) {
+                        showToast('❌ Erro ao registrar ajuste: ' + error.message, 'error');
+                        setEditandoRetorno(false);
+                        return;
+                      }
+                    } else {
+                      showToast('✓ Horário de retorno atualizado! (Admin)', 'success');
+                    }
+                    
                     setEditandoRetorno(false);
                   }}
                   onCancel={() => setEditandoRetorno(false)}
@@ -1018,6 +1147,55 @@ const WorkPontoTab = () => {
               <FileText className="w-5 h-5" />
               Gerar Comprovante do Dia
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Histórico de Ajustes (somente para Admin) */}
+      {isAdmin && ajustesMes && ajustesMes.historico && ajustesMes.historico.length > 0 && (
+        <div className="mb-6 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-6 shadow-lg border-2 border-purple-200 dark:border-purple-700">
+          <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-purple-900 dark:text-purple-100">
+            <Clock className="w-5 h-5" />
+            Histórico de Ajustes de Horário (Admin)
+          </h3>
+          <div className="space-y-3">
+            {ajustesMes.historico.slice().reverse().map((ajuste, index) => (
+              <div key={index} className="bg-white dark:bg-gray-900/40 rounded-lg p-4 shadow-sm">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-purple-100 dark:bg-purple-800/50 rounded">
+                      <Edit2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900 dark:text-white">
+                        {ajuste.tipo === 'edicao_horario_almoco' ? 'Horário de Almoço' : 'Horário de Retorno'}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(ajuste.data).toLocaleString('pt-BR')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                    <div className="text-xs text-red-600 dark:text-red-400 font-semibold mb-1">Antes</div>
+                    <div className="text-lg font-mono font-bold text-red-700 dark:text-red-300">
+                      {ajuste.detalhes.horarioAnterior || '--:--'}
+                    </div>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                    <div className="text-xs text-green-600 dark:text-green-400 font-semibold mb-1">Depois</div>
+                    <div className="text-lg font-mono font-bold text-green-700 dark:text-green-300">
+                      {ajuste.detalhes.horarioNovo || '--:--'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 text-xs text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40 rounded-lg p-3">
+            <strong>ℹ️ Informação:</strong> Como admin, você pode ver todo o histórico de ajustes de horário do funcionário. 
+            Os ajustes não são descontados da sua conta.
           </div>
         </div>
       )}

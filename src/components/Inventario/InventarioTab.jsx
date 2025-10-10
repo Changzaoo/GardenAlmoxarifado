@@ -1,6 +1,6 @@
 // InventarioTab.jsx - Página Unificada de Gestão de Inventário
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useContext } from 'react';
 import { Package, ShoppingCart, Wrench, AlertCircle, ClipboardCheck } from 'lucide-react';
 import NovoItem from './NovoItem';
 import ListaInventario from './ListaInventario';
@@ -12,6 +12,15 @@ import { useAuth } from '../../hooks/useAuth';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 import { Shield, Building2 } from 'lucide-react';
 
+// Import opcional do DataContext
+let DataContext;
+try {
+  const module = require('../../context/DataContext');
+  DataContext = module.DataContext;
+} catch (e) {
+  DataContext = null;
+}
+
 const TABS = {
   INVENTARIO: 'inventario',
   COMPRAS: 'compras',
@@ -21,30 +30,52 @@ const TABS = {
 };
 
 const InventarioTab = ({
-  inventario,
-  emprestimos,
+  inventario: inventarioProps,
+  emprestimos: emprestimosProps,
   adicionarItem,
   removerItem,
   atualizarItem,
   obterDetalhesEmprestimos,
   // Props de Compras
-  compras,
-  funcionarios,
+  compras: comprasProps,
+  funcionarios: funcionariosProps,
   adicionarCompra,
   removerCompra,
   atualizarCompra,
   // Props de Danificadas
-  ferramentasDanificadas,
+  ferramentasDanificadas: ferramentasDanificadasProps,
   adicionarFerramentaDanificada,
   atualizarFerramentaDanificada,
   removerFerramentaDanificada,
   // Props de Perdidas
-  ferramentasPerdidas,
+  ferramentasPerdidas: ferramentasPerdidasProps,
   adicionarFerramentaPerdida,
   atualizarFerramentaPerdida,
   removerFerramentaPerdida
 }) => {
   const { usuario } = useAuth();
+  
+  // Tentar usar DataContext se disponível
+  let ferramentasGlobal = [];
+  let emprestimosGlobal = [];
+  let usuariosGlobal = [];
+  
+  if (DataContext) {
+    try {
+      const context = useContext(DataContext);
+      ferramentasGlobal = context?.ferramentas || [];
+      emprestimosGlobal = context?.emprestimos || [];
+      usuariosGlobal = context?.usuarios || [];
+    } catch (e) {
+      ferramentasGlobal = [];
+      emprestimosGlobal = [];
+      usuariosGlobal = [];
+    }
+  }
+  
+  const inventario = inventarioProps || ferramentasGlobal;
+  const emprestimos = emprestimosProps || emprestimosGlobal;
+  const funcionarios = funcionariosProps || usuariosGlobal;
   const { 
     filterBySector, 
     canViewAllSectors, 
