@@ -76,6 +76,10 @@ const InventarioTab = ({
   const inventario = inventarioProps || ferramentasGlobal;
   const emprestimos = emprestimosProps || emprestimosGlobal;
   const funcionarios = funcionariosProps || usuariosGlobal;
+  const compras = comprasProps || [];
+  const ferramentasDanificadas = ferramentasDanificadasProps || [];
+  const ferramentasPerdidas = ferramentasPerdidasProps || [];
+  
   const { 
     filterBySector, 
     canViewAllSectors, 

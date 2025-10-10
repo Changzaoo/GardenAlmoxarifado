@@ -268,7 +268,7 @@ const NovoItem = ({ adicionarItem }) => {
             !novoItem.categoria ||
             (isAdmin && (!empresaSelecionada || !setorSelecionado))
           }
-          className="bg-blue-500 dark:bg-[#1D9BF0] text-gray-900 dark:text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors disabled:bg-[#38444D] disabled:text-gray-500 dark:text-gray-400 disabled:cursor-not-allowed"
+          className="bg-blue-500 dark:bg-[#1D9BF0] text-white rounded-full px-4 py-2 flex items-center justify-center gap-2 hover:bg-blue-600 dark:hover:bg-[#1a8cd8] transition-colors disabled:bg-gray-300 dark:disabled:bg-[#38444D] disabled:text-gray-500 dark:disabled:text-gray-400 disabled:cursor-not-allowed"
         >
           <Plus className="w-4 h-4" />
           Adicionar Item

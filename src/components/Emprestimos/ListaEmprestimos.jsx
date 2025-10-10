@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit, Package2, CircleUser, Shield, FileText } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Search, CheckCircle, Clock, Trash2, CircleDotDashed, Pencil, ArrowRightLeft, Edit, Package2, CircleUser, Shield, FileText, MoreVertical, Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { NIVEIS_PERMISSAO, PermissionChecker } from '../../constants/permissoes';
 import { doc, updateDoc, collection, getDocs, addDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { formatarDataHora } from '../../utils/formatters';
 import DevolucaoFerramentasModal from './DevolucaoFerramentasModal';
-import BoxLoanAnimation from './BoxLoanAnimation';
+import DevolucaoAnimation from './DevolucaoAnimation';
 import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
 import TransferenciaAnimation from './TransferenciaAnimation';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
@@ -68,16 +69,20 @@ const ListaEmprestimos = ({
   const [showConfirmacaoExclusao, setShowConfirmacaoExclusao] = useState(false);
   const [emprestimoParaExcluir, setEmprestimoParaExcluir] = useState(null);
   const [expandedEmployees, setExpandedEmployees] = useState(new Set());
-  const [editingObservacao, setEditingObservacao] = useState(null);
-  const [observacoesTemp, setObservacoesTemp] = useState({});
   const [showTransferenciaModal, setShowTransferenciaModal] = useState(false);
   const [emprestimoParaTransferencia, setEmprestimoParaTransferencia] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [emprestimoParaEditar, setEmprestimoParaEditar] = useState(null);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [currentEmprestimoIndex, setCurrentEmprestimoIndex] = useState({});
+  const [editingObservacoes, setEditingObservacoes] = useState(new Set());
+  const [tempObservacoes, setTempObservacoes] = useState({});
+  const dropdownRef = useRef(null);
   
   // Estados para animação de devolução
   const [showDevolucaoAnimation, setShowDevolucaoAnimation] = useState(false);
   const [dadosDevolucao, setDadosDevolucao] = useState(null);
+  const [evaporatingCard, setEvaporatingCard] = useState(null); // ID do funcionário cujo card está evaporando
   
   // Estados para animação de transferência
   const [showTransferenciaAnimation, setShowTransferenciaAnimation] = useState(false);
@@ -91,6 +96,18 @@ const ListaEmprestimos = ({
   
   // ✅ Sistema reverso: Admin (0) <= Supervisor (2) = tem permissão
   const temPermissaoEdicao = usuario && usuario.nivel <= NIVEIS_PERMISSAO.SUPERVISOR;
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Função para ordenar os empréstimos
   const sortEmprestimos = (emprestimos) => {
@@ -236,19 +253,27 @@ const ListaEmprestimos = ({
     }, {});
 
   const handleDevolverFerramentas = (id) => {
+    console.log('🔍 handleDevolverFerramentas chamado com ID:', id);
+    console.log('📦 Empréstimos disponíveis:', emprestimos);
+    
     if (!id || !Array.isArray(emprestimos)) {
-      console.error('ID inválido ou empréstimos não é um array:', { id, emprestimos });
+      console.error('❌ ID inválido ou empréstimos não é um array:', { id, emprestimos });
+      alert('Erro: ID inválido ou lista de empréstimos não disponível.');
       return;
     }
     
     const emprestimo = emprestimos.find(e => e.id === id);
+    console.log('🔎 Empréstimo encontrado:', emprestimo);
+    
     if (!emprestimo) {
-      console.error('Empréstimo não encontrado com o ID:', id);
+      console.error('❌ Empréstimo não encontrado com o ID:', id);
+      alert(`Erro: Empréstimo não encontrado (ID: ${id})`);
       return;
     }
 
     if (!Array.isArray(emprestimo.ferramentas)) {
-      console.error('Empréstimo sem array de ferramentas válido:', emprestimo);
+      console.error('❌ Empréstimo sem array de ferramentas válido:', emprestimo);
+      alert('Erro: Empréstimo sem ferramentas válidas.');
       return;
     }
 
@@ -256,10 +281,12 @@ const ListaEmprestimos = ({
     const emprestimoParaDevolver = JSON.parse(JSON.stringify(emprestimo));
     
     if (emprestimoParaDevolver.ferramentas.length === 0) {
-      console.error('Empréstimo sem ferramentas para devolver:', emprestimoParaDevolver);
+      console.error('❌ Empréstimo sem ferramentas para devolver:', emprestimoParaDevolver);
+      alert('Erro: Empréstimo sem ferramentas para devolver.');
       return;
     }
 
+    console.log('✅ Abrindo modal de devolução com empréstimo:', emprestimoParaDevolver);
     setSelectedEmprestimo(emprestimoParaDevolver);
     setShowDevolucaoModal(true);
   };
@@ -329,7 +356,7 @@ const ListaEmprestimos = ({
         return;
       }
 
-      // Fecha o modal e prepara dados para animação
+      // Fecha o modal
       setShowDevolucaoModal(false);
       
       const emprestimo = emprestimos.find(e => e.id === emprestimoId);
@@ -338,13 +365,20 @@ const ListaEmprestimos = ({
         return;
       }
 
-      // Mostra a animação com os dados
-      setDadosDevolucao({
-        emprestimo,
-        ferramentasDevolvidas: ferramentas,
-        devolvidoPorTerceiros
-      });
-      setShowDevolucaoAnimation(true);
+      // Inicia a animação de evaporação do card
+      setEvaporatingCard(emprestimo.funcionario);
+      
+      // Aguarda 800ms da animação antes de processar
+      setTimeout(() => {
+        // Mostra a animação de devolução com os dados
+        setDadosDevolucao({
+          emprestimo,
+          ferramentasDevolvidas: ferramentas,
+          devolvidoPorTerceiros
+        });
+        setShowDevolucaoAnimation(true);
+        setEvaporatingCard(null);
+      }, 800);
       
       // A devolução real será processada após a animação no finalizarDevolucao
       return;
@@ -632,62 +666,96 @@ const ListaEmprestimos = ({
     return emprestimo.ferramentas && emprestimo.ferramentas.length > 0;
   };
 
-  const handleStartEditObservacao = (emprestimo, e) => {
-    e.stopPropagation();
-    setEditingObservacao(emprestimo.id);
-    setObservacoesTemp(prev => ({
-      ...prev,
-      [emprestimo.id]: emprestimo.observacao || ''
-    }));
+  // Função para editar observações inline
+  const handleStartEditObservacao = (emprestimoId, observacaoAtual) => {
+    setEditingObservacoes(prev => new Set(prev).add(emprestimoId));
+    setTempObservacoes(prev => ({ ...prev, [emprestimoId]: observacaoAtual || '' }));
   };
 
-  const handleObservacaoChange = (emprestimoId, value) => {
-    setObservacoesTemp(prev => ({
-      ...prev,
-      [emprestimoId]: value
-    }));
-  };
-
-  const handleSaveObservacao = async (emprestimo, e) => {
-    e?.stopPropagation();
-    if (!emprestimo || !temPermissaoEdicao) return;
-
+  const handleSaveObservacao = async (emprestimoId) => {
     try {
-      const novaObservacao = observacoesTemp[emprestimo.id];
-      if (novaObservacao === emprestimo.observacao) {
-        setEditingObservacao(null);
-        return;
-      }
-
-      const emprestimoRef = doc(db, 'emprestimos', emprestimo.id);
+      const novaObservacao = tempObservacoes[emprestimoId] || '';
+      const emprestimoRef = doc(db, 'emprestimos', emprestimoId);
+      
       await updateDoc(emprestimoRef, {
-        observacao: novaObservacao,
-        ultimaAtualizacao: new Date().toISOString(),
-        usuarioUltimaAtualizacao: usuario.email
+        observacoes: novaObservacao,
+        dataAtualizacao: new Date().toISOString(),
+        usuarioAtualizacao: usuario?.email || 'sistema'
       });
 
-      setEditingObservacao(null);
+      // Remove do estado de edição
+      setEditingObservacoes(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(emprestimoId);
+        return newSet;
+      });
     } catch (error) {
-      console.error('Erro ao atualizar observação:', error);
+      console.error('Erro ao salvar observação:', error);
+      alert('Erro ao salvar observação. Tente novamente.');
     }
   };
 
-  const handleCancelEdit = (emprestimoId, e) => {
-    e.stopPropagation();
-    setEditingObservacao(null);
-    setObservacoesTemp(prev => {
+  const handleCancelEditObservacao = (emprestimoId) => {
+    setEditingObservacoes(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(emprestimoId);
+      return newSet;
+    });
+    setTempObservacoes(prev => {
       const newTemp = { ...prev };
       delete newTemp[emprestimoId];
       return newTemp;
     });
   };
 
-  const handleKeyDown = (emprestimo, e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSaveObservacao(emprestimo, e);
-    } else if (e.key === 'Escape') {
-      handleCancelEdit(emprestimo.id, e);
+  // Função para enviar lembrete ao funcionário
+  const handleEnviarLembrete = async (emprestimo) => {
+    try {
+      const notificacao = {
+        tipo: 'lembrete_emprestimo',
+        titulo: 'Lembrete de Devolução',
+        mensagem: `Você ainda possui ${emprestimo.ferramentas?.length || 0} ferramenta(s) emprestada(s). Por favor, verifique a devolução.`,
+        funcionarioId: emprestimo.funcionarioId,
+        funcionarioNome: emprestimo.nomeFuncionario,
+        emprestimoId: emprestimo.id,
+        ferramentas: emprestimo.ferramentas?.map(f => f.nome || f) || [],
+        dataEmprestimo: emprestimo.dataEmprestimo,
+        dataCriacao: new Date().toISOString(),
+        lida: false,
+        remetente: usuario?.email || 'sistema',
+        remetenteNome: usuario?.nome || 'Sistema'
+      };
+
+      // Salva a notificação no Firestore
+      await addDoc(collection(db, 'notificacoes'), notificacao);
+
+      // Tenta enviar notificação push se o service worker estiver registrado
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        const registration = await navigator.serviceWorker.ready;
+        
+        if (registration.pushManager) {
+          try {
+            await registration.showNotification('Lembrete de Devolução', {
+              body: notificacao.mensagem,
+              icon: '/logo.png',
+              badge: '/logo.png',
+              tag: `lembrete-${emprestimo.id}`,
+              requireInteraction: true,
+              data: {
+                url: '/emprestimos',
+                emprestimoId: emprestimo.id
+              }
+            });
+          } catch (pushError) {
+            console.log('Notificação push não disponível:', pushError);
+          }
+        }
+      }
+
+      alert(`Lembrete enviado para ${emprestimo.nomeFuncionario}!`);
+    } catch (error) {
+      console.error('Erro ao enviar lembrete:', error);
+      alert('Erro ao enviar lembrete. Tente novamente.');
     }
   };
 
@@ -707,13 +775,12 @@ const ListaEmprestimos = ({
         <div className="flex justify-between items-center mb-4">
         <div className="flex gap-4 items-center flex-wrap">
           <div className="relative w-64">
-            <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="     Buscar..."
+              placeholder="Buscar..."
               value={filtroEmprestimos}
               onChange={(e) => setFiltroEmprestimos(e.target.value)}
-              className="h-[36px] w-full px-4 pl-8 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
+              className="h-[36px] w-full px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
             />
           </div>
           <select
@@ -785,133 +852,322 @@ const ListaEmprestimos = ({
 
       {/* Resumo Estatístico */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-6 shadow-sm border border-blue-200 dark:border-blue-700/50">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-2xl p-6 shadow-xl border-2 border-blue-400/50 dark:border-blue-500/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">Total de Empréstimos</p>
-              <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{emprestimosFiltrados.length}</p>
+              <p className="text-sm font-semibold text-blue-100 mb-2">Total de Empréstimos</p>
+              <p className="text-4xl font-black text-white">{emprestimosFiltrados.length}</p>
             </div>
-            <Package2 className="w-12 h-12 text-blue-400 dark:text-blue-600 opacity-50" />
+            <Package2 className="w-14 h-14 text-white/30" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-xl p-6 shadow-sm border border-yellow-200 dark:border-yellow-700/50">
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 rounded-2xl p-6 shadow-xl border-2 border-amber-400/50 dark:border-amber-500/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-1">Empréstimos Ativos</p>
-              <p className="text-3xl font-bold text-yellow-900 dark:text-yellow-100">
+              <p className="text-sm font-semibold text-amber-100 mb-2">Empréstimos Ativos</p>
+              <p className="text-4xl font-black text-white">
                 {emprestimosFiltrados.filter(e => e.status === 'emprestado').length}
               </p>
             </div>
-            <Clock className="w-12 h-12 text-yellow-400 dark:text-yellow-600 opacity-50" />
+            <Clock className="w-14 h-14 text-white/30" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-6 shadow-sm border border-green-200 dark:border-green-700/50">
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 rounded-2xl p-6 shadow-xl border-2 border-emerald-400/50 dark:border-emerald-500/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-1">Devolvidos</p>
-              <p className="text-3xl font-bold text-green-900 dark:text-green-100">
+              <p className="text-sm font-semibold text-emerald-100 mb-2">Devolvidos</p>
+              <p className="text-4xl font-black text-white">
                 {emprestimosFiltrados.filter(e => e.status === 'devolvido').length}
               </p>
             </div>
-            <CheckCircle className="w-12 h-12 text-green-400 dark:text-green-600 opacity-50" />
+            <CheckCircle className="w-14 h-14 text-white/30" />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Object.entries(funcionariosOrdenados).map(([funcionario, emprestimos]) => {
-          const emprestimoAtivo = emprestimos.some(e => e.status === 'emprestado');
-          const totalFerramentas = emprestimos.reduce((acc, emp) => acc + (emp.ferramentas?.length || 0), 0);
-          
-          return (
-            <div 
-              key={funcionario} 
-              className={`bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border-2 overflow-hidden ${
-                expandedEmployees.has(funcionario) 
-                  ? 'ring-4 ring-blue-400/30 dark:ring-blue-500/40 border-blue-400 dark:border-blue-500' 
-                  : emprestimoAtivo 
-                    ? 'border-yellow-200 dark:border-yellow-700/50' 
-                    : 'border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              <div 
-                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors p-5"
-                onClick={() => toggleEmployee(funcionario)}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <AnimatePresence mode="wait">
+          {Object.entries(funcionariosOrdenados).map(([funcionario, emprestimos]) => {
+            const emprestimoAtivo = emprestimos.some(e => e.status === 'emprestado');
+            const totalFerramentas = emprestimos.reduce((acc, emp) => acc + (emp.ferramentas?.length || 0), 0);
+            const isEvaporating = evaporatingCard === funcionario;
+            
+            return (
+              <motion.div
+                key={funcionario}
+                initial={{ opacity: 1, scale: 1, y: 0 }}
+                animate={isEvaporating ? {
+                  opacity: 0,
+                  scale: 0.8,
+                  y: -50
+                } : {
+                  opacity: 1,
+                  scale: 1,
+                  y: 0
+                }}
+                transition={{ duration: 0.8, ease: "easeInOut" }}
+                className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border-2 overflow-hidden h-[520px] flex flex-col ${
+                  expandedEmployees.has(funcionario) 
+                    ? 'ring-4 ring-blue-500/50 dark:ring-blue-400/60 border-blue-500 dark:border-blue-400' 
+                    : emprestimoAtivo 
+                      ? 'border-amber-400 dark:border-amber-600/80' 
+                      : 'border-gray-200 dark:border-gray-700'
+                }`}
               >
-                {/* Cabeçalho do Card */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="relative">
-                      {funcionarios.find(f => f.nome === funcionario)?.photoURL ? (
-                        <img 
-                          src={funcionarios.find(f => f.nome === funcionario)?.photoURL} 
-                          alt={funcionario} 
-                          className="w-14 h-14 rounded-full object-cover border-3 border-white dark:border-gray-700 shadow-md"
-                        />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 flex items-center justify-center border-3 border-white dark:border-gray-700 shadow-md">
-                          <CircleUser className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                        </div>
-                      )}
-                      {emprestimoAtivo && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full border-2 border-white dark:border-gray-800 animate-pulse" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                        {funcionario}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {totalFerramentas} ferramenta{totalFerramentas !== 1 ? 's' : ''}
-                      </p>
-                    </div>
+              <div 
+                className="hover:bg-gradient-to-r hover:from-gray-50/50 dark:hover:from-gray-700/50 transition-all p-5 flex flex-col h-full"
+              >
+                {/* Cabeçalho Compacto */}
+                <div className="flex items-center gap-3 mb-3 flex-shrink-0">
+                  {/* Avatar */}
+                  <div className="relative flex-shrink-0">
+                    {funcionarios.find(f => f.nome === funcionario)?.photoURL ? (
+                      <img 
+                        src={funcionarios.find(f => f.nome === funcionario)?.photoURL} 
+                        alt={funcionario} 
+                        className="w-14 h-14 rounded-full object-cover border-3 border-white dark:border-gray-700 shadow-lg"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center border-3 border-white dark:border-gray-700 shadow-lg">
+                        <CircleUser className="w-8 h-8 text-white" />
+                      </div>
+                    )}
                   </div>
                   
-                  <button 
-                    className={`flex-shrink-0 p-2 rounded-lg transition-all duration-200 ${
-                      expandedEmployees.has(funcionario)
-                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                        : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <svg 
-                      className={`w-5 h-5 transition-transform duration-200 ${
-                        expandedEmployees.has(funcionario) ? 'rotate-180' : ''
-                      }`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                  {/* Info Compacta */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white truncate">
+                      {funcionario}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      {totalFerramentas} ferramenta{totalFerramentas !== 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
                 
-                {/* Badges de Status */}
-                <div className="flex flex-wrap gap-2">
-                  <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-lg text-sm font-medium">
-                    <Package2 className="w-4 h-4" />
-                    {emprestimos.length} total
+                {/* Badges em uma linha */}
+                <div className="flex gap-2 mb-2 flex-shrink-0">
+                  <div className="flex-1 bg-blue-100 dark:bg-blue-500/30 px-2 py-1.5 rounded-lg flex items-center justify-between border border-blue-200 dark:border-blue-400">
+                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">Total</span>
+                    <span className="text-sm font-bold text-blue-900 dark:text-blue-100">{emprestimos.length}</span>
                   </div>
-                  
-                  {emprestimos.filter(e => e.status === 'emprestado').length > 0 && (
-                    <div className="flex items-center gap-1.5 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-3 py-1.5 rounded-lg text-sm font-medium animate-pulse">
-                      <Clock className="w-4 h-4" />
-                      {emprestimos.filter(e => e.status === 'emprestado').length} ativo{emprestimos.filter(e => e.status === 'emprestado').length !== 1 ? 's' : ''}
-                    </div>
-                  )}
-                  
-                  {emprestimos.filter(e => e.status === 'devolvido').length > 0 && (
-                    <div className="flex items-center gap-1.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1.5 rounded-lg text-sm font-medium">
-                      <CheckCircle className="w-4 h-4" />
-                      {emprestimos.filter(e => e.status === 'devolvido').length} devolvido{emprestimos.filter(e => e.status === 'devolvido').length !== 1 ? 's' : ''}
-                    </div>
-                  )}
+                  <div className="flex-1 bg-amber-100 dark:bg-amber-500/30 px-2 py-1.5 rounded-lg flex items-center justify-between border border-amber-200 dark:border-amber-400">
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">Ativo</span>
+                    <span className="text-sm font-bold text-amber-900 dark:text-amber-100">{emprestimos.filter(e => e.status === 'emprestado').length}</span>
+                  </div>
                 </div>
+
+                {/* Data e Hora do Empréstimo */}
+                {(() => {
+                  const currentIndex = currentEmprestimoIndex[funcionario] || 0;
+                  const currentEmp = emprestimos[currentIndex];
+                  return currentEmp ? (
+                    <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-3 flex-shrink-0 bg-gray-50 dark:bg-gray-700/30 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="font-medium">
+                        {new Date(currentEmp.dataEmprestimo).toLocaleDateString('pt-BR')} às {new Date(currentEmp.dataEmprestimo).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
+                
+                  {/* Conteúdo Principal - Flex-1 para preencher espaço */}
+                  <div className="flex-1 overflow-y-auto mb-4">
+                    {(() => {
+                      const currentIndex = currentEmprestimoIndex[funcionario] || 0;
+                      const currentEmp = emprestimos[currentIndex];
+                      
+                      if (!currentEmp) return null;
+                      
+                      return (
+                        <div className="space-y-3">
+                          {/* Navegação de Empréstimos */}
+                          {emprestimos.length > 1 && (
+                            <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                              <button
+                                onClick={() => setCurrentEmprestimoIndex(prev => ({
+                                  ...prev,
+                                  [funcionario]: Math.max(0, currentIndex - 1)
+                                }))}
+                                disabled={currentIndex === 0}
+                                className={`p-2 rounded-lg transition-all ${
+                                  currentIndex === 0
+                                    ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                    : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                }`}
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                              </button>
+                              
+                              <div className="text-center">
+                                <div className="text-sm font-bold text-gray-800 dark:text-white">
+                                  Empréstimo {currentIndex + 1} de {emprestimos.length}
+                                </div>
+                                <div className={`text-xs font-semibold mt-1 ${
+                                  currentEmp.status === 'emprestado'
+                                    ? 'text-amber-600 dark:text-amber-400'
+                                    : 'text-emerald-600 dark:text-emerald-400'
+                                }`}>
+                                  {currentEmp.status === 'emprestado' ? '● Ativo' : '● Devolvido'}
+                                </div>
+                              </div>
+                              
+                              <button
+                                onClick={() => setCurrentEmprestimoIndex(prev => ({
+                                  ...prev,
+                                  [funcionario]: Math.min(emprestimos.length - 1, currentIndex + 1)
+                                }))}
+                                disabled={currentIndex === emprestimos.length - 1}
+                                className={`p-2 rounded-lg transition-all ${
+                                  currentIndex === emprestimos.length - 1
+                                    ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                    : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                }`}
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* Ferramentas */}
+                          <div>
+                            <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                              <Package2 className="w-4 h-4" />
+                              <span>Ferramentas ({currentEmp.ferramentas?.length || 0})</span>
+                            </div>
+                            <div className="space-y-1.5">
+                              {currentEmp.ferramentas?.map((ferr, idx) => (
+                                <div key={idx} className="text-sm bg-gray-50 dark:bg-gray-700/30 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600">
+                                  <span className="font-medium text-gray-700 dark:text-gray-300">{ferr.nome}</span>
+                                  {ferr.quantidade > 1 && (
+                                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">x{ferr.quantidade}</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          {/* Observações - Editável */}
+                          <div>
+                            <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                              💬 Observações
+                            </div>
+                            {editingObservacoes.has(currentEmp.id) ? (
+                              <textarea
+                                value={tempObservacoes[currentEmp.id] || ''}
+                                onChange={(e) => setTempObservacoes(prev => ({ ...prev, [currentEmp.id]: e.target.value }))}
+                                onBlur={() => handleSaveObservacao(currentEmp.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') handleCancelEditObservacao(currentEmp.id);
+                                  if (e.key === 'Enter' && e.ctrlKey) handleSaveObservacao(currentEmp.id);
+                                }}
+                                autoFocus
+                                className="w-full text-sm bg-white dark:bg-gray-800 rounded-lg px-3 py-2 border-2 border-blue-500 dark:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                rows="3"
+                                placeholder="Digite as observações... (Ctrl+Enter para salvar, Esc para cancelar)"
+                              />
+                            ) : (
+                              <div 
+                                onClick={() => handleStartEditObservacao(currentEmp.id, currentEmp.observacoes)}
+                                className="text-sm bg-gray-50 dark:bg-gray-700/30 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600 cursor-text hover:border-blue-400 dark:hover:border-blue-500 transition-colors min-h-[60px]"
+                              >
+                                {currentEmp.observacoes || <span className="text-gray-400 dark:text-gray-500 italic">Clique para adicionar observações...</span>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Botões de Ação - Fixos no Rodapé */}
+                  <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 pt-3">
+                    {(() => {
+                      const currentIndex = currentEmprestimoIndex[funcionario] || 0;
+                      const currentEmp = emprestimos[currentIndex];
+                      
+                      if (!currentEmp) return null;
+                      
+                      return (
+                        <div className="space-y-2">
+                          {/* Botão Lembrar Funcionário */}
+                          {currentEmp.status === 'emprestado' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEnviarLembrete(currentEmp);
+                              }}
+                              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+                            >
+                              <Bell className="w-4 h-4" />
+                              <span>Lembrar Funcionário</span>
+                            </button>
+                          )}
+                          
+                          {/* Grid de Ações */}
+                          <div className="grid grid-cols-2 gap-2">
+                            {currentEmp.status === 'emprestado' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  console.log('🔘 Botão Devolver clicado! ID:', currentEmp.id);
+                                  console.log('📋 Empréstimo atual:', currentEmp);
+                                  handleDevolverFerramentas(currentEmp.id);
+                                }}
+                                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Devolver</span>
+                              </button>
+                            )}
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditarEmprestimo(currentEmp);
+                              }}
+                              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+                            >
+                              <Edit className="w-4 h-4" />
+                              <span>Editar</span>
+                            </button>
+                            
+                            {currentEmp.status === 'emprestado' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTransferirFerramentas(currentEmp);
+                                }}
+                                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+                              >
+                                <ArrowRightLeft className="w-4 h-4" />
+                                <span>Transferir</span>
+                              </button>
+                            )}
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleGerarComprovante(currentEmp);
+                              }}
+                              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span>PDF</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
               </div>
-            
+              
               {/* Lista de Empréstimos Expandida */}
               {expandedEmployees.has(funcionario) && (
                 <div className="border-t-2 border-gray-100 dark:border-gray-700 bg-gradient-to-b from-gray-50 to-white dark:from-gray-700/50 dark:to-gray-800/50">
@@ -919,11 +1175,12 @@ const ListaEmprestimos = ({
                     <div className="p-4 space-y-3">
                       {emprestimos.map(emprestimo => (
                         <div 
-                          key={emprestimo.id} 
-                          className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 border-l-4 overflow-hidden ${
+                          key={emprestimo.id}
+                          data-emprestimo-card-id={emprestimo.id}
+                          className={`bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-200 border-l-4 overflow-hidden ${
                             emprestimo.status === 'emprestado'
-                              ? 'border-l-yellow-400 dark:border-l-yellow-500'
-                              : 'border-l-green-400 dark:border-l-green-500'
+                              ? 'border-l-amber-500 dark:border-l-amber-400'
+                              : 'border-l-emerald-500 dark:border-l-emerald-400'
                           }`}
                         >
                           <div className="p-4">
@@ -933,8 +1190,8 @@ const ListaEmprestimos = ({
                                 <div className="flex items-center gap-2 mb-2">
                                   <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
                                     emprestimo.status === 'emprestado'
-                                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200'
-                                      : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
+                                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                      : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
                                   }`}>
                                     {emprestimo.status === 'emprestado' ? (
                                       <><Clock className="w-3.5 h-3.5" />Em Andamento</>
@@ -950,71 +1207,88 @@ const ListaEmprestimos = ({
                                 </div>
                               </div>
                               
-                              {/* Botões de Ação */}
+                              {/* Menu Dropdown de Ações */}
                               {emprestimo.status === 'emprestado' && temFerramentasEmprestadas(emprestimo) && (
-                                <div className="flex flex-col gap-1">
-                                  {/* Linha 1 - Ações principais */}
-                                  <div className="grid grid-cols-3 gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditarEmprestimo(emprestimo);
-                                      }}
-                                      className="p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all duration-200"
-                                      title="Editar empréstimo"
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </button>
-                                    
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleTransferirFerramentas(emprestimo);
-                                      }}
-                                      className="p-2 text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-md transition-all duration-200"
-                                      title="Transferir ferramentas"
-                                    >
-                                      <ArrowRightLeft className="w-4 h-4" />
-                                    </button>
-                                    
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleGerarComprovante(emprestimo);
-                                      }}
-                                      className="p-2 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-md transition-all duration-200"
-                                      title="Gerar comprovante PDF"
-                                    >
-                                      <FileText className="w-4 h-4" />
-                                    </button>
-                                  </div>
+                                <div className="relative" ref={openDropdownId === emprestimo.id ? dropdownRef : null}>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenDropdownId(openDropdownId === emprestimo.id ? null : emprestimo.id);
+                                    }}
+                                    className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
+                                    title="Mais ações"
+                                  >
+                                    <MoreVertical className="w-5 h-5" />
+                                  </button>
                                   
-                                  {/* Linha 2 - Ações secundárias */}
-                                  <div className="grid grid-cols-2 gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDevolverFerramentas(emprestimo.id);
-                                      }}
-                                      className="p-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-all duration-200"
-                                      title="Devolver ferramentas"
-                                    >
-                                      <CheckCircle className="w-4 h-4" />
-                                    </button>
-                                    
-                                    {temPermissaoEdicao && (
+                                  {/* Dropdown Menu */}
+                                  {openDropdownId === emprestimo.id && (
+                                    <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-[200px]">
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleRemoverEmprestimo(emprestimo);
+                                          handleEditarEmprestimo(emprestimo);
+                                          setOpenDropdownId(null);
                                         }}
-                                        className="p-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all duration-200"
-                                        title="Remover registro"
+                                        className="w-full px-4 py-2 text-left flex items-center gap-3 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                                       >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Edit className="w-4 h-4" />
+                                        <span className="text-sm font-medium">Editar empréstimo</span>
                                       </button>
-                                    )}
-                                  </div>
+                                      
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleTransferirFerramentas(emprestimo);
+                                          setOpenDropdownId(null);
+                                        }}
+                                        className="w-full px-4 py-2 text-left flex items-center gap-3 text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 transition-colors"
+                                      >
+                                        <ArrowRightLeft className="w-4 h-4" />
+                                        <span className="text-sm font-medium">Transferir ferramentas</span>
+                                      </button>
+                                      
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleGerarComprovante(emprestimo);
+                                          setOpenDropdownId(null);
+                                        }}
+                                        className="w-full px-4 py-2 text-left flex items-center gap-3 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
+                                      >
+                                        <FileText className="w-4 h-4" />
+                                        <span className="text-sm font-medium">Gerar comprovante PDF</span>
+                                      </button>
+                                      
+                                      <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                                      
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDevolverFerramentas(emprestimo.id);
+                                          setOpenDropdownId(null);
+                                        }}
+                                        className="w-full px-4 py-2 text-left flex items-center gap-3 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors"
+                                      >
+                                        <CheckCircle className="w-4 h-4" />
+                                        <span className="text-sm font-medium">Devolver ferramentas</span>
+                                      </button>
+                                      
+                                      {temPermissaoEdicao && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoverEmprestimo(emprestimo);
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className="w-full px-4 py-2 text-left flex items-center gap-3 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                          <span className="text-sm font-medium">Remover registro</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               
@@ -1065,27 +1339,27 @@ const ListaEmprestimos = ({
                                         key={idx} 
                                         className={`flex items-center justify-between p-2.5 rounded-lg transition-colors ${
                                           ferramentaDevolvida 
-                                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700/30' 
-                                            : 'bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600'
+                                            ? 'bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-600/40' 
+                                            : 'bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700/50 dark:to-gray-700/70 border border-gray-300 dark:border-gray-600'
                                         }`}
                                       >
                                         <div className="flex items-center gap-2 flex-1">
-                                          <div className={`w-2 h-2 rounded-full ${
-                                            ferramentaDevolvida ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'
+                                          <div className={`w-2.5 h-2.5 rounded-full shadow-sm ${
+                                            ferramentaDevolvida ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'
                                           }`} />
                                           <span className={`text-sm font-medium ${
                                             ferramentaDevolvida 
-                                              ? 'text-green-700 dark:text-green-300 line-through' 
-                                              : 'text-gray-800 dark:text-gray-200'
+                                              ? 'text-emerald-700 dark:text-emerald-300 line-through' 
+                                              : 'text-gray-800 dark:text-gray-100'
                                           }`}>
                                             {ferramenta.nome}
                                           </span>
                                         </div>
                                         {ferramenta.quantidade > 1 && (
-                                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${
                                             ferramentaDevolvida
-                                              ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200'
-                                              : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                                              ? 'bg-emerald-200 dark:bg-emerald-600/40 text-emerald-800 dark:text-emerald-200'
+                                              : 'bg-blue-500 dark:bg-blue-600 text-white'
                                           }`}>
                                             {ferramenta.quantidade}x
                                           </span>
@@ -1140,31 +1414,21 @@ const ListaEmprestimos = ({
                                 <Pencil className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Observações</span>
                               </div>
-                              {editingObservacao === emprestimo.id ? (
+                              {editingObservacoes.has(emprestimo.id) ? (
                                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-700/30">
                                   <textarea
-                                    value={observacoesTemp[emprestimo.id] || ''}
-                                    onChange={(e) => handleObservacaoChange(emprestimo.id, e.target.value)}
-                                    onKeyDown={(e) => handleKeyDown(emprestimo, e)}
+                                    value={tempObservacoes[emprestimo.id] || ''}
+                                    onChange={(e) => setTempObservacoes(prev => ({ ...prev, [emprestimo.id]: e.target.value }))}
+                                    onBlur={() => handleSaveObservacao(emprestimo.id)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Escape') handleCancelEditObservacao(emprestimo.id);
+                                      if (e.key === 'Enter' && e.ctrlKey) handleSaveObservacao(emprestimo.id);
+                                    }}
                                     onClick={(e) => e.stopPropagation()}
                                     className="w-full p-3 text-sm border-0 bg-white dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white resize-y min-h-[80px] shadow-inner"
-                                    placeholder="Digite suas observações aqui..."
+                                    placeholder="Digite suas observações aqui... (Ctrl+Enter para salvar, Esc para cancelar)"
                                     autoFocus
                                   />
-                                  <div className="flex justify-end gap-2 mt-2">
-                                    <button
-                                      onClick={(e) => handleCancelEdit(emprestimo.id, e)}
-                                      className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                                    >
-                                      Cancelar
-                                    </button>
-                                    <button
-                                      onClick={(e) => handleSaveObservacao(emprestimo, e)}
-                                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                                    >
-                                      Salvar
-                                    </button>
-                                  </div>
                                 </div>
                               ) : (
                                 <div 
@@ -1172,13 +1436,14 @@ const ListaEmprestimos = ({
                                     temPermissaoEdicao ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:border-blue-300 dark:hover:border-blue-600 transition-all' : ''
                                   }`}
                                   onClick={(e) => {
+                                    e.stopPropagation();
                                     if (temPermissaoEdicao) {
-                                      handleStartEditObservacao(emprestimo, e);
+                                      handleStartEditObservacao(emprestimo.id, emprestimo.observacoes);
                                     }
                                   }}
                                 >
                                   <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words min-h-[40px]">
-                                    {emprestimo.observacao || (
+                                    {emprestimo.observacoes || (
                                       <span className="text-gray-400 dark:text-gray-500 italic flex items-center gap-2">
                                         <Pencil className="w-3.5 h-3.5" />
                                         {temPermissaoEdicao ? 'Clique para adicionar observações' : 'Sem observações'}
@@ -1209,9 +1474,10 @@ const ListaEmprestimos = ({
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
           );
         })}
+        </AnimatePresence>
       </div>
 
       {showDevolucaoModal && selectedEmprestimo && (
@@ -1273,13 +1539,10 @@ const ListaEmprestimos = ({
 
       {/* Animação de Devolução */}
       {showDevolucaoAnimation && dadosDevolucao && (
-        <BoxLoanAnimation
-          ferramentas={dadosDevolucao.ferramentasDevolvidas.map(f => f.nome || f)}
-          remetenteNome={dadosDevolucao.emprestimo.nomeFuncionario || funcionarios.find(func => func.id === dadosDevolucao.emprestimo.funcionarioId)?.nome || 'Funcionário'}
-          remetenteFoto={funcionarios.find(func => func.id === dadosDevolucao.emprestimo.funcionarioId)?.photoURL || null}
-          destinatarioNome="Almoxarifado"
-          destinatarioFoto={null}
-          tipo="devolucao"
+        <DevolucaoAnimation
+          emprestimo={dadosDevolucao.emprestimo}
+          ferramentasDevolvidas={dadosDevolucao.ferramentasDevolvidas}
+          emprestimoCardId={dadosDevolucao.emprestimo.id}
           onComplete={finalizarDevolucao}
         />
       )}

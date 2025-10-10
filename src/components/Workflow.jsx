@@ -49,6 +49,7 @@ import AnalyticsProvider from './Analytics/AnalyticsProvider';
 import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
+import NotificacoesUnificadas from './Notificacoes/NotificacoesUnificadas';
 import EscalaPage from '../pages/Escala/EscalaPage';
 import TarefasTab from './Tarefas/TarefasTab';
 // ✅ Novos serviços de autenticação e senha
@@ -4008,7 +4009,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'notificacoes' && (
-              <NotificationsPage onNavigate={setAbaAtiva} />
+              <NotificacoesUnificadas />
             )}
 
             {abaAtiva === 'mensagens' && (

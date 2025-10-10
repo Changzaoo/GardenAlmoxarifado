@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, getDocs, onSnapshot } from 'firebase/firestore';
-import { backupDb } from '../config/firebaseDual';
+import { db } from '../firebaseConfig';
 
 const DataContext = createContext();
 
@@ -36,12 +36,12 @@ export const DataProvider = ({ children }) => {
           emprestimosSnap,
           tarefasSnap
         ] = await Promise.all([
-          getDocs(collection(backupDb, 'usuarios')),
-          getDocs(collection(backupDb, 'empresas')),
-          getDocs(collection(backupDb, 'setores')),
-          getDocs(collection(backupDb, 'ferramentas')),
-          getDocs(collection(backupDb, 'emprestimos')),
-          getDocs(collection(backupDb, 'tarefas'))
+          getDocs(collection(db, 'usuarios')),
+          getDocs(collection(db, 'empresas')),
+          getDocs(collection(db, 'setores')),
+          getDocs(collection(db, 'ferramentas')),
+          getDocs(collection(db, 'emprestimos')),
+          getDocs(collection(db, 'tarefas'))
         ]);
 
         // Processar usuários
@@ -89,32 +89,32 @@ export const DataProvider = ({ children }) => {
         setLoading(false);
 
         // Configurar listeners para atualizações em tempo real
-        const unsubUsuarios = onSnapshot(collection(backupDb, 'usuarios'), (snapshot) => {
+        const unsubUsuarios = onSnapshot(collection(db, 'usuarios'), (snapshot) => {
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setUsuarios(data);
         });
 
-        const unsubEmpresas = onSnapshot(collection(backupDb, 'empresas'), (snapshot) => {
+        const unsubEmpresas = onSnapshot(collection(db, 'empresas'), (snapshot) => {
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setEmpresas(data);
         });
 
-        const unsubSetores = onSnapshot(collection(backupDb, 'setores'), (snapshot) => {
+        const unsubSetores = onSnapshot(collection(db, 'setores'), (snapshot) => {
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setSetores(data);
         });
 
-        const unsubFerramentas = onSnapshot(collection(backupDb, 'ferramentas'), (snapshot) => {
+        const unsubFerramentas = onSnapshot(collection(db, 'ferramentas'), (snapshot) => {
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setFerramentas(data);
         });
 
-        const unsubEmprestimos = onSnapshot(collection(backupDb, 'emprestimos'), (snapshot) => {
+        const unsubEmprestimos = onSnapshot(collection(db, 'emprestimos'), (snapshot) => {
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setEmprestimos(data);
         });
 
-        const unsubTarefas = onSnapshot(collection(backupDb, 'tarefas'), (snapshot) => {
+        const unsubTarefas = onSnapshot(collection(db, 'tarefas'), (snapshot) => {
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setTarefas(data);
         });
