@@ -1576,6 +1576,7 @@ const AlmoxarifadoSistema = () => {
   const [showMenuConfig, setShowMenuConfig] = useState(false);
   const [menuLongPressTimer, setMenuLongPressTimer] = useState(null);
   const [menuLongPressProgress, setMenuLongPressProgress] = useState(0);
+  const [menuProgressInterval, setMenuProgressInterval] = useState(null);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverItem, setDragOverItem] = useState(null);
   const [menuConfigSaved, setMenuConfigSaved] = useState(false);
@@ -1635,6 +1636,22 @@ const AlmoxarifadoSistema = () => {
       setDesktopLongPressItem(null);
     }
   };
+
+  // ===== CLEANUP DE TIMERS NO UNMOUNT =====
+  useEffect(() => {
+    return () => {
+      // Limpar todos os timers quando o componente desmontar
+      if (menuLongPressTimer) {
+        clearTimeout(menuLongPressTimer);
+      }
+      if (menuProgressInterval) {
+        clearInterval(menuProgressInterval);
+      }
+      if (desktopLongPressTimer) {
+        clearTimeout(desktopLongPressTimer);
+      }
+    };
+  }, [menuLongPressTimer, menuProgressInterval, desktopLongPressTimer]);
 
   // ===== SISTEMA DE PERSISTÊNCIA DE ESTADO =====
   const STORAGE_KEY = `workflow_state_${usuario?.id}`;
@@ -4171,10 +4188,16 @@ const AlmoxarifadoSistema = () => {
               onClick={toggleMenu}
               onTouchStart={(e) => {
                 e.preventDefault();
+                
+                // Timer para abrir configuração após 500ms
                 const timer = setTimeout(() => {
                   setShowMenuConfig(true);
                   setMenuLongPressProgress(0);
-                }, 500); // Reduzido para 0.5 segundo
+                  // Vibração para feedback tátil
+                  if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                  }
+                }, 500);
                 setMenuLongPressTimer(timer);
                 
                 // Animação de progresso (20% a cada 100ms = 5 frames = 500ms)
@@ -4186,18 +4209,31 @@ const AlmoxarifadoSistema = () => {
                     clearInterval(progressInterval);
                   }
                 }, 100);
+                setMenuProgressInterval(progressInterval);
               }}
               onTouchEnd={() => {
+                // Limpar timer do long press
                 if (menuLongPressTimer) {
                   clearTimeout(menuLongPressTimer);
                   setMenuLongPressTimer(null);
                 }
+                // Limpar intervalo de progresso
+                if (menuProgressInterval) {
+                  clearInterval(menuProgressInterval);
+                  setMenuProgressInterval(null);
+                }
                 setMenuLongPressProgress(0);
               }}
               onTouchMove={() => {
+                // Limpar timer do long press
                 if (menuLongPressTimer) {
                   clearTimeout(menuLongPressTimer);
                   setMenuLongPressTimer(null);
+                }
+                // Limpar intervalo de progresso
+                if (menuProgressInterval) {
+                  clearInterval(menuProgressInterval);
+                  setMenuProgressInterval(null);
                 }
                 setMenuLongPressProgress(0);
               }}
