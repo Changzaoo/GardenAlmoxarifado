@@ -29,6 +29,7 @@ import {
   Calendar,
   Building2
 } from 'lucide-react';
+import SafeImage from '../../common/SafeImage';
 import AvaliacoesCard from './AvaliacoesCard';
 import InformacoesContato from './InformacoesContato';
 import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
@@ -269,24 +270,23 @@ const CardFuncionarioModerno = memo(({
               className="relative flex-shrink-0 cursor-pointer"
               onClick={handleOpenCartao}
             >
-              {func.photoURL ? (
-                <div className="relative">
-                  <img 
-                    src={func.photoURL} 
-                    alt={func.nome} 
-                    loading="lazy"
-                    decoding="async"
-                    className="w-16 h-16 rounded-2xl object-cover ring-4 ring-white/50 dark:ring-gray-700/50 shadow-xl"
-                  />
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/20 via-transparent to-white/20" />
-                </div>
-              ) : (
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center relative ring-4 ring-white/50 dark:ring-gray-700/50 shadow-xl">
-                  <span className="text-blue-600 dark:text-blue-400 text-xl font-bold">
-                    {func.nome?.charAt(0)?.toUpperCase() || 'F'}
-                  </span>
-                </div>
-              )}
+              <div className="relative">
+                <SafeImage 
+                  src={func.photoURL} 
+                  alt={func.nome}
+                  className="w-16 h-16 rounded-2xl object-cover ring-4 ring-white/50 dark:ring-gray-700/50 shadow-xl"
+                  fallback={
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center relative ring-4 ring-white/50 dark:ring-gray-700/50 shadow-xl">
+                      <span className="text-blue-600 dark:text-blue-400 text-xl font-bold">
+                        {func.nome?.charAt(0)?.toUpperCase() || 'F'}
+                      </span>
+                    </div>
+                  }
+                />
+                {func.photoURL && (
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/20 via-transparent to-white/20 pointer-events-none" />
+                )}
+              </div>
               
               {/* Status indicator - Demitido */}
               {func.demitido && (
@@ -641,29 +641,25 @@ const CardFuncionarioModerno = memo(({
                 
                 {/* Foto grande */}
                 <div className="flex flex-col items-center">
-                  {func.photoURL ? (
-                    <motion.img 
-                      initial={motionProps.initial}
-                      animate={motionProps.animate ? { scale: 1 } : undefined}
-                      transition={motionProps.transition || { type: "spring", delay: 0.2 }}
+                  <motion.div
+                    initial={motionProps.initial}
+                    animate={motionProps.animate ? { scale: 1 } : undefined}
+                    transition={motionProps.transition || { type: "spring", delay: 0.2 }}
+                    className="w-32 h-32 rounded-3xl ring-4 ring-white/50 shadow-2xl mb-4 overflow-hidden"
+                  >
+                    <SafeImage 
                       src={func.photoURL} 
                       alt={func.nome}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-32 h-32 rounded-3xl object-cover ring-4 ring-white/50 shadow-2xl mb-4"
+                      className="w-full h-full object-cover"
+                      fallback={
+                        <div className="w-full h-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                          <span className="text-white text-5xl font-bold">
+                            {func.nome?.charAt(0)?.toUpperCase() || 'F'}
+                          </span>
+                        </div>
+                      }
                     />
-                  ) : (
-                    <motion.div 
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", delay: 0.2 }}
-                      className="w-32 h-32 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center ring-4 ring-white/50 shadow-2xl mb-4"
-                    >
-                      <span className="text-white text-5xl font-bold">
-                        {func.nome?.charAt(0)?.toUpperCase() || 'F'}
-                      </span>
-                    </motion.div>
-                  )}
+                  </motion.div>
                   
                   <motion.h2 
                     initial={{ opacity: 0, y: 10 }}

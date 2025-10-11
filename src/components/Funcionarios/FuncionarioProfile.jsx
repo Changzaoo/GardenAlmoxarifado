@@ -3,6 +3,7 @@ import { X, Users, Phone, Briefcase, CheckCircle, Package, Clock, ThumbsUp, Gaug
 import CargoSelect from './components/CargoSelect';
 import { useAuth } from '../../hooks/useAuth';
 import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
+import SafeImage from '../common/SafeImage';
 import { db } from '../../firebaseConfig';
 import { formatarData, formatarDataHora } from '../../utils/dateUtils';
 import AvaliacoesTab from './AvaliacoesTab';
@@ -293,16 +294,17 @@ const FuncionarioProfile = ({ funcionario, onClose }) => {
         <div className="relative">
           <div className="h-32 bg-blue-500 dark:bg-[#1D9BF0]/10"></div>
           <div className="absolute -bottom-16 left-6">
-            <div className="w-32 h-32 rounded-full border-4 border-[#192734] bg-white dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-              {funcionario.photoURL ? (
-                <img 
-                  src={funcionario.photoURL} 
-                  alt={funcionario.nome} 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Users className="w-16 h-16 text-gray-500 dark:text-gray-400" />
-              )}
+            <div className="w-32 h-32 rounded-full border-4 border-[#192734] bg-white dark:bg-gray-700 overflow-hidden">
+              <SafeImage 
+                src={funcionario.photoURL} 
+                alt={funcionario.nome} 
+                className="w-full h-full object-cover"
+                fallback={
+                  <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                    <Users className="w-16 h-16 text-gray-500 dark:text-gray-400" />
+                  </div>
+                }
+              />
             </div>
           </div>
         </div>

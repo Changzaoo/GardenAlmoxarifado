@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import OfflineLogo from '../common/OfflineLogo';
 import { Menu as MenuIcon, Home, Package, Users, Clock, AlertTriangle, Settings, LogOut, FileText } from 'lucide-react';
+import SafeImage from '../common/SafeImage';
 
 const Sidebar = ({ onProfileClick }) => {
   const navigate = useNavigate();
@@ -82,12 +83,17 @@ const Sidebar = ({ onProfileClick }) => {
             className="w-full flex items-center p-6 text-gray-900 dark:text-white hover:bg-[#1D9BF0]/10 transition-colors duration-200"
           >
             <div className="flex items-center flex-1">
-              <div className="w-10 h-10 rounded-full bg-[#2F3336] flex items-center justify-center border-2 border-gray-200 dark:border-gray-600 dark:border-gray-600">
-                {usuario?.foto ? (
-                  <img src={usuario.foto} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                ) : (
-                  <span className="text-lg font-bold">{usuario?.nome?.[0].toUpperCase()}</span>
-                )}
+              <div className="w-10 h-10 rounded-full bg-[#2F3336] border-2 border-gray-200 dark:border-gray-600 overflow-hidden">
+                <SafeImage 
+                  src={usuario?.foto} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                  fallback={
+                    <div className="w-full h-full flex items-center justify-center bg-[#2F3336]">
+                      <span className="text-lg font-bold text-white">{usuario?.nome?.[0]?.toUpperCase()}</span>
+                    </div>
+                  }
+                />
               </div>
               <div className="ml-3 overflow-hidden">
                 <p className="text-sm font-semibold truncate">{usuario?.nome}</p>
