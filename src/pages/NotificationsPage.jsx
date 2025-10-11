@@ -120,6 +120,17 @@ const NotificationsPage = ({ onNavigate }) => {
     return true;
   });
 
+  // Debug: Log para verificar o que está acontecendo
+  useEffect(() => {
+    console.log('=== DEBUG NOTIFICAÇÕES ===');
+    console.log('Total de notificações:', notifications.length);
+    console.log('Notificações não filtradas:', notifications);
+    console.log('Filtro atual:', filter);
+    console.log('Notificações filtradas:', filteredNotifications.length);
+    console.log('Tarefas:', tarefas.length);
+    console.log('Unread count:', unreadCount);
+  }, [notifications, filter, filteredNotifications, tarefas, unreadCount]);
+
   const handleNotificationClick = (notif) => {
     if (!notif.lida) {
       markAsRead(notif.id);
