@@ -11,6 +11,7 @@ import { dbWorkflowBR1 } from '../config/firebaseWorkflowBR1'; // Import do Fire
 import { FuncionariosProvider, useFuncionarios } from './Funcionarios/FuncionariosProvider';
 import { useTheme } from './Theme/ThemeSystem';
 import ThemeToggle from './Theme/ThemeToggle';
+import SafeImage from './common/SafeImage';
 // ✅ Importar sistema de permissões CORRIGIDO
 import { 
   NIVEIS_PERMISSAO, 
@@ -3750,13 +3751,16 @@ const AlmoxarifadoSistema = () => {
           <div className={`${isMobile ? 'fixed' : 'absolute'} bottom-0 left-0 right-0 py-3 px-4 bg-white dark:bg-black rounded-b-lg border-t border-gray-200 dark:border-gray-600`}>
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-[#16181C]">
-              {funcionarioInfo?.photoURL ? (
-                <img src={funcionarioInfo.photoURL} alt="Profile" className="w-full h-full object-cover" />
-              ) : usuario.photoURL ? (
-                <img src={usuario.photoURL} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-full h-full p-2 text-gray-600 dark:text-[#71767B]" />
-              )}
+              <SafeImage 
+                src={funcionarioInfo?.photoURL || usuario.photoURL} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+                fallback={
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-[#16181C]">
+                    <User className="w-full h-full p-2 text-gray-600 dark:text-[#71767B]" />
+                  </div>
+                }
+              />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-base font-bold text-gray-900 dark:text-[#E7E9EA] truncate leading-tight">
