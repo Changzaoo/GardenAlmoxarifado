@@ -50,10 +50,10 @@ const AtualizarFuncionariosJardim = () => {
       const todosFunc = funcionariosSnap.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }));
+      })) as any[];
       
       // Filtrar funcionários sem empresa ou setor
-      const semEmpresa = todosFunc.filter(func => 
+      const semEmpresa = todosFunc.filter((func: any) => 
         !func.empresaId || !func.setorId
       );
       

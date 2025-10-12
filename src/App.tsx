@@ -66,7 +66,7 @@ function AppContent() {
   // Sincronização inicial ao abrir o app
   useEffect(() => {
     const checkInitialSync = async () => {
-      const syncStatus = initialSyncService.checkSyncStatus();
+      const syncStatus = await initialSyncService.checkSyncStatus();
       
       if (syncStatus.needsSync) {
         // Precisa sincronizar
@@ -199,8 +199,8 @@ function AppContent() {
         <Route path="/login" element={<LoginFormContainer />} />
         <Route path="/criar-admin-temp" element={<CriarAdminTemp />} />
         <Route path="/qr-auth" element={<QRCodeScanner />} />
-        <Route path="/criar-conta" element={<CriarConta onVoltar={() => window.location.href = '/login'} />} />
-        <Route path="/redefinir-senha" element={<PasswordResetForm onVoltar={() => window.location.href = '/'} />} />
+        <Route path="/criar-conta" element={<CriarConta onVoltar={() => window.location.href = '/login'} onSucesso={() => window.location.href = '/login'} />} />
+        <Route path="/redefinir-senha" element={<PasswordResetForm onVoltar={() => window.location.href = '/'} onSucesso={() => window.location.href = '/login'} />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<PrivateRoute requiredLevel={1}><Workflow /></PrivateRoute>} />
           <Route path="/estatisticas-acesso" element={<PrivateRoute requiredLevel={4}><EstatisticasAcesso /></PrivateRoute>} />
