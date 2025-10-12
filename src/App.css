@@ -26,3 +26,19 @@
 .animate-slideUp {
   animation: slideUp 0.4s ease-out;
 }
+
+/* Animação para o auto-update manager */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.4s ease-out;
+}

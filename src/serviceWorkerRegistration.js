@@ -90,6 +90,13 @@ function registerValidSW(swUrl, config) {
         }
       }
 
+      // ✨ ATUALIZAÇÃO AUTOMÁTICA - Verificar atualizações a cada 60 segundos
+      setInterval(() => {
+        registration.update().catch(err => {
+          console.log('Erro ao verificar atualizações:', err);
+        });
+      }, 60000); // 60 segundos
+
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         if (installingWorker == null) {
@@ -98,9 +105,21 @@ function registerValidSW(swUrl, config) {
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
-              // At this point, the updated precached content has been fetched,
-              // but the previous service worker will still serve the older
-              // content until all client tabs are closed.
+              // ✨ ATUALIZAÇÃO AUTOMÁTICA - Nova versão disponível
+              console.log('Nova versão disponível! Atualizando automaticamente...');
+              
+              // Pedir ao service worker para pular a espera
+              installingWorker.postMessage({ type: 'SKIP_WAITING' });
+              
+              // Recarregar a página após o SW estar ativo
+              let refreshing = false;
+              navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                  refreshing = true;
+                  console.log('Service Worker atualizado! Recarregando...');
+                  window.location.reload();
+                }
+              });
 
               // Execute callback
               if (config && config.onUpdate) {
@@ -110,6 +129,7 @@ function registerValidSW(swUrl, config) {
               // At this point, everything has been precached.
               // It's the perfect time to display a
               // "Content is cached for offline use." message.
+              console.log('Aplicativo pronto para uso offline!');
 
               // Execute callback
               if (config && config.onSuccess) {

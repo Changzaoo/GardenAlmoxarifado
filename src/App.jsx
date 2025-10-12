@@ -41,6 +41,9 @@ import BackgroundJobsIndicator from './components/BackgroundJobsIndicator';
 // 🆘 CORREÇÃO DE EMERGÊNCIA - Firestore
 import { detectarECorrigirErroFirestore, adicionarBotaoEmergencia } from './utils/firestoreEmergency';
 
+// ✨ Auto-Update Manager
+import AutoUpdateManager from './components/AutoUpdateManager';
+
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
@@ -174,6 +177,9 @@ function AppContent() {
       
       {/* Indicador de tarefas em segundo plano */}
       <BackgroundJobsIndicator />
+      
+      {/* ✨ Gerenciador de atualizações automáticas */}
+      <AutoUpdateManager />
       
       <ToastContainer 
         position="top-right" 
