@@ -12,7 +12,8 @@ const ServerDebug = () => {
   const { servers, loading, error } = useServerManagement();
 
   useEffect(() => {
-    });
+    // Debug logging
+    console.log('ServerDebug:', { servers, loading, error });
   }, [servers, loading, error]);
 
   const handleAddServers = async () => {

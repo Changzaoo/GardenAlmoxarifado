@@ -48,15 +48,16 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "prebuild": "node scripts/generate-version.js",
+    "prebuild": "tsx scripts/generate-version.ts",
     "build": "cross-env CI=false react-scripts build",
     "build:win": "set CI=false && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build:version": "node scripts/generate-version.js && cross-env CI=false react-scripts build",
+    "build:version": "tsx scripts/generate-version.ts && cross-env CI=false react-scripts build",
     "vercel-build": "npm run build:version",
-    "lint": "eslint src --ext .js,.jsx",
-    "lint:fix": "eslint src --ext .js,.jsx --fix"
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit"
   },
   "engines": {
     "node": "22.x"
@@ -112,6 +113,7 @@
     "react-refresh": "^0.17.0",
     "style-loader": "^4.0.0",
     "tailwindcss": "^4.1.12",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.2"
   }
 }

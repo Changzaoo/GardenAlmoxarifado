@@ -133,7 +133,7 @@ const HistoricoEmprestimosTab = () => {
       {/* Cabeçalho */}
       <div className="flex justify-between items-start">
         <div>
-
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Histórico de Empréstimos</h1>
           <p className="text-gray-500">Visualize e analise todos os empréstimos realizados</p>
         </div>
         <button
@@ -384,6 +384,8 @@ const HistoricoEmprestimosTab = () => {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
       </div>
     </div>
   );

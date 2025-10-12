@@ -43,7 +43,6 @@ const AdminPanel = ({ onClose }) => {
             placeholder="Digite a nova senha"
           />
         </div>
-        </div>
         
         <div className="flex flex-col md:flex-row gap-4 mt-6">
           <Button
