@@ -29,6 +29,7 @@ const InitialSyncLoader = ({ onComplete }) => {
     isComplete: false,
     errors: []
   });
+  const [isFadingOut, setIsFadingOut] = useState(false); // ✨ Estado para fade out
 
   useEffect(() => {
     if (!dataLoading) {
@@ -40,6 +41,7 @@ const InitialSyncLoader = ({ onComplete }) => {
     }
 
     let unsubscribe;
+    const startTime = Date.now(); // ✨ Marca o tempo de início
 
     const startSync = async () => {
       // Listener para progresso
@@ -50,14 +52,27 @@ const InitialSyncLoader = ({ onComplete }) => {
       // Iniciar sincronização
       const result = await initialSyncService.performInitialSync();
       
+      // ✨ Calcula o tempo decorrido
+      const elapsedTime = Date.now() - startTime;
+      const minDisplayTime = 2000; // Tempo mínimo de 2 segundos
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+      
       if (result.cached) {
-        // Dados já estavam em cache
-        if (onComplete) onComplete(result);
-      } else if (result.success) {
-        // Sincronização concluída
+        // Dados já estavam em cache - aguarda tempo mínimo
         setTimeout(() => {
-          if (onComplete) onComplete(result);
-        }, 1000);
+          setIsFadingOut(true); // ✨ Inicia fade out
+          setTimeout(() => {
+            if (onComplete) onComplete(result);
+          }, 500); // Tempo da animação de fade out
+        }, remainingTime);
+      } else if (result.success) {
+        // Sincronização concluída - aguarda tempo mínimo + 1s extra
+        setTimeout(() => {
+          setIsFadingOut(true); // ✨ Inicia fade out
+          setTimeout(() => {
+            if (onComplete) onComplete(result);
+          }, 500); // Tempo da animação de fade out
+        }, Math.max(1000, remainingTime));
       }
     };
 
@@ -107,14 +122,18 @@ const InitialSyncLoader = ({ onComplete }) => {
       justifyContent: 'center',
       zIndex: 9999,
       color: '#fff',
-      padding: '20px'
+      padding: '20px',
+      opacity: isFadingOut ? 0 : 1, // ✨ Fade out quando concluído
+      transition: 'opacity 0.5s ease-out' // ✨ Transição suave
     }}>
       {/* Logo/Título */}
       <div style={{
         fontSize: '32px',
         fontWeight: 'bold',
         marginBottom: '40px',
-        textAlign: 'center'
+        textAlign: 'center',
+        transform: isFadingOut ? 'scale(1.1)' : 'scale(1)', // ✨ Leve zoom ao sair
+        transition: 'transform 0.5s ease-out'
       }}>
         🌿 WorkFlow
       </div>

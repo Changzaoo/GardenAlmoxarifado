@@ -82,14 +82,17 @@ function AppContent() {
   }, []);
 
   const handleSyncComplete = (result) => {
-    setIsInitialSyncing(false);
-    setSyncComplete(true);
-    
-    if (result.success) {
-      // Sincronização concluída
-    } else if (result.cached) {
-      // Dados já estavam em cache
-    }
+    // ✨ Adiciona delay mínimo de 1.5 segundos para evitar piscar da tela de login
+    setTimeout(() => {
+      setIsInitialSyncing(false);
+      setSyncComplete(true);
+      
+      if (result.success) {
+        // Sincronização concluída
+      } else if (result.cached) {
+        // Dados já estavam em cache
+      }
+    }, 1500); // Delay de 1.5 segundos para transição suave
   };
 
   // Sincronizar quando reconectar (uploads pendentes)
