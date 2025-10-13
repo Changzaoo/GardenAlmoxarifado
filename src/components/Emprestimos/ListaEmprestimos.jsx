@@ -98,6 +98,18 @@ const ListaEmprestimos = ({
   // ✅ Sistema reverso: Admin (0) <= Supervisor (2) = tem permissão
   const temPermissaoEdicao = usuario && usuario.nivel <= NIVEIS_PERMISSAO.SUPERVISOR;
 
+  // Log de debug para verificar props
+  useEffect(() => {
+    console.log('📦 ListaEmprestimos - Props recebidas:', {
+      emprestimosCount: emprestimos.length,
+      temDevolverFerramentas: typeof devolverFerramentas === 'function',
+      temRemoverEmprestimo: typeof removerEmprestimo === 'function',
+      temAtualizarDisponibilidade: typeof atualizarDisponibilidade === 'function',
+      funcionariosCount: funcionarios.length,
+      readonly
+    });
+  }, [emprestimos.length, funcionarios.length]);
+
   // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -352,8 +364,10 @@ const ListaEmprestimos = ({
 
   const handleConfirmDevolucao = async ({ ferramentas, devolvidoPorTerceiros, emprestimoId }) => {
     try {
+      console.log('🔍 handleConfirmDevolucao iniciado', { emprestimoId, ferramentas, devolvidoPorTerceiros });
+      
       if (!emprestimoId || !ferramentas || ferramentas.length === 0) {
-        console.error('Dados inválidos para devolução');
+        console.error('❌ Dados inválidos para devolução', { emprestimoId, ferramentas });
         return;
       }
 
@@ -362,63 +376,84 @@ const ListaEmprestimos = ({
       
       const emprestimo = emprestimos.find(e => e.id === emprestimoId);
       if (!emprestimo) {
-        console.error('Empréstimo não encontrado');
+        console.error('❌ Empréstimo não encontrado', { emprestimoId, emprestimos });
         return;
       }
 
+      console.log('✅ Empréstimo encontrado', { emprestimo });
+
+      // Prepara os dados para a animação
+      setDadosDevolucao({
+        emprestimo,
+        ferramentasDevolvidas: ferramentas,
+        devolvidoPorTerceiros
+      });
+
       // Inicia a animação de evaporação do card
       setEvaporatingCard(emprestimo.funcionario);
+      setShowDevolucaoAnimation(true);
       
-      // Aguarda 800ms da animação antes de processar
+      console.log('🎬 Animação iniciada, aguardando 700ms...');
+      
+      // Após exatamente 700ms (duração da animação), remove o card visualmente
       setTimeout(() => {
-        // Mostra a animação de devolução com os dados
-        setDadosDevolucao({
-          emprestimo,
-          ferramentasDevolvidas: ferramentas,
-          devolvidoPorTerceiros
-        });
-        setShowDevolucaoAnimation(true);
+        console.log('⏱️ 700ms passados, removendo card e processando devolução');
         setEvaporatingCard(null);
-      }, 800);
+        setShowDevolucaoAnimation(false);
+        
+        // Processa a devolução no banco de dados em background
+        // O usuário não verá mais o card, mas a exclusão continua
+        finalizarDevolucaoBackground(emprestimo, ferramentas, devolvidoPorTerceiros);
+      }, 700);
       
-      // A devolução real será processada após a animação no finalizarDevolucao
       return;
     } catch (error) {
-      console.error('Erro ao preparar devolução:', error);
+      console.error('❌ Erro ao preparar devolução:', error);
       alert('Erro ao preparar a devolução. Por favor, tente novamente.');
     }
   };
 
-  const finalizarDevolucao = async () => {
+  // Função que processa a devolução em background após a animação
+  const finalizarDevolucaoBackground = async (emprestimoAtual, ferramentasDevolvidas, devolvidoPorTerceiros) => {
     try {
-      if (!dadosDevolucao) return;
+      console.log('🔄 finalizarDevolucaoBackground iniciado', { 
+        emprestimoId: emprestimoAtual.id, 
+        ferramentasDevolvidas, 
+        devolvidoPorTerceiros 
+      });
 
-      const { emprestimo: emprestimoData, ferramentasDevolvidas, devolvidoPorTerceiros } = dadosDevolucao;
-      const emprestimoId = emprestimoData.id;
-
-      const emprestimoAtual = emprestimos.find(e => e.id === emprestimoId);
-      if (!emprestimoAtual) {
-        console.error('Empréstimo não encontrado');
+      if (!emprestimoAtual || !emprestimoAtual.id) {
+        console.error('❌ Empréstimo inválido', { emprestimoAtual });
         return;
       }
 
+      const emprestimoId = emprestimoAtual.id;
       const emprestimoRef = doc(db, 'emprestimos', emprestimoId);
       const dataDevolucao = new Date().toISOString();
 
+      console.log('📊 Comparando ferramentas:', {
+        devolvidas: ferramentasDevolvidas.length,
+        total: emprestimoAtual.ferramentas.length
+      });
+
       // Se todas as ferramentas foram selecionadas, faz devolução total
       if (ferramentasDevolvidas.length === emprestimoAtual.ferramentas.length) {
-
+        console.log('🎯 Devolução TOTAL - chamando devolverFerramentas');
+        
         if (typeof devolverFerramentas === 'function') {
           await devolverFerramentas(
             emprestimoId,
             atualizarDisponibilidade,
             devolvidoPorTerceiros
           );
+          console.log('✅ Devolução total concluída com sucesso');
+        } else {
+          console.error('❌ Função devolverFerramentas não está disponível');
         }
       } else {
+        console.log('🎯 Devolução PARCIAL - atualizando Firestore');
+        
         // Devolução parcial - remove apenas as ferramentas selecionadas
-
-        // Compara ferramentas de forma mais robusta (por nome ou referência)
         const ferramentasRestantes = emprestimoAtual.ferramentas.filter(
           ferramenta => {
             const nomeFerramenta = typeof ferramenta === 'object' ? ferramenta.nome : ferramenta;
@@ -429,6 +464,8 @@ const ListaEmprestimos = ({
           }
         );
 
+        console.log('📦 Ferramentas restantes:', ferramentasRestantes.length);
+
         // Adiciona as ferramentas devolvidas ao histórico
         const historico = ferramentasDevolvidas.map(f => ({
           ferramenta: typeof f === 'object' ? f.nome : f,
@@ -436,24 +473,34 @@ const ListaEmprestimos = ({
           devolvidoPorTerceiros
         }));
 
+        console.log('💾 Atualizando Firestore com:', {
+          ferramentasRestantes: ferramentasRestantes.length,
+          historico: historico.length
+        });
+
         await updateDoc(emprestimoRef, {
           ferramentas: ferramentasRestantes,
           historicoFerramentas: arrayUnion(...historico)
         });
 
+        console.log('✅ Firestore atualizado com sucesso');
+
         // Atualiza a disponibilidade das ferramentas
+        console.log('🔄 Atualizando disponibilidade...');
         await atualizarDisponibilidade();
+        console.log('✅ Disponibilidade atualizada');
       }
 
       // Limpa os estados após conclusão
+      console.log('🧹 Limpando estados...');
       setSelectedEmprestimo(null);
       setDadosDevolucao(null);
-      setShowDevolucaoAnimation(false);
+      console.log('✅ Devolução completamente finalizada!');
     } catch (error) {
-      console.error('Erro ao devolver ferramentas:', error);
-      alert('Erro ao devolver as ferramentas. Por favor, tente novamente.');
-      setShowDevolucaoAnimation(false);
-      setDadosDevolucao(null);
+      console.error('❌ Erro ao devolver ferramentas:', error);
+      console.error('Stack trace:', error.stack);
+      // Não mostra alert pois a animação já terminou e o card desapareceu
+      console.error('⚠️ A devolução falhou, mas a interface foi atualizada. Verifique o console para mais detalhes.');
     }
   };
 
@@ -890,26 +937,28 @@ const ListaEmprestimos = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <AnimatePresence mode="wait">
-          {Object.entries(funcionariosOrdenados).map(([funcionario, emprestimos]) => {
+          {Object.entries(funcionariosOrdenados)
+            .filter(([funcionario]) => evaporatingCard !== funcionario) // Remove card que está evaporando
+            .map(([funcionario, emprestimos]) => {
             const emprestimoAtivo = emprestimos.some(e => e.status === 'emprestado');
             const totalFerramentas = emprestimos.reduce((acc, emp) => acc + (emp.ferramentas?.length || 0), 0);
-            const isEvaporating = evaporatingCard === funcionario;
             
             return (
               <motion.div
                 key={funcionario}
                 id={`emprestimo-card-${emprestimos[currentEmprestimoIndex[funcionario] || 0]?.id || funcionario}`}
-                initial={{ opacity: 1, scale: 1, y: 0 }}
-                animate={isEvaporating ? {
-                  opacity: 0,
-                  scale: 0.8,
-                  y: -50
-                } : {
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{
                   opacity: 1,
                   scale: 1,
                   y: 0
                 }}
-                transition={{ duration: 0.8, ease: "easeInOut" }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.8,
+                  y: -50
+                }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
                 className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border-2 overflow-hidden h-[520px] flex flex-col ${
                   expandedEmployees.has(funcionario) 
                     ? 'ring-4 ring-blue-500/50 dark:ring-blue-400/60 border-blue-500 dark:border-blue-400' 
@@ -1545,7 +1594,7 @@ const ListaEmprestimos = ({
           emprestimo={dadosDevolucao.emprestimo}
           ferramentasDevolvidas={dadosDevolucao.ferramentasDevolvidas}
           cardElement={document.getElementById(`emprestimo-card-${dadosDevolucao.emprestimo.id}`)}
-          onComplete={finalizarDevolucao}
+          onComplete={() => {}} // Callback vazio, a remoção é controlada por timeout
         />
       )}
 
