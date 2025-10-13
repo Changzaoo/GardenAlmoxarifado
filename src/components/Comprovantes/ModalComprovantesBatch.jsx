@@ -128,36 +128,39 @@ const ModalComprovantesBatch = ({ isOpen, onClose, funcionarios = [] }) => {
     }
   };
 
-  // Buscar dados diário
+  // Buscar dados diário - SEM índice composto
   const buscarDadosDiario = async (funcionarioNome) => {
     const data = new Date(dataSelecionada);
-    const inicioDia = Timestamp.fromDate(new Date(data.setHours(0, 0, 0, 0)));
-    const fimDia = Timestamp.fromDate(new Date(data.setHours(23, 59, 59, 999)));
+    const inicioDia = new Date(data.setHours(0, 0, 0, 0));
+    const fimDia = new Date(data.setHours(23, 59, 59, 999));
 
+    // Query simples - apenas por funcionário (não requer índice composto)
     const q = query(
       collection(db, 'pontos'),
-      where('funcionarioNome', '==', funcionarioNome),
-      where('data', '>=', inicioDia),
-      where('data', '<=', fimDia)
+      where('funcionarioNome', '==', funcionarioNome)
     );
 
     const snapshot = await getDocs(q);
     const pontos = { entrada: null, saidaAlmoco: null, voltaAlmoco: null, saida: null };
 
+    // Filtra por data no código (evita índice composto)
     snapshot.docs.forEach(doc => {
       const ponto = doc.data();
       const timestamp = ponto.data?.toDate ? ponto.data.toDate() : new Date(ponto.timestamp || ponto.data);
       
-      if (ponto.tipo === 'entrada') pontos.entrada = timestamp;
-      else if (ponto.tipo === 'saida_almoco') pontos.saidaAlmoco = timestamp;
-      else if (ponto.tipo === 'retorno_almoco') pontos.voltaAlmoco = timestamp;
-      else if (ponto.tipo === 'saida') pontos.saida = timestamp;
+      // Verifica se está no dia selecionado
+      if (timestamp >= inicioDia && timestamp <= fimDia) {
+        if (ponto.tipo === 'entrada') pontos.entrada = timestamp;
+        else if (ponto.tipo === 'saida_almoco') pontos.saidaAlmoco = timestamp;
+        else if (ponto.tipo === 'retorno_almoco') pontos.voltaAlmoco = timestamp;
+        else if (ponto.tipo === 'saida') pontos.saida = timestamp;
+      }
     });
 
     return { data: new Date(dataSelecionada), pontos };
   };
 
-  // Buscar dados semanal
+  // Buscar dados semanal - SEM índice composto
   const buscarDadosSemanal = async (funcionarioNome) => {
     const data = new Date(dataSelecionada);
     const diaSemana = data.getDay();
@@ -169,32 +172,36 @@ const ModalComprovantesBatch = ({ isOpen, onClose, funcionarios = [] }) => {
     fimSemana.setDate(inicioSemana.getDate() + 6);
     fimSemana.setHours(23, 59, 59, 999);
 
+    // Query simples - apenas por funcionário (não requer índice composto)
     const q = query(
       collection(db, 'pontos'),
-      where('funcionarioNome', '==', funcionarioNome),
-      where('data', '>=', Timestamp.fromDate(inicioSemana)),
-      where('data', '<=', Timestamp.fromDate(fimSemana))
+      where('funcionarioNome', '==', funcionarioNome)
     );
 
     const snapshot = await getDocs(q);
     const pontosPorDia = {};
     
+    // Filtra por data no código (evita índice composto)
     snapshot.docs.forEach(doc => {
       const ponto = doc.data();
       const timestamp = ponto.data?.toDate ? ponto.data.toDate() : new Date(ponto.timestamp || ponto.data);
-      const diaKey = timestamp.toISOString().split('T')[0];
       
-      if (!pontosPorDia[diaKey]) {
-        pontosPorDia[diaKey] = {
-          data: new Date(diaKey),
-          pontos: { entrada: null, saidaAlmoco: null, voltaAlmoco: null, saida: null }
-        };
+      // Verifica se está na semana selecionada
+      if (timestamp >= inicioSemana && timestamp <= fimSemana) {
+        const diaKey = timestamp.toISOString().split('T')[0];
+        
+        if (!pontosPorDia[diaKey]) {
+          pontosPorDia[diaKey] = {
+            data: new Date(diaKey),
+            pontos: { entrada: null, saidaAlmoco: null, voltaAlmoco: null, saida: null }
+          };
+        }
+        
+        if (ponto.tipo === 'entrada') pontosPorDia[diaKey].pontos.entrada = timestamp;
+        else if (ponto.tipo === 'saida_almoco') pontosPorDia[diaKey].pontos.saidaAlmoco = timestamp;
+        else if (ponto.tipo === 'retorno_almoco') pontosPorDia[diaKey].pontos.voltaAlmoco = timestamp;
+        else if (ponto.tipo === 'saida') pontosPorDia[diaKey].pontos.saida = timestamp;
       }
-      
-      if (ponto.tipo === 'entrada') pontosPorDia[diaKey].pontos.entrada = timestamp;
-      else if (ponto.tipo === 'saida_almoco') pontosPorDia[diaKey].pontos.saidaAlmoco = timestamp;
-      else if (ponto.tipo === 'retorno_almoco') pontosPorDia[diaKey].pontos.voltaAlmoco = timestamp;
-      else if (ponto.tipo === 'saida') pontosPorDia[diaKey].pontos.saida = timestamp;
     });
 
     const diasDaSemana = [];
@@ -212,73 +219,81 @@ const ModalComprovantesBatch = ({ isOpen, onClose, funcionarios = [] }) => {
     return diasDaSemana;
   };
 
-  // Buscar dados mensal
+  // Buscar dados mensal - SEM índice composto
   const buscarDadosMensal = async (funcionarioNome) => {
     const inicioMes = new Date(mesAno.ano, mesAno.mes, 1);
     const fimMes = new Date(mesAno.ano, mesAno.mes + 1, 0, 23, 59, 59, 999);
 
+    // Query simples - apenas por funcionário (não requer índice composto)
     const q = query(
       collection(db, 'pontos'),
-      where('funcionarioNome', '==', funcionarioNome),
-      where('data', '>=', Timestamp.fromDate(inicioMes)),
-      where('data', '<=', Timestamp.fromDate(fimMes))
+      where('funcionarioNome', '==', funcionarioNome)
     );
 
     const snapshot = await getDocs(q);
     const pontosPorDia = {};
     
+    // Filtra por data no código (evita índice composto)
     snapshot.docs.forEach(doc => {
       const ponto = doc.data();
       const timestamp = ponto.data?.toDate ? ponto.data.toDate() : new Date(ponto.timestamp || ponto.data);
-      const diaKey = timestamp.toISOString().split('T')[0];
       
-      if (!pontosPorDia[diaKey]) {
-        pontosPorDia[diaKey] = {
-          data: new Date(diaKey),
-          pontos: { entrada: null, saidaAlmoco: null, voltaAlmoco: null, saida: null }
-        };
+      // Verifica se está no mês selecionado
+      if (timestamp >= inicioMes && timestamp <= fimMes) {
+        const diaKey = timestamp.toISOString().split('T')[0];
+        
+        if (!pontosPorDia[diaKey]) {
+          pontosPorDia[diaKey] = {
+            data: new Date(diaKey),
+            pontos: { entrada: null, saidaAlmoco: null, voltaAlmoco: null, saida: null }
+          };
+        }
+        
+        if (ponto.tipo === 'entrada') pontosPorDia[diaKey].pontos.entrada = timestamp;
+        else if (ponto.tipo === 'saida_almoco') pontosPorDia[diaKey].pontos.saidaAlmoco = timestamp;
+        else if (ponto.tipo === 'retorno_almoco') pontosPorDia[diaKey].pontos.voltaAlmoco = timestamp;
+        else if (ponto.tipo === 'saida') pontosPorDia[diaKey].pontos.saida = timestamp;
       }
-      
-      if (ponto.tipo === 'entrada') pontosPorDia[diaKey].pontos.entrada = timestamp;
-      else if (ponto.tipo === 'saida_almoco') pontosPorDia[diaKey].pontos.saidaAlmoco = timestamp;
-      else if (ponto.tipo === 'retorno_almoco') pontosPorDia[diaKey].pontos.voltaAlmoco = timestamp;
-      else if (ponto.tipo === 'saida') pontosPorDia[diaKey].pontos.saida = timestamp;
     });
 
     return Object.values(pontosPorDia);
   };
 
-  // Buscar dados anual
+  // Buscar dados anual - SEM índice composto
   const buscarDadosAnual = async (funcionarioNome) => {
     const inicioAno = new Date(ano, 0, 1);
     const fimAno = new Date(ano, 11, 31, 23, 59, 59, 999);
 
+    // Query simples - apenas por funcionário (não requer índice composto)
     const q = query(
       collection(db, 'pontos'),
-      where('funcionarioNome', '==', funcionarioNome),
-      where('data', '>=', Timestamp.fromDate(inicioAno)),
-      where('data', '<=', Timestamp.fromDate(fimAno))
+      where('funcionarioNome', '==', funcionarioNome)
     );
 
     const snapshot = await getDocs(q);
     const pontosPorDia = {};
     
+    // Filtra por data no código (evita índice composto)
     snapshot.docs.forEach(doc => {
       const ponto = doc.data();
       const timestamp = ponto.data?.toDate ? ponto.data.toDate() : new Date(ponto.timestamp || ponto.data);
-      const diaKey = timestamp.toISOString().split('T')[0];
       
-      if (!pontosPorDia[diaKey]) {
-        pontosPorDia[diaKey] = {
-          data: new Date(diaKey),
-          pontos: { entrada: null, saidaAlmoco: null, voltaAlmoco: null, saida: null }
-        };
+      // Verifica se está no ano selecionado
+      if (timestamp >= inicioAno && timestamp <= fimAno) {
+        const diaKey = timestamp.toISOString().split('T')[0];
+        
+        if (!pontosPorDia[diaKey]) {
+          pontosPorDia[diaKey] = {
+            data: new Date(diaKey),
+            pontos: { entrada: null, saidaAlmoco: null, voltaAlmoco: null, saida: null }
+          };
+        }
+        
+        if (ponto.tipo === 'entrada') pontosPorDia[diaKey].pontos.entrada = timestamp;
+        else if (ponto.tipo === 'saida_almoco') pontosPorDia[diaKey].pontos.saidaAlmoco = timestamp;
+        else if (ponto.tipo === 'retorno_almoco') pontosPorDia[diaKey].pontos.voltaAlmoco = timestamp;
+        else if (ponto.tipo === 'saida') pontosPorDia[diaKey].pontos.saida = timestamp;
       }
-      
-      if (ponto.tipo === 'entrada') pontosPorDia[diaKey].pontos.entrada = timestamp;
-      else if (ponto.tipo === 'saida_almoco') pontosPorDia[diaKey].pontos.saidaAlmoco = timestamp;
-      else if (ponto.tipo === 'retorno_almoco') pontosPorDia[diaKey].pontos.voltaAlmoco = timestamp;
-      else if (ponto.tipo === 'saida') pontosPorDia[diaKey].pontos.saida = timestamp;
     });
 
     // Calcular totais por mês

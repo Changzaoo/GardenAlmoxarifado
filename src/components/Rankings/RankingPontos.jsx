@@ -1420,22 +1420,142 @@ const RankingPontos = () => {
                   setShowDetails(true);
                 }}
                 className={`
-                  relative overflow-hidden rounded-2xl cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl
+                  relative overflow-visible rounded-2xl cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl
                   ${isFirst 
-                    ? 'bg-[#1D9BF0] dark:bg-[#1A8CD8] border-4 border-yellow-400 shadow-xl' 
-                    : isPodium 
-                      ? 'bg-white dark:bg-gray-800 border-3 border-gray-300 dark:border-gray-600 shadow-lg'
-                      : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-md'
+                    ? 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 dark:from-yellow-500 dark:via-yellow-600 dark:to-yellow-700 shadow-xl' 
+                    : index === 1
+                      ? 'bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 dark:from-gray-500 dark:via-gray-600 dark:to-gray-700 shadow-lg'
+                      : isPodium
+                        ? 'bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 dark:from-orange-600 dark:via-orange-700 dark:to-orange-800 shadow-lg'
+                        : 'bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-md'
                   }
                 `}
+                style={isPodium ? {
+                  animation: `flame-flicker-${index} 2s ease-in-out infinite`,
+                  border: `3px solid ${isFirst ? '#FFD700' : index === 1 ? '#C0C0C0' : '#CD7F32'}`,
+                  position: 'relative'
+                } : undefined}
               >
+                {/* Efeito de chama animada para o pódio */}
+                {isPodium && (
+                  <>
+                    {/* Animação para 1º lugar - DOURADA */}
+                    {isFirst && (
+                      <style>{`
+                        @keyframes flame-flicker-0 {
+                          0%, 100% {
+                            box-shadow: 
+                              0 0 20px #FFD700,
+                              0 0 40px #FFA500,
+                              0 0 60px #FF8C00,
+                              inset 0 0 20px rgba(255,215,0,0.4);
+                          }
+                          25% {
+                            box-shadow: 
+                              0 0 30px #FFD700,
+                              0 0 50px #FFA500,
+                              0 0 75px #FF8C00,
+                              inset 0 0 25px rgba(255,215,0,0.5);
+                          }
+                          50% {
+                            box-shadow: 
+                              0 0 35px #FFD700,
+                              0 0 60px #FFA500,
+                              0 0 90px #FF8C00,
+                              inset 0 0 30px rgba(255,215,0,0.6);
+                          }
+                          75% {
+                            box-shadow: 
+                              0 0 28px #FFD700,
+                              0 0 55px #FFA500,
+                              0 0 80px #FF8C00,
+                              inset 0 0 28px rgba(255,215,0,0.55);
+                          }
+                        }
+                      `}</style>
+                    )}
+                    
+                    {/* Animação para 2º lugar - PRATEADA */}
+                    {index === 1 && (
+                      <style>{`
+                        @keyframes flame-flicker-1 {
+                          0%, 100% {
+                            box-shadow: 
+                              0 0 20px #E8E8E8,
+                              0 0 40px #C0C0C0,
+                              0 0 60px #A8A8A8,
+                              inset 0 0 20px rgba(192,192,192,0.4);
+                          }
+                          25% {
+                            box-shadow: 
+                              0 0 30px #E8E8E8,
+                              0 0 50px #C0C0C0,
+                              0 0 75px #A8A8A8,
+                              inset 0 0 25px rgba(192,192,192,0.5);
+                          }
+                          50% {
+                            box-shadow: 
+                              0 0 35px #E8E8E8,
+                              0 0 60px #C0C0C0,
+                              0 0 90px #A8A8A8,
+                              inset 0 0 30px rgba(192,192,192,0.6);
+                          }
+                          75% {
+                            box-shadow: 
+                              0 0 28px #E8E8E8,
+                              0 0 55px #C0C0C0,
+                              0 0 80px #A8A8A8,
+                              inset 0 0 28px rgba(192,192,192,0.55);
+                          }
+                        }
+                      `}</style>
+                    )}
+                    
+                    {/* Animação para 3º lugar - BRONZE */}
+                    {index === 2 && (
+                      <style>{`
+                        @keyframes flame-flicker-2 {
+                          0%, 100% {
+                            box-shadow: 
+                              0 0 20px #CD7F32,
+                              0 0 40px #B8860B,
+                              0 0 60px #8B4513,
+                              inset 0 0 20px rgba(205,127,50,0.4);
+                          }
+                          25% {
+                            box-shadow: 
+                              0 0 30px #CD7F32,
+                              0 0 50px #B8860B,
+                              0 0 75px #8B4513,
+                              inset 0 0 25px rgba(205,127,50,0.5);
+                          }
+                          50% {
+                            box-shadow: 
+                              0 0 35px #CD7F32,
+                              0 0 60px #B8860B,
+                              0 0 90px #8B4513,
+                              inset 0 0 30px rgba(205,127,50,0.6);
+                          }
+                          75% {
+                            box-shadow: 
+                              0 0 28px #CD7F32,
+                              0 0 55px #B8860B,
+                              0 0 80px #8B4513,
+                              inset 0 0 28px rgba(205,127,50,0.55);
+                          }
+                        }
+                      `}</style>
+                    )}
+                  </>
+                )}
+                
                 {/* Posição Badge - Canto Superior Esquerdo */}
                 <div className="absolute top-0 left-0 z-10">
                   {renderPosicaoIcon(index)}
                 </div>
 
                 {/* Conteúdo do Card */}
-                <div className={`p-6 pt-16 ${isFirst ? 'text-white' : ''}`}>
+                <div className={`p-6 pt-16 ${isPodium ? 'text-white' : ''}`}>
                   {/* Avatar e Nome */}
                   <div className="flex flex-col items-center mb-4">
                     {funcionario.photoURL ? (
@@ -1444,39 +1564,61 @@ const RankingPontos = () => {
                         alt={funcionario.nome}
                         className={`w-24 h-24 rounded-full object-cover shadow-lg mb-3 ${
                           isFirst 
-                            ? 'border-4 border-yellow-400' 
-                            : 'border-4 border-[#1D9BF0]'
+                            ? 'border-4 border-white ring-2 ring-yellow-200' 
+                            : index === 1
+                              ? 'border-4 border-white ring-2 ring-gray-200'
+                              : isPodium
+                                ? 'border-4 border-white ring-2 ring-orange-200'
+                                : 'border-4 border-[#1D9BF0]'
                         }`}
                       />
                     ) : (
                       <div className={`w-24 h-24 rounded-full flex items-center justify-center shadow-lg mb-3 ${
                         isFirst 
-                          ? 'bg-yellow-400 border-4 border-yellow-300' 
-                          : 'bg-[#1D9BF0] border-4 border-[#1A8CD8]'
+                          ? 'bg-white border-4 border-yellow-200' 
+                          : index === 1
+                            ? 'bg-white border-4 border-gray-300'
+                            : isPodium
+                              ? 'bg-white border-4 border-orange-300'
+                              : 'bg-[#1D9BF0] border-4 border-[#1A8CD8]'
                       }`}>
-                        <span className="text-4xl font-bold text-white">
+                        <span className={`text-4xl font-bold ${
+                          isPodium ? 'text-gray-800' : 'text-white'
+                        }`}>
                           {funcionario.nome.charAt(0)}
                         </span>
                       </div>
                     )}
                     
                     <h3 className={`text-xl font-bold text-center mb-2 ${
-                      isFirst ? 'text-white' : 'text-gray-900 dark:text-white'
+                      isPodium ? 'text-white drop-shadow-lg' : 'text-gray-900 dark:text-white'
                     }`}>
                       {funcionario.nome}
                     </h3>
                     
                     {/* Pontuação Total */}
-                    <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+                    <div className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg ${
                       isFirst 
-                        ? 'bg-yellow-400' 
-                        : 'bg-[#1D9BF0]'
-                    } shadow-lg`}>
-                      <Trophy className="w-5 h-5 text-white" />
-                      <span className="text-2xl font-bold text-white">
+                        ? 'bg-white text-yellow-600' 
+                        : index === 1
+                          ? 'bg-white text-gray-600'
+                          : isPodium
+                            ? 'bg-white text-orange-600'
+                            : 'bg-[#1D9BF0] text-white'
+                    }`}>
+                      <Trophy className={`w-5 h-5 ${
+                        isFirst 
+                          ? 'text-yellow-600' 
+                          : index === 1
+                            ? 'text-gray-600'
+                            : isPodium
+                              ? 'text-orange-600'
+                              : 'text-white'
+                      }`} />
+                      <span className="text-2xl font-bold">
                         {funcionario.pontuacao.total}
                       </span>
-                      <span className="text-sm font-semibold text-white">pts</span>
+                      <span className="text-sm font-semibold">pts</span>
                     </div>
                   </div>
 
@@ -1484,22 +1626,22 @@ const RankingPontos = () => {
                   <div className="space-y-2 mt-4">
                     {/* Ferramentas */}
                     <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${
-                      isFirst 
-                        ? 'bg-white/20 backdrop-blur-sm' 
+                      isPodium 
+                        ? 'bg-white/30 backdrop-blur-sm' 
                         : 'bg-blue-50 dark:bg-blue-900/20'
                     }`}>
                       <div className="flex items-center gap-2">
                         <ToolCase className={`w-5 h-5 ${
-                          isFirst ? 'text-white' : 'text-blue-600 dark:text-blue-400'
+                          isPodium ? 'text-white' : 'text-blue-600 dark:text-blue-400'
                         }`} />
                         <span className={`text-sm font-medium ${
-                          isFirst ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                          isPodium ? 'text-white' : 'text-gray-700 dark:text-gray-300'
                         }`}>
                           Ferramentas
                         </span>
                       </div>
                       <span className={`text-lg font-bold ${
-                        isFirst ? 'text-white' : 'text-blue-600 dark:text-blue-400'
+                        isPodium ? 'text-white' : 'text-blue-600 dark:text-blue-400'
                       }`}>
                         {funcionario.pontuacao.detalhes.ferramentas}
                       </span>
@@ -1507,22 +1649,22 @@ const RankingPontos = () => {
 
                     {/* Tarefas */}
                     <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${
-                      isFirst 
-                        ? 'bg-white/20 backdrop-blur-sm' 
+                      isPodium 
+                        ? 'bg-white/30 backdrop-blur-sm' 
                         : 'bg-green-50 dark:bg-green-900/20'
                     }`}>
                       <div className="flex items-center gap-2">
                         <CheckCircle className={`w-5 h-5 ${
-                          isFirst ? 'text-white' : 'text-green-600 dark:text-green-400'
+                          isPodium ? 'text-white' : 'text-green-600 dark:text-green-400'
                         }`} />
                         <span className={`text-sm font-medium ${
-                          isFirst ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                          isPodium ? 'text-white' : 'text-gray-700 dark:text-gray-300'
                         }`}>
                           Tarefas
                         </span>
                       </div>
                       <span className={`text-lg font-bold ${
-                        isFirst ? 'text-white' : 'text-green-600 dark:text-green-400'
+                        isPodium ? 'text-white' : 'text-green-600 dark:text-green-400'
                       }`}>
                         {funcionario.pontuacao.detalhes.tarefas}
                       </span>
@@ -1530,22 +1672,22 @@ const RankingPontos = () => {
 
                     {/* Avaliações */}
                     <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${
-                      isFirst 
-                        ? 'bg-white/20 backdrop-blur-sm' 
+                      isPodium 
+                        ? 'bg-white/30 backdrop-blur-sm' 
                         : 'bg-yellow-50 dark:bg-yellow-900/20'
                     }`}>
                       <div className="flex items-center gap-2">
                         <Star className={`w-5 h-5 ${
-                          isFirst ? 'text-white' : 'text-yellow-600 dark:text-yellow-400'
+                          isPodium ? 'text-white' : 'text-yellow-600 dark:text-yellow-400'
                         }`} />
                         <span className={`text-sm font-medium ${
-                          isFirst ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                          isPodium ? 'text-white' : 'text-gray-700 dark:text-gray-300'
                         }`}>
                           Avaliações
                         </span>
                       </div>
                       <span className={`text-lg font-bold ${
-                        isFirst ? 'text-white' : 'text-yellow-600 dark:text-yellow-400'
+                        isPodium ? 'text-white' : 'text-yellow-600 dark:text-yellow-400'
                       }`}>
                         {funcionario.pontuacao.detalhes.avaliacao}
                       </span>

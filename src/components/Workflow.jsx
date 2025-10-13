@@ -3,7 +3,6 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, getDocs, get
 import { useDevToolsProtection } from '../hooks/useDevToolsProtection';
 import { ToastProvider } from './ToastProvider';
 import LegalTab from './Legal/LegalTab';
-import SupportTab from './Support/SupportTab';
 import { Shield } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { backupDb } from '../config/firebaseDual'; // Import do Firebase Backup
@@ -51,8 +50,6 @@ import DashboardTab from './Dashboard/DashboardTab';
 import ProfileTab from './Profile/ProfileTab';
 import NotificationsPage from '../pages/NotificationsPage';
 import NotificacoesUnificadas from './Notificacoes/NotificacoesUnificadas';
-import EscalaPage from '../pages/Escala/EscalaPage';
-import TarefasTab from './Tarefas/TarefasTab';
 // ✅ Novos serviços de autenticação e senha
 import { 
   authenticateUser, 
@@ -84,7 +81,6 @@ import {
   ClipboardList,
   ClipboardCheck,
   AlertTriangle,
-  Calendar,
   Search,
   Settings,
   Lock,
@@ -97,7 +93,6 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  HelpCircle,
   UserCog,
   History,
   ArrowRight,
@@ -120,8 +115,7 @@ import {
   Database,
   Key,
   MousePointer,
-  FileText,
-  CheckSquare
+  FileText
 } from 'lucide-react';
 
 // Função para bloquear teclas de atalho e menu de contexto
@@ -1128,24 +1122,6 @@ const LoginForm = () => {
 
         {/* Links para Redefinição de Senha e Criar Conta */}
         <div className="mt-6 text-center space-y-3">
-          <button
-            onClick={() => setMostrarRedefinicao(true)}
-            className="block w-full text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
-          >
-            Esqueci minha senha
-          </button>
-          
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                ou
-              </span>
-            </div>
-          </div>
-          
           <button
             onClick={() => setMostrarCriarUsuario(true)}
             className="block w-full px-4 py-2 border-2 border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg font-medium transition-colors text-sm"
@@ -2867,35 +2843,6 @@ const AlmoxarifadoSistema = () => {
       icone: Settings,
       permissao: () => usuario?.nivel === NIVEIS_PERMISSAO.ADMIN // APENAS Admin
     },
-    { 
-      id: 'feed-social', 
-      nome: 'Feed Social', 
-      icone: MessageCircle,
-      permissao: () => true // Todos os usuários autenticados
-    },
-    {
-      id: 'escala',
-      nome: 'Escala',
-      icone: Calendar,
-      permissao: () => {
-        // ADMIN sempre tem acesso
-        if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
-        // Funcionários (nível 1) podem ver apenas própria escala
-        return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_GERAL;
-      }
-    },
-    {
-      id: 'tarefas',
-      nome: 'Tarefas',
-      icone: CheckSquare,
-      permissao: () => true // Todos os usuários autenticados
-    },
-    {
-      id: 'suporte',
-      nome: 'Suporte',
-      icone: HelpCircle,
-      permissao: () => true // Todos os usuários autenticados
-    },
     
   ], [usuario?.nivel]); // Memorizar baseado no nível do usuário
   
@@ -3466,28 +3413,6 @@ const AlmoxarifadoSistema = () => {
                     </button>
                   );
                 })}
-                
-                {/* Botões secundários */}
-                <button
-                  onClick={() => {
-                    setAbaAtiva('suporte');
-                    setMenuOpen(false);
-                  }}
-                  className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
-                    abaAtiva === 'suporte'
-                      ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white shadow-lg'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 mb-1">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                    <path d="M12 17h.01"></path>
-                  </svg>
-                  <span className="text-xs font-medium text-center leading-tight">
-                    Suporte
-                  </span>
-                </button>
 
                 {temPermissao(NIVEIS_PERMISSAO.ADMIN) && (
                   <>
@@ -3660,21 +3585,6 @@ const AlmoxarifadoSistema = () => {
         {!isMobile && menuRecolhido && (
           <div className="px-2 py-2 border-t border-gray-200 dark:border-gray-600">
             <div className="space-y-1">
-              <button
-                onClick={() => setAbaAtiva('suporte')}
-                className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
-                  abaAtiva === 'suporte'
-                    ? 'bg-blue-500 dark:bg-[#1D9BF0] text-white'
-                    : 'text-gray-700 dark:text-[#E7E9EA] hover:bg-gray-100 dark:hover:bg-[#1D9BF0]/10'
-                }`}
-                title="Ajuda"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                  <path d="M12 17h.01"></path>
-                </svg>
-              </button>
               
               {temPermissao(NIVEIS_PERMISSAO.ADMIN) && (
                 <>
@@ -3844,20 +3754,6 @@ const AlmoxarifadoSistema = () => {
           {!isMobile && (
             <div className="mt-2">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setAbaAtiva('suporte');
-                    setMenuOpen(false);
-                  }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onMouseUp={(e) => e.stopPropagation()}
-                  onMouseLeave={(e) => e.stopPropagation()}
-                  className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-[#1D9BF0]/10 transition-colors"
-                  title="Ajuda"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-900 dark:text-[#E7E9EA]"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
-                </button>
                 {/* Usuários - Apenas Admin */}
                 {temPermissao(NIVEIS_PERMISSAO.ADMIN) && (
                   <button
@@ -4089,17 +3985,6 @@ const AlmoxarifadoSistema = () => {
               )
             )}
 
-            {abaAtiva === 'suporte' && (
-              <SupportTab />
-            )}
-
-            {abaAtiva === 'escala' && (
-              <EscalaPage usuarioAtual={usuario} />
-            )}
-
-            {abaAtiva === 'tarefas' && (
-              <TarefasTab funcionarioAtual={usuario} />
-            )}
           </div>
         </div>
       </main>

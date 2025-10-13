@@ -389,21 +389,25 @@ const ListaEmprestimos = ({
         devolvidoPorTerceiros
       });
 
-      // Inicia a animação de evaporação do card
+      // ✅ Remove o card IMEDIATAMENTE da visualização
+      console.log('⚡ Removendo card instantaneamente da UI');
       setEvaporatingCard(emprestimo.funcionario);
+      
+      // Inicia a animação em background (não bloqueia a remoção do card)
       setShowDevolucaoAnimation(true);
       
-      console.log('🎬 Animação iniciada, aguardando 700ms...');
-      
-      // Após exatamente 700ms (duração da animação), remove o card visualmente
+      // Remove o card da lista instantaneamente (0ms)
       setTimeout(() => {
-        console.log('⏱️ 700ms passados, removendo card e processando devolução');
+        console.log('✅ Card removido instantaneamente');
         setEvaporatingCard(null);
-        setShowDevolucaoAnimation(false);
         
         // Processa a devolução no banco de dados em background
-        // O usuário não verá mais o card, mas a exclusão continua
         finalizarDevolucaoBackground(emprestimo, ferramentas, devolvidoPorTerceiros);
+      }, 0);
+      
+      // Limpa a animação após ela terminar (não afeta a remoção do card)
+      setTimeout(() => {
+        setShowDevolucaoAnimation(false);
       }, 700);
       
       return;

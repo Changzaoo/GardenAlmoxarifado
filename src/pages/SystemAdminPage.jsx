@@ -23,12 +23,6 @@ const SystemAdminPage = () => {
       description: 'Gerenciamento de backups e sincronização de dados'
     },
     {
-      id: 'reset-codes',
-      label: 'Códigos de Redefinição',
-      icon: Shield,
-      description: 'Gerenciamento de códigos de reset de senha'
-    },
-    {
       id: 'error-reports',
       label: 'Relatórios de Erro',
       icon: FileText,
@@ -49,7 +43,7 @@ const SystemAdminPage = () => {
               Administração do Sistema
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Backup, Monitoramento, Códigos de Redefinição e Relatórios de Erro
+              Backup, Monitoramento e Relatórios de Erro
             </p>
           </div>
         </div>
@@ -125,7 +119,6 @@ const SystemAdminPage = () => {
             transition={{ duration: 0.3 }}
           >
             {abaAtiva === 'backup' && <BackupMonitoringPage />}
-            {abaAtiva === 'reset-codes' && <PasswordResetManager />}
             {abaAtiva === 'error-reports' && <ErrorReportsPage />}
           </motion.div>
         </div>
