@@ -74,6 +74,7 @@ import PasswordResetForm from './PasswordReset/PasswordResetForm';
 import UserCreationForm from './PasswordReset/UserCreationForm';
 import '../utils/passwordDebug'; // Carrega utilitário de debug de senhas
 import OfflineLogo from './common/OfflineLogo';
+import UpdateNotification from './Updates/UpdateNotification';
 // Icons
 import { 
   Package,
@@ -702,6 +703,7 @@ const AuthProvider = ({ children }) => {
       saveUserSession(usuarioAutenticado, lembrarLogin);
       salvarDadosLogin(usuarioAutenticado, true);
       setUsuario(usuarioAutenticado);
+      
       return { success: true };
       
     } catch (error) {
@@ -4513,6 +4515,7 @@ const App = () => {
   const [fadeOutLoading, setFadeOutLoading] = useState(false);
   const [mostrarConteudo, setMostrarConteudo] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
 
   // Aguardar a inicialização completa antes de mostrar conteúdo
   useEffect(() => {
@@ -4534,6 +4537,17 @@ const App = () => {
     }
   }, [loading]);
 
+  // Verificar atualização quando usuário fizer login
+  useEffect(() => {
+    if (usuario && mostrarConteudo) {
+      // Aguardar um pouco após o login para mostrar a notificação
+      const timer = setTimeout(() => {
+        setShowUpdateNotification(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [usuario, mostrarConteudo]);
+
   // Mostrar loading até sistema estar completamente pronto
   if (loading || !mostrarConteudo) {
     return <LoadingScreen fadeOut={fadeOutLoading} isRedirecting={false} />;
@@ -4543,6 +4557,14 @@ const App = () => {
   return (
     <div className="animate-fadeIn min-h-screen bg-gray-50 dark:bg-gray-900">
       {usuario ? <AlmoxarifadoSistema /> : <LoginForm />}
+      
+      {/* Notificação de Atualização do App */}
+      {showUpdateNotification && usuario && (
+        <UpdateNotification 
+          userId={usuario.id} 
+          onClose={() => setShowUpdateNotification(false)} 
+        />
+      )}
     </div>
   );
 };

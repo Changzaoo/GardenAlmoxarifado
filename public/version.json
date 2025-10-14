@@ -1,10 +1,27 @@
 {
   "version": "1.0.0",
-  "buildDate": "2025-10-14T12:56:22.988Z",
-  "buildNumber": 1760446582990,
-  "buildId": "build-1760446582990",
-  "gitCommit": "fc87f79d",
-  "gitBranch": "main",
+  "buildDate": "2025-10-14T13:46:23.262Z",
+  "buildNumber": 1760449583265,
+  "buildId": "build-1760449583265",
   "environment": "production",
-  "timestamp": 1760446582990
+  "timestamp": 1760449583265,
+  "git": {
+    "commit": "5bb670cd",
+    "commitFull": "5bb670cd9cb6a789dd063377f92ddbf366057616",
+    "branch": "main",
+    "message": "fffg",
+    "author": "Changzaoo",
+    "date": "2025-10-14T10:01:59-03:00",
+    "remoteUrl": "https://github.com/Changzaoo/GardenAlmoxarifado.git"
+  },
+  "vercel": {
+    "env": null,
+    "url": null,
+    "commitSha": "5bb670cd9cb6a789dd063377f92ddbf366057616",
+    "commitMessage": "fffg",
+    "commitAuthor": "Changzaoo",
+    "commitRef": "main",
+    "repoOwner": null,
+    "repoSlug": null
+  }
 }

@@ -6,11 +6,13 @@ import {
   Shield,
   FileText,
   Settings,
-  Server
+  Server,
+  RefreshCw
 } from 'lucide-react';
 import BackupMonitoringPage from './BackupMonitoringPage';
 import ErrorReportsPage from './ErrorReports/ErrorReportsPage';
 import PasswordResetManager from '../components/PasswordReset/PasswordResetManager';
+import AppUpdateManager from '../components/Updates/AppUpdateManager';
 
 const SystemAdminPage = () => {
   const [abaAtiva, setAbaAtiva] = useState('backup');
@@ -21,6 +23,12 @@ const SystemAdminPage = () => {
       label: 'Backup & Monitoramento',
       icon: Database,
       description: 'Gerenciamento de backups e sincronização de dados'
+    },
+    {
+      id: 'app-updates',
+      label: 'Atualizações do App',
+      icon: RefreshCw,
+      description: 'Enviar atualizações e notificar usuários'
     },
     {
       id: 'error-reports',
@@ -119,6 +127,7 @@ const SystemAdminPage = () => {
             transition={{ duration: 0.3 }}
           >
             {abaAtiva === 'backup' && <BackupMonitoringPage />}
+            {abaAtiva === 'app-updates' && <AppUpdateManager />}
             {abaAtiva === 'error-reports' && <ErrorReportsPage />}
           </motion.div>
         </div>
