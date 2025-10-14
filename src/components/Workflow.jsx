@@ -3161,6 +3161,12 @@ const AlmoxarifadoSistema = () => {
   // Obter abas na ordem personalizada
   const getAbasOrdenadas = (somenteComPermissao = false) => {
     const abasParaUsar = somenteComPermissao ? abasComPermissao : abas;
+    
+    // ✅ ADMINISTRADOR: Sempre vê TODAS as páginas, sem filtro de menuPersonalizado
+    if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) {
+      return abasParaUsar;
+    }
+    
     if (!menuPersonalizado) return abasParaUsar;
     
     const abasMap = new Map(abasParaUsar.map(aba => [aba.id, aba]));
@@ -3172,6 +3178,11 @@ const AlmoxarifadoSistema = () => {
 
   // Obter abas visíveis no menu inferior
   const getAbasMenuInferior = () => {
+    // ✅ ADMINISTRADOR: Sempre vê TODAS as páginas com permissão, independente da configuração
+    if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) {
+      return abasComPermissao.filter(a => a.id !== itemFavorito);
+    }
+    
     if (!menuPersonalizado) {
       // Configuração padrão se não houver personalização
       // TODAS as abas com permissão podem aparecer, exceto a favorita

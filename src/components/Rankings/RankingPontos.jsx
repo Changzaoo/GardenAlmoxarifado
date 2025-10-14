@@ -6,6 +6,7 @@ import { useSectorPermissions } from '../../hooks/useSectorPermissions';
 import { PermissionChecker } from '../../constants/permissoes';
 import { useAuth } from '../../hooks/useAuth';
 import { useFuncionarios } from '../Funcionarios/FuncionariosProvider';
+import SafeImage from '../common/SafeImage';
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -1559,7 +1560,7 @@ const RankingPontos = () => {
                   {/* Avatar e Nome */}
                   <div className="flex flex-col items-center mb-4">
                     {funcionario.photoURL ? (
-                      <img 
+                      <SafeImage 
                         src={funcionario.photoURL} 
                         alt={funcionario.nome}
                         className={`w-24 h-24 rounded-full object-cover shadow-lg mb-3 ${
@@ -1784,7 +1785,7 @@ const DetalhesPontos = ({ funcionario, periodoAtual, mesSelected, anoSelected, s
             <div className="flex items-center gap-4">
               {/* Foto do funcionário */}
               {funcionario.photoURL ? (
-                <img 
+                <SafeImage 
                   src={funcionario.photoURL} 
                   alt={funcionario.nome}
                   className="w-16 h-16 rounded-full object-cover border-4 border-white/30 shadow-lg"

@@ -17,7 +17,7 @@ import { Users } from 'lucide-react';
  * @param {React.Component} fallback - Componente de fallback (opcional)
  * @param {function} onError - Callback de erro (opcional)
  * @param {function} onLoad - Callback de sucesso (opcional)
- * @param {boolean} forceReload - Forçar reload com timestamp (default: true)
+ * @param {boolean} forceReload - Forçar reload com timestamp (default: false)
  */
 const SafeImage = ({ 
   src, 
@@ -26,7 +26,7 @@ const SafeImage = ({
   fallback = null,
   onError = null,
   onLoad = null,
-  forceReload = true,
+  forceReload = false,
   style = {}
 }) => {
   const [imageUrl, setImageUrl] = useState(null);
@@ -43,16 +43,20 @@ const SafeImage = ({
     setIsLoading(true);
     setHasError(false);
 
-    // Adicionar timestamp para forçar reload e evitar cache corrompido
+    // Detectar se é URL do Firebase Storage
+    const isFirebaseStorage = src.includes('firebasestorage.googleapis.com') || 
+                              src.includes('storage.googleapis.com');
+    
+    // Adicionar timestamp para forçar reload APENAS se solicitado explicitamente
     let processedUrl = src;
     
     try {
-      // Se a URL já tem parâmetros, adicionar timestamp com &
-      // Caso contrário, adicionar com ?
-      const separator = src.includes('?') ? '&' : '?';
-      
-      // Só adicionar timestamp se forceReload estiver ativo e a URL não for data:
-      if (forceReload && !src.startsWith('data:')) {
+      // Só adicionar timestamp se:
+      // 1. forceReload estiver ativo
+      // 2. Não for data: URI
+      // 3. Não for URL do Firebase (que já tem tokens de acesso)
+      if (forceReload && !src.startsWith('data:') && !isFirebaseStorage) {
+        const separator = src.includes('?') ? '&' : '?';
         processedUrl = `${src}${separator}_t=${Date.now()}`;
       }
 
@@ -76,8 +80,12 @@ const SafeImage = ({
         if (onError) onError(error);
       };
 
-      // Configurar CORS
-      img.crossOrigin = 'anonymous';
+      // NÃO configurar CORS para URLs do Firebase Storage (causa conflito com tokens)
+      // Apenas para URLs externas que realmente precisam
+      if (!isFirebaseStorage && !src.startsWith('data:')) {
+        img.crossOrigin = 'anonymous';
+      }
+      
       img.src = processedUrl;
 
     } catch (error) {

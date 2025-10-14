@@ -14,6 +14,7 @@ import TransferenciaAnimation from './TransferenciaAnimation';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
 import ComprovanteModal from '../Comprovantes/ComprovanteModal';
 import { useSectorPermissions } from '../../hooks/useSectorPermissions';
+import SafeImage from '../common/SafeImage';
 
 // Enum for sorting options
 const SORT_OPTIONS = {
@@ -979,7 +980,7 @@ const ListaEmprestimos = ({
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     {funcionarios.find(f => f.nome === funcionario)?.photoURL ? (
-                      <img 
+                      <SafeImage 
                         src={funcionarios.find(f => f.nome === funcionario)?.photoURL} 
                         alt={funcionario} 
                         className="w-14 h-14 rounded-full object-cover border-3 border-white dark:border-gray-700 shadow-lg"

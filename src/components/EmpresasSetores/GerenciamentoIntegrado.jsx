@@ -431,10 +431,11 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
         </div>
       </div>
 
-      {/* Breadcrumb Modernizado com Design Glassmorphism */}
-      <div className="backdrop-blur-md bg-white/80 dark:bg-gray-800/80 rounded-2xl p-5 shadow-lg border border-white/50 dark:border-gray-700/50">
-        <div className="flex items-center gap-3 text-sm flex-wrap">
-          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-md">
+      {/* Breadcrumb Modernizado com Design Glassmorphism e Estatísticas */}
+      <div className="backdrop-blur-md bg-white/90 dark:bg-gray-800/90 rounded-2xl p-6 shadow-xl border border-white/50 dark:border-gray-700/50">
+        {/* Navegação Breadcrumb */}
+        <div className="flex items-center gap-3 text-sm flex-wrap mb-5">
+          <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-full shadow-lg hover:shadow-xl transition-all">
             <Building2 className="w-5 h-5 text-white" />
             <span className="font-bold text-white">
               {empresaSelecionada ? empresaSelecionada.nome : '✨ Selecione uma empresa'}
@@ -443,7 +444,7 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
           {empresaSelecionada && (
             <>
               <ChevronRight className="w-5 h-5 text-gray-400 animate-pulse" />
-              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full shadow-md">
+              <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 via-indigo-600 to-purple-700 rounded-full shadow-lg hover:shadow-xl transition-all">
                 <Briefcase className="w-5 h-5 text-white" />
                 <span className="font-bold text-white">
                   {setorSelecionado ? setorSelecionado.nome : '✨ Selecione um setor'}
@@ -454,12 +455,66 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
           {setorSelecionado && (
             <>
               <ChevronRight className="w-5 h-5 text-gray-400 animate-pulse" />
-              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full shadow-md">
+              <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 via-emerald-600 to-green-700 rounded-full shadow-lg hover:shadow-xl transition-all">
                 <Clock className="w-5 h-5 text-white" />
                 <span className="font-bold text-white">Horários</span>
               </div>
             </>
           )}
+        </div>
+
+        {/* Cards de Estatísticas Rápidas */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card Empresas */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-4 border-2 border-blue-200/50 dark:border-blue-700/50 hover:shadow-lg transition-all group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+            <div className="relative flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">Total de Empresas</p>
+                <p className="text-3xl font-black text-blue-700 dark:text-blue-300">{empresas.length}</p>
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-1">
+                  {empresas.filter(e => e.ativo !== false).length} ativas
+                </p>
+              </div>
+              <div className="p-3 bg-blue-500/20 rounded-xl">
+                <Building2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card Setores */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-800/30 rounded-xl p-4 border-2 border-purple-200/50 dark:border-purple-700/50 hover:shadow-lg transition-all group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
+            <div className="relative flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-1">Total de Setores</p>
+                <p className="text-3xl font-black text-purple-700 dark:text-purple-300">{setores.length}</p>
+                <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-1">
+                  {empresaSelecionada ? `${setores.filter(s => s.empresaId === empresaSelecionada.id).length} nesta empresa` : 'Em todas empresas'}
+                </p>
+              </div>
+              <div className="p-3 bg-purple-500/20 rounded-xl">
+                <Briefcase className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card Horários */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-800/30 rounded-xl p-4 border-2 border-green-200/50 dark:border-green-700/50 hover:shadow-lg transition-all group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full blur-2xl group-hover:bg-green-500/20 transition-all"></div>
+            <div className="relative flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wide mb-1">Total de Horários</p>
+                <p className="text-3xl font-black text-green-700 dark:text-green-300">{horarios.length}</p>
+                <p className="text-xs text-green-600/70 dark:text-green-400/70 mt-1">
+                  {setorSelecionado ? `${horarios.filter(h => h.setorId === setorSelecionado.id).length} neste setor` : 'Em todos setores'}
+                </p>
+              </div>
+              <div className="p-3 bg-green-500/20 rounded-xl">
+                <Clock className="w-8 h-8 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -533,82 +588,135 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                           {empresa.nome}
                         </h3>
                         
-                        {/* Valores Financeiros - Card Premium */}
+                        {/* Valores Financeiros - Card Premium com Detalhes */}
                         <div className={`rounded-xl p-4 mb-3 shadow-md ${
                           isSelected 
                             ? 'bg-white/20 backdrop-blur-sm border border-white/30' 
                             : 'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200/50 dark:border-blue-700/50'
                         }`}>
-                          <div className="grid grid-cols-2 gap-4 text-xs">
-                            <div className="space-y-1">
-                              <div className={`flex items-center gap-2 font-bold ${isSelected ? 'text-white/90' : 'text-blue-600 dark:text-blue-400'}`}>
-                                <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-blue-500/10'}`}>
-                                  <DollarSign className="w-4 h-4" />
-                                </div>
-                                <span>Valor Líquido</span>
+                          {/* Valor Líquido Principal - Destaque */}
+                          <div className="mb-3 pb-3 border-b border-blue-200/30 dark:border-blue-700/30">
+                            <div className={`flex items-center gap-2 mb-2 ${isSelected ? 'text-white/90' : 'text-blue-600 dark:text-blue-400'}`}>
+                              <div className={`p-2 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-green-500/10'}`}>
+                                <DollarSign className="w-5 h-5" />
                               </div>
-                              <div className={`font-black text-base ${isSelected ? 'text-white' : 'text-green-600 dark:text-green-400'}`}>
-                                R$ {valores.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              <span className="text-xs font-bold uppercase tracking-wide">Valor Líquido Total</span>
+                            </div>
+                            <div className={`font-black text-2xl ${isSelected ? 'text-white' : 'text-green-600 dark:text-green-400'}`}>
+                              R$ {valores.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                          
+                          {/* Grid de Estatísticas */}
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            {/* Valor Bruto */}
+                            <div className="space-y-1">
+                              <div className={`flex items-center gap-1.5 font-semibold ${isSelected ? 'text-white/80' : 'text-blue-600 dark:text-blue-400'}`}>
+                                <TrendingUp className="w-3.5 h-3.5" />
+                                <span>Valor Bruto</span>
+                              </div>
+                              <div className={`font-bold text-sm ${isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                                R$ {valores.valorBruto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </div>
                             </div>
+                            
+                            {/* Total de Itens */}
                             <div className="space-y-1">
-                              <div className={`flex items-center gap-2 font-bold ${isSelected ? 'text-white/90' : 'text-blue-600 dark:text-blue-400'}`}>
-                                <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-purple-500/10'}`}>
-                                  <Package className="w-4 h-4" />
-                                </div>
-                                <span>Total de Itens</span>
+                              <div className={`flex items-center gap-1.5 font-semibold ${isSelected ? 'text-white/80' : 'text-purple-600 dark:text-purple-400'}`}>
+                                <Package className="w-3.5 h-3.5" />
+                                <span>Itens</span>
                               </div>
-                              <div className={`font-black text-base ${isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                              <div className={`font-bold text-sm ${isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                                 {valores.totalItens} itens
                               </div>
                             </div>
+                            
+                            {/* Valor Danificadas */}
+                            {valores.valorDanificadas > 0 && (
+                              <div className="space-y-1">
+                                <div className={`flex items-center gap-1.5 font-semibold ${isSelected ? 'text-white/80' : 'text-orange-600 dark:text-orange-400'}`}>
+                                  <AlertOctagon className="w-3.5 h-3.5" />
+                                  <span>Danificadas</span>
+                                </div>
+                                <div className={`font-bold text-sm ${isSelected ? 'text-orange-200' : 'text-orange-600 dark:text-orange-400'}`}>
+                                  -R$ {valores.valorDanificadas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Valor Perdidas */}
+                            {valores.valorPerdidas > 0 && (
+                              <div className="space-y-1">
+                                <div className={`flex items-center gap-1.5 font-semibold ${isSelected ? 'text-white/80' : 'text-red-600 dark:text-red-400'}`}>
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  <span>Perdidas</span>
+                                </div>
+                                <div className={`font-bold text-sm ${isSelected ? 'text-red-200' : 'text-red-600 dark:text-red-400'}`}>
+                                  -R$ {valores.valorPerdidas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         
-                        {/* Informações da Empresa - Grid Moderno */}
-                        <div className="space-y-2 mt-3">
-                          {empresa.cnpj && (
-                            <div className={`flex items-center gap-2 text-sm ${isSelected ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
-                              <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'}`}>
-                                <FileText className="w-3.5 h-3.5" />
+                        {/* Informações da Empresa - Grid Moderno e Organizado */}
+                        <div className={`rounded-xl p-3 ${isSelected ? 'bg-white/10 backdrop-blur-sm' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}>
+                          <div className="space-y-2.5">
+                            {empresa.cnpj && (
+                              <div className={`flex items-center gap-2.5 text-sm ${isSelected ? 'text-white/95' : 'text-gray-700 dark:text-gray-300'}`}>
+                                <div className={`p-2 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                                  <FileText className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-xs font-semibold mb-0.5 ${isSelected ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>CNPJ</p>
+                                  <p className="font-bold">{empresa.cnpj}</p>
+                                </div>
                               </div>
-                              <span className="font-medium">CNPJ: {empresa.cnpj}</span>
-                            </div>
-                          )}
-                          
-                          {empresa.telefone && (
-                            <div className={`flex items-center gap-2 text-sm ${isSelected ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
-                              <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'}`}>
-                                <Phone className="w-3.5 h-3.5" />
+                            )}
+                            
+                            {empresa.telefone && (
+                              <div className={`flex items-center gap-2.5 text-sm ${isSelected ? 'text-white/95' : 'text-gray-700 dark:text-gray-300'}`}>
+                                <div className={`p-2 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-green-100 dark:bg-green-900/30'}`}>
+                                  <Phone className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-green-600 dark:text-green-400'}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-xs font-semibold mb-0.5 ${isSelected ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>Telefone</p>
+                                  <p className="font-bold">{empresa.telefone}</p>
+                                </div>
                               </div>
-                              <span className="font-medium">{empresa.telefone}</span>
-                            </div>
-                          )}
-                          
-                          {empresa.email && (
-                            <div className={`flex items-center gap-2 text-sm ${isSelected ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
-                              <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'}`}>
-                                <Mail className="w-3.5 h-3.5" />
+                            )}
+                            
+                            {empresa.email && (
+                              <div className={`flex items-center gap-2.5 text-sm ${isSelected ? 'text-white/95' : 'text-gray-700 dark:text-gray-300'}`}>
+                                <div className={`p-2 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
+                                  <Mail className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-xs font-semibold mb-0.5 ${isSelected ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>E-mail</p>
+                                  <p className="font-bold truncate">{empresa.email}</p>
+                                </div>
                               </div>
-                              <span className="font-medium truncate">{empresa.email}</span>
-                            </div>
-                          )}
-                          
-                          {empresa.endereco && (
-                            <div className={`flex items-center gap-2 text-sm ${isSelected ? 'text-white/90' : 'text-gray-600 dark:text-gray-400'}`}>
-                              <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'}`}>
-                                <MapPin className="w-3.5 h-3.5" />
+                            )}
+                            
+                            {empresa.endereco && (
+                              <div className={`flex items-start gap-2.5 text-sm ${isSelected ? 'text-white/95' : 'text-gray-700 dark:text-gray-300'}`}>
+                                <div className={`p-2 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-orange-100 dark:bg-orange-900/30'}`}>
+                                  <MapPin className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-orange-600 dark:text-orange-400'}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-xs font-semibold mb-0.5 ${isSelected ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>Endereço</p>
+                                  <p className="font-bold text-xs leading-relaxed">{empresa.endereco}</p>
+                                </div>
                               </div>
-                              <span className="font-medium text-xs">{empresa.endereco}</span>
-                            </div>
-                          )}
-                          
-                          {empresa.dataCriacao && (
-                            <div className={`flex items-center gap-2 text-xs mt-3 pt-2 border-t ${isSelected ? 'border-white/20 text-white/70' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-500'}`}>
-                              <Calendar className="w-3 h-3" />
-                              <span>📅 {formatarData(empresa.dataCriacao)}</span>
-                            </div>
-                          )}
+                            )}
+                            
+                            {empresa.dataCriacao && (
+                              <div className={`flex items-center gap-2 text-xs pt-2 mt-2 border-t ${isSelected ? 'border-white/20 text-white/70' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                                <Calendar className="w-3.5 h-3.5" />
+                                <span className="font-semibold">Cadastrada em {formatarData(empresa.dataCriacao)}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       
@@ -646,13 +754,13 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                       )}
                     </div>
 
-                    {/* Setores da Empresa */}
+                    {/* Setores da Empresa - Lista Expandível */}
                     {(() => {
                       const setoresDaEmpresa = setores.filter(s => s.empresaId === empresa.id);
                       if (setoresDaEmpresa.length > 0) {
                         const isExpanded = setoresExpandidos[empresa.id];
                         return (
-                          <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
+                          <div className={`mt-4 pt-4 border-t ${isSelected ? 'border-white/20' : 'border-gray-200 dark:border-gray-700'}`}>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -661,18 +769,29 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                                   [empresa.id]: !prev[empresa.id]
                                 }));
                               }}
-                              className="w-full flex items-center justify-between gap-2 mb-2 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                              className={`w-full flex items-center justify-between gap-2 mb-3 p-3 rounded-xl transition-all ${
+                                isSelected 
+                                  ? 'bg-white/10 hover:bg-white/20 border border-white/30' 
+                                  : 'bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 hover:from-purple-100 hover:to-indigo-100 dark:hover:from-purple-900/30 dark:hover:to-indigo-900/30 border border-purple-200/50 dark:border-purple-700/50'
+                              }`}
                             >
-                              <div className="flex items-center gap-2">
-                                <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                                  Setores ({setoresDaEmpresa.length})
-                                </span>
+                              <div className="flex items-center gap-2.5">
+                                <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-purple-500/20'}`}>
+                                  <Briefcase className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+                                </div>
+                                <div className="text-left">
+                                  <p className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-purple-700 dark:text-purple-300'}`}>
+                                    {setoresDaEmpresa.length} {setoresDaEmpresa.length === 1 ? 'Setor' : 'Setores'}
+                                  </p>
+                                  <p className={`text-xs ${isSelected ? 'text-white/70' : 'text-purple-600/70 dark:text-purple-400/70'}`}>
+                                    {isExpanded ? 'Clique para ocultar' : 'Clique para expandir'}
+                                  </p>
+                                </div>
                               </div>
                               {isExpanded ? (
-                                <ChevronUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                <ChevronUp className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
                               ) : (
-                                <ChevronDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                <ChevronDown className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
                               )}
                             </button>
                             
@@ -683,25 +802,37 @@ const GerenciamentoIntegrado = ({ usuarioAtual }) => {
                                   return (
                                     <div 
                                       key={setor.id}
-                                      className="bg-white dark:bg-gray-700 rounded-lg p-2 border border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer"
-                                      onClick={() => setSetorSelecionado(setor.id)}
+                                      className={`group rounded-xl p-3 border-2 transition-all cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-white/10 border-white/30 hover:bg-white/20'
+                                          : 'bg-white dark:bg-gray-800 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 hover:shadow-lg'
+                                      }`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSetorSelecionado(setor);
+                                      }}
                                     >
-                                      <div className="flex justify-between items-center mb-1">
-                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                          {setor.nome}
-                                        </span>
+                                      <div className="flex justify-between items-start mb-2">
+                                        <div className="flex items-center gap-2">
+                                          <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-purple-100 dark:bg-purple-900/30'}`}>
+                                            <Briefcase className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
+                                          </div>
+                                          <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+                                            {setor.nome}
+                                          </span>
+                                        </div>
+                                        <ChevronRight className={`w-4 h-4 ${isSelected ? 'text-white/50' : 'text-gray-400'} group-hover:translate-x-1 transition-transform`} />
                                       </div>
                                       <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <div className="flex items-center gap-1">
-                                          <DollarSign className="w-3 h-3 text-green-600 dark:text-green-400" />
-                                          <span className="text-gray-600 dark:text-gray-400">Líquido:</span>
-                                          <span className="font-bold text-green-700 dark:text-green-400">
+                                        <div className={`flex items-center gap-1.5 ${isSelected ? 'text-white/90' : 'text-gray-700 dark:text-gray-300'}`}>
+                                          <DollarSign className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-green-600 dark:text-green-400'}`} />
+                                          <span className="font-semibold">
                                             R$ {valoresSetor.valorLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                           </span>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                          <Package className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                                          <span className="text-gray-600 dark:text-gray-400">{valoresSetor.totalItens} itens</span>
+                                        <div className={`flex items-center gap-1.5 ${isSelected ? 'text-white/90' : 'text-gray-700 dark:text-gray-300'}`}>
+                                          <Package className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
+                                          <span className="font-semibold">{valoresSetor.totalItens} itens</span>
                                         </div>
                                       </div>
                                     </div>
