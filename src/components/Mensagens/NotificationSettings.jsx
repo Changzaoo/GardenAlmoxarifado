@@ -62,9 +62,44 @@ const NotificationSettings = ({ onClose }) => {
 
     setLoading(true);
     try {
-      await notificationManager.sendTestNotification();
+      // Tocar som de teste
+      if (preferences.sound) {
+        const audio = new Audio('/sounds/notification.wav');
+        audio.volume = 0.6;
+        await audio.play();
+      }
+
+      // Enviar notificação de teste
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        const registration = await navigator.serviceWorker.ready;
+        if (registration.showNotification) {
+          await registration.showNotification('Teste de Notificação 🔔', {
+            body: 'Esta é uma notificação de teste do WorkFlow',
+            icon: '/logo192.png',
+            badge: '/logo192.png',
+            tag: 'test-notification',
+            requireInteraction: false,
+            vibrate: preferences.vibration ? [200, 100, 200] : [],
+            silent: !preferences.sound
+          });
+        }
+      } else {
+        // Notificação básica
+        const notification = new Notification('Teste de Notificação 🔔', {
+          body: 'Esta é uma notificação de teste do WorkFlow',
+          icon: '/logo192.png',
+          badge: '/logo192.png',
+          requireInteraction: false,
+          vibrate: preferences.vibration ? [200, 100, 200] : []
+        });
+
+        setTimeout(() => notification.close(), 5000);
+      }
+
+      toast.success('Notificação de teste enviada!', { icon: '✅' });
     } catch (error) {
-      toast.error('Erro ao enviar teste');
+      console.error('Erro ao enviar teste:', error);
+      toast.error('Erro ao enviar notificação de teste');
     } finally {
       setLoading(false);
     }

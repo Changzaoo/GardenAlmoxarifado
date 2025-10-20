@@ -71,9 +71,10 @@ export const useMensagens = () => {
   }, []);
 
   /**
-   * Cria listeners globais para todas as conversas (receber mensagens em tempo real)
+   * Cria listeners globais para TODAS as conversas (OTIMIZADO para entrega instantânea)
    */
   const setupGlobalMessageListeners = useCallback((conversas) => {
+    console.log('🌍 Configurando listeners globais para', conversas.length, 'conversas');
 
     conversas.forEach(conversa => {
       // Se já existe listener para essa conversa, não criar outro
@@ -81,75 +82,89 @@ export const useMensagens = () => {
         return;
       }
 
-      // Criar listener apenas para a última mensagem (otimização)
+      // ⚡ OTIMIZAÇÃO: Listener otimizado para recebimento instantâneo
       const mensagensRef = collection(db, 'conversas', conversa.id, 'mensagens');
       const q = query(
         mensagensRef,
-        orderBy('timestamp', 'desc'),
+        orderBy('timestampCliente', 'desc'), // ⚡ Usar timestampCliente em vez de timestamp
         limit(1) // Apenas última mensagem
       );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            const novaMensagem = { id: change.doc.id, ...change.doc.data() };
-            
-            // Verificar se é uma mensagem nova (não está no cache)
-            const ultimaMensagemId = ultimasMensagensCache.current[conversa.id];
-            
-            if (ultimaMensagemId !== novaMensagem.id) {
-
-              // Atualizar cache
-              ultimasMensagensCache.current[conversa.id] = novaMensagem.id;
+      const unsubscribe = onSnapshot(
+        q,
+        {
+          // ⚡ includeMetadataChanges para atualizações instantâneas do cache local
+          includeMetadataChanges: false // false para evitar duplicatas
+        },
+        (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+              const novaMensagem = { id: change.doc.id, ...change.doc.data() };
               
-              // Se não for do usuário atual e não estiver na conversa ativa
-              if (novaMensagem.remetenteId !== usuario.id) {
-                // FORÇAR ATUALIZAÇÃO DA LISTA DE CONVERSAS
+              // Verificar se é uma mensagem nova (não está no cache)
+              const ultimaMensagemId = ultimasMensagensCache.current[conversa.id];
+              
+              if (ultimaMensagemId !== novaMensagem.id) {
+                console.log('📬 NOVA MENSAGEM recebida:', novaMensagem.id, 'na conversa:', conversa.id);
 
-                // Atualizar o estado das conversas para triggerar re-render
-                setConversas(prevConversas => {
-                  // Encontrar a conversa que recebeu a mensagem
-                  const conversaIndex = prevConversas.findIndex(c => c.id === conversa.id);
-                  if (conversaIndex === -1) return prevConversas;
-                  
-                  // Criar nova array com a conversa atualizada
-                  const novasConversas = [...prevConversas];
-                  const conversaAtualizada = {
-                    ...novasConversas[conversaIndex],
-                    ultimaMensagem: novaMensagem.textoOriginal || novaMensagem.texto,
-                    atualizadaEm: novaMensagem.timestamp,
-                    // Incrementar não lidas apenas se não estiver na conversa ativa
-                    naoLidas: conversaAtivaRef.current?.id === conversa.id 
-                      ? 0 
-                      : (novasConversas[conversaIndex].naoLidas || 0) + 1
-                  };
-                  
-                  // Remover do lugar atual e adicionar no topo
-                  novasConversas.splice(conversaIndex, 1);
-                  novasConversas.unshift(conversaAtualizada);
-
-                  // Atualizar total de não lidas
-                  const total = novasConversas.reduce((acc, conv) => acc + (conv.naoLidas || 0), 0);
-                  setTotalNaoLidas(total);
-
-                  return novasConversas;
-                });
+                // Atualizar cache
+                ultimasMensagensCache.current[conversa.id] = novaMensagem.id;
                 
-                // Tocar som se não estiver na conversa
-                if (conversaAtivaRef.current?.id !== conversa.id) {
-                  try {
-                    const audio = new Audio('/sounds/notification.mp3');
-                    audio.volume = 0.3;
-                    audio.play();
-                  } catch (e) {
-                    // Ignorar
+                // Se não for do usuário atual
+                if (novaMensagem.remetenteId !== usuario.id) {
+                  // ⚡ ATUALIZAÇÃO INSTANTÂNEA da lista de conversas
+                  setConversas(prevConversas => {
+                    const conversaIndex = prevConversas.findIndex(c => c.id === conversa.id);
+                    if (conversaIndex === -1) return prevConversas;
+                    
+                    const novasConversas = [...prevConversas];
+                    const conversaAtualizada = {
+                      ...novasConversas[conversaIndex],
+                      ultimaMensagem: novaMensagem.textoOriginal || novaMensagem.texto,
+                      atualizadaEm: novaMensagem.timestampLocal || new Date(novaMensagem.timestampCliente || Date.now()),
+                      // Incrementar não lidas apenas se não estiver na conversa ativa
+                      naoLidas: conversaAtivaRef.current?.id === conversa.id 
+                        ? 0 
+                        : (novasConversas[conversaIndex].naoLidas || 0) + 1
+                    };
+                    
+                    // Remover do lugar atual e adicionar no topo (conversa mais recente)
+                    novasConversas.splice(conversaIndex, 1);
+                    novasConversas.unshift(conversaAtualizada);
+
+                    // Atualizar total de não lidas
+                    const total = novasConversas.reduce((acc, conv) => acc + (conv.naoLidas || 0), 0);
+                    setTotalNaoLidas(total);
+
+                    return novasConversas;
+                  });
+                  
+                  // ⚡ Se não estiver na conversa ativa, tocar som e mostrar notificação
+                  if (conversaAtivaRef.current?.id !== conversa.id) {
+                    // Tocar som de notificação
+                    playNotificationSound();
+                    
+                    // Enviar notificação push
+                    sendPushNotification({
+                      remetente: novaMensagem.remetenteNome || 'Nova Mensagem',
+                      mensagem: novaMensagem.textoOriginal || novaMensagem.texto,
+                      conversaId: conversa.id,
+                      timestamp: novaMensagem.timestampLocal || new Date()
+                    });
+
+                    console.log('🔔 Notificação enviada para mensagem:', novaMensagem.id);
+                  } else {
+                    console.log('🔇 Usuário está na conversa ativa, sem notificação');
                   }
                 }
               }
             }
-          }
-        });
-      });
+          });
+        },
+        (error) => {
+          console.error('❌ Erro no listener global da conversa', conversa.id, ':', error);
+        }
+      );
 
       // Armazenar unsubscribe
       unsubscribeGlobalListeners.current[conversa.id] = unsubscribe;
@@ -158,7 +173,7 @@ export const useMensagens = () => {
     // Limpar listeners de conversas que não existem mais
     Object.keys(unsubscribeGlobalListeners.current).forEach(conversaId => {
       if (!conversas.find(c => c.id === conversaId)) {
-
+        console.log('🧹 Removendo listener da conversa:', conversaId);
         unsubscribeGlobalListeners.current[conversaId]();
         delete unsubscribeGlobalListeners.current[conversaId];
         delete ultimasMensagensCache.current[conversaId];
@@ -168,6 +183,180 @@ export const useMensagens = () => {
   }, [usuario?.id]);
 
   /**
+   * Toca som de notificação
+   */
+  const playNotificationSound = useCallback(() => {
+    try {
+      // Criar ou reutilizar áudio
+      const audio = new Audio('/sounds/notification.wav');
+      audio.volume = 0.6; // Volume ajustável
+      audio.playbackRate = 1.0;
+      
+      // Tocar som
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('🔊 Som de notificação reproduzido');
+          })
+          .catch(error => {
+            console.warn('⚠️ Erro ao reproduzir som:', error.message);
+            // Ignorar erro silenciosamente
+          });
+      }
+    } catch (error) {
+      console.warn('⚠️ Erro ao criar áudio de notificação:', error);
+    }
+  }, []);
+
+  /**
+   * Envia notificação push
+   */
+  const sendPushNotification = useCallback(({ remetente, mensagem, conversaId, timestamp }) => {
+    try {
+      // Verificar se está na conversa ativa
+      if (conversaAtivaRef.current?.id === conversaId) {
+        console.log('🔇 Usuário já está na conversa, sem notificação');
+        return;
+      }
+
+      // Verificar se está na página de mensagens e janela ativa
+      const isOnMessagesPage = window.location.hash.includes('#/mensagens') || 
+                              window.location.pathname.includes('/mensagens');
+      const isWindowActive = document.hasFocus() && !document.hidden;
+
+      // Se está na página e janela ativa, apenas mostrar toast
+      if (isOnMessagesPage && isWindowActive) {
+        toast.info(`💬 ${remetente}: ${mensagem}`, {
+          autoClose: 4000,
+          position: 'top-right',
+          onClick: () => {
+            if (conversaId) {
+              const conversaAtual = conversas.find(c => c.id === conversaId);
+              if (conversaAtual) {
+                setConversaAtiva(conversaAtual);
+                conversaAtivaRef.current = conversaAtual;
+              }
+            }
+          }
+        });
+        return;
+      }
+
+      // Verificar permissão de notificação
+      if (!('Notification' in window)) {
+        console.warn('⚠️ Navegador não suporta notificações');
+        return;
+      }
+
+      if (Notification.permission !== 'granted') {
+        console.log('🔔 Permissão de notificação não concedida');
+        return;
+      }
+
+      // NOTIFICAÇÃO PUSH NATIVA
+      // Tentar usar Service Worker (melhor para persistência)
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready
+          .then((registration) => {
+            if (registration.showNotification) {
+              return registration.showNotification(remetente || 'Nova Mensagem', {
+                body: mensagem.substring(0, 100) + (mensagem.length > 100 ? '...' : ''),
+                icon: '/logo192.png',
+                badge: '/logo192.png',
+                tag: `msg-${conversaId}`,
+                data: {
+                  conversaId,
+                  url: `/#/mensagens?conversa=${conversaId}`,
+                  timestamp: timestamp?.toDate?.() || new Date()
+                },
+                requireInteraction: false,
+                vibrate: [200, 100, 200], // Padrão de vibração
+                silent: false,
+                actions: [
+                  {
+                    action: 'open',
+                    title: '📖 Abrir'
+                  },
+                  {
+                    action: 'close',
+                    title: '✖️ Fechar'
+                  }
+                ]
+              });
+            } else {
+              // Fallback para notificação básica
+              return showBasicNotification(remetente, mensagem, conversaId);
+            }
+          })
+          .then(() => {
+            console.log('✅ Notificação push enviada');
+          })
+          .catch((error) => {
+            console.error('❌ Erro ao enviar notificação via SW:', error);
+            // Fallback para notificação básica
+            showBasicNotification(remetente, mensagem, conversaId);
+          });
+      } else {
+        // Notificação básica do navegador
+        showBasicNotification(remetente, mensagem, conversaId);
+      }
+
+      // Toast como backup visual
+      toast.info(`💬 ${remetente}: ${mensagem.substring(0, 50)}${mensagem.length > 50 ? '...' : ''}`, {
+        autoClose: 5000,
+        position: 'top-right',
+        onClick: () => {
+          window.focus();
+          if (conversaId) {
+            window.location.hash = `#/mensagens?conversa=${conversaId}`;
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao enviar notificação push:', error);
+    }
+
+    // Função helper para notificação básica
+    function showBasicNotification(remetente, mensagem, conversaId) {
+      try {
+        const notification = new Notification(remetente || 'Nova Mensagem', {
+          body: mensagem.substring(0, 100),
+          icon: '/logo192.png',
+          badge: '/logo192.png',
+          tag: `msg-${conversaId}`,
+          requireInteraction: false,
+          vibrate: [200, 100, 200],
+          data: { conversaId }
+        });
+
+        notification.onclick = () => {
+          window.focus();
+          window.location.hash = conversaId 
+            ? `#/mensagens?conversa=${conversaId}`
+            : '#/mensagens';
+          notification.close();
+        };
+
+        // Auto-fechar após 10 segundos
+        setTimeout(() => {
+          try {
+            notification.close();
+          } catch (e) {
+            // Ignorar
+          }
+        }, 10000);
+
+        console.log('✅ Notificação básica exibida');
+      } catch (error) {
+        console.error('❌ Erro ao criar notificação básica:', error);
+      }
+    }
+  }, [conversas]);
+
+  /**
    * Manipula notificação de nova mensagem
    */
   const handleNewMessageNotification = useCallback((notificacao) => {
@@ -175,127 +364,18 @@ export const useMensagens = () => {
     const { titulo, mensagem, remetente, dados } = notificacao;
     const conversaId = dados?.conversaId;
 
-    // Verificar se usuário está na conversa ativa
-    if (conversaAtivaRef.current?.id === conversaId) {
+    // Tocar som de notificação
+    playNotificationSound();
 
-      return;
-    }
-
-    // Verificar se está na página de mensagens e janela ativa
-    const isOnMessagesPage = window.location.hash.includes('#/mensagens') || 
-                            window.location.pathname.includes('/mensagens');
-    const isWindowActive = document.hasFocus() && !document.hidden;
-
-    if (isOnMessagesPage && isWindowActive) {
-
-      toast.info(`${remetente}: ${mensagem}`, {
-        icon: '💬',
-        autoClose: 4000,
-        onClick: () => {
-          // Navegar para a conversa
-          if (conversaId) {
-            window.location.hash = `#/mensagens?conversa=${conversaId}`;
-          }
-        }
-      });
-      return;
-    }
-
-    // NOTIFICAÇÃO NATIVA (funciona em desktop e mobile)
-    if ('Notification' in window && Notification.permission === 'granted') {
-      // Tentar usar Service Worker para notificação (melhor para mobile)
-      if ('serviceWorker' in navigator && navigator.serviceWorker) {
-
-        navigator.serviceWorker.ready.then((registration) => {
-          if (!registration || !registration.showNotification) {
-
-            showWebNotification(remetente, mensagem, conversaId);
-            return;
-          }
-          
-          registration.showNotification(remetente || titulo || 'Nova Mensagem', {
-            body: mensagem,
-            icon: '/logo192.png',
-            badge: '/logo192.png',
-            tag: `msg-${conversaId}`,
-            data: {
-              conversaId,
-              url: conversaId ? `/#/mensagens?conversa=${conversaId}` : '/#/mensagens',
-              timestamp: Date.now()
-            },
-            requireInteraction: false,
-            vibrate: [200, 100, 200],
-            actions: [
-              {
-                action: 'open',
-                title: '📖 Abrir'
-              }
-            ],
-            silent: false
-          }).then(() => {
-
-          }).catch(err => {
-            console.error('❌ Erro ao enviar notificação via SW:', err);
-            // Fallback para notificação web normal
-            showWebNotification(remetente, mensagem, conversaId);
-          });
-        }).catch(err => {
-          console.error('❌ Service Worker não disponível:', err);
-          // Fallback para notificação web normal
-          showWebNotification(remetente, mensagem, conversaId);
-        });
-      } else {
-        // Fallback: Notificação web normal (desktop)
-        showWebNotification(remetente, mensagem, conversaId);
-      }
-
-      // Tocar som
-      try {
-        const audio = new Audio('/sounds/notification.mp3');
-        audio.volume = 0.5;
-        audio.play();
-      } catch (e) {
-        // Ignorar erro de som
-      }
-    }
-
-    // Toast sempre (backup visual)
-    toast.info(`${remetente}: ${mensagem}`, {
-      icon: '💬',
-      autoClose: 5000,
-      onClick: () => {
-        if (conversaId) {
-          window.location.hash = `#/mensagens?conversa=${conversaId}`;
-        }
-      }
+    // Enviar notificação push
+    sendPushNotification({
+      remetente: remetente || titulo || 'Nova Mensagem',
+      mensagem: mensagem || 'Você recebeu uma nova mensagem',
+      conversaId,
+      timestamp: notificacao.timestamp || new Date()
     });
 
-    // Função helper para notificação web (fallback)
-    function showWebNotification(remetente, mensagem, conversaId) {
-
-      const notification = new Notification(remetente || 'Nova Mensagem', {
-        body: mensagem,
-        icon: '/logo192.png',
-        badge: '/logo192.png',
-        tag: `msg-${conversaId}`,
-        requireInteraction: false,
-        vibrate: [200, 100, 200],
-        data: { conversaId }
-      });
-
-      notification.onclick = () => {
-        window.focus();
-        window.location.hash = conversaId 
-          ? `#/mensagens?conversa=${conversaId}`
-          : '#/mensagens';
-        notification.close();
-      };
-
-      // Auto-fechar após 10 segundos
-      setTimeout(() => notification.close(), 10000);
-    }
-
-  }, []);
+  }, [playNotificationSound, sendPushNotification]);
 
   // ==================== INICIALIZACAO ====================
 
@@ -586,42 +666,91 @@ export const useMensagens = () => {
   // ==================== MENSAGENS ====================
 
   /**
-   * Envia uma mensagem de texto
+   * Envia uma mensagem de texto (OPTIMISTIC UI - atualização instantânea)
    */
   const enviarMensagem = useCallback(async (conversaId, texto) => {
     if (!texto.trim()) return;
     
+    const textoTrimmed = texto.trim();
+    const mensagemTemporaria = {
+      id: `temp-${Date.now()}`,
+      texto: textoTrimmed,
+      remetenteId: usuario.id,
+      tipo: MESSAGE_TYPE.TEXTO,
+      status: 'enviando',
+      timestamp: new Date(),
+      timestampCliente: Date.now(),
+      encrypted: false,
+      editada: false,
+      deletada: false,
+      leitaPor: [usuario.id],
+      entregueA: [usuario.id],
+      conversaId,
+      isTemporary: true
+    };
+
+    // ⚡ OPTIMISTIC UPDATE: Adicionar mensagem imediatamente na UI
+    setMensagens(prev => [...prev, mensagemTemporaria]);
+
+    // ⚡ OPTIMISTIC UPDATE: Atualizar lista de conversas imediatamente
+    setConversas(prevConversas => {
+      const conversaIndex = prevConversas.findIndex(c => c.id === conversaId);
+      if (conversaIndex === -1) return prevConversas;
+      
+      const novasConversas = [...prevConversas];
+      const conversaAtualizada = {
+        ...novasConversas[conversaIndex],
+        ultimaMensagem: textoTrimmed.substring(0, 50),
+        atualizadaEm: new Date(),
+      };
+      
+      // Mover para o topo
+      novasConversas.splice(conversaIndex, 1);
+      novasConversas.unshift(conversaAtualizada);
+
+      return novasConversas;
+    });
+    
     setEnviando(true);
     try {
+      // Enviar para o servidor
       const mensagemEnviada = await mensagensService.sendMessage(
         conversaId,
         usuario.id,
-        texto,
+        textoTrimmed,
         MESSAGE_TYPE.TEXTO
       );
       
-      // ATUALIZAR LISTA DE CONVERSAS LOCALMENTE (UX instantâneo)
+      // ✅ Substituir mensagem temporária pela real
+      setMensagens(prev => 
+        prev.map(msg => 
+          msg.id === mensagemTemporaria.id 
+            ? { ...mensagemEnviada, status: MESSAGE_STATUS.ENVIADA }
+            : msg
+        )
+      );
 
-      setConversas(prevConversas => {
-        const conversaIndex = prevConversas.findIndex(c => c.id === conversaId);
-        if (conversaIndex === -1) return prevConversas;
-        
-        const novasConversas = [...prevConversas];
-        const conversaAtualizada = {
-          ...novasConversas[conversaIndex],
-          ultimaMensagem: texto.substring(0, 50),
-          atualizadaEm: new Date(),
-        };
-        
-        // Mover para o topo
-        novasConversas.splice(conversaIndex, 1);
-        novasConversas.unshift(conversaAtualizada);
-
-        return novasConversas;
-      });
+      console.log('✅ Mensagem enviada com sucesso:', mensagemEnviada.id);
+      
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
-      toast.error('Nao foi possivel enviar a mensagem');
+      console.error('❌ Erro ao enviar mensagem:', error);
+      
+      // ❌ Marcar mensagem como erro
+      setMensagens(prev => 
+        prev.map(msg => 
+          msg.id === mensagemTemporaria.id 
+            ? { ...msg, status: 'erro', error: error.message }
+            : msg
+        )
+      );
+      
+      toast.error('Não foi possível enviar a mensagem. Clique para tentar novamente.', {
+        onClick: () => {
+          // Retry: remover mensagem com erro e tentar novamente
+          setMensagens(prev => prev.filter(msg => msg.id !== mensagemTemporaria.id));
+          enviarMensagem(conversaId, textoTrimmed);
+        }
+      });
     } finally {
       setEnviando(false);
     }

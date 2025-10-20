@@ -49,13 +49,20 @@ const MensagensMain = () => {
   // Inicializar sistema avançado de notificações
   useEffect(() => {
     if (usuario?.id) {
+      // Solicitar permissão de notificação
+      requestNotificationPermission();
+
+      // Inicializar gerenciador de notificações
       notificationManager.initialize(usuario.id)
         .then(result => {
-
+          console.log('🔔 Sistema de notificações:', result);
+          
           if (result.permission === 'granted') {
-
+            console.log('✅ Notificações push ativadas');
+          } else if (result.permission === 'denied') {
+            console.log('❌ Notificações push bloqueadas');
           } else {
-
+            console.log('⚠️ Permissão de notificações pendente');
           }
         })
         .catch(err => {
@@ -69,6 +76,47 @@ const MensagensMain = () => {
       }
     };
   }, [usuario?.id]);
+
+  /**
+   * Solicita permissão para notificações
+   */
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      console.warn('⚠️ Este navegador não suporta notificações');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      console.log('✅ Permissão de notificação já concedida');
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      console.warn('❌ Permissão de notificação negada. Ative nas configurações do navegador.');
+      return;
+    }
+
+    // Solicitar permissão
+    try {
+      const permission = await Notification.requestPermission();
+      
+      if (permission === 'granted') {
+        console.log('✅ Permissão de notificação concedida!');
+        
+        // Mostrar notificação de teste
+        new Notification('Notificações Ativadas! 🔔', {
+          body: 'Você receberá notificações de novas mensagens',
+          icon: '/logo192.png',
+          badge: '/logo192.png',
+          tag: 'notification-enabled'
+        });
+      } else {
+        console.log('⚠️ Permissão de notificação negada pelo usuário');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao solicitar permissão:', error);
+    }
+  };
 
   const handleSelectConversa = (conversa) => {
 

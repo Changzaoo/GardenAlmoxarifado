@@ -228,14 +228,14 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
             <Plus className="w-7 h-7 text-blue-600 dark:text-blue-400" />
             Novo Empréstimo
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Preencha os dados para registrar um novo empréstimo</p>
+          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">Preencha os dados para registrar um novo empréstimo</p>
         </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-              <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+        <div className="space-y-4 md:space-y-6">
+          <div className="space-y-2 md:space-y-3">
+            <label className="flex items-center gap-2 text-sm md:text-base font-semibold text-gray-700 dark:text-gray-300">
+              <User className="w-4 h-4 md:w-5 md:h-5 text-blue-600 dark:text-blue-400" />
               Funcionário Responsável
             </label>
             
@@ -244,9 +244,9 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
               <button
                 type="button"
                 onClick={() => setDropdownAberto(!dropdownAberto)}
-                className="h-12 w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all px-4 font-medium shadow-sm flex items-center justify-between"
+                className="min-h-[48px] md:h-12 w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all px-3 md:px-4 font-medium shadow-sm flex items-center justify-between text-sm md:text-base"
               >
-                <span className="flex items-center gap-3">
+                <span className="flex items-center gap-2 md:gap-3 min-w-0">
                   {novoEmprestimo.colaborador ? (
                     <>
                       {(() => {
@@ -259,15 +259,15 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                             <SafeImage
                               src={funcSelecionado?.photoURL || funcSelecionado?.fotoPerfil}
                               alt={funcSelecionado?.nome}
-                              className="w-8 h-8 rounded-full object-cover border-2 border-blue-300 dark:border-blue-600"
+                              className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover border-2 border-blue-300 dark:border-blue-600 flex-shrink-0"
                               fallback={
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-blue-300 dark:border-blue-600">
-                                  <User className="w-4 h-4 text-white" />
+                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-blue-300 dark:border-blue-600 flex-shrink-0">
+                                  <User className="w-4 h-4 md:w-5 md:h-5 text-white" />
                                 </div>
                               }
                             />
-                            <div className="flex flex-col items-start">
-                              <span className="font-semibold">{novoEmprestimo.colaborador}</span>
+                            <div className="flex flex-col items-start min-w-0">
+                              <span className="font-semibold truncate max-w-full">{novoEmprestimo.colaborador}</span>
                               {cargo && <span className="text-xs text-gray-500 dark:text-gray-400">{cargo}</span>}
                             </div>
                           </>
@@ -283,9 +283,9 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
 
               {/* Lista de Funcionários */}
               {dropdownAberto && (
-                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-2xl max-h-80 overflow-y-auto">
+                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-2xl max-h-60 md:max-h-80 overflow-y-auto">
                   {funcionarios.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                    <div className="p-4 text-center text-sm md:text-base text-gray-500 dark:text-gray-400">
                       Nenhum funcionário disponível
                     </div>
                   ) : (
@@ -314,24 +314,24 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
                             setFuncionarioSelecionado(funcionario.nome);
                             setDropdownAberto(false);
                           }}
-                          className={`w-full p-3 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors ${
+                          className={`w-full p-3 md:p-4 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors active:bg-blue-100 dark:active:bg-gray-600 min-h-[60px] ${
                             novoEmprestimo.colaborador === funcionario.nome ? 'bg-blue-50 dark:bg-gray-700' : ''
                           }`}
                         >
                           <SafeImage
                             src={funcionario.photoURL || funcionario.fotoPerfil}
                             alt={funcionario.nome}
-                            className="w-10 h-10 rounded-full object-cover border-2 border-blue-300 dark:border-blue-600"
+                            className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-blue-300 dark:border-blue-600 flex-shrink-0"
                             fallback={
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-blue-300 dark:border-blue-600">
-                                <User className="w-5 h-5 text-white" />
+                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-blue-300 dark:border-blue-600 flex-shrink-0">
+                                <User className="w-5 h-5 md:w-6 md:h-6 text-white" />
                               </div>
                             }
                           />
-                          <div className="flex-1 text-left">
-                            <p className="font-semibold text-gray-900 dark:text-white">{funcionario.nome}</p>
+                          <div className="flex-1 text-left min-w-0">
+                            <p className="font-semibold text-sm md:text-base text-gray-900 dark:text-white truncate">{funcionario.nome}</p>
                             {cargo && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${corCargo}`}>
+                              <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-1 ${corCargo}`}>
                                 {cargo}
                               </span>
                             )}

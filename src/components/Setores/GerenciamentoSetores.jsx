@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db } from '../../firebaseConfig';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { Briefcase, Clock, Plus, Edit2, Trash2, Save, X, AlertTriangle, User, Users, FileText, Calendar, DollarSign, Package, AlertOctagon, TrendingUp, ArrowRightLeft, Star, Award, CheckCircle, Filter, SortAsc, ClipboardList, Timer, Info, Grid3X3, List, Mail, MapPin, Phone } from 'lucide-react';
@@ -15,6 +15,12 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
   const [loading, setLoading] = useState(true);
   const [editando, setEditando] = useState(null);
 
+  // Cache para evitar recarregamentos desnecessários
+  const cacheRef = useRef({
+    lastUpdate: null,
+    ttl: 5 * 60 * 1000 // 5 minutos de cache
+  });
+
   // Estados para dados financeiros
   const [inventario, setInventario] = useState([]);
   const [ferramentasDanificadas, setFerramentasDanificadas] = useState([]);
@@ -25,8 +31,13 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
   const [modalHorario, setModalHorario] = useState(false);
   const [modalTransferencia, setModalTransferencia] = useState(false);
   const [modalTarefa, setModalTarefa] = useState(false);
+  const [modalEditarFuncionario, setModalEditarFuncionario] = useState(false);
+  const [modalCriarFuncionario, setModalCriarFuncionario] = useState(false);
+  const [modalExcluirFuncionario, setModalExcluirFuncionario] = useState(false);
   const [funcionarioTransferencia, setFuncionarioTransferencia] = useState(null);
   const [funcionarioTarefa, setFuncionarioTarefa] = useState(null);
+  const [funcionarioEdicao, setFuncionarioEdicao] = useState(null);
+  const [funcionarioExclusao, setFuncionarioExclusao] = useState(null);
   const [setorDestinoId, setSetorDestinoId] = useState('');
   
   // Estado para visualização (lista ou card)
@@ -46,6 +57,13 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
   // Estados de formulário
   const [formSetor, setFormSetor] = useState({ nome: '', descricao: '', responsavel: '', ativo: true });
   const [formHorario, setFormHorario] = useState({ nome: '', descricao: '', ativo: true });
+  const [formFuncionario, setFormFuncionario] = useState({ nome: '', cargo: '' });
+  const [formNovoFuncionario, setFormNovoFuncionario] = useState({ 
+    nome: '', 
+    cargo: '', 
+    telefone: '',
+    status: 'ativo'
+  });
   const [formTarefa, setFormTarefa] = useState({ 
     titulo: '', 
     descricao: '', 
@@ -59,25 +77,33 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
   // Verificar permissões
   const isAdmin = checkIsAdmin(usuarioAtual?.nivel) || hasManagementPermission(usuarioAtual?.nivel);
 
-  // Função para carregar dados financeiros
+  // Função para invalidar cache
+  const invalidarCache = () => {
+    cacheRef.current.lastUpdate = null;
+  };
+
+  // Função para carregar dados financeiros - otimizada
   const carregarDadosFinanceiros = async () => {
     try {
-      const inventarioRef = collection(db, 'inventario');
-      const inventarioSnap = await getDocs(inventarioRef);
+      // Carregar todas as collections financeiras em paralelo
+      const [inventarioSnap, danificadasSnap, perdidasSnap] = await Promise.all([
+        getDocs(collection(db, 'inventario')),
+        getDocs(collection(db, 'ferramentas_danificadas')),
+        getDocs(collection(db, 'ferramentas_perdidas'))
+      ]);
+
       const inventarioData = inventarioSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setInventario(inventarioData);
-
-      const danificadasRef = collection(db, 'ferramentas_danificadas');
-      const danificadasSnap = await getDocs(danificadasRef);
       const danificadasData = danificadasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setFerramentasDanificadas(danificadasData);
-
-      const perdidasRef = collection(db, 'ferramentas_perdidas');
-      const perdidasSnap = await getDocs(perdidasRef);
       const perdidasData = perdidasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      setInventario(inventarioData);
+      setFerramentasDanificadas(danificadasData);
       setFerramentasPerdidas(perdidasData);
+
+      return { inventarioData, danificadasData, perdidasData };
     } catch (error) {
       console.error('Erro ao carregar dados financeiros:', error);
+      return { inventarioData: [], danificadasData: [], perdidasData: [] };
     }
   };
 
@@ -113,83 +139,125 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     };
   };
 
-  // Função para carregar funcionários
+  // Função utilitária para gerar URL de avatar padrão
+  const getAvatarUrl = (nome) => {
+    if (!nome) return null;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=3b82f6&color=fff&size=200&bold=true`;
+  };
+
+  // Função para carregar funcionários - otimizada
   const carregarFuncionarios = async () => {
     try {
-      const funcionariosRef = collection(db, 'funcionarios');
-      const snapshot = await getDocs(funcionariosRef);
-      const funcionariosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const snapshot = await getDocs(collection(db, 'funcionarios'));
+      const funcionariosData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // Se não tiver foto, gerar uma com base no nome
+          fotoPerfil: data.fotoPerfil || getAvatarUrl(data.nome)
+        };
+      });
       setFuncionarios(funcionariosData);
+      return funcionariosData;
     } catch (error) {
       console.error('Erro ao carregar funcionários:', error);
       toast.error('Erro ao carregar funcionários');
+      return [];
     }
   };
 
-  // Função para carregar tarefas
+  // Função para carregar tarefas - otimizada
   const carregarTarefas = async () => {
     try {
-      const tarefasRef = collection(db, 'tarefas');
-      const snapshot = await getDocs(tarefasRef);
+      const snapshot = await getDocs(collection(db, 'tarefas'));
       const tarefasData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setTarefas(tarefasData);
+      return tarefasData;
     } catch (error) {
       console.error('Erro ao carregar tarefas:', error);
+      return [];
     }
   };
 
-  // Função para carregar pontos
+  // Função para carregar pontos - otimizada
   const carregarPontos = async () => {
     try {
-      const pontosRef = collection(db, 'pontos');
-      const snapshot = await getDocs(pontosRef);
+      const snapshot = await getDocs(collection(db, 'pontos'));
       const pontosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setPontos(pontosData);
+      return pontosData;
     } catch (error) {
       console.error('Erro ao carregar pontos:', error);
+      return [];
     }
   };
 
-  // Função para carregar avaliações
+  // Função para carregar avaliações - otimizada
   const carregarAvaliacoes = async () => {
     try {
-      const avaliacoesRef = collection(db, 'avaliacoes');
-      const snapshot = await getDocs(avaliacoesRef);
+      const snapshot = await getDocs(collection(db, 'avaliacoes'));
       const avaliacoesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAvaliacoes(avaliacoesData);
+      return avaliacoesData;
     } catch (error) {
       console.error('Erro ao carregar avaliações:', error);
+      return [];
     }
   };
 
-  // Função para carregar registros de ponto
+  // Função para carregar registros de ponto - otimizada
   const carregarRegistrosPonto = async () => {
     try {
-      const pontosRef = collection(db, 'registros_ponto');
-      const snapshot = await getDocs(pontosRef);
+      const snapshot = await getDocs(collection(db, 'registros_ponto'));
       const registrosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setRegistrosPonto(registrosData);
+      return registrosData;
     } catch (error) {
       console.error('Erro ao carregar registros de ponto:', error);
+      return [];
     }
   };
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais com otimização
   useEffect(() => {
     const carregarDadosIniciais = async () => {
       setLoading(true);
+      const startTime = Date.now();
+      const minLoadingTime = 800; // Tempo mínimo de loading (800ms)
+      
       try {
-        await Promise.all([
-          carregarDadosFinanceiros(),
-          carregarSetores(),
-          carregarFuncionarios(),
-          carregarTarefas(),
-          carregarPontos(),
-          carregarAvaliacoes(),
-          carregarRegistrosPonto()
-        ]);
+        console.log('🚀 Iniciando carregamento de dados...');
+        
+        // Carregar todos os dados em paralelo para máxima performance
+        const loadingPromises = [
+          carregarDadosFinanceiros().then(() => console.log('✓ Dados financeiros carregados')),
+          carregarSetores().then(() => console.log('✓ Setores carregados')),
+          carregarFuncionarios().then(() => console.log('✓ Funcionários carregados')),
+          carregarTarefas().then(() => console.log('✓ Tarefas carregadas')),
+          carregarPontos().then(() => console.log('✓ Pontos carregados')),
+          carregarAvaliacoes().then(() => console.log('✓ Avaliações carregadas')),
+          carregarRegistrosPonto().then(() => console.log('✓ Registros de ponto carregados'))
+        ];
+
+        await Promise.all(loadingPromises);
+
+        // Calcular tempo decorrido
+        const elapsedTime = Date.now() - startTime;
+        console.log(`⚡ Dados carregados em ${elapsedTime}ms`);
+        
+        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+
+        // Se carregou muito rápido, aguardar o tempo mínimo para evitar flash
+        if (remainingTime > 0) {
+          console.log(`⏱️ Aguardando ${remainingTime}ms para transição suave...`);
+          await new Promise(resolve => setTimeout(resolve, remainingTime));
+        }
+
+        console.log('✅ Carregamento completo!');
       } catch (error) {
-        console.error('Erro ao carregar dados iniciais:', error);
+        console.error('❌ Erro ao carregar dados iniciais:', error);
+        toast.error('Erro ao carregar dados. Tente novamente.');
       } finally {
         setLoading(false);
       }
@@ -206,30 +274,33 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     }
   }, [setorSelecionado]);
 
-  // Funções de carregamento
+  // Funções de carregamento - otimizadas
   const carregarSetores = async () => {
     try {
-      const setoresRef = collection(db, 'setores');
-      const snapshot = await getDocs(setoresRef);
+      const snapshot = await getDocs(collection(db, 'setores'));
       const setoresData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setSetores(setoresData.filter(s => s.ativo !== false));
+      const setoresAtivos = setoresData.filter(s => s.ativo !== false);
+      setSetores(setoresAtivos);
+      return setoresAtivos;
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
       toast.error('Erro ao carregar setores');
+      return [];
     }
   };
 
   const carregarHorarios = async (setorId) => {
     try {
-      const horariosRef = collection(db, 'horarios_personalizados');
-      const snapshot = await getDocs(horariosRef);
+      const snapshot = await getDocs(collection(db, 'horarios_personalizados'));
       const horariosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Filtrar horários do setor
+      // Filtrar horários do setor - otimizado
       const horariosSetor = horariosData.filter(h => h.setorId === setorId && h.ativo !== false);
       setHorarios(horariosSetor);
+      return horariosSetor;
     } catch (error) {
       console.error('Erro ao carregar horários:', error);
       toast.error('Erro ao carregar horários');
+      return [];
     }
   };
 
@@ -259,8 +330,12 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
       }
       setModalSetor(false);
       handleCancelar();
-      await carregarSetores();
-      await carregarDadosFinanceiros();
+      invalidarCache();
+      // Recarregar apenas setores e dados financeiros em paralelo
+      await Promise.all([
+        carregarSetores(),
+        carregarDadosFinanceiros()
+      ]);
     } catch (error) {
       console.error('Erro ao salvar setor:', error);
       toast.error('Erro ao salvar setor');
@@ -276,8 +351,12 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
       if (setorSelecionado?.id === setorId) {
         setSetorSelecionado(null);
       }
-      await carregarSetores();
-      await carregarDadosFinanceiros();
+      invalidarCache();
+      // Recarregar apenas setores e dados financeiros em paralelo
+      await Promise.all([
+        carregarSetores(),
+        carregarDadosFinanceiros()
+      ]);
     } catch (error) {
       console.error('Erro ao excluir setor:', error);
       toast.error('Erro ao excluir setor');
@@ -418,61 +497,212 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     setModalTarefa(true);
   };
 
-  // Função para calcular estatísticas do funcionário
-  const calcularEstatisticasFuncionario = (funcionarioId) => {
-    // Pontos
-    const pontosFuncionario = pontos.filter(p => p.funcionarioId === funcionarioId);
-    const totalPontos = pontosFuncionario.reduce((sum, p) => sum + (parseInt(p.pontos) || 0), 0);
-
-    // Avaliações
-    const avaliacoesFuncionario = avaliacoes.filter(a => a.funcionarioId === funcionarioId);
-    const mediaAvaliacoes = avaliacoesFuncionario.length > 0
-      ? avaliacoesFuncionario.reduce((sum, a) => sum + (parseFloat(a.nota) || 0), 0) / avaliacoesFuncionario.length
-      : 0;
-
-    // Tarefas
-    const tarefasFuncionario = tarefas.filter(t => t.funcionarioId === funcionarioId);
-    const tarefasPendentes = tarefasFuncionario.filter(t => t.status === 'pendente').length;
-    const tarefasConcluidas = tarefasFuncionario.filter(t => t.status === 'concluida').length;
-
-    // Registros de ponto (últimos 30 dias)
-    const dataLimite = new Date();
-    dataLimite.setDate(dataLimite.getDate() - 30);
-    const registrosFuncionario = registrosPonto.filter(r => {
-      if (r.funcionarioId !== funcionarioId) return false;
-      const dataRegistro = r.data?.toDate ? r.data.toDate() : new Date(r.data);
-      return dataRegistro >= dataLimite;
+  // Função para abrir modal de edição de funcionário
+  const abrirModalEditarFuncionario = (funcionario) => {
+    setFuncionarioEdicao(funcionario);
+    setFormFuncionario({
+      nome: funcionario.nome || '',
+      cargo: funcionario.cargo || ''
     });
-
-    // Calcular horas trabalhadas
-    const horasTrabalhadas = registrosFuncionario.reduce((sum, r) => {
-      if (r.horasTrabalhadas) return sum + parseFloat(r.horasTrabalhadas);
-      return sum;
-    }, 0);
-
-    // Calcular horas negativas (diferença entre horas esperadas e trabalhadas)
-    const horasNegativasMinutos = registrosFuncionario.reduce((sum, r) => {
-      if (r.horasNegativas) return sum + parseFloat(r.horasNegativas);
-      return sum;
-    }, 0);
-    const horasNeg = Math.floor(Math.abs(horasNegativasMinutos) / 60);
-    const minutosNeg = Math.floor(Math.abs(horasNegativasMinutos) % 60);
-
-    // Empréstimos ativos (simulado - você pode adicionar uma collection real)
-    const emprestimosAtivos = 0; // TODO: Implementar busca de empréstimos quando a collection existir
-
-    return {
-      pontos: totalPontos,
-      avaliacaoMedia: mediaAvaliacoes.toFixed(1),
-      tarefasPendentes,
-      tarefasConcluidas,
-      tarefasTotal: tarefasFuncionario.length,
-      horasTrabalhadas: horasTrabalhadas.toFixed(1),
-      horasNegativas: `${horasNeg}h ${minutosNeg}m`,
-      emprestimosAtivos,
-      registrosPonto: registrosFuncionario.length
-    };
+    setModalEditarFuncionario(true);
   };
+
+  // Função para atualizar dados do funcionário
+  const handleAtualizarFuncionario = async (e) => {
+    e.preventDefault();
+    
+    if (!funcionarioEdicao) {
+      toast.warning('Funcionário não selecionado');
+      return;
+    }
+
+    if (!formFuncionario.nome.trim()) {
+      toast.warning('Nome é obrigatório');
+      return;
+    }
+
+    try {
+      const funcionarioRef = doc(db, 'funcionarios', funcionarioEdicao.id);
+      await updateDoc(funcionarioRef, {
+        nome: formFuncionario.nome.trim(),
+        cargo: formFuncionario.cargo.trim(),
+        dataAtualizacao: serverTimestamp(),
+        atualizadoPor: usuarioAtual?.nome || usuarioAtual?.email
+      });
+
+      toast.success('Funcionário atualizado com sucesso!');
+      setModalEditarFuncionario(false);
+      setFuncionarioEdicao(null);
+      setFormFuncionario({ nome: '', cargo: '' });
+      await carregarFuncionarios();
+    } catch (error) {
+      console.error('Erro ao atualizar funcionário:', error);
+      toast.error('Erro ao atualizar funcionário');
+    }
+  };
+
+  // Função para abrir modal de criar funcionário
+  const abrirModalCriarFuncionario = () => {
+    if (!setorSelecionado) {
+      toast.warning('Selecione um setor primeiro');
+      return;
+    }
+    setFormNovoFuncionario({ 
+      nome: '', 
+      cargo: '', 
+      telefone: '',
+      status: 'ativo'
+    });
+    setModalCriarFuncionario(true);
+  };
+
+  // Função para criar novo funcionário
+  const handleCriarFuncionario = async (e) => {
+    e.preventDefault();
+    
+    if (!setorSelecionado) {
+      toast.warning('Selecione um setor primeiro');
+      return;
+    }
+
+    if (!formNovoFuncionario.nome.trim()) {
+      toast.warning('Nome é obrigatório');
+      return;
+    }
+
+    try {
+      // Gerar avatar padrão com as iniciais
+      const iniciais = formNovoFuncionario.nome.trim().split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      const coresAvatar = [
+        'https://ui-avatars.com/api/?name=' + encodeURIComponent(formNovoFuncionario.nome) + '&background=3b82f6&color=fff&size=200&bold=true',
+        'https://ui-avatars.com/api/?name=' + encodeURIComponent(formNovoFuncionario.nome) + '&background=06b6d4&color=fff&size=200&bold=true',
+        'https://ui-avatars.com/api/?name=' + encodeURIComponent(formNovoFuncionario.nome) + '&background=8b5cf6&color=fff&size=200&bold=true',
+      ];
+      const avatarUrl = coresAvatar[Math.floor(Math.random() * coresAvatar.length)];
+
+      await addDoc(collection(db, 'funcionarios'), {
+        nome: formNovoFuncionario.nome.trim(),
+        cargo: formNovoFuncionario.cargo.trim(),
+        telefone: formNovoFuncionario.telefone.trim(),
+        setor: setorSelecionado.nome,
+        setorNome: setorSelecionado.nome,
+        setorId: setorSelecionado.id,
+        status: formNovoFuncionario.status,
+        fotoPerfil: avatarUrl,
+        dataCriacao: serverTimestamp(),
+        dataAtualizacao: serverTimestamp(),
+        criadoPor: usuarioAtual?.nome || usuarioAtual?.email
+      });
+
+      toast.success('Funcionário criado com sucesso!');
+      setModalCriarFuncionario(false);
+      setFormNovoFuncionario({ 
+        nome: '', 
+        cargo: '', 
+        telefone: '',
+        status: 'ativo'
+      });
+      await carregarFuncionarios();
+    } catch (error) {
+      console.error('Erro ao criar funcionário:', error);
+      toast.error('Erro ao criar funcionário');
+    }
+  };
+
+  // Função para abrir modal de excluir funcionário
+  const abrirModalExcluirFuncionario = (funcionario) => {
+    setFuncionarioExclusao(funcionario);
+    setModalExcluirFuncionario(true);
+  };
+
+  // Função para excluir funcionário
+  const handleExcluirFuncionario = async () => {
+    if (!funcionarioExclusao) {
+      toast.warning('Funcionário não selecionado');
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'funcionarios', funcionarioExclusao.id));
+      toast.success('Funcionário excluído com sucesso!');
+      setModalExcluirFuncionario(false);
+      setFuncionarioExclusao(null);
+      await carregarFuncionarios();
+    } catch (error) {
+      console.error('Erro ao excluir funcionário:', error);
+      toast.error('Erro ao excluir funcionário');
+    }
+  };
+
+  // Função para calcular estatísticas do funcionário - otimizada com cache
+  const calcularEstatisticasFuncionario = useMemo(() => {
+    // Criar um cache de estatísticas para evitar recálculos
+    const statsCache = new Map();
+    
+    return (funcionarioId) => {
+      // Verificar se já está no cache
+      if (statsCache.has(funcionarioId)) {
+        return statsCache.get(funcionarioId);
+      }
+
+      // Pontos
+      const pontosFuncionario = pontos.filter(p => p.funcionarioId === funcionarioId);
+      const totalPontos = pontosFuncionario.reduce((sum, p) => sum + (parseInt(p.pontos) || 0), 0);
+
+      // Avaliações
+      const avaliacoesFuncionario = avaliacoes.filter(a => a.funcionarioId === funcionarioId);
+      const mediaAvaliacoes = avaliacoesFuncionario.length > 0
+        ? avaliacoesFuncionario.reduce((sum, a) => sum + (parseFloat(a.nota) || 0), 0) / avaliacoesFuncionario.length
+        : 0;
+
+      // Tarefas
+      const tarefasFuncionario = tarefas.filter(t => t.funcionarioId === funcionarioId);
+      const tarefasPendentes = tarefasFuncionario.filter(t => t.status === 'pendente').length;
+      const tarefasConcluidas = tarefasFuncionario.filter(t => t.status === 'concluida').length;
+
+      // Registros de ponto (últimos 30 dias)
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - 30);
+      const registrosFuncionario = registrosPonto.filter(r => {
+        if (r.funcionarioId !== funcionarioId) return false;
+        const dataRegistro = r.data?.toDate ? r.data.toDate() : new Date(r.data);
+        return dataRegistro >= dataLimite;
+      });
+
+      // Calcular horas trabalhadas
+      const horasTrabalhadas = registrosFuncionario.reduce((sum, r) => {
+        if (r.horasTrabalhadas) return sum + parseFloat(r.horasTrabalhadas);
+        return sum;
+      }, 0);
+
+      // Calcular horas negativas (diferença entre horas esperadas e trabalhadas)
+      const horasNegativasMinutos = registrosFuncionario.reduce((sum, r) => {
+        if (r.horasNegativas) return sum + parseFloat(r.horasNegativas);
+        return sum;
+      }, 0);
+      const horasNeg = Math.floor(Math.abs(horasNegativasMinutos) / 60);
+      const minutosNeg = Math.floor(Math.abs(horasNegativasMinutos) % 60);
+
+      // Empréstimos ativos
+      const emprestimosAtivos = 0;
+
+      const stats = {
+        pontos: totalPontos,
+        avaliacaoMedia: mediaAvaliacoes.toFixed(1),
+        tarefasPendentes,
+        tarefasConcluidas,
+        tarefasTotal: tarefasFuncionario.length,
+        horasTrabalhadas: horasTrabalhadas.toFixed(1),
+        horasNegativas: `${horasNeg}h ${minutosNeg}m`,
+        emprestimosAtivos,
+        registrosPonto: registrosFuncionario.length
+      };
+
+      // Armazenar no cache
+      statsCache.set(funcionarioId, stats);
+      return stats;
+    };
+  }, [pontos, avaliacoes, tarefas, registrosPonto]); // Recalcular apenas quando esses dados mudarem
 
   // Função para filtrar e ordenar funcionários
   const filtrarEOrdenarFuncionarios = (funcionariosLista) => {
@@ -532,8 +762,11 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     setEditando(null);
     setFormSetor({ nome: '', descricao: '', responsavel: '', ativo: true });
     setFormHorario({ nome: '', descricao: '', ativo: true });
+    setFormFuncionario({ nome: '', cargo: '' });
     setModalSetor(false);
     setModalHorario(false);
+    setModalEditarFuncionario(false);
+    setFuncionarioEdicao(null);
   };
 
   const formatarData = (timestamp) => {
@@ -552,8 +785,43 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+        {/* Header Skeleton */}
+        <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 dark:from-blue-800 dark:via-blue-900 dark:to-blue-950 rounded-2xl p-6 sm:p-8 shadow-xl animate-pulse">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 bg-white/20 rounded-2xl"></div>
+            <div className="flex-1">
+              <div className="h-8 bg-white/20 rounded-lg w-3/4 mb-2"></div>
+              <div className="h-4 bg-white/10 rounded w-1/2"></div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white/10 rounded-xl p-4 h-24"></div>
+            ))}
+          </div>
+        </div>
+
+        {/* Setores Skeleton */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 animate-pulse">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-gray-100 dark:bg-gray-700 rounded-xl h-32"></div>
+            ))}
+          </div>
+        </div>
+
+        {/* Loading Text */}
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+          <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
+            Carregando dados...
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            Aguarde enquanto organizamos tudo para você
+          </p>
+        </div>
       </div>
     );
   }
@@ -953,52 +1221,67 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
               </div>
 
               {/* Funcionários do Setor */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      <Users className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div className="bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-3 md:p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 md:mb-4">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Users className="w-4 h-4 md:w-5 md:h-5 text-green-600 dark:text-green-400" />
                       Funcionários do Setor
                     </h3>
                     
-                    {/* Toggle Visualização */}
-                    <div className="flex items-center gap-2 bg-white dark:bg-gray-700 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-600">
-                      <button
-                        onClick={() => setVisualizacao('card')}
-                        className={`p-2 rounded-md transition-all ${
-                          visualizacao === 'card'
-                            ? 'bg-green-600 text-white shadow-md'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600'
-                        }`}
-                        title="Visualização em Cards"
-                      >
-                        <Grid3X3 className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => setVisualizacao('lista')}
-                        className={`p-2 rounded-md transition-all ${
-                          visualizacao === 'lista'
-                            ? 'bg-green-600 text-white shadow-md'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600'
-                        }`}
-                        title="Visualização em Lista"
-                      >
-                        <List className="w-5 h-5" />
-                      </button>
+                    <div className="flex items-center gap-2">
+                      {/* Botão Novo Funcionário */}
+                      {isAdmin && (
+                        <button
+                          onClick={abrirModalCriarFuncionario}
+                          className="flex items-center gap-2 px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors shadow-lg hover:shadow-xl min-h-[44px]"
+                          title="Adicionar Funcionário"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span className="font-semibold hidden sm:inline">Novo Funcionário</span>
+                          <span className="font-semibold sm:hidden">Novo</span>
+                        </button>
+                      )}
+                      
+                      {/* Toggle Visualização */}
+                      <div className="flex items-center gap-1 md:gap-2 bg-white dark:bg-gray-700 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-600">
+                        <button
+                          onClick={() => setVisualizacao('card')}
+                          className={`p-1.5 md:p-2 rounded-md transition-all ${
+                            visualizacao === 'card'
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          }`}
+                          title="Visualização em Cards"
+                        >
+                          <Grid3X3 className="w-4 h-4 md:w-5 md:h-5" />
+                        </button>
+                        <button
+                          onClick={() => setVisualizacao('lista')}
+                          className={`p-1.5 md:p-2 rounded-md transition-all ${
+                            visualizacao === 'lista'
+                              ? 'bg-blue-600 text-white shadow-md'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          }`}
+                          title="Visualização em Lista"
+                        >
+                          <List className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
                   {/* Filtros e Ordenação */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
                     {/* Filtro por Nome */}
                     <div className="relative">
-                      <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
                       <input
                         type="text"
                         placeholder="Buscar por nome..."
                         value={filtroNome}
                         onChange={(e) => setFiltroNome(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                     </div>
 
@@ -1006,7 +1289,7 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                     <select
                       value={filtroStatus}
                       onChange={(e) => setFiltroStatus(e.target.value)}
-                      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="px-3 md:px-4 py-2 md:py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="todos">Todos os status</option>
                       <option value="ativo">Ativos</option>
@@ -1015,11 +1298,11 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
 
                     {/* Ordenação */}
                     <div className="relative">
-                      <SortAsc className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <SortAsc className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" />
                       <select
                         value={ordenacao}
                         onChange={(e) => setOrdenacao(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="alfabetica">Ordem Alfabética</option>
                         <option value="pontos">Maior Pontuação</option>
@@ -1029,7 +1312,7 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                   </div>
                 </div>
 
-                <div className="p-4 space-y-3">
+                <div className="p-3 md:p-4 space-y-3">
                   {(() => {
                     let funcionariosDoSetor = funcionarios.filter(func => 
                       func.setor?.toLowerCase().trim() === setorSelecionado?.nome?.toLowerCase().trim() ||
@@ -1067,35 +1350,35 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                             key={funcionario.id}
                             className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700"
                           >
-                            <div className="p-4 flex items-center gap-4">
+                            <div className="p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
                               {/* Foto */}
                               <SafeImage
                                 src={funcionario.fotoPerfil}
                                 alt={funcionario.nome}
-                                className="w-16 h-16 rounded-xl object-cover border-2 border-blue-300 dark:border-blue-600 flex-shrink-0"
+                                className="w-14 h-14 md:w-16 md:h-16 rounded-xl object-cover border-2 border-blue-300 dark:border-blue-600 flex-shrink-0"
                                 fallback={
-                                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-blue-300 dark:border-blue-600">
-                                    <User className="w-8 h-8 text-white" />
+                                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-blue-300 dark:border-blue-600">
+                                    <User className="w-7 h-7 md:w-8 md:h-8 text-white" />
                                   </div>
                                 }
                               />
                               
                               {/* Informações Principais */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-3 mb-2">
-                                  <div className="flex-1">
-                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white truncate">{funcionario.nome}</h4>
+                              <div className="flex-1 min-w-0 w-full">
+                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">{funcionario.nome}</h4>
                                     {funcionario.cargo && (
                                       <div className="flex items-center gap-2 mt-0.5">
-                                        <Briefcase className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                        <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{funcionario.cargo}</span>
+                                        <Briefcase className="w-3 h-3 md:w-3.5 md:h-3.5 text-blue-600 dark:text-blue-400" />
+                                        <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400 font-medium truncate">{funcionario.cargo}</span>
                                       </div>
                                     )}
                                   </div>
                                   
                                   {/* Badge de Status */}
                                   {funcionario.status && (
-                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap ${
+                                    <span className={`px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg text-xs font-semibold whitespace-nowrap ${
                                       funcionario.status === 'ativo' 
                                         ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
@@ -1106,92 +1389,112 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                                 </div>
 
                                 {/* Informações de Contato */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2 mb-2 md:mb-3">
                                   {funcionario.email && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                      <Mail className="w-3.5 h-3.5" />
+                                    <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                                      <Mail className="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" />
                                       <span className="truncate">{funcionario.email}</span>
                                     </div>
                                   )}
                                   {funcionario.telefone && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                      <Phone className="w-3.5 h-3.5" />
-                                      <span>{funcionario.telefone}</span>
+                                    <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                                      <Phone className="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" />
+                                      <span className="truncate">{funcionario.telefone}</span>
                                     </div>
                                   )}
                                 </div>
 
-                                {/* Estatísticas em Grid Horizontal */}
-                                <div className="grid grid-cols-5 gap-3">
-                                  <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-2 border border-teal-200 dark:border-teal-800">
-                                    <div className="flex items-center gap-1.5">
-                                      <Award className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                                      <div>
-                                        <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">Pontos</p>
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white">{stats.pontos}</p>
+                                {/* Estatísticas em Grid Horizontal - Responsivo */}
+                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-3">
+                                  <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-1.5 md:p-2 border border-teal-200 dark:border-teal-800">
+                                    <div className="flex items-center gap-1 md:gap-1.5">
+                                      <Award className="w-3.5 h-3.5 md:w-4 md:h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="text-xs text-teal-600 dark:text-teal-400 font-medium truncate">Pontos</p>
+                                        <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white">{stats.pontos}</p>
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 border border-amber-200 dark:border-amber-800">
-                                    <div className="flex items-center gap-1.5">
-                                      <Star className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                                      <div>
-                                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Aval.</p>
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white">{stats.avaliacaoMedia}</p>
+                                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-1.5 md:p-2 border border-amber-200 dark:border-amber-800">
+                                    <div className="flex items-center gap-1 md:gap-1.5">
+                                      <Star className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium truncate">Aval.</p>
+                                        <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white">{stats.avaliacaoMedia}</p>
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-2 border border-rose-200 dark:border-rose-800">
-                                    <div className="flex items-center gap-1.5">
-                                      <AlertOctagon className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                                      <div>
-                                        <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">Horas-</p>
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white">{stats.horasNegativas}</p>
+                                  <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-1.5 md:p-2 border border-rose-200 dark:border-rose-800">
+                                    <div className="flex items-center gap-1 md:gap-1.5">
+                                      <AlertOctagon className="w-3.5 h-3.5 md:w-4 md:h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="text-xs text-rose-600 dark:text-rose-400 font-medium truncate">Horas-</p>
+                                        <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white">{stats.horasNegativas}</p>
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 border border-blue-200 dark:border-blue-800">
-                                    <div className="flex items-center gap-1.5">
-                                      <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                      <div>
-                                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Tarefas</p>
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white">{stats.tarefasConcluidas}</p>
+                                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-1.5 md:p-2 border border-blue-200 dark:border-blue-800">
+                                    <div className="flex items-center gap-1 md:gap-1.5">
+                                      <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium truncate">Tarefas</p>
+                                        <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white">{stats.tarefasConcluidas}</p>
                                       </div>
                                     </div>
                                   </div>
 
-                                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-2 border border-purple-200 dark:border-purple-800">
-                                    <div className="flex items-center gap-1.5">
-                                      <Package className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                      <div>
-                                        <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Emprés.</p>
-                                        <p className="text-sm font-bold text-gray-900 dark:text-white">{stats.emprestimosAtivos || 0}</p>
+                                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-1.5 md:p-2 border border-purple-200 dark:border-purple-800 col-span-3 sm:col-span-1">
+                                    <div className="flex items-center gap-1 md:gap-1.5">
+                                      <Package className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="text-xs text-purple-600 dark:text-purple-400 font-medium truncate">Emprés.</p>
+                                        <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white">{stats.emprestimosAtivos || 0}</p>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Botões de Ação */}
-                              <div className="flex flex-col gap-2 flex-shrink-0">
+                              {/* Botões de Ação - Responsivo */}
+                              <div className="flex sm:flex-col gap-2 flex-shrink-0 w-full sm:w-auto">
+                                <button
+                                  onClick={() => abrirModalEditarFuncionario(funcionario)}
+                                  className="flex-1 sm:flex-none min-h-[44px] p-2.5 md:p-3 bg-cyan-500/10 hover:bg-cyan-500/20 active:bg-cyan-500/30 text-cyan-600 dark:text-cyan-400 rounded-xl transition-all flex items-center justify-center gap-2"
+                                  title="Editar Funcionário"
+                                >
+                                  <Edit2 className="w-4 h-4 md:w-5 md:h-5" />
+                                  <span className="sm:hidden text-sm font-medium">Editar</span>
+                                </button>
                                 <button
                                   onClick={() => abrirModalTarefa(funcionario)}
-                                  className="p-2.5 bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 rounded-xl transition-all"
+                                  className="flex-1 sm:flex-none min-h-[44px] p-2.5 md:p-3 bg-blue-500/10 hover:bg-blue-500/20 active:bg-blue-500/30 text-blue-600 dark:text-blue-400 rounded-xl transition-all flex items-center justify-center gap-2"
                                   title="Criar Tarefa"
                                 >
-                                  <ClipboardList className="w-5 h-5" />
+                                  <ClipboardList className="w-4 h-4 md:w-5 md:h-5" />
+                                  <span className="sm:hidden text-sm font-medium">Tarefa</span>
                                 </button>
                                 {isAdmin && (
-                                  <button
-                                    onClick={() => abrirModalTransferencia(funcionario)}
-                                    className="p-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl transition-all"
-                                    title="Transferir de setor"
-                                  >
-                                    <ArrowRightLeft className="w-5 h-5" />
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => abrirModalTransferencia(funcionario)}
+                                      className="flex-1 sm:flex-none min-h-[44px] p-2.5 md:p-3 bg-blue-500/10 hover:bg-blue-500/20 active:bg-blue-500/30 text-blue-600 dark:text-blue-400 rounded-xl transition-all flex items-center justify-center gap-2"
+                                      title="Transferir de setor"
+                                    >
+                                      <ArrowRightLeft className="w-4 h-4 md:w-5 md:h-5" />
+                                      <span className="sm:hidden text-sm font-medium">Transferir</span>
+                                    </button>
+                                    <button
+                                      onClick={() => abrirModalExcluirFuncionario(funcionario)}
+                                      className="flex-1 sm:flex-none min-h-[44px] p-2.5 md:p-3 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-600 dark:text-red-400 rounded-xl transition-all flex items-center justify-center gap-2"
+                                      title="Excluir Funcionário"
+                                    >
+                                      <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+                                      <span className="sm:hidden text-sm font-medium">Excluir</span>
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -1199,31 +1502,31 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                         );
                       }
                       
-                      // Visualização em Card
+                      // Visualização em Card - Responsiva
                       return (
                         <div
                           key={funcionario.id}
-                          className="bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-900 dark:to-black rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-700 dark:border-gray-600"
+                          className="bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-900 dark:to-black rounded-2xl md:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-700 dark:border-gray-600"
                         >
                           {/* Header com Foto e Nome */}
-                          <div className="p-4 border-b border-gray-700 dark:border-gray-600 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                          <div className="p-3 md:p-4 border-b border-gray-700 dark:border-gray-600 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
                               <SafeImage
                                 src={funcionario.fotoPerfil}
                                 alt={funcionario.nome}
-                                className="w-14 h-14 rounded-xl object-cover border-2 border-cyan-500 dark:border-cyan-400 flex-shrink-0"
+                                className="w-12 h-12 md:w-14 md:h-14 rounded-xl object-cover border-2 border-cyan-500 dark:border-cyan-400 flex-shrink-0"
                                 fallback={
-                                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-cyan-500 dark:border-cyan-400">
-                                    <User className="w-7 h-7 text-white" />
+                                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-cyan-500 dark:border-cyan-400">
+                                    <User className="w-6 h-6 md:w-7 md:h-7 text-white" />
                                   </div>
                                 }
                               />
                               <div className="flex-1 min-w-0">
-                                <h4 className="text-lg font-bold text-white truncate">{funcionario.nome}</h4>
+                                <h4 className="text-base md:text-lg font-bold text-white truncate">{funcionario.nome}</h4>
                                 {funcionario.cargo && (
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    <Briefcase className="w-3.5 h-3.5 text-cyan-400" />
-                                    <span className="text-sm text-cyan-400 font-medium">{funcionario.cargo}</span>
+                                  <div className="flex items-center gap-1.5 md:gap-2 mt-0.5">
+                                    <Briefcase className="w-3 h-3 md:w-3.5 md:h-3.5 text-cyan-400" />
+                                    <span className="text-xs md:text-sm text-cyan-400 font-medium truncate">{funcionario.cargo}</span>
                                   </div>
                                 )}
                               </div>
@@ -1231,7 +1534,7 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                             
                             {/* Badge de Status */}
                             {funcionario.status && (
-                              <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                              <span className={`px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg text-xs font-semibold flex-shrink-0 ${
                                 funcionario.status === 'ativo' 
                                   ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                                   : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
@@ -1241,41 +1544,41 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                             )}
                           </div>
 
-                          {/* Estatísticas Detalhadas */}
-                          <div className="p-4 space-y-3">
+                          {/* Estatísticas Detalhadas - Grid Responsivo */}
+                          <div className="p-3 md:p-4 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                             {/* Pontos */}
-                            <div className="bg-gradient-to-r from-teal-900/40 to-teal-800/40 rounded-2xl p-4 border border-teal-700/50 hover:border-teal-600/50 transition-all">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-teal-600/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                                  <Award className="w-6 h-6 text-teal-400" />
+                            <div className="bg-gradient-to-r from-teal-900/40 to-teal-800/40 rounded-xl md:rounded-2xl p-3 md:p-4 border border-teal-700/50 hover:border-teal-600/50 transition-all">
+                              <div className="flex items-center gap-2 md:gap-3">
+                                <div className="w-10 h-10 md:w-12 md:h-12 bg-teal-600/30 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0">
+                                  <Award className="w-5 h-5 md:w-6 md:h-6 text-teal-400" />
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-teal-400 uppercase tracking-wider">Pontos</p>
-                                  <p className="text-2xl font-bold text-white">{stats.pontos} <span className="text-sm text-teal-400">pts</span></p>
+                                  <p className="text-xl md:text-2xl font-bold text-white truncate">{stats.pontos} <span className="text-xs md:text-sm text-teal-400">pts</span></p>
                                 </div>
                               </div>
                             </div>
 
                             {/* Avaliação */}
-                            <div className="bg-gradient-to-r from-amber-900/40 to-orange-900/40 rounded-2xl p-4 border border-amber-700/50 hover:border-amber-600/50 transition-all">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-amber-600/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                                  <Star className="w-6 h-6 text-amber-400" />
+                            <div className="bg-gradient-to-r from-amber-900/40 to-orange-900/40 rounded-xl md:rounded-2xl p-3 md:p-4 border border-amber-700/50 hover:border-amber-600/50 transition-all">
+                              <div className="flex items-center gap-2 md:gap-3">
+                                <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-600/30 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0">
+                                  <Star className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-amber-400 uppercase tracking-wider">Avaliação</p>
-                                  <p className="text-2xl font-bold text-white">{stats.avaliacaoMedia} <span className="text-sm text-amber-400">⭐</span></p>
+                                  <p className="text-xl md:text-2xl font-bold text-white truncate">{stats.avaliacaoMedia} <span className="text-xs md:text-sm text-amber-400">⭐</span></p>
                                 </div>
                               </div>
                             </div>
 
                             {/* Horas Negativas */}
-                            <div className="bg-gradient-to-r from-rose-900/40 to-red-900/40 rounded-2xl p-4 border border-rose-700/50 hover:border-rose-600/50 transition-all">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-rose-600/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                                  <AlertOctagon className="w-6 h-6 text-rose-400" />
+                            <div className="bg-gradient-to-r from-rose-900/40 to-red-900/40 rounded-xl md:rounded-2xl p-3 md:p-4 border border-rose-700/50 hover:border-rose-600/50 transition-all">
+                              <div className="flex items-center gap-2 md:gap-3">
+                                <div className="w-10 h-10 md:w-12 md:h-12 bg-rose-600/30 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0">
+                                  <AlertOctagon className="w-5 h-5 md:w-6 md:h-6 text-rose-400" />
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-rose-400 uppercase tracking-wider">Horas Negativas</p>
                                   <p className="text-2xl font-bold text-white">{stats.horasNegativas || '0h 0m'}</p>
                                 </div>
@@ -1283,49 +1586,65 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                             </div>
 
                             {/* Tarefas */}
-                            <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-2xl p-4 border border-blue-700/50 hover:border-blue-600/50 transition-all">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-blue-600/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                                  <CheckCircle className="w-6 h-6 text-blue-400" />
+                            <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 rounded-xl md:rounded-2xl p-3 md:p-4 border border-blue-700/50 hover:border-blue-600/50 transition-all">
+                              <div className="flex items-center gap-2 md:gap-3">
+                                <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-600/30 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0">
+                                  <CheckCircle className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-blue-400 uppercase tracking-wider">Tarefas</p>
-                                  <p className="text-2xl font-bold text-white">{stats.tarefasConcluidas} <span className="text-sm text-blue-400">concluídas</span></p>
+                                  <p className="text-xl md:text-2xl font-bold text-white truncate">{stats.tarefasConcluidas} <span className="text-xs md:text-sm text-blue-400">concluídas</span></p>
                                 </div>
                               </div>
                             </div>
 
                             {/* Empréstimos */}
-                            <div className="bg-gradient-to-r from-purple-900/40 to-violet-900/40 rounded-2xl p-4 border border-purple-700/50 hover:border-purple-600/50 transition-all">
-                              <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-purple-600/30 rounded-xl flex items-center justify-center flex-shrink-0">
-                                  <Package className="w-6 h-6 text-purple-400" />
+                            <div className="bg-gradient-to-r from-purple-900/40 to-violet-900/40 rounded-xl md:rounded-2xl p-3 md:p-4 border border-purple-700/50 hover:border-purple-600/50 transition-all md:col-span-2">
+                              <div className="flex items-center gap-2 md:gap-3">
+                                <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-600/30 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0">
+                                  <Package className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-purple-400 uppercase tracking-wider">Empréstimos</p>
-                                  <p className="text-2xl font-bold text-white">{stats.emprestimosAtivos || 0} <span className="text-sm text-purple-400">ativos</span></p>
+                                  <p className="text-xl md:text-2xl font-bold text-white truncate">{stats.emprestimosAtivos || 0} <span className="text-xs md:text-sm text-purple-400">ativos</span></p>
                                 </div>
                               </div>
                             </div>
                           </div>
 
-                          {/* Footer com Botões de Ação */}
-                          <div className="p-4 border-t border-gray-700 dark:border-gray-600 flex gap-2">
+                          {/* Footer com Botões de Ação - Responsivo */}
+                          <div className="p-3 md:p-4 border-t border-gray-700 dark:border-gray-600 flex gap-2">
+                            <button
+                              onClick={() => abrirModalEditarFuncionario(funcionario)}
+                              className="min-h-[44px] py-2.5 px-3 md:px-4 bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white font-semibold rounded-xl transition-all shadow-lg flex items-center justify-center"
+                              title="Editar"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => abrirModalTarefa(funcionario)}
-                              className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+                              className="flex-1 min-h-[44px] py-2.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
                             >
                               <ClipboardList className="w-4 h-4" />
-                              Criar Tarefa
+                              <span className="text-sm md:text-base">Criar Tarefa</span>
                             </button>
                             {isAdmin && (
-                              <button
-                                onClick={() => abrirModalTransferencia(funcionario)}
-                                className="py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg"
-                                title="Transferir"
-                              >
-                                <ArrowRightLeft className="w-4 h-4" />
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => abrirModalTransferencia(funcionario)}
+                                  className="min-h-[44px] py-2.5 px-3 md:px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold rounded-xl transition-all shadow-lg flex items-center justify-center"
+                                  title="Transferir"
+                                >
+                                  <ArrowRightLeft className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => abrirModalExcluirFuncionario(funcionario)}
+                                  className="min-h-[44px] py-2.5 px-3 md:px-4 bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold rounded-xl transition-all shadow-lg flex items-center justify-center"
+                                  title="Excluir"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
                             )}
                           </div>
                         </div>
@@ -1518,14 +1837,14 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                 <select
                   value={setorDestinoId}
                   onChange={(e) => setSetorDestinoId(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all [&>option]:bg-white [&>option]:dark:bg-gray-700 [&>option]:text-gray-900 [&>option]:dark:text-white [&>option:hover]:bg-blue-50 [&>option:hover]:dark:bg-gray-600"
                   required
                 >
-                  <option value="">Selecione o setor de destino</option>
+                  <option value="" className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white">Selecione o setor de destino</option>
                   {setores
                     .filter(s => s.id !== setorSelecionado?.id)
                     .map(setor => (
-                      <option key={setor.id} value={setor.id}>
+                      <option key={setor.id} value={setor.id} className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-blue-50 dark:hover:bg-gray-600">
                         {setor.nome}
                       </option>
                     ))}
@@ -1756,6 +2075,307 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Funcionário */}
+      {modalEditarFuncionario && funcionarioEdicao && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
+            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-2">
+                <Edit2 className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Editar Funcionário
+                </h3>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Atualizar informações de <strong>{funcionarioEdicao.nome}</strong>
+              </p>
+            </div>
+            
+            <form onSubmit={handleAtualizarFuncionario} className="p-6 space-y-4">
+              {/* Foto do Funcionário */}
+              <div className="flex justify-center mb-2">
+                <SafeImage
+                  src={funcionarioEdicao.fotoPerfil}
+                  alt={funcionarioEdicao.nome}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-cyan-300 dark:border-cyan-600 shadow-lg"
+                  fallback={
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center border-4 border-cyan-300 dark:border-cyan-600 shadow-lg">
+                      <User className="w-12 h-12 text-white" />
+                    </div>
+                  }
+                />
+              </div>
+
+              {/* Nome do Funcionário */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Nome Completo *
+                </label>
+                <input
+                  type="text"
+                  value={formFuncionario.nome}
+                  onChange={(e) => setFormFuncionario({...formFuncionario, nome: e.target.value})}
+                  placeholder="Digite o nome completo"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+
+              {/* Cargo */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Cargo
+                </label>
+                <input
+                  type="text"
+                  value={formFuncionario.cargo}
+                  onChange={(e) => setFormFuncionario({...formFuncionario, cargo: e.target.value})}
+                  placeholder="Digite o cargo (ex: Jardineiro, Supervisor)"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              {/* Informações do Setor */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center gap-2 mb-2">
+                  <Briefcase className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Informações Atuais</p>
+                </div>
+                <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                  <p><span className="font-medium">Setor:</span> {setorSelecionado?.nome}</p>
+                  <p><span className="font-medium">Status:</span> {funcionarioEdicao.status === 'ativo' ? '✓ Ativo' : '✗ Inativo'}</p>
+                </div>
+              </div>
+
+              {/* Botões */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCancelar}
+                  className="flex-1 px-4 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                >
+                  <Save className="w-4 h-4" />
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Criar Funcionário */}
+      {modalCriarFuncionario && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+              <div className="flex items-center gap-3 mb-2">
+                <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Novo Funcionário
+                </h3>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Adicionar funcionário ao setor <strong>{setorSelecionado?.nome}</strong>
+              </p>
+            </div>
+            
+            <form onSubmit={handleCriarFuncionario} className="p-6 space-y-4">
+              {/* Nome do Funcionário */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Nome Completo *
+                </label>
+                <input
+                  type="text"
+                  value={formNovoFuncionario.nome}
+                  onChange={(e) => setFormNovoFuncionario({...formNovoFuncionario, nome: e.target.value})}
+                  placeholder="Digite o nome completo"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+
+              {/* Cargo */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Cargo
+                </label>
+                <input
+                  type="text"
+                  value={formNovoFuncionario.cargo}
+                  onChange={(e) => setFormNovoFuncionario({...formNovoFuncionario, cargo: e.target.value})}
+                  placeholder="Ex: Jardineiro, Supervisor, Porteiro"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              {/* Telefone */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Telefone
+                </label>
+                <input
+                  type="tel"
+                  value={formNovoFuncionario.telefone}
+                  onChange={(e) => setFormNovoFuncionario({...formNovoFuncionario, telefone: e.target.value})}
+                  placeholder="(11) 98765-4321"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Status Inicial
+                </label>
+                <select
+                  value={formNovoFuncionario.status}
+                  onChange={(e) => setFormNovoFuncionario({...formNovoFuncionario, status: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+                >
+                  <option value="ativo">✓ Ativo</option>
+                  <option value="inativo">✗ Inativo</option>
+                </select>
+              </div>
+
+              {/* Informações do Setor */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Setor de Alocação</p>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-medium text-blue-600 dark:text-blue-400">{setorSelecionado?.nome}</span>
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                  O funcionário será automaticamente vinculado a este setor
+                </p>
+              </div>
+
+              {/* Botões */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalCriarFuncionario(false);
+                    setFormNovoFuncionario({ 
+                      nome: '', 
+                      cargo: '', 
+                      telefone: '',
+                      status: 'ativo'
+                    });
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                >
+                  <Plus className="w-4 h-4" />
+                  Criar Funcionário
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Excluir Funcionário */}
+      {modalExcluirFuncionario && funcionarioExclusao && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                  <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Confirmar Exclusão
+                </h3>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Esta ação não pode ser desfeita
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* Informações do Funcionário */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center gap-3 mb-3">
+                  <SafeImage
+                    src={funcionarioExclusao.fotoPerfil}
+                    alt={funcionarioExclusao.nome}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-red-300 dark:border-red-600"
+                    fallback={
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-400 to-orange-500 flex items-center justify-center border-2 border-red-300 dark:border-red-600">
+                        <User className="w-8 h-8 text-white" />
+                      </div>
+                    }
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 dark:text-white text-lg">{funcionarioExclusao.nome}</p>
+                    {funcionarioExclusao.cargo && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{funcionarioExclusao.cargo}</p>
+                    )}
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      Setor: {funcionarioExclusao.setor || funcionarioExclusao.setorNome}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Aviso */}
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                <div className="flex gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-red-800 dark:text-red-200">
+                      Tem certeza que deseja excluir este funcionário?
+                    </p>
+                    <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                      Todos os dados relacionados (tarefas, pontos, avaliações) permanecerão no sistema, mas o funcionário será removido permanentemente.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalExcluirFuncionario(false);
+                    setFuncionarioExclusao(null);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExcluirFuncionario}
+                  className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Confirmar Exclusão
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

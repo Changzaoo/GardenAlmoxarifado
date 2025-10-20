@@ -245,10 +245,11 @@ class MensagensService {
   // ==================== MENSAGENS ====================
 
   /**
-   * Envia uma mensagem de texto
+   * Envia uma mensagem de texto (OTIMIZADO para entrega instantânea)
    */
   async sendMessage(conversaId, remetenteId, texto, tipo = MESSAGE_TYPE.TEXTO, anexoUrl = null) {
     try {
+      console.time('⚡ Envio de mensagem');
 
       // Verificar bloqueio
       const bloqueado = await this.isBlocked(conversaId, remetenteId);
@@ -270,7 +271,8 @@ class MensagensService {
 
       // Mensagem sem criptografia
       const textoOriginal = texto || '';
-      const timestamp = Date.now();
+      const timestampCliente = Date.now();
+      const agora = new Date();
 
       const mensagensRef = collection(db, `conversas/${conversaId}/mensagens`);
       
@@ -280,57 +282,68 @@ class MensagensService {
         tipo,
         anexoUrl,
         status: MESSAGE_STATUS.ENVIADA,
-        timestamp: serverTimestamp(),
-        timestampCliente: timestamp,
-        encrypted: false, // Sem criptografia
+        timestamp: serverTimestamp(), // Para ordenação precisa no servidor
+        timestampCliente: timestampCliente, // Para exibição instantânea
+        timestampLocal: agora, // Backup para fallback
+        encrypted: false,
         editada: false,
         deletada: false,
         leitaPor: [remetenteId],
         entregueA: [remetenteId],
-        conversaId // Adiciona referência à conversa
+        conversaId
       };
 
-      // Adicionar mensagem
-      const docRef = await addDoc(mensagensRef, novaMensagem);
+      // ⚡ OTIMIZAÇÃO: Usar batch para operações atômicas e instantâneas
+      const batch = writeBatch(db);
 
-      // Atualizar última mensagem na conversa (não bloquear envio)
+      // 1. Adicionar mensagem
+      const docRef = doc(mensagensRef);
+      batch.set(docRef, novaMensagem);
+
+      // 2. Atualizar última mensagem e contador em uma operação
       const previewText = tipo === MESSAGE_TYPE.TEXTO 
         ? texto.substring(0, 50) 
         : `📎 ${tipo}`;
 
-      await updateDoc(conversaRef, {
+      const conversaUpdates = {
         ultimaMensagem: {
           id: docRef.id,
           texto: previewText,
           remetenteId,
-          timestamp: new Date()
+          timestamp: agora,
+          timestampCliente: timestampCliente
         },
         atualizadaEm: serverTimestamp()
+      };
+
+      // 3. Incrementar contador para outros participantes (em batch)
+      participantes.forEach(participanteId => {
+        if (participanteId !== remetenteId) {
+          conversaUpdates[`participantesInfo.${participanteId}.naoLidas`] = increment(1);
+        }
       });
 
-      // Incrementar contador para outros participantes
-      for (const participanteId of participantes) {
-        if (participanteId !== remetenteId) {
-          await updateDoc(conversaRef, {
-            [`participantesInfo.${participanteId}.naoLidas`]: increment(1)
-          });
-        }
-      }
+      batch.update(conversaRef, conversaUpdates);
 
-      // ENVIAR NOTIFICAÇÕES PUSH para outros participantes
-      await this.sendPushNotifications(
+      // ⚡ COMMIT ATÔMICO - Tudo de uma vez
+      await batch.commit();
+      console.timeEnd('⚡ Envio de mensagem');
+
+      // ENVIAR NOTIFICAÇÕES PUSH (não bloquear - fazer em paralelo)
+      this.sendPushNotifications(
         conversaId,
         remetenteId,
         participantes,
         textoOriginal,
         tipo,
         conversaData
-      );
+      ).catch(err => console.error('❌ Erro ao enviar notificações:', err));
 
       return {
         id: docRef.id,
         ...novaMensagem,
-        texto: textoOriginal // Retorna texto descriptografado localmente
+        timestamp: agora, // Retorna timestamp local para exibição instantânea
+        texto: textoOriginal
       };
     } catch (error) {
       console.error('❌ Erro ao enviar mensagem:', error);
@@ -437,69 +450,97 @@ class MensagensService {
   }
 
   /**
-   * Escuta mensagens em tempo real
-   */
-  /**
-   * Escuta mensagens em tempo real e descriptografa
+   * Escuta mensagens em tempo real (OTIMIZADO para recebimento instantâneo)
    */
   listenToMessages(conversaId, currentUserId, limiteMensagens = LIMITS.MESSAGES_PER_PAGE, callback) {
+    console.log('🎧 Iniciando listener de mensagens para conversa:', conversaId);
 
     const mensagensRef = collection(db, `conversas/${conversaId}/mensagens`);
     const q = query(
       mensagensRef,
-      orderBy('timestamp', 'desc'),
+      orderBy('timestampCliente', 'desc'), // ⚡ Usar timestampCliente para ordenação mais rápida
       limit(limiteMensagens)
     );
 
-    return onSnapshot(q, 
+    return onSnapshot(
+      q,
+      {
+        // ⚡ OTIMIZAÇÃO: includeMetadataChanges para updates instantâneos
+        includeMetadataChanges: true
+      },
       async (snapshot) => {
+        // ⚡ OTIMIZAÇÃO: Processar mudanças incrementais (added, modified, removed)
+        if (!snapshot.metadata.fromCache && snapshot.docChanges().length > 0) {
+          console.log('📬 Recebidas', snapshot.docChanges().length, 'mudanças nas mensagens');
+        }
 
         if (snapshot.empty) {
-
+          console.log('📭 Nenhuma mensagem nesta conversa');
           callback([]);
           return;
         }
 
         try {
+          // ⚡ Cache de informações de usuários para evitar buscas repetidas
+          const usuariosCache = new Map();
 
-          // Processar mensagens e buscar informações dos remetentes
+          // Processar mensagens em paralelo
           const mensagensPromises = snapshot.docs.map(async (doc) => {
             const data = doc.data();
             
-            // Buscar informações do remetente
+            // Usar timestampCliente como fallback se timestamp ainda não foi atualizado pelo servidor
+            const timestampFinal = data.timestamp instanceof Object && data.timestamp.toDate 
+              ? data.timestamp.toDate()
+              : data.timestampLocal || new Date(data.timestampCliente || Date.now());
+
+            // Buscar informações do remetente (com cache)
             let remetenteInfo = null;
             if (data.remetenteId) {
-              try {
-                remetenteInfo = await this.getUserInfo(data.remetenteId);
-              } catch (error) {
-                console.error('Erro ao buscar info do remetente:', error);
+              if (usuariosCache.has(data.remetenteId)) {
+                remetenteInfo = usuariosCache.get(data.remetenteId);
+              } else {
+                try {
+                  remetenteInfo = await this.getUserInfo(data.remetenteId);
+                  usuariosCache.set(data.remetenteId, remetenteInfo);
+                } catch (error) {
+                  console.error('Erro ao buscar info do remetente:', error);
+                  remetenteInfo = { nome: 'Usuário', photoURL: null };
+                }
               }
             }
 
             return {
               id: doc.id,
               ...data,
-              remetente: remetenteInfo // Adicionar informações do remetente (nome, photoURL, etc)
+              timestamp: timestampFinal, // ⚡ Usar timestamp calculado
+              remetente: remetenteInfo,
+              // Adicionar flag se é do cache (para UI)
+              fromCache: snapshot.metadata.fromCache
             };
           });
 
-          const mensagens = (await Promise.all(mensagensPromises)).reverse(); // Inverter para mostrar mais antigas primeiro
+          const mensagens = (await Promise.all(mensagensPromises)).reverse(); // Inverter para ordem cronológica
 
+          // ⚡ CALLBACK INSTANTÂNEO
           callback(mensagens);
+          
         } catch (error) {
           console.error('❌ Erro ao processar mensagens:', error);
-          console.error('Stack trace:', error.stack);
-          // Em caso de erro, retornar mensagens sem processar
-          const mensagens = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })).reverse();
+          // Fallback: retornar mensagens brutas
+          const mensagens = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              timestamp: data.timestampLocal || new Date(data.timestampCliente || Date.now())
+            };
+          }).reverse();
           callback(mensagens);
         }
       },
       (error) => {
-        console.error('❌ Erro ao escutar mensagens:', error);
-        console.error('Detalhes:', error.message);
+        console.error('❌ Erro no listener de mensagens:', error);
+        console.error('Detalhes:', error.message, error.code);
         callback([]);
       }
     );
