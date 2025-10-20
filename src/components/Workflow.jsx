@@ -75,6 +75,8 @@ import UserCreationForm from './PasswordReset/UserCreationForm';
 import '../utils/passwordDebug'; // Carrega utilitário de debug de senhas
 import OfflineLogo from './common/OfflineLogo';
 import UpdateNotification from './Updates/UpdateNotification';
+import OfflineSyncStatus from './OfflineSyncStatus';
+import { useOfflineSync } from '../hooks/useOfflineSync';
 // Icons
 import { 
   Package,
@@ -1538,6 +1540,20 @@ const AlmoxarifadoSistema = () => {
   const { unreadCount: notificationUnreadCount } = useNotification();
   const { totalNaoLidas: mensagensNaoLidas } = useMensagens();
   const funcionarioInfo = funcionariosData.find(f => f.id === usuario.id);
+  
+  // 🔄 Sistema de Sincronização Offline com Python
+  const {
+    isOnline,
+    isSyncing,
+    syncProgress,
+    lastSyncTime,
+    cachedData,
+    error: syncError,
+    syncAllCollections,
+    clearCache,
+    getCachedCollection,
+    cacheAge
+  } = useOfflineSync();
   
   // ✅ CORREÇÃO: Calcular aba inicial sincronicamente para evitar flash
   // Estados locais

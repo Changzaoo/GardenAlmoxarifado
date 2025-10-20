@@ -1,5 +1,4 @@
-ddfd
-/**ss
+/**
  * Web Worker para Cálculos Otimizados com Python (Pyodide)
  * 
  * Este worker roda Python em uma thread separada para não bloquear a UI.
@@ -729,6 +728,54 @@ def calcular_tendencias_mensal(dados_historicos_json, tipo_calculo):
         'projecao': round(projecao, 2),
         'totalPeriodo': int(np.sum(valores))
     }
+
+def compress_data(data_json, collection_name):
+    """
+    Comprime dados JSON usando gzip e base64
+    Reduz significativamente o tamanho para armazenamento em IndexedDB
+    """
+    import gzip
+    import base64
+    
+    # Converter string JSON para bytes
+    data_bytes = data_json.encode('utf-8')
+    
+    # Comprimir com gzip (nível 9 = máxima compressão)
+    compressed = gzip.compress(data_bytes, compresslevel=9)
+    
+    # Converter para base64 para armazenamento seguro
+    compressed_b64 = base64.b64encode(compressed).decode('utf-8')
+    
+    # Calcular estatísticas de compressão
+    original_size = len(data_bytes)
+    compressed_size = len(compressed)
+    ratio = round((1 - compressed_size / original_size) * 100, 2)
+    
+    return {
+        'compressed': compressed_b64,
+        'originalSize': original_size,
+        'compressedSize': compressed_size,
+        'compressionRatio': ratio,
+        'collection': collection_name
+    }
+
+def decompress_data(compressed_b64):
+    """
+    Descomprime dados comprimidos com compress_data
+    """
+    import gzip
+    import base64
+    
+    # Decodificar base64
+    compressed = base64.b64decode(compressed_b64.encode('utf-8'))
+    
+    # Descomprimir gzip
+    decompressed = gzip.decompress(compressed)
+    
+    # Converter bytes para string
+    data_json = decompressed.decode('utf-8')
+    
+    return data_json
     `);
     
     isInitialized = true;
@@ -998,6 +1045,31 @@ calcular_tendencias_mensal(
         `).toJs();
         
         result = Object.fromEntries(result);
+        break;
+      
+      case 'COMPRESS_DATA':
+        const { data: dataToCompress, collectionName } = data.payload;
+        
+        // Escapar aspas para Python
+        const escapedData = dataToCompress.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        
+        result = pyodide.runPython(`
+compress_data(
+  '''${escapedData}''',
+  '${collectionName}'
+)
+        `).toJs();
+        
+        result = Object.fromEntries(result);
+        break;
+      
+      case 'DECOMPRESS_DATA':
+        const { compressedData } = data.payload;
+        
+        result = pyodide.runPython(`
+decompress_data('${compressedData}')
+        `);
+        
         break;
       
       default:
