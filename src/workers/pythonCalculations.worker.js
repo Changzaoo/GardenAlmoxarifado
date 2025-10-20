@@ -792,9 +792,14 @@ self.onmessage = async function(e) {
   const { type, data, id } = e.data;
   
   try {
-    // Inicializar se necessário
+    // CORREÇÃO 4: Verificar se Pyodide está pronto antes de processar
     if (!isInitialized) {
+      console.log('⏳ Aguardando inicialização do Pyodide...');
       await initPyodide();
+    }
+
+    if (!pyodide) {
+      throw new Error('Pyodide não foi inicializado corretamente');
     }
     
     let result;
@@ -1050,14 +1055,15 @@ calcular_tendencias_mensal(
       case 'COMPRESS_DATA':
         const { data: dataToCompress, collectionName } = data.payload;
         
-        // Escapar aspas para Python
-        const escapedData = dataToCompress.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        // CORREÇÃO 3: Escape correto e seguro para Python
+        // Usar btoa para base64 e evitar problemas com caracteres especiais
+        const dataB64 = btoa(unescape(encodeURIComponent(dataToCompress)));
         
         result = pyodide.runPython(`
-compress_data(
-  '''${escapedData}''',
-  '${collectionName}'
-)
+import base64
+data_json = base64.b64decode('${dataB64}').decode('utf-8')
+result = compress_data(data_json, '${collectionName}')
+result
         `).toJs();
         
         result = Object.fromEntries(result);
@@ -1066,8 +1072,10 @@ compress_data(
       case 'DECOMPRESS_DATA':
         const { compressedData } = data.payload;
         
+        // CORREÇÃO 3: Passar dados diretamente sem escape
         result = pyodide.runPython(`
-decompress_data('${compressedData}')
+result = decompress_data('${compressedData}')
+result
         `);
         
         break;

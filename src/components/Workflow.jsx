@@ -77,6 +77,10 @@ import OfflineLogo from './common/OfflineLogo';
 import UpdateNotification from './Updates/UpdateNotification';
 import OfflineSyncStatus from './OfflineSyncStatus';
 import { useOfflineSync } from '../hooks/useOfflineSync';
+// ✅ Novos sistemas de otimização
+import { useStatePersistence } from '../hooks/useStatePersistence';
+import { useDatabaseOptimizer } from '../hooks/useDatabaseOptimizer';
+import AutoSaveIndicator from './AutoSaveIndicator';
 // Icons
 import { 
   Package,
@@ -1554,6 +1558,44 @@ const AlmoxarifadoSistema = () => {
     getCachedCollection,
     cacheAge
   } = useOfflineSync();
+  
+  // ✅ Sistema de Persistência de Estado
+  const {
+    isInitialized: statePersistenceReady,
+    isSaving: isSavingState,
+    lastSaveTime: lastStateSaveTime,
+    saveError: stateSaveError,
+    saveState: manualSaveState,
+    clearState: clearPersistedState
+  } = useStatePersistence({
+    autoRestore: true,
+    enabled: true,
+    onRestored: (restoredState) => {
+      console.log('✅ Estado restaurado automaticamente:', restoredState);
+      // Pode atualizar estados React aqui se necessário
+      if (restoredState.abaAtiva) {
+        setAbaAtiva(restoredState.abaAtiva);
+      }
+    }
+  });
+
+  // ✅ Sistema de Otimização de Banco de Dados
+  const {
+    isInitialized: dbOptimizerReady,
+    isLoading: isDbLoading,
+    error: dbError,
+    cacheStats: dbCacheStats,
+    getDocument: getOptimizedDocument,
+    getDocuments: getOptimizedDocuments,
+    queryDocuments: queryOptimizedDocuments,
+    setDocument: setOptimizedDocument,
+    updateDocument: updateOptimizedDocument,
+    deleteDocument: deleteOptimizedDocument,
+    clearCache: clearDbCache,
+    invalidateCache: invalidateDbCache
+  } = useDatabaseOptimizer({
+    enabled: true
+  });
   
   // ✅ CORREÇÃO: Calcular aba inicial sincronicamente para evitar flash
   // Estados locais
@@ -3266,6 +3308,15 @@ const AlmoxarifadoSistema = () => {
   return (
     <FuncionariosProvider>
       <div className="min-h-screen bg-white dark:bg-black transition-colors duration-200">
+        {/* ✅ Indicador de Auto-Save */}
+        <AutoSaveIndicator 
+          isSaving={isSavingState}
+          lastSaveTime={lastStateSaveTime}
+          error={stateSaveError}
+          position="bottom-right"
+          compact={isMobile}
+        />
+        
         {/* Header móvel */}
       {isMobile && (
         <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-700 shadow-sm">

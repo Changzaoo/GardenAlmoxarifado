@@ -51,25 +51,54 @@ export const useOfflineSync = () => {
    */
   const initIndexedDB = useCallback(() => {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      // CORREÇÃO 2: Verificar se IndexedDB está disponível
+      if (!window.indexedDB) {
+        console.warn('⚠️ IndexedDB não disponível neste navegador');
+        reject(new Error('IndexedDB não suportado'));
+        return;
+      }
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        dbRef.current = request.result;
-        resolve(request.result);
-      };
+      // Verificar modo privado
+      try {
+        const testRequest = indexedDB.open('test');
+        testRequest.onerror = () => {
+          console.warn('⚠️ IndexedDB bloqueado (modo privado?)');
+          reject(new Error('IndexedDB bloqueado - modo de navegação privada?'));
+        };
+        testRequest.onsuccess = () => {
+          indexedDB.deleteDatabase('test');
+          
+          // Agora abrir o banco real
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        
-        // Criar object store se não existir
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          store.createIndex('collection', 'collection', { unique: false });
-          store.createIndex('timestamp', 'timestamp', { unique: false });
-          store.createIndex('compressed', 'compressed', { unique: false });
-        }
-      };
+          request.onerror = () => {
+            console.error('❌ Erro ao abrir IndexedDB:', request.error);
+            reject(request.error);
+          };
+          
+          request.onsuccess = () => {
+            dbRef.current = request.result;
+            console.log('✅ IndexedDB inicializado');
+            resolve(request.result);
+          };
+
+          request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            
+            // Criar object store se não existir
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+              store.createIndex('collection', 'collection', { unique: false });
+              store.createIndex('timestamp', 'timestamp', { unique: false });
+              store.createIndex('compressed', 'compressed', { unique: false });
+              console.log('✅ Object store criado');
+            }
+          };
+        };
+      } catch (error) {
+        console.error('❌ Erro ao testar IndexedDB:', error);
+        reject(error);
+      }
     });
   }, []);
 
@@ -78,10 +107,16 @@ export const useOfflineSync = () => {
    */
   const initPythonWorker = useCallback(() => {
     if (!workerRef.current) {
-      workerRef.current = new Worker(
-        new URL('../workers/pythonCalculations.worker.js', import.meta.url),
-        { type: 'module' }
-      );
+      try {
+        workerRef.current = new Worker(
+          new URL('../workers/pythonCalculations.worker.js', import.meta.url),
+          { type: 'module' }
+        );
+        console.log('✅ Worker Python inicializado');
+      } catch (error) {
+        console.error('❌ Erro ao inicializar Worker Python:', error);
+        return null;
+      }
     }
     return workerRef.current;
   }, []);
@@ -91,7 +126,13 @@ export const useOfflineSync = () => {
    */
   const compressDataWithPython = useCallback((data, collectionName) => {
     return new Promise((resolve, reject) => {
+      // CORREÇÃO 1: Verificar se worker foi inicializado
       const worker = initPythonWorker();
+      if (!worker) {
+        reject(new Error('Worker Python não disponível'));
+        return;
+      }
+
       const messageId = `compress_${Date.now()}`;
 
       const handleMessage = (event) => {
@@ -106,21 +147,37 @@ export const useOfflineSync = () => {
         }
       };
 
-      worker.addEventListener('message', handleMessage);
+      // CORREÇÃO 4: Verificar se Pyodide está pronto
+      const handleError = (event) => {
+        worker.removeEventListener('error', handleError);
+        console.error('❌ Erro no Worker Python:', event);
+        reject(new Error('Erro ao processar no Worker Python'));
+      };
 
-      worker.postMessage({
-        id: messageId,
-        type: 'COMPRESS_DATA',
-        payload: {
-          data: JSON.stringify(data),
-          collectionName
-        }
-      });
+      worker.addEventListener('message', handleMessage);
+      worker.addEventListener('error', handleError);
+
+      try {
+        worker.postMessage({
+          id: messageId,
+          type: 'COMPRESS_DATA',
+          payload: {
+            data: JSON.stringify(data),
+            collectionName
+          }
+        });
+      } catch (error) {
+        worker.removeEventListener('message', handleMessage);
+        worker.removeEventListener('error', handleError);
+        reject(error);
+        return;
+      }
 
       // Timeout de 30 segundos
       setTimeout(() => {
         worker.removeEventListener('message', handleMessage);
-        reject(new Error('Timeout ao comprimir dados'));
+        worker.removeEventListener('error', handleError);
+        reject(new Error('Timeout ao comprimir dados - Worker não respondeu'));
       }, 30000);
     });
   }, [initPythonWorker]);
@@ -130,7 +187,13 @@ export const useOfflineSync = () => {
    */
   const decompressDataWithPython = useCallback((compressedData) => {
     return new Promise((resolve, reject) => {
+      // CORREÇÃO 1: Verificar se worker foi inicializado
       const worker = initPythonWorker();
+      if (!worker) {
+        reject(new Error('Worker Python não disponível'));
+        return;
+      }
+
       const messageId = `decompress_${Date.now()}`;
 
       const handleMessage = (event) => {
@@ -145,18 +208,33 @@ export const useOfflineSync = () => {
         }
       };
 
-      worker.addEventListener('message', handleMessage);
+      const handleError = (event) => {
+        worker.removeEventListener('error', handleError);
+        console.error('❌ Erro no Worker Python:', event);
+        reject(new Error('Erro ao processar no Worker Python'));
+      };
 
-      worker.postMessage({
-        id: messageId,
-        type: 'DECOMPRESS_DATA',
-        payload: { compressedData }
-      });
+      worker.addEventListener('message', handleMessage);
+      worker.addEventListener('error', handleError);
+
+      try {
+        worker.postMessage({
+          id: messageId,
+          type: 'DECOMPRESS_DATA',
+          payload: { compressedData }
+        });
+      } catch (error) {
+        worker.removeEventListener('message', handleMessage);
+        worker.removeEventListener('error', handleError);
+        reject(error);
+        return;
+      }
 
       // Timeout de 30 segundos
       setTimeout(() => {
         worker.removeEventListener('message', handleMessage);
-        reject(new Error('Timeout ao descomprimir dados'));
+        worker.removeEventListener('error', handleError);
+        reject(new Error('Timeout ao descomprimir dados - Worker não respondeu'));
       }, 30000);
     });
   }, [initPythonWorker]);
@@ -169,23 +247,54 @@ export const useOfflineSync = () => {
       await initIndexedDB();
     }
 
+    // CORREÇÃO 5: Verificar permissões de armazenamento
+    if (navigator.storage && navigator.storage.persist) {
+      const isPersisted = await navigator.storage.persisted();
+      if (!isPersisted) {
+        console.log('⏳ Solicitando armazenamento persistente...');
+        const granted = await navigator.storage.persist();
+        if (granted) {
+          console.log('✅ Armazenamento persistente concedido');
+        } else {
+          console.warn('⚠️ Armazenamento persistente negado - dados podem ser limpos pelo navegador');
+        }
+      }
+    }
+
     return new Promise((resolve, reject) => {
-      const transaction = dbRef.current.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
+      try {
+        const transaction = dbRef.current.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
 
-      const record = {
-        id: collectionName,
-        collection: collectionName,
-        data: data,
-        compressed: compressed,
-        timestamp: Date.now(),
-        count: Array.isArray(data) ? data.length : Object.keys(data).length
-      };
+        const record = {
+          id: collectionName,
+          collection: collectionName,
+          data: data,
+          compressed: compressed,
+          timestamp: Date.now(),
+          count: Array.isArray(data) ? data.length : Object.keys(data).length
+        };
 
-      const request = store.put(record);
+        const request = store.put(record);
 
-      request.onsuccess = () => resolve(record);
-      request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          console.log(`💾 ${collectionName} salvo no cache (${record.count} registros)`);
+          resolve(record);
+        };
+        
+        request.onerror = () => {
+          console.error(`❌ Erro ao salvar ${collectionName}:`, request.error);
+          reject(request.error);
+        };
+
+        transaction.onerror = () => {
+          console.error(`❌ Erro na transação ao salvar ${collectionName}:`, transaction.error);
+          reject(transaction.error);
+        };
+      } catch (error) {
+        console.error(`❌ Erro ao criar transação para ${collectionName}:`, error);
+        reject(error);
+      }
     });
   }, [initIndexedDB]);
 
@@ -304,12 +413,19 @@ export const useOfflineSync = () => {
               console.log(`✅ ${collectionName} comprimido com sucesso`);
             } catch (compressError) {
               console.warn(`⚠️ Falha ao comprimir ${collectionName}, salvando sem compressão:`, compressError);
+              // CORREÇÃO: Fallback - salvar sem compressão se Python falhar
               dataToStore = data;
+              isCompressed = false;
             }
           }
 
           // Salvar no IndexedDB
-          await saveToIndexedDB(collectionName, dataToStore, isCompressed);
+          try {
+            await saveToIndexedDB(collectionName, dataToStore, isCompressed);
+          } catch (dbError) {
+            console.error(`❌ Erro ao salvar ${collectionName} no IndexedDB:`, dbError);
+            // CORREÇÃO: Continuar mesmo se salvar falhar (usar dados em memória)
+          }
           
           // Adicionar aos dados em memória (usar dados originais, não comprimidos)
           allData[collectionName] = data;
@@ -479,20 +595,38 @@ export const useOfflineSync = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        // Tentar carregar do cache primeiro
-        const cached = await loadCachedData();
+        // CORREÇÃO: Tentar inicializar IndexedDB com fallback
+        let cacheAvailable = true;
+        try {
+          await initIndexedDB();
+        } catch (dbError) {
+          console.warn('⚠️ IndexedDB não disponível, cache desabilitado:', dbError);
+          cacheAvailable = false;
+          setError('Cache offline não disponível neste navegador');
+        }
 
-        if (cached) {
-          console.log('✅ Dados carregados do cache, app pronto para uso offline');
+        // Tentar carregar do cache primeiro (se disponível)
+        if (cacheAvailable) {
+          const cached = await loadCachedData();
+
+          if (cached) {
+            console.log('✅ Dados carregados do cache, app pronto para uso offline');
+          }
         }
 
         // Se online, sincronizar em background
         if (isOnline) {
           console.log('🌐 Online - iniciando sincronização em background...');
-          syncAllCollections().catch(console.error);
+          syncAllCollections().catch(err => {
+            console.error('❌ Erro na sincronização automática:', err);
+            setError(`Erro na sincronização: ${err.message}`);
+          });
           setupRealtimeListeners();
         } else {
           console.log('📴 Offline - usando dados em cache');
+          if (!cacheAvailable) {
+            setError('Sem conexão e cache não disponível - algumas funcionalidades podem não funcionar');
+          }
         }
       } catch (error) {
         console.error('❌ Erro na inicialização:', error);
@@ -504,7 +638,13 @@ export const useOfflineSync = () => {
 
     // Cleanup
     return () => {
-      unsubscribersRef.current.forEach(unsub => unsub());
+      unsubscribersRef.current.forEach(unsub => {
+        try {
+          unsub();
+        } catch (error) {
+          console.error('Erro ao limpar listener:', error);
+        }
+      });
       unsubscribersRef.current = [];
     };
   }, []);
