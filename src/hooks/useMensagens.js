@@ -4,6 +4,7 @@ import mensagensService from '../services/mensagensService';
 import {
   USER_STATUS,
   MESSAGE_TYPE,
+  MESSAGE_STATUS,
   LIMITS,
   UI_CONFIG,
   NOTIFICATION_SOUNDS
@@ -120,7 +121,12 @@ export const useMensagens = () => {
                     const novasConversas = [...prevConversas];
                     const conversaAtualizada = {
                       ...novasConversas[conversaIndex],
-                      ultimaMensagem: novaMensagem.textoOriginal || novaMensagem.texto,
+                      ultimaMensagem: {
+                        texto: novaMensagem.texto,
+                        remetenteId: novaMensagem.remetenteId,
+                        timestamp: novaMensagem.timestampLocal || new Date(novaMensagem.timestampCliente || Date.now()),
+                        timestampCliente: novaMensagem.timestampCliente
+                      },
                       atualizadaEm: novaMensagem.timestampLocal || new Date(novaMensagem.timestampCliente || Date.now()),
                       // Incrementar não lidas apenas se não estiver na conversa ativa
                       naoLidas: conversaAtivaRef.current?.id === conversa.id 
@@ -451,11 +457,24 @@ export const useMensagens = () => {
           return true;
         });
 
-        console.trace('Stack trace do callback');
-
-        setConversas(conversasFiltradas);
+        // ⚡ PRESERVAR estado local do badge se conversa está ativa
+        setConversas(prevConversas => {
+          return conversasFiltradas.map(conversa => {
+            // Se esta conversa está ativa, manter naoLidas = 0
+            if (conversaAtivaRef.current?.id === conversa.id) {
+              return { ...conversa, naoLidas: 0 };
+            }
+            return conversa;
+          });
+        });
+        
         setLoading(false);
-        atualizarTotalNaoLidas(conversasFiltradas);
+        
+        // Calcular total de não lidas considerando conversa ativa
+        const conversasComBadgeCorrigido = conversasFiltradas.map(c => 
+          c.id === conversaAtivaRef.current?.id ? { ...c, naoLidas: 0 } : c
+        );
+        atualizarTotalNaoLidas(conversasComBadgeCorrigido);
         
         // Configurar listeners globais para todas as conversas
         setupGlobalMessageListeners(novasConversas);
@@ -509,9 +528,6 @@ export const useMensagens = () => {
 
   // MONITOR: Rastrear TODAS as mudancas no estado conversas
   useEffect(() => {
-
-    console.trace('Stack trace da mudanca');
-
     // ALERTA CRITICO: Se conversas ficarem vazias mas backup tem dados
     if (conversas.length === 0 && conversasBackupRef.current.length > 0) {
       console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
@@ -535,9 +551,6 @@ export const useMensagens = () => {
    * Seleciona uma conversa para abrir
    */
   const selecionarConversa = useCallback((conversa) => {
-
-    console.trace('Stack trace da chamada:');
-
     // Se for a mesma conversa, nao fazer nada
     if (conversaAtivaRef.current?.id === conversa.id) {
 
@@ -698,10 +711,16 @@ export const useMensagens = () => {
       if (conversaIndex === -1) return prevConversas;
       
       const novasConversas = [...prevConversas];
+      const agora = new Date();
       const conversaAtualizada = {
         ...novasConversas[conversaIndex],
-        ultimaMensagem: textoTrimmed.substring(0, 50),
-        atualizadaEm: new Date(),
+        ultimaMensagem: {
+          texto: textoTrimmed.substring(0, 50),
+          remetenteId: usuario.id,
+          timestamp: agora,
+          timestampCliente: agora.getTime()
+        },
+        atualizadaEm: agora,
       };
       
       // Mover para o topo
@@ -781,10 +800,16 @@ export const useMensagens = () => {
         const tipoEmoji = tipo === MESSAGE_TYPE.IMAGEM ? '🖼️' : 
                          tipo === MESSAGE_TYPE.AUDIO ? '🎵' : 
                          tipo === MESSAGE_TYPE.VIDEO ? '🎥' : '📎';
+        const agora = new Date();
         const conversaAtualizada = {
           ...novasConversas[conversaIndex],
-          ultimaMensagem: `${tipoEmoji} ${tipo}`,
-          atualizadaEm: new Date(),
+          ultimaMensagem: {
+            texto: `${tipoEmoji} ${tipo}`,
+            remetenteId: usuario.id,
+            timestamp: agora,
+            timestampCliente: agora.getTime()
+          },
+          atualizadaEm: agora,
         };
         
         // Mover para o topo

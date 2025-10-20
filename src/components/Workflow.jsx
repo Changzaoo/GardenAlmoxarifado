@@ -3376,10 +3376,10 @@ const AlmoxarifadoSistema = () => {
                     >
                       <div className="relative">
                         <Icone className="w-6 h-6 mb-1" />
-                        {aba.id === 'notificacoes' && (
+                        {aba.id === 'notificacoes' && abaAtiva !== 'notificacoes' && (
                           <MessagesBadge count={notificationUnreadCount} size="sm" max={9} />
                         )}
-                        {aba.id === 'mensagens' && (
+                        {aba.id === 'mensagens' && abaAtiva !== 'mensagens' && (
                           <MessagesBadge count={mensagensNaoLidas} size="sm" max={99} />
                         )}
                       </div>
@@ -3536,10 +3536,10 @@ const AlmoxarifadoSistema = () => {
                           ? 'text-white' 
                           : 'text-gray-700 dark:text-[#E7E9EA] group-hover:text-blue-500 dark:group-hover:text-[#1D9BF0]'
                       }`} />
-                      {aba.id === 'notificacoes' && (
+                      {aba.id === 'notificacoes' && abaAtiva !== 'notificacoes' && (
                         <MessagesBadge count={notificationUnreadCount} size="md" max={9} />
                       )}
-                      {aba.id === 'mensagens' && (
+                      {aba.id === 'mensagens' && abaAtiva !== 'mensagens' && (
                         <MessagesBadge count={mensagensNaoLidas} size="md" max={99} />
                       )}
                       {/* Indicador de página favorita */}

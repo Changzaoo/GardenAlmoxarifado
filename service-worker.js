@@ -188,7 +188,7 @@ self.addEventListener('push', (event) => {
 
 // Clique na notificação
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notificação clicada:', event.action);
+  console.log('[SW] Notificação clicada:', event.action, event.notification.data);
   
   event.notification.close();
   
@@ -204,23 +204,47 @@ self.addEventListener('notificationclick', (event) => {
     }
   }
   
-  const urlToOpen = event.notification.data?.url || '/#/mensagens';
+  const conversaId = event.notification.data?.conversaId;
+  const urlToOpen = conversaId 
+    ? `${self.registration.scope}#/mensagens?conversa=${conversaId}` 
+    : `${self.registration.scope}#/mensagens`;
+  
+  console.log('[SW] Abrindo URL:', urlToOpen);
   
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then(windowClients => {
-        // Verificar se já existe uma janela aberta
+    clients.matchAll({ 
+      type: 'window', 
+      includeUncontrolled: true 
+    }).then(windowClients => {
+        // Procurar janela aberta
+        let clientToFocus = null;
+        
         for (let client of windowClients) {
-          if (client.url.includes('mensagens') && 'focus' in client) {
-            client.postMessage({
-              type: 'NOTIFICATION_CLICKED',
-              conversaId: event.notification.data?.conversaId
-            });
-            return client.focus();
+          if (client.url === urlToOpen || client.url.includes('/mensagens')) {
+            clientToFocus = client;
+            break;
           }
         }
         
-        // Abrir nova janela
+        // Se encontrou janela aberta, focar e enviar mensagem
+        if (clientToFocus) {
+          console.log('[SW] Focando cliente existente');
+          clientToFocus.postMessage({
+            type: 'NOTIFICATION_CLICKED',
+            conversaId: conversaId,
+            action: event.action
+          });
+          return clientToFocus.focus().then(() => {
+            // Navegar para a conversa específica
+            if (conversaId) {
+              clientToFocus.navigate?.(urlToOpen);
+            }
+            return clientToFocus;
+          });
+        }
+        
+        // Caso contrário, abrir nova janela
+        console.log('[SW] Abrindo nova janela');
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }

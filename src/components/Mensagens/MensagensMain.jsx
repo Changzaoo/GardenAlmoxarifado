@@ -4,6 +4,7 @@ import ListaConversas from './ListaConversas';
 import JanelaChat from './JanelaChat';
 import NovaConversa from './NovaConversa';
 import NotificationSettings from './NotificationSettings';
+import FloatingChatHeads from './FloatingChatHeads';
 import { useMensagens } from '../../hooks/useMensagens';
 import { useAuth } from '../../hooks/useAuth';
 import notificationManager from '../../services/notificationManager';
@@ -45,6 +46,57 @@ const MensagensMain = () => {
   useEffect(() => {
 
   }, [conversas, loading]);
+
+  // Verificar query params para abrir conversa via notificação
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const conversaId = params.get('conversa');
+    
+    if (conversaId && conversas.length > 0) {
+      const conversa = conversas.find(c => c.id === conversaId);
+      if (conversa) {
+        // Abrir chat head flutuante
+        setTimeout(() => {
+          if (window.openFloatingChat) {
+            window.openFloatingChat(conversaId);
+          } else {
+            // Fallback: abrir conversa normalmente
+            selecionarConversa(conversaId);
+            setShowChat(true);
+          }
+        }, 500);
+        
+        // Limpar query param
+        window.history.replaceState({}, '', window.location.pathname + window.location.hash.split('?')[0]);
+      }
+    }
+  }, [conversas, selecionarConversa]);
+
+  // Escutar mensagens do Service Worker
+  useEffect(() => {
+    const handleSWMessage = (event) => {
+      if (event.data?.type === 'NOTIFICATION_CLICKED' && event.data?.conversaId) {
+        const conversaId = event.data.conversaId;
+        
+        // Abrir chat head flutuante
+        setTimeout(() => {
+          if (window.openFloatingChat) {
+            window.openFloatingChat(conversaId);
+          } else {
+            // Fallback: abrir conversa normalmente
+            selecionarConversa(conversaId);
+            setShowChat(true);
+          }
+        }, 300);
+      }
+    };
+
+    navigator.serviceWorker?.addEventListener('message', handleSWMessage);
+    
+    return () => {
+      navigator.serviceWorker?.removeEventListener('message', handleSWMessage);
+    };
+  }, [selecionarConversa]);
 
   // Inicializar sistema avançado de notificações
   useEffect(() => {
@@ -211,6 +263,9 @@ const MensagensMain = () => {
           onClose={() => setShowNotificationSettings(false)}
         />
       )}
+
+      {/* Conversas Flutuantes (Chat Heads) - Estilo Messenger */}
+      <FloatingChatHeads />
 
       {/* Janela de chat - Desktop sempre visível, Mobile condicional */}
       <div className={`
