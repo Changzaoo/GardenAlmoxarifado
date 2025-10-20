@@ -158,8 +158,8 @@ const MensagensMain = () => {
         // Mostrar notificação de teste
         new Notification('Notificações Ativadas! 🔔', {
           body: 'Você receberá notificações de novas mensagens',
-          icon: '/logo192.png',
-          badge: '/logo192.png',
+          icon: '/logo.png',
+          badge: '/logo.png',
           tag: 'notification-enabled'
         });
       } else {
@@ -230,7 +230,7 @@ const MensagensMain = () => {
   };
 
   return (
-    <div className="h-full flex bg-gray-100 dark:bg-gray-900 overflow-hidden">
+    <div className="absolute inset-0 lg:relative lg:h-full flex bg-gray-100 dark:bg-gray-900 overflow-hidden">
       {/* Lista de conversas - Desktop sempre visível, Mobile condicional */}
       <div className={`
         w-full lg:w-80 xl:w-96 border-r border-gray-200 dark:border-gray-700 h-full flex-shrink-0

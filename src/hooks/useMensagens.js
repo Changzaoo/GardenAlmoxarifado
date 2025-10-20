@@ -10,8 +10,9 @@ import {
   NOTIFICATION_SOUNDS
 } from '../constants/mensagensConstants';
 import { toast } from 'react-toastify';
+import { MessageToast } from '../components/Mensagens/MessageToast';
 import { db } from '../firebaseConfig';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { listenerManager, QUERY_LIMITS } from '../utils/memoryOptimization';
 
 /**
@@ -107,12 +108,16 @@ export const useMensagens = () => {
               
               if (ultimaMensagemId !== novaMensagem.id) {
                 console.log('📬 NOVA MENSAGEM recebida:', novaMensagem.id, 'na conversa:', conversa.id);
+                console.log('📖 Já lida?', novaMensagem.leitaPor?.includes(usuario.id), 'por:', novaMensagem.leitaPor);
 
                 // Atualizar cache
                 ultimasMensagensCache.current[conversa.id] = novaMensagem.id;
                 
                 // Se não for do usuário atual
                 if (novaMensagem.remetenteId !== usuario.id) {
+                  // ✅ VERIFICAR SE JÁ FOI LIDA - Sincronização entre dispositivos
+                  const jaLida = novaMensagem.leitaPor && novaMensagem.leitaPor.includes(usuario.id);
+                  
                   // ⚡ ATUALIZAÇÃO INSTANTÂNEA da lista de conversas
                   setConversas(prevConversas => {
                     const conversaIndex = prevConversas.findIndex(c => c.id === conversa.id);
@@ -128,8 +133,10 @@ export const useMensagens = () => {
                         timestampCliente: novaMensagem.timestampCliente
                       },
                       atualizadaEm: novaMensagem.timestampLocal || new Date(novaMensagem.timestampCliente || Date.now()),
-                      // Incrementar não lidas apenas se não estiver na conversa ativa
-                      naoLidas: conversaAtivaRef.current?.id === conversa.id 
+                      // ✅ Incrementar não lidas apenas se:
+                      // 1. Não estiver na conversa ativa E
+                      // 2. Mensagem ainda não foi lida (sincronização multi-dispositivo)
+                      naoLidas: (conversaAtivaRef.current?.id === conversa.id || jaLida)
                         ? 0 
                         : (novasConversas[conversaIndex].naoLidas || 0) + 1
                     };
@@ -145,8 +152,8 @@ export const useMensagens = () => {
                     return novasConversas;
                   });
                   
-                  // ⚡ Se não estiver na conversa ativa, tocar som e mostrar notificação
-                  if (conversaAtivaRef.current?.id !== conversa.id) {
+                  // ⚡ Se não estiver na conversa ativa E mensagem não foi lida, tocar som e mostrar notificação
+                  if (conversaAtivaRef.current?.id !== conversa.id && !jaLida) {
                     // Tocar som de notificação
                     playNotificationSound();
                     
@@ -234,19 +241,49 @@ export const useMensagens = () => {
 
       // Se está na página e janela ativa, apenas mostrar toast
       if (isOnMessagesPage && isWindowActive) {
-        toast.info(`💬 ${remetente}: ${mensagem}`, {
-          autoClose: 4000,
-          position: 'top-right',
-          onClick: () => {
-            if (conversaId) {
-              const conversaAtual = conversas.find(c => c.id === conversaId);
-              if (conversaAtual) {
-                setConversaAtiva(conversaAtual);
-                conversaAtivaRef.current = conversaAtual;
+        const toastId = toast(
+          <MessageToast 
+            remetente={remetente}
+            mensagem={mensagem}
+            conversaId={conversaId}
+            onAbrir={async () => {
+              // Marcar conversa como ativa
+              if (conversaId) {
+                const conversaAtual = conversas.find(c => c.id === conversaId);
+                if (conversaAtual) {
+                  setConversaAtiva(conversaAtual);
+                  conversaAtivaRef.current = conversaAtual;
+                  
+                  // Marcar mensagens como lidas usando o serviço
+                  try {
+                    const mensagensNaoLidas = mensagens
+                      .filter(m => m.conversaId === conversaId && !m.lida && m.remetenteId !== usuario?.id)
+                      .map(m => m.id);
+                    
+                    if (mensagensNaoLidas.length > 0) {
+                      await mensagensService.markAsRead(conversaId, usuario.id, mensagensNaoLidas);
+                    }
+                  } catch (error) {
+                    console.error('Erro ao marcar mensagens como lidas:', error);
+                  }
+                }
               }
-            }
+              toast.dismiss(toastId);
+            }}
+            onFechar={() => {
+              toast.dismiss(toastId);
+            }}
+          />,
+          {
+            autoClose: false,
+            closeButton: false,
+            position: 'top-right',
+            hideProgressBar: true,
+            className: 'p-0',
+            bodyClassName: 'p-0',
+            style: { background: 'transparent', boxShadow: 'none' }
           }
-        });
+        );
         return;
       }
 
@@ -269,8 +306,8 @@ export const useMensagens = () => {
             if (registration.showNotification) {
               return registration.showNotification(remetente || 'Nova Mensagem', {
                 body: mensagem.substring(0, 100) + (mensagem.length > 100 ? '...' : ''),
-                icon: '/logo192.png',
-                badge: '/logo192.png',
+                icon: '/logo.png',
+                badge: '/logo.png',
                 tag: `msg-${conversaId}`,
                 data: {
                   conversaId,
@@ -330,8 +367,8 @@ export const useMensagens = () => {
       try {
         const notification = new Notification(remetente || 'Nova Mensagem', {
           body: mensagem.substring(0, 100),
-          icon: '/logo192.png',
-          badge: '/logo192.png',
+          icon: '/logo.png',
+          badge: '/logo.png',
           tag: `msg-${conversaId}`,
           requireInteraction: false,
           vibrate: [200, 100, 200],

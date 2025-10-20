@@ -3823,7 +3823,7 @@ const AlmoxarifadoSistema = () => {
         userId={usuario.id}
       />
 
-      <main className={`${isMobile ? 'pt-16 pb-20' : `${menuRecolhido ? 'pl-16' : 'pl-80'} transition-all duration-300 ease-in-out`} w-full h-screen overflow-hidden bg-white dark:bg-black`}>
+      <main className={`${isMobile ? (abaAtiva === 'mensagens' ? 'pt-0 pb-0' : 'pt-16 pb-20') : `${menuRecolhido ? 'pl-16' : 'pl-80'} transition-all duration-300 ease-in-out`} w-full h-screen overflow-hidden bg-white dark:bg-black`}>
         <div className={`h-full ${abaAtiva === 'mensagens' ? '' : 'max-w-5xl mx-auto px-4 overflow-y-auto'}`}>
           <div className={abaAtiva === 'mensagens' ? 'h-full' : 'py-3'}>
 

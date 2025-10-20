@@ -75,8 +75,8 @@ const NotificationSettings = ({ onClose }) => {
         if (registration.showNotification) {
           await registration.showNotification('Teste de Notificação 🔔', {
             body: 'Esta é uma notificação de teste do WorkFlow',
-            icon: '/logo192.png',
-            badge: '/logo192.png',
+            icon: '/logo.png',
+            badge: '/logo.png',
             tag: 'test-notification',
             requireInteraction: false,
             vibrate: preferences.vibration ? [200, 100, 200] : [],
@@ -87,8 +87,8 @@ const NotificationSettings = ({ onClose }) => {
         // Notificação básica
         const notification = new Notification('Teste de Notificação 🔔', {
           body: 'Esta é uma notificação de teste do WorkFlow',
-          icon: '/logo192.png',
-          badge: '/logo192.png',
+          icon: '/logo.png',
+          badge: '/logo.png',
           requireInteraction: false,
           vibrate: preferences.vibration ? [200, 100, 200] : []
         });

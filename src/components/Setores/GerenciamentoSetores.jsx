@@ -1,12 +1,22 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { db } from '../../firebaseConfig';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { Briefcase, Clock, Plus, Edit2, Trash2, Save, X, AlertTriangle, User, Users, FileText, Calendar, DollarSign, Package, AlertOctagon, TrendingUp, ArrowRightLeft, Star, Award, CheckCircle, Filter, SortAsc, ClipboardList, Timer, Info, Grid3X3, List, Mail, MapPin, Phone } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { isAdmin as checkIsAdmin, hasManagementPermission } from '../../constants/permissoes';
 import SafeImage from '../common/SafeImage';
+import { usePythonCalculations } from '../../hooks/usePythonCalculations';
 
 const GerenciamentoSetores = ({ usuarioAtual }) => {
+  // Hook Python para cálculos otimizados
+  const { 
+    isPythonReady, 
+    isInitializing,
+    calcularValoresSetor: calcularValoresSetorPython,
+    calcularValoresSetoresBatch,
+    calcularEstatisticasFuncionario: calcularEstatisticasFuncionarioPython
+  } = usePythonCalculations();
+
   // Estados principais
   const [setorSelecionado, setSetorSelecionado] = useState(null);
   const [setores, setSetores] = useState([]);
@@ -14,6 +24,9 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
   const [funcionarios, setFuncionarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editando, setEditando] = useState(null);
+  
+  // Estado para valores calculados dos setores (otimizado com Python)
+  const [valoresSetores, setValoresSetores] = useState({});
 
   // Cache para evitar recarregamentos desnecessários
   const cacheRef = useRef({
@@ -82,8 +95,19 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     cacheRef.current.lastUpdate = null;
   };
 
-  // Função para carregar dados financeiros - otimizada
+  // Função para carregar dados financeiros - otimizada com lazy loading
   const carregarDadosFinanceiros = async () => {
+    // Verificar cache
+    if (cacheRef.current.dadosFinanceiros && 
+        Date.now() - (cacheRef.current.lastUpdateFinanceiros || 0) < cacheRef.current.ttl) {
+      console.log('💾 Usando dados financeiros do cache');
+      const cached = cacheRef.current.dadosFinanceiros;
+      setInventario(cached.inventarioData);
+      setFerramentasDanificadas(cached.danificadasData);
+      setFerramentasPerdidas(cached.perdidasData);
+      return cached;
+    }
+
     try {
       // Carregar todas as collections financeiras em paralelo
       const [inventarioSnap, danificadasSnap, perdidasSnap] = await Promise.all([
@@ -100,44 +124,63 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
       setFerramentasDanificadas(danificadasData);
       setFerramentasPerdidas(perdidasData);
 
-      return { inventarioData, danificadasData, perdidasData };
+      // Salvar no cache
+      const result = { inventarioData, danificadasData, perdidasData };
+      cacheRef.current.dadosFinanceiros = result;
+      cacheRef.current.lastUpdateFinanceiros = Date.now();
+
+      return result;
     } catch (error) {
       console.error('Erro ao carregar dados financeiros:', error);
       return { inventarioData: [], danificadasData: [], perdidasData: [] };
     }
   };
 
-  // Função para calcular valores do setor
-  const calcularValoresSetor = (setorId, setorNome) => {
-    const itensSetor = inventario.filter(item => 
-      item.setorId === setorId || item.setorNome === setorNome
-    );
+  // Função para calcular valores do setor - otimizada com Python/useCallback
+  const calcularValoresSetor = useCallback(async (setorId, setorNome) => {
+    try {
+      // Usar versão Python otimizada (com fallback automático para JS)
+      const resultado = await calcularValoresSetorPython(
+        setorId,
+        setorNome,
+        inventario,
+        ferramentasDanificadas,
+        ferramentasPerdidas
+      );
+      return resultado;
+    } catch (error) {
+      console.error('Erro ao calcular valores do setor:', error);
+      // Fallback manual se tudo falhar
+      const itensSetor = inventario.filter(item => 
+        item.setorId === setorId || item.setorNome === setorNome
+      );
 
-    const valorBruto = itensSetor.reduce((sum, item) => {
-      const valor = parseFloat(item.valorUnitario || 0);
-      const qtd = parseInt(item.quantidade || 0);
-      return sum + (valor * qtd);
-    }, 0);
+      const valorBruto = itensSetor.reduce((sum, item) => {
+        const valor = parseFloat(item.valorUnitario || 0);
+        const qtd = parseInt(item.quantidade || 0);
+        return sum + (valor * qtd);
+      }, 0);
 
-    const danificadasSetor = ferramentasDanificadas.filter(d => 
-      itensSetor.some(i => i.nome.toLowerCase().trim() === d.nomeItem?.toLowerCase().trim())
-    );
-    const valorDanificadas = danificadasSetor.reduce((sum, d) => sum + (parseFloat(d.valorEstimado) || 0), 0);
+      const danificadasSetor = ferramentasDanificadas.filter(d => 
+        itensSetor.some(i => i.nome.toLowerCase().trim() === d.nomeItem?.toLowerCase().trim())
+      );
+      const valorDanificadas = danificadasSetor.reduce((sum, d) => sum + (parseFloat(d.valorEstimado) || 0), 0);
 
-    const perdidasSetor = ferramentasPerdidas.filter(p => 
-      itensSetor.some(i => i.nome.toLowerCase().trim() === p.nomeItem?.toLowerCase().trim())
-    );
-    const valorPerdidas = perdidasSetor.reduce((sum, p) => sum + (parseFloat(p.valorEstimado) || 0), 0);
+      const perdidasSetor = ferramentasPerdidas.filter(p => 
+        itensSetor.some(i => i.nome.toLowerCase().trim() === p.nomeItem?.toLowerCase().trim())
+      );
+      const valorPerdidas = perdidasSetor.reduce((sum, p) => sum + (parseFloat(p.valorEstimado) || 0), 0);
 
-    return {
-      valorBruto,
-      valorDanificadas,
-      valorPerdidas,
-      valorLiquido: valorBruto - valorDanificadas - valorPerdidas,
-      totalItens: itensSetor.length,
-      quantidadeTotal: itensSetor.reduce((sum, item) => sum + parseInt(item.quantidade || 0), 0)
-    };
-  };
+      return {
+        valorBruto,
+        valorDanificadas,
+        valorPerdidas,
+        valorLiquido: valorBruto - valorDanificadas - valorPerdidas,
+        totalItens: itensSetor.length,
+        quantidadeTotal: itensSetor.reduce((sum, item) => sum + parseInt(item.quantidade || 0), 0)
+      };
+    }
+  }, [inventario, ferramentasDanificadas, ferramentasPerdidas, calcularValoresSetorPython]);
 
   // Função utilitária para gerar URL de avatar padrão
   const getAvatarUrl = (nome) => {
@@ -145,8 +188,16 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=3b82f6&color=fff&size=200&bold=true`;
   };
 
-  // Função para carregar funcionários - otimizada
+  // Função para carregar funcionários - otimizada com cache
   const carregarFuncionarios = async () => {
+    // Verificar cache
+    if (cacheRef.current.funcionarios && 
+        Date.now() - (cacheRef.current.lastUpdateFuncionarios || 0) < cacheRef.current.ttl) {
+      console.log('💾 Usando funcionários do cache');
+      setFuncionarios(cacheRef.current.funcionarios);
+      return cacheRef.current.funcionarios;
+    }
+
     try {
       const snapshot = await getDocs(collection(db, 'funcionarios'));
       const funcionariosData = snapshot.docs.map(doc => {
@@ -159,6 +210,11 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
         };
       });
       setFuncionarios(funcionariosData);
+      
+      // Salvar no cache
+      cacheRef.current.funcionarios = funcionariosData;
+      cacheRef.current.lastUpdateFuncionarios = Date.now();
+      
       return funcionariosData;
     } catch (error) {
       console.error('Erro ao carregar funcionários:', error);
@@ -219,52 +275,101 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     }
   };
 
-  // Carregar dados iniciais com otimização
+  // Carregar dados iniciais com otimização MÁXIMA
   useEffect(() => {
     const carregarDadosIniciais = async () => {
       setLoading(true);
       const startTime = Date.now();
-      const minLoadingTime = 800; // Tempo mínimo de loading (800ms)
       
       try {
-        console.log('🚀 Iniciando carregamento de dados...');
+        console.log('🚀 Iniciando carregamento OTIMIZADO de dados...');
         
-        // Carregar todos os dados em paralelo para máxima performance
-        const loadingPromises = [
-          carregarDadosFinanceiros().then(() => console.log('✓ Dados financeiros carregados')),
-          carregarSetores().then(() => console.log('✓ Setores carregados')),
-          carregarFuncionarios().then(() => console.log('✓ Funcionários carregados')),
-          carregarTarefas().then(() => console.log('✓ Tarefas carregadas')),
-          carregarPontos().then(() => console.log('✓ Pontos carregados')),
-          carregarAvaliacoes().then(() => console.log('✓ Avaliações carregadas')),
-          carregarRegistrosPonto().then(() => console.log('✓ Registros de ponto carregados'))
-        ];
+        // ⚡ FASE 1: Carregar apenas dados ESSENCIAIS primeiro (paralelo)
+        const [setoresData, funcionariosData] = await Promise.all([
+          carregarSetores().then((data) => { console.log('✓ Setores carregados'); return data; }),
+          carregarFuncionarios().then((data) => { console.log('✓ Funcionários carregados'); return data; })
+        ]);
 
-        await Promise.all(loadingPromises);
-
-        // Calcular tempo decorrido
-        const elapsedTime = Date.now() - startTime;
-        console.log(`⚡ Dados carregados em ${elapsedTime}ms`);
+        // Calcular tempo da fase 1
+        const phase1Time = Date.now() - startTime;
+        console.log(`⚡ Dados essenciais carregados em ${phase1Time}ms`);
         
-        const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+        // Liberar loading IMEDIATAMENTE para UX melhor
+        setLoading(false);
+        console.log('✅ Interface liberada para o usuário!');
 
-        // Se carregou muito rápido, aguardar o tempo mínimo para evitar flash
-        if (remainingTime > 0) {
-          console.log(`⏱️ Aguardando ${remainingTime}ms para transição suave...`);
-          await new Promise(resolve => setTimeout(resolve, remainingTime));
-        }
+        // ⚡ FASE 2: Carregar dados SECUNDÁRIOS em background (não bloqueia UI)
+        console.log('🔄 Carregando dados secundários em background...');
+        Promise.all([
+          carregarDadosFinanceiros().then(() => console.log('✓ Dados financeiros carregados (background)')),
+          carregarTarefas().then(() => console.log('✓ Tarefas carregadas (background)')),
+          carregarPontos().then(() => console.log('✓ Pontos carregados (background)')),
+          carregarAvaliacoes().then(() => console.log('✓ Avaliações carregadas (background)')),
+          carregarRegistrosPonto().then(() => console.log('✓ Registros de ponto carregados (background)'))
+        ]).then(() => {
+          const totalTime = Date.now() - startTime;
+          console.log(`✅ Carregamento completo em ${totalTime}ms (${phase1Time}ms visível para usuário)`);
+        }).catch(err => {
+          console.error('⚠️ Erro ao carregar dados secundários (não crítico):', err);
+        });
 
-        console.log('✅ Carregamento completo!');
       } catch (error) {
-        console.error('❌ Erro ao carregar dados iniciais:', error);
+        console.error('❌ Erro ao carregar dados essenciais:', error);
         toast.error('Erro ao carregar dados. Tente novamente.');
-      } finally {
         setLoading(false);
       }
     };
     
     carregarDadosIniciais();
   }, []);
+
+  // Effect para recalcular valores dos setores com Python (BATCH otimizado)
+  useEffect(() => {
+    const calcularValores = async () => {
+      if (setores.length === 0) {
+        console.log('⚠️ Nenhum setor para calcular');
+        return;
+      }
+      
+      if (inventario.length === 0) {
+        console.log('⚠️ Inventário vazio, setando valores zerados');
+        // Setar valores zerados para todos os setores
+        const valoresZerados = {};
+        setores.forEach(setor => {
+          valoresZerados[setor.id] = {
+            valorBruto: 0,
+            valorDanificadas: 0,
+            valorPerdidas: 0,
+            valorLiquido: 0,
+            totalItens: 0,
+            quantidadeTotal: 0
+          };
+        });
+        setValoresSetores(valoresZerados);
+        return;
+      }
+      
+      console.log('🐍 Iniciando cálculo de valores com Python/JS otimizado...');
+      console.log(`📊 Setores: ${setores.length}, Inventário: ${inventario.length}, Danificadas: ${ferramentasDanificadas.length}, Perdidas: ${ferramentasPerdidas.length}`);
+      
+      try {
+        // Usar versão BATCH se disponível (muito mais rápido)
+        const resultados = await calcularValoresSetoresBatch(
+          setores,
+          inventario,
+          ferramentasDanificadas,
+          ferramentasPerdidas
+        );
+        
+        console.log('✅ Valores calculados:', resultados);
+        setValoresSetores(resultados);
+      } catch (error) {
+        console.error('❌ Erro ao calcular valores:', error);
+      }
+    };
+    
+    calcularValores();
+  }, [setores, inventario, ferramentasDanificadas, ferramentasPerdidas, calcularValoresSetoresBatch]);
 
   useEffect(() => {
     if (setorSelecionado) {
@@ -274,13 +379,26 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     }
   }, [setorSelecionado]);
 
-  // Funções de carregamento - otimizadas
+  // Funções de carregamento - otimizadas com cache
   const carregarSetores = async () => {
+    // Verificar cache
+    if (cacheRef.current.setores && 
+        Date.now() - (cacheRef.current.lastUpdateSetores || 0) < cacheRef.current.ttl) {
+      console.log('💾 Usando setores do cache');
+      setSetores(cacheRef.current.setores);
+      return cacheRef.current.setores;
+    }
+
     try {
       const snapshot = await getDocs(collection(db, 'setores'));
       const setoresData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const setoresAtivos = setoresData.filter(s => s.ativo !== false);
       setSetores(setoresAtivos);
+      
+      // Salvar no cache
+      cacheRef.current.setores = setoresAtivos;
+      cacheRef.current.lastUpdateSetores = Date.now();
+      
       return setoresAtivos;
     } catch (error) {
       console.error('Erro ao carregar setores:', error);
@@ -704,9 +822,10 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     };
   }, [pontos, avaliacoes, tarefas, registrosPonto]); // Recalcular apenas quando esses dados mudarem
 
-  // Função para filtrar e ordenar funcionários
-  const filtrarEOrdenarFuncionarios = (funcionariosLista) => {
-    let resultado = [...funcionariosLista];
+  // Função para filtrar e ordenar funcionários - otimizada com useMemo
+  const funcionariosFiltradosEOrdenados = useMemo(() => {
+    console.log('🔄 Aplicando filtros e ordenação aos funcionários');
+    let resultado = [...funcionarios];
 
     // Aplicar filtro de nome
     if (filtroNome) {
@@ -744,7 +863,55 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
     }
 
     return resultado;
-  };
+  }, [funcionarios, filtroNome, filtroStatus, ordenacao, calcularEstatisticasFuncionario]);
+
+  // Memoização dos funcionários do setor selecionado com filtros aplicados
+  const funcionariosDoSetorFiltrados = useMemo(() => {
+    if (!setorSelecionado) return [];
+    
+    console.log('🔄 Filtrando funcionários do setor:', setorSelecionado.nome);
+    let funcionariosDoSetor = funcionarios.filter(func => 
+      func.setor?.toLowerCase().trim() === setorSelecionado?.nome?.toLowerCase().trim() ||
+      func.setorNome?.toLowerCase().trim() === setorSelecionado?.nome?.toLowerCase().trim()
+    );
+
+    // Aplicar filtros de nome
+    if (filtroNome) {
+      funcionariosDoSetor = funcionariosDoSetor.filter(f => 
+        f.nome?.toLowerCase().includes(filtroNome.toLowerCase())
+      );
+    }
+
+    // Aplicar filtro de status
+    if (filtroStatus !== 'todos') {
+      funcionariosDoSetor = funcionariosDoSetor.filter(f => f.status === filtroStatus);
+    }
+
+    // Aplicar ordenação
+    switch (ordenacao) {
+      case 'alfabetica':
+        funcionariosDoSetor.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+        break;
+      case 'pontos':
+        funcionariosDoSetor.sort((a, b) => {
+          const pontosA = calcularEstatisticasFuncionario(a.id).pontos;
+          const pontosB = calcularEstatisticasFuncionario(b.id).pontos;
+          return pontosB - pontosA;
+        });
+        break;
+      case 'avaliacao':
+        funcionariosDoSetor.sort((a, b) => {
+          const avalA = parseFloat(calcularEstatisticasFuncionario(a.id).avaliacaoMedia);
+          const avalB = parseFloat(calcularEstatisticasFuncionario(b.id).avaliacaoMedia);
+          return avalB - avalA;
+        });
+        break;
+      default:
+        break;
+    }
+
+    return funcionariosDoSetor;
+  }, [setorSelecionado, funcionarios, filtroNome, filtroStatus, ordenacao, calcularEstatisticasFuncionario]);
 
   // Funções auxiliares
   const handleEditar = (item, tipo) => {
@@ -780,7 +947,12 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
   };
 
   const formatarMoeda = (valor) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+    // Garantir que o valor seja um número válido
+    const valorNumerico = parseFloat(valor);
+    if (isNaN(valorNumerico)) {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0);
+    }
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorNumerico);
   };
 
   if (loading) {
@@ -910,7 +1082,15 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
               ) : (
                 setores.map(setor => {
                   const isSelected = setorSelecionado?.id === setor.id;
-                  const valores = calcularValoresSetor(setor.id, setor.nome);
+                  // Usar valores pre-calculados do estado (otimizado com Python)
+                  const valores = valoresSetores[setor.id] || {
+                    valorBruto: 0,
+                    valorDanificadas: 0,
+                    valorPerdidas: 0,
+                    valorLiquido: 0,
+                    totalItens: 0,
+                    quantidadeTotal: 0
+                  };
 
                   return (
                     <div
@@ -1040,7 +1220,15 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
 
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                   {(() => {
-                    const valores = calcularValoresSetor(setorSelecionado.id, setorSelecionado.nome);
+                    // Usar valores pré-calculados do estado
+                    const valores = valoresSetores[setorSelecionado.id] || {
+                      valorBruto: 0,
+                      valorDanificadas: 0,
+                      valorPerdidas: 0,
+                      valorLiquido: 0,
+                      totalItens: 0,
+                      quantidadeTotal: 0
+                    };
                     
                     return (
                       <>
@@ -1314,15 +1502,7 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
 
                 <div className="p-3 md:p-4 space-y-3">
                   {(() => {
-                    let funcionariosDoSetor = funcionarios.filter(func => 
-                      func.setor?.toLowerCase().trim() === setorSelecionado?.nome?.toLowerCase().trim() ||
-                      func.setorNome?.toLowerCase().trim() === setorSelecionado?.nome?.toLowerCase().trim()
-                    );
-
-                    // Aplicar filtros e ordenação
-                    funcionariosDoSetor = filtrarEOrdenarFuncionarios(funcionariosDoSetor);
-
-                    if (funcionariosDoSetor.length === 0) {
+                    if (funcionariosDoSetorFiltrados.length === 0) {
                       return (
                         <div className="text-center py-12">
                           <Users className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
@@ -1340,7 +1520,7 @@ const GerenciamentoSetores = ({ usuarioAtual }) => {
                       );
                     }
 
-                    return funcionariosDoSetor.map(funcionario => {
+                    return funcionariosDoSetorFiltrados.map(funcionario => {
                       const stats = calcularEstatisticasFuncionario(funcionario.id);
                       
                       // Visualização em Lista

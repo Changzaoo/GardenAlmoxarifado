@@ -25,6 +25,7 @@ import DetalhesTarefasModal from './DetalhesTarefasModal';
 import DetalhesAvaliacoesModal from './DetalhesAvaliacoesModal';
 import AvaliacoesList from './AvaliacoesList';
 import DetalhamentoPontosTab from './DetalhamentoPontosTab';
+import CardEstatisticasPonto from './CardEstatisticasPonto';
 import { collection, query, where, getDocs, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -697,8 +698,24 @@ const ProfileTab = () => {
           </div>
         )}
         {activeTab === 'workponto' && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
-            <WorkPontoTab />
+          <div className="space-y-6">
+            {/* Card de Estatísticas de Ponto - COM PYTHON */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Trophy className="w-6 h-6 text-blue-500" />
+                Estatísticas do Mês
+              </h3>
+              <CardEstatisticasPonto 
+                funcionarioId={usuario?.id} 
+                mes={new Date().getMonth() + 1} 
+                ano={new Date().getFullYear()} 
+              />
+            </div>
+
+            {/* Registro de Ponto */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+              <WorkPontoTab />
+            </div>
           </div>
         )}
         {activeTab === 'tarefas' && (

@@ -19,14 +19,16 @@ const MessageBubble = ({ mensagem, isOwn, showAvatar }) => {
   const getStatusIcon = () => {
     if (!isOwn) return null;
 
-    const status = mensagem.status || {};
+    // ✅ SINCRONIZADO: Verificar array leitaPor
+    const leitaPor = mensagem.leitaPor || [];
+    const entregueA = mensagem.entregueA || [];
     
-    // Verificar se foi lida por alguém
-    const foiLida = status.lida && Object.values(status.lida).some(v => v === true && v !== mensagem.remetenteId);
+    // Verificar se foi lida por alguém (exceto o remetente)
+    const foiLida = leitaPor.some(userId => userId !== mensagem.remetenteId);
     
     if (foiLida) {
       return <CheckCheck className="w-4 h-4 text-blue-500" />;
-    } else if (status.entregue) {
+    } else if (entregueA.length > 0) {
       return <CheckCheck className="w-4 h-4 text-gray-400" />;
     } else {
       return <Check className="w-4 h-4 text-gray-400" />;

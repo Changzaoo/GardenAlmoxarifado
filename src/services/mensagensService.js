@@ -16,7 +16,8 @@ import {
   Timestamp,
   writeBatch,
   increment,
-  runTransaction
+  runTransaction,
+  arrayUnion
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebaseConfig';
@@ -572,27 +573,34 @@ class MensagensService {
 
   /**
    * Marca mensagens como lidas
+   * ✅ SINCRONIZADO: Adiciona userId ao array leitaPor sem sobrescrever
+   * Funciona em múltiplos dispositivos simultaneamente
    */
   async markMessagesAsRead(conversaId, userId, mensagensIds) {
     try {
+      if (!mensagensIds || mensagensIds.length === 0) return;
+
       const batch = writeBatch(db);
       const mensagensRef = collection(db, `conversas/${conversaId}/mensagens`);
 
-      mensagensIds.forEach(msgId => {
+      // Para cada mensagem, adicionar userId ao array leitaPor
+      for (const msgId of mensagensIds) {
         const msgRef = doc(mensagensRef, msgId);
         batch.update(msgRef, {
           status: MESSAGE_STATUS.LIDA,
-          [`leitaPor`]: [userId] // Usar arrayUnion em produção
+          leitaPor: arrayUnion(userId), // ✅ Adiciona sem sobrescrever
+          entregueA: arrayUnion(userId) // ✅ Marca como entregue também
         });
-      });
+      }
 
-      // Zerar contador de não lidas
+      // Zerar contador de não lidas no documento da conversa
       const conversaRef = doc(this.conversasRef, conversaId);
       batch.update(conversaRef, {
         [`participantesInfo.${userId}.naoLidas`]: 0
       });
 
       await batch.commit();
+      console.log(`✅ ${mensagensIds.length} mensagens marcadas como lidas para user ${userId}`);
 
     } catch (error) {
       console.error('Erro ao marcar mensagens como lidas:', error);

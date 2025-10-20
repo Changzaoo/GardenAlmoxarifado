@@ -48,8 +48,8 @@ const enviarNotificacaoPush = async (titulo, mensagem, dados = {}) => {
 
       const notification = new Notification(titulo, {
         body: mensagem,
-        icon: '/logo192.png',
-        badge: '/logo192.png',
+        icon: '/logo.png',
+        badge: '/logo.png',
         tag: dados.tarefaId || 'notification',
         requireInteraction: false,
         silent: false,

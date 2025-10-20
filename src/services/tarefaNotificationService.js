@@ -19,7 +19,7 @@ const criarNotif = async (userId, type, title, message, data = {}) => {
     if (('Notification' in window) && Notification.permission === 'granted') {
       new Notification(title, {
         body: message,
-        icon: '/logo192.png',
+        icon: '/logo.png',
         tag: data.tarefaId || 'notif'
       });
     }

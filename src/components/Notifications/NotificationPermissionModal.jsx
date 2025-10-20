@@ -46,8 +46,8 @@ const NotificationPermissionModal = () => {
       if (permission === 'granted') {
         new Notification('Notificações ativadas! 🎉', {
           body: 'Você receberá notificações de mensagens e atualizações importantes.',
-          icon: '/logo192.png',
-          badge: '/logo192.png',
+          icon: '/logo.png',
+          badge: '/logo.png',
           tag: 'welcome-notification'
         });
       }

@@ -375,7 +375,7 @@ class NotificationManager {
       const notification = new Notification(title, {
         body: this.preferences.showPreview ? body : 'Nova mensagem',
         icon,
-        badge: '/logo192.png',
+        badge: '/logo.png',
         tag: conversaId ? `msg-${conversaId}` : `msg-${Date.now()}`,
         data: {
           conversaId,
@@ -647,7 +647,7 @@ class NotificationManager {
     await this.showNotification({
       title: 'Teste de Notificação 🧪',
       body: 'Sistema de notificações funcionando perfeitamente!',
-      icon: '/logo192.png'
+      icon: '/logo.png'
     });
     
     toast.success('Notificação de teste enviada!', { icon: '✅' });

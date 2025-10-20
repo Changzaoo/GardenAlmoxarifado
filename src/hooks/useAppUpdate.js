@@ -73,8 +73,8 @@ export const useAppUpdate = () => {
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Atualização Disponível', {
             body: 'Uma nova versão do sistema está disponível!',
-            icon: '/logo192.png',
-            badge: '/logo192.png',
+            icon: '/logo.png',
+            badge: '/logo.png',
             tag: 'app-update',
             requireInteraction: false
           });

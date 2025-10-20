@@ -9,6 +9,7 @@ import { obterHorariosEsperados } from '../utils/escalaUtils';
 import ComprovantesPontoModal from './Comprovantes/ComprovantesPontoModal';
 import TimePickerCustom from './WorkPonto/TimePickerCustom';
 import { getAjustesMes, registrarAjuste, podeAjustar, onAjustesMesChange } from '../services/ajustesPontoService';
+import { usePythonCalculations } from '../hooks/usePythonCalculations';
 
 // Utilitário para formatar hora
 function formatHora(date) {
@@ -47,6 +48,7 @@ function getInicioDia() {
 const WorkPontoTab = () => {
   const { usuario } = useAuth();
   const { showToast } = useToast();
+  const { calcularHorasTrabalhadas, isPythonReady } = usePythonCalculations();
   
   // Debug: verificar inicialização
   useEffect(() => {
@@ -151,9 +153,81 @@ const WorkPontoTab = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Calcular horas trabalhadas em tempo real
+  // Calcular horas trabalhadas em tempo real - OTIMIZADO COM PYTHON
   useEffect(() => {
-    const calcularHoras = () => {
+    const calcularHoras = async () => {
+      const entrada = registros.find(r => r.tipo === 'entrada')?.horario;
+      const saidaAlmoco = registros.find(r => r.tipo === 'saida_almoco')?.horario;
+      const retornoAlmoco = registros.find(r => r.tipo === 'retorno_almoco')?.horario;
+      const saida = registros.find(r => r.tipo === 'saida')?.horario;
+
+      if (!entrada) {
+        setHorasTrabalhadasHoje({ horas: 0, minutos: 0, segundos: 0 });
+        return;
+      }
+
+      try {
+        // Usar Python para cálculo preciso e rápido
+        const resultado = await calcularHorasTrabalhadas(
+          new Date(entrada),
+          saidaAlmoco ? new Date(saidaAlmoco) : null,
+          retornoAlmoco ? new Date(retornoAlmoco) : null,
+          saida ? new Date(saida) : null
+        );
+
+        setHorasTrabalhadasHoje({
+          horas: resultado.horas,
+          minutos: resultado.minutos,
+          segundos: resultado.segundos
+        });
+
+        // Calcular tempo desde a entrada
+        const agora = new Date();
+        const entradaTime = new Date(entrada);
+        const fimParaDesde = saida ? new Date(saida) : agora;
+        const totalSegDesde = Math.max(0, Math.floor((fimParaDesde - entradaTime) / 1000));
+        const h = Math.floor(totalSegDesde / 3600);
+        const m = Math.floor((totalSegDesde % 3600) / 60);
+        const s = totalSegDesde % 60;
+        setDesdeEntrada({ horas: h, minutos: m, segundos: s });
+
+      } catch (error) {
+        console.error('Erro ao calcular horas:', error);
+        // Fallback para cálculo JavaScript se Python falhar
+        calcularHorasManual();
+      }
+
+      // Calcular tolerância para cada ponto comparando com horáriosEsperados
+      try {
+        const novo = { entrada: null, saida_almoco: null, retorno_almoco: null, saida: null };
+        const esperado = horariosEsperados || {};
+
+        if (entrada && esperado.entrada) {
+          const v = validarTolerancia(combinarParaDate(esperado.entrada), entrada);
+          novo.entrada = v;
+        }
+        if (saidaAlmoco && (esperado.almoco || esperado.saida)) {
+          const horarioEsperado = esperado.almoco || esperado.saida;
+          const v = validarTolerancia(combinarParaDate(horarioEsperado), saidaAlmoco);
+          novo.saida_almoco = v;
+        }
+        if (retornoAlmoco && esperado.retorno) {
+          const v = validarTolerancia(combinarParaDate(esperado.retorno), retornoAlmoco);
+          novo.retorno_almoco = v;
+        }
+        if (saida && esperado.saida) {
+          const v = validarTolerancia(combinarParaDate(esperado.saida), saida);
+          novo.saida = v;
+        }
+
+        setTolerancias(novo);
+      } catch (e) {
+        console.error('Erro ao calcular tolerancias', e);
+      }
+    };
+
+    // Função fallback manual (JavaScript puro)
+    const calcularHorasManual = () => {
       const entrada = registros.find(r => r.tipo === 'entrada')?.horario;
       const saidaAlmoco = registros.find(r => r.tipo === 'saida_almoco')?.horario;
       const retornoAlmoco = registros.find(r => r.tipo === 'retorno_almoco')?.horario;
@@ -217,60 +291,13 @@ const WorkPontoTab = () => {
       const segundos = totalSegundos % 60;
 
       setHorasTrabalhadasHoje({ horas, minutos, segundos });
-
-      // Calcular tempo desde a entrada (entrada -> agora ou entrada -> saida_almoco se bateu almoço?)
-      try {
-        const agora = new Date();
-        if (!entrada) {
-          setDesdeEntrada({ horas: 0, minutos: 0, segundos: 0 });
-        } else {
-          const entradaTime = new Date(entrada);
-          // Se já bateu saída final, calcular até a saída
-          const fimParaDesde = saida ? new Date(saida) : agora;
-          const totalSegDesde = Math.max(0, Math.floor((fimParaDesde - entradaTime) / 1000));
-          const h = Math.floor(totalSegDesde / 3600);
-          const m = Math.floor((totalSegDesde % 3600) / 60);
-          const s = totalSegDesde % 60;
-          setDesdeEntrada({ horas: h, minutos: m, segundos: s });
-        }
-      } catch (e) {
-        console.error('Erro ao calcular desdeEntrada', e);
-      }
-
-      // Calcular tolerância para cada ponto comparando com horáriosEsperados
-      try {
-        const novo = { entrada: null, saida_almoco: null, retorno_almoco: null, saida: null };
-        const esperado = horariosEsperados || {};
-
-        if (entrada && esperado.entrada) {
-          const v = validarTolerancia(combinarParaDate(esperado.entrada), entrada);
-          novo.entrada = v;
-        }
-        if (saidaAlmoco && (esperado.almoco || esperado.saida)) {
-          const horarioEsperado = esperado.almoco || esperado.saida;
-          const v = validarTolerancia(combinarParaDate(horarioEsperado), saidaAlmoco);
-          novo.saida_almoco = v;
-        }
-        if (retornoAlmoco && esperado.retorno) {
-          const v = validarTolerancia(combinarParaDate(esperado.retorno), retornoAlmoco);
-          novo.retorno_almoco = v;
-        }
-        if (saida && esperado.saida) {
-          const v = validarTolerancia(combinarParaDate(esperado.saida), saida);
-          novo.saida = v;
-        }
-
-        setTolerancias(novo);
-      } catch (e) {
-        console.error('Erro ao calcular tolerancias', e);
-      }
     };
 
     calcularHoras();
     const interval = setInterval(calcularHoras, 1000);
 
     return () => clearInterval(interval);
-  }, [registros]);
+  }, [registros, calcularHorasTrabalhadas]);
 
   // Carregar dados do funcionário e horários esperados
   useEffect(() => {
