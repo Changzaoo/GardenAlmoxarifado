@@ -65,7 +65,7 @@ import SystemAdminPage from '../pages/SystemAdminPage';
 import { notifyNewLoan } from '../utils/notificationHelpers';
 import CadastroEmpresas from './Empresas/CadastroEmpresas';
 import CadastroSetores from './Setores/CadastroSetores';
-import GerenciamentoIntegrado from './EmpresasSetores/GerenciamentoIntegrado';
+import GerenciamentoSetores from './Setores/GerenciamentoSetores';
 import { encryptPassword, verifyPassword } from '../utils/crypto';
 import LoadingScreen from './common/LoadingScreen';
 import MessagesBadge from './MessagesBadge';
@@ -297,7 +297,11 @@ const CookieManager = {
 
 // Provider de autenticação melhorado
 const AuthProvider = ({ children }) => {
-  const [usuario, setUsuario] = useState(null);
+  // Inicializar usuario sincronicamente com sessão salva (previne flash de login)
+  const [usuario, setUsuario] = useState(() => {
+    const sessaoSalva = getStoredSession();
+    return sessaoSalva || null;
+  });
   const [usuarios, setUsuarios] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [firebaseStatus, setFirebaseStatus] = useState('connecting');
@@ -1121,21 +1125,6 @@ const LoginForm = () => {
             )}
           </button>
         </form>
-
-        {/* Links para Redefinição de Senha e Criar Conta */}
-        <div className="mt-6 text-center space-y-3">
-          <button
-            onClick={() => setMostrarCriarUsuario(true)}
-            className="block w-full px-4 py-2 border-2 border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg font-medium transition-colors text-sm"
-          >
-            Criar Nova Conta
-          </button>
-        </div>
-
-        {/* Footer or legal info only, no test users, cookies, or login tips */}
-        <div className="mt-4 text-center text-xs text-gray-500">
-          <p>Sistema protegido por autenticação</p>
-        </div>
       </div>
     </div>
   );
@@ -1527,6 +1516,20 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// ✅ Função helper para calcular aba inicial sincronicamente
+const calcularAbaInicial = (usuario) => {
+  if (!usuario?.id) return null;
+  
+  // Tentar carregar favorito do localStorage
+  const favoritoCache = localStorage.getItem(`favorito_${usuario.id}`);
+  if (favoritoCache) {
+    return favoritoCache;
+  }
+  
+  // Sempre iniciar na página "Meu Perfil" para todos os níveis
+  return 'meu-perfil';
+};
+
 // Componente principal do sistema
 const AlmoxarifadoSistema = () => {
   const { usuario, logout, firebaseStatus, temPermissao } = useAuth();
@@ -1536,8 +1539,9 @@ const AlmoxarifadoSistema = () => {
   const { totalNaoLidas: mensagensNaoLidas } = useMensagens();
   const funcionarioInfo = funcionariosData.find(f => f.id === usuario.id);
   
+  // ✅ CORREÇÃO: Calcular aba inicial sincronicamente para evitar flash
   // Estados locais
-  const [abaAtiva, setAbaAtiva] = useState(null); // Inicia como null para evitar flash do dashboard
+  const [abaAtiva, setAbaAtiva] = useState(() => calcularAbaInicial(usuario));
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuRecolhido, setMenuRecolhido] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -1547,24 +1551,26 @@ const AlmoxarifadoSistema = () => {
   
   // Estados para personalização do menu
   const [menuPersonalizado, setMenuPersonalizado] = useState(null);
-  // ✅ OTIMIZAÇÃO: Tentar carregar favorito do localStorage primeiro para redirecionamento instantâneo
+  // ✅ OTIMIZAÇÃO: Carregar favorito do localStorage sincronicamente
   const [itemFavorito, setItemFavorito] = useState(() => {
     if (usuario?.id) {
       const cached = localStorage.getItem(`favorito_${usuario.id}`);
       if (cached) {
         return cached;
       }
+      // Fallback se não houver cache
+      return usuario.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'gerenciamento-inventario';
     }
     return null;
   });
   const [favoritoCarregado, setFavoritoCarregado] = useState(() => {
-    // Se tem cache, marca como carregado imediatamente
-    if (usuario?.id) {
-      return !!localStorage.getItem(`favorito_${usuario.id}`);
-    }
-    return false;
+    // Marca como carregado se conseguiu calcular o favorito
+    return !!usuario?.id;
   });
-  const [paginaInicialDefinida, setPaginaInicialDefinida] = useState(false); // Flag para controlar se página inicial já foi definida
+  const [paginaInicialDefinida, setPaginaInicialDefinida] = useState(() => {
+    // ✅ CORREÇÃO: Marcar como definida se conseguiu calcular sincronicamente
+    return !!usuario?.id;
+  });
   const [showMenuConfig, setShowMenuConfig] = useState(false);
   const [menuLongPressTimer, setMenuLongPressTimer] = useState(null);
   const [menuLongPressProgress, setMenuLongPressProgress] = useState(0);
@@ -2829,12 +2835,12 @@ const AlmoxarifadoSistema = () => {
     },
     { 
       id: 'empresas-setores', 
-      nome: 'Empresas & Setores', 
+      nome: 'Setores', 
       icone: Building2,
       permissao: () => {
         // ADMIN sempre tem acesso TOTAL
         if (usuario?.nivel === NIVEIS_PERMISSAO.ADMIN) return true;
-        // Funcionários (nível 1) NÃO podem ver empresas e setores
+        // Funcionários (nível 1) NÃO podem ver setores
         if (usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO) return false;
         return usuario?.nivel <= NIVEIS_PERMISSAO.GERENTE_GERAL;
       }
@@ -2936,7 +2942,7 @@ const AlmoxarifadoSistema = () => {
     
     // Se não houver estado válido, usar página favorita como inicial
     const abaFavorita = getAbaFavorita();
-    const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'dashboard';
+    const fallbackPadrao = 'meu-perfil'; // Sempre iniciar em "Meu Perfil" para todos os níveis
     const paginaInicial = abaFavorita ? abaFavorita.id : fallbackPadrao;
     setAbaAtiva(paginaInicial);
     
@@ -3007,19 +3013,15 @@ const AlmoxarifadoSistema = () => {
     carregarMenuConfig();
   }, [usuario?.id, abas.length]);
 
-  // Definir página inicial como favorita ao carregar o sistema (apenas uma vez)
+  // ✅ CORREÇÃO: Definir página inicial apenas se ainda não foi definida
+  // Agora que calculamos sincronicamente, este useEffect serve apenas para revalidação
   useEffect(() => {
-    if (favoritoCarregado && itemFavorito && usuario?.id && !paginaInicialDefinida) {
-      // Iniciar fase de redirecionamento
-      setIsRedirecting(true);
-      
-      // Verificar se a aba favorita é válida e o usuário tem permissão
-      const abaFavorita = abas.find(aba => aba.id === itemFavorito);
-      if (abaFavorita && abaFavorita.permissao && abaFavorita.permissao()) {
-        setAbaAtiva(itemFavorito);
-      } else {
-        // Se não tiver permissão, usar fallback
-        const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
+    if (favoritoCarregado && itemFavorito && usuario?.id && abaAtiva) {
+      // Verificar se a aba ativa tem permissão
+      const abaAtual = abas.find(aba => aba.id === abaAtiva);
+      if (abaAtual && abaAtual.permissao && !abaAtual.permissao()) {
+        // Se não tiver permissão, redirecionar para fallback
+        const fallbackPadrao = 'meu-perfil'; // Sempre usar "Meu Perfil" como fallback
         const abaFallback = abas.find(aba => aba.id === fallbackPadrao);
         if (abaFallback && abaFallback.permissao && abaFallback.permissao()) {
           setAbaAtiva(fallbackPadrao);
@@ -3031,15 +3033,8 @@ const AlmoxarifadoSistema = () => {
           }
         }
       }
-      
-      setPaginaInicialDefinida(true);
-      
-      // Finalizar fase de redirecionamento após um breve delay
-      setTimeout(() => {
-        setIsRedirecting(false);
-      }, 300);
     }
-  }, [favoritoCarregado, itemFavorito, usuario?.id, paginaInicialDefinida, abas]);
+  }, [favoritoCarregado, itemFavorito, usuario?.id, usuario?.nivel, abas]);
 
   // Resetar flag quando usuário fizer logout
   useEffect(() => {
@@ -3049,38 +3044,6 @@ const AlmoxarifadoSistema = () => {
       setAbaAtiva(null);
     }
   }, [usuario]);
-
-  // Fallback de segurança: Se após 2 segundos ainda não houver aba definida, usar fallback
-  // Este useEffect só deve rodar uma vez após o login, não toda vez que abaAtiva muda
-  useEffect(() => {
-    if (usuario?.id && !abaAtiva && abas.length > 0 && favoritoCarregado) {
-      const timer = setTimeout(() => {
-        // Verificar novamente se ainda não há aba ativa
-        setAbaAtiva(currentAba => {
-          // Se já foi definida, não fazer nada
-          if (currentAba) {
-            return currentAba;
-          }
-          
-          // Se ainda está null, usar fallback
-          const fallbackPadrao = usuario?.nivel === NIVEIS_PERMISSAO.FUNCIONARIO ? 'meu-perfil' : 'emprestimos';
-          const abaFallback = abas.find(aba => aba.id === fallbackPadrao);
-          if (abaFallback && abaFallback.permissao && abaFallback.permissao()) {
-            return fallbackPadrao;
-          } else {
-            // Se nem o fallback funcionar, usar primeira aba disponível
-            const primeiraAbaDisponivel = abas.find(aba => aba.permissao && aba.permissao());
-            if (primeiraAbaDisponivel) {
-              return primeiraAbaDisponivel.id;
-            }
-          }
-          return currentAba;
-        });
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [usuario?.id, favoritoCarregado, abas.length]);
 
   // Salvar configuração do menu no Firebase
   const salvarMenuConfig = async (novaConfig, novoFavorito) => {
@@ -3945,7 +3908,7 @@ const AlmoxarifadoSistema = () => {
             )}
 
             {abaAtiva === 'empresas-setores' && (
-              <GerenciamentoIntegrado usuarioAtual={usuario} />
+              <GerenciamentoSetores usuarioAtual={usuario} />
             )}
 
             {abaAtiva === 'ranking' && (

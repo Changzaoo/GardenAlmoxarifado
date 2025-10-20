@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, User, Wrench, Backpack, HelpCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, User, Wrench, Backpack, HelpCircle, X, ChevronDown } from 'lucide-react';
 import { obterDataAtual, obterHoraAtual } from '../../utils/dateUtils';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
@@ -8,6 +8,7 @@ import FerramentaSelector from './FerramentaSelector';
 import BoxLoanAnimation from './BoxLoanAnimation';
 import EmprestimoParticleAnimation from './EmprestimoParticleAnimation';
 import FerramentaFlyingAnimation from './FerramentaFlyingAnimation';
+import SafeImage from '../common/SafeImage';
 
 const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilidade }) => {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -17,23 +18,53 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
   const [emprestimoParaAnimar, setEmprestimoParaAnimar] = useState(null);
   const [showFlyingAnimation, setShowFlyingAnimation] = useState(false);
   const [ferramentaVoando, setFerramentaVoando] = useState(null);
+  const [dropdownAberto, setDropdownAberto] = useState(false);
+  const dropdownRef = useRef(null);
 
-  // Carregar funcionários
+  // Carregar funcionários (nível 1, 2 e 3 - exceto Admin nível 0)
   useEffect(() => {
     const q = query(
-      collection(db, 'usuarios'),
-      where('nivel', '==', NIVEIS_PERMISSAO.FUNCIONARIO)
+      collection(db, 'usuarios')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const funcionariosData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const funcionariosData = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter(usuario => {
+          // Filtra apenas usuários com nível >= 1 (excluindo Admin que é nível 0)
+          const nivel = typeof usuario.nivel === 'number' ? usuario.nivel : parseInt(usuario.nivel);
+          return nivel >= 1 && nivel <= 3;
+        });
+      
+      // Ordenar por nome para melhor visualização
+      funcionariosData.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+      
+      // Debug: Mostrar todos os usuários carregados
+      console.log('📋 Funcionários carregados para empréstimo:', funcionariosData.map(f => ({
+        nome: f.nome,
+        nivel: f.nivel,
+        nivelTipo: f.nivel === 1 ? 'FUNCIONARIO' : f.nivel === 2 ? 'SUPERVISOR' : f.nivel === 3 ? 'GERENTE_SETOR' : 'OUTRO'
+      })));
+      
       setFuncionarios(funcionariosData);
     });
 
     return () => unsubscribe();
+  }, []);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownAberto(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Adiciona ferramenta à lista com quantidade
@@ -207,29 +238,110 @@ const NovoEmprestimo = ({ inventario, adicionarEmprestimo, atualizarDisponibilid
               <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               Funcionário Responsável
             </label>
-            <div className="relative">
-              <select
-                value={novoEmprestimo.colaborador}
-                onChange={(e) => {
-                  const valor = e.target.value;
-                  setNovoEmprestimo({...novoEmprestimo, colaborador: valor});
-                  setFuncionarioSelecionado(valor);
-                }}
-                className="h-12 w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none px-4 pr-10 font-medium shadow-sm"
-                required
+            
+            {/* Dropdown Customizado com Fotos */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setDropdownAberto(!dropdownAberto)}
+                className="h-12 w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-blue-300 dark:hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all px-4 font-medium shadow-sm flex items-center justify-between"
               >
-                <option value="" className="dark:bg-gray-800">Selecione um funcionário...</option>
-                {[...funcionarios].sort((a, b) => a.nome.localeCompare(b.nome)).map((funcionario) => (
-                  <option key={funcionario.id} value={funcionario.nome} className="dark:bg-gray-800">
-                    {funcionario.nome}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+                <span className="flex items-center gap-3">
+                  {novoEmprestimo.colaborador ? (
+                    <>
+                      {(() => {
+                        const funcSelecionado = funcionarios.find(f => f.nome === novoEmprestimo.colaborador);
+                        const nivel = typeof funcSelecionado?.nivel === 'number' ? funcSelecionado.nivel : parseInt(funcSelecionado?.nivel || 0);
+                        const cargo = nivel === 1 ? 'Funcionário' : nivel === 2 ? 'Supervisor' : nivel === 3 ? 'Gerente' : '';
+                        
+                        return (
+                          <>
+                            <SafeImage
+                              src={funcSelecionado?.photoURL || funcSelecionado?.fotoPerfil}
+                              alt={funcSelecionado?.nome}
+                              className="w-8 h-8 rounded-full object-cover border-2 border-blue-300 dark:border-blue-600"
+                              fallback={
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-blue-300 dark:border-blue-600">
+                                  <User className="w-4 h-4 text-white" />
+                                </div>
+                              }
+                            />
+                            <div className="flex flex-col items-start">
+                              <span className="font-semibold">{novoEmprestimo.colaborador}</span>
+                              {cargo && <span className="text-xs text-gray-500 dark:text-gray-400">{cargo}</span>}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    <span className="text-gray-500 dark:text-gray-400">Selecione um funcionário...</span>
+                  )}
+                </span>
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${dropdownAberto ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Lista de Funcionários */}
+              {dropdownAberto && (
+                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-2xl max-h-80 overflow-y-auto">
+                  {funcionarios.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      Nenhum funcionário disponível
+                    </div>
+                  ) : (
+                    funcionarios.map((funcionario) => {
+                      const nivel = typeof funcionario.nivel === 'number' ? funcionario.nivel : parseInt(funcionario.nivel);
+                      let cargo = '';
+                      let corCargo = '';
+                      
+                      if (nivel === 1) {
+                        cargo = 'Funcionário';
+                        corCargo = 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+                      } else if (nivel === 2) {
+                        cargo = 'Supervisor';
+                        corCargo = 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+                      } else if (nivel === 3) {
+                        cargo = 'Gerente';
+                        corCargo = 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
+                      }
+                      
+                      return (
+                        <button
+                          key={funcionario.id}
+                          type="button"
+                          onClick={() => {
+                            setNovoEmprestimo({...novoEmprestimo, colaborador: funcionario.nome});
+                            setFuncionarioSelecionado(funcionario.nome);
+                            setDropdownAberto(false);
+                          }}
+                          className={`w-full p-3 flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors ${
+                            novoEmprestimo.colaborador === funcionario.nome ? 'bg-blue-50 dark:bg-gray-700' : ''
+                          }`}
+                        >
+                          <SafeImage
+                            src={funcionario.photoURL || funcionario.fotoPerfil}
+                            alt={funcionario.nome}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-blue-300 dark:border-blue-600"
+                            fallback={
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center border-2 border-blue-300 dark:border-blue-600">
+                                <User className="w-5 h-5 text-white" />
+                              </div>
+                            }
+                          />
+                          <div className="flex-1 text-left">
+                            <p className="font-semibold text-gray-900 dark:text-white">{funcionario.nome}</p>
+                            {cargo && (
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${corCargo}`}>
+                                {cargo}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

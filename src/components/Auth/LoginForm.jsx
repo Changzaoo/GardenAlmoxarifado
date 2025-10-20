@@ -125,8 +125,7 @@ const LoginForm = ({
         )}
 
         <div className={`mt-6 text-center text-xs ${colors.textSecondary}`}>
-          <p>Sistema protegido por autenticação</p>
-          <p className="mt-1">© 2024 WorkFlow</p>
+          <p>© 2024 WorkFlow</p>
         </div>
       </div>
 

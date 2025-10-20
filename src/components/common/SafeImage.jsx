@@ -10,6 +10,13 @@ import { Users } from 'lucide-react';
  * - CORS issues
  * - Cache de navegador
  * - Fallback automático para avatar padrão
+ * - URLs externas (Discord CDN, etc)
+ * 
+ * Suporte para:
+ * - Firebase Storage (firebasestorage.googleapis.com)
+ * - Discord CDN (cdn.discordapp.com, media.discordapp.net)
+ * - Data URIs (data:image/...)
+ * - URLs externas genéricas
  * 
  * @param {string} src - URL da imagem
  * @param {string} alt - Texto alternativo
@@ -43,9 +50,17 @@ const SafeImage = ({
     setIsLoading(true);
     setHasError(false);
 
-    // Detectar se é URL do Firebase Storage
+    // Detectar tipo de URL
     const isFirebaseStorage = src.includes('firebasestorage.googleapis.com') || 
                               src.includes('storage.googleapis.com');
+    
+    const isDiscordCDN = src.includes('cdn.discordapp.com') || 
+                         src.includes('cdn.discord.com') ||
+                         src.includes('media.discordapp.net') ||
+                         src.includes('images-ext-1.discordapp.net') ||
+                         src.includes('images-ext-2.discordapp.net');
+    
+    const isDataURI = src.startsWith('data:');
     
     // Adicionar timestamp para forçar reload APENAS se solicitado explicitamente
     let processedUrl = src;
@@ -55,7 +70,8 @@ const SafeImage = ({
       // 1. forceReload estiver ativo
       // 2. Não for data: URI
       // 3. Não for URL do Firebase (que já tem tokens de acesso)
-      if (forceReload && !src.startsWith('data:') && !isFirebaseStorage) {
+      // 4. Não for URL do Discord (não precisa de cache busting)
+      if (forceReload && !isDataURI && !isFirebaseStorage && !isDiscordCDN) {
         const separator = src.includes('?') ? '&' : '?';
         processedUrl = `${src}${separator}_t=${Date.now()}`;
       }
@@ -64,6 +80,10 @@ const SafeImage = ({
       const img = new Image();
       
       img.onload = () => {
+        console.log('✅ Imagem carregada com sucesso:', {
+          url: src,
+          tipo: isDiscordCDN ? 'Discord CDN' : isFirebaseStorage ? 'Firebase Storage' : isDataURI ? 'Data URI' : 'URL Externa'
+        });
         setImageUrl(processedUrl);
         setIsLoading(false);
         setHasError(false);
@@ -73,6 +93,8 @@ const SafeImage = ({
       img.onerror = (error) => {
         console.error('❌ Erro ao carregar imagem:', {
           url: src,
+          processedUrl: processedUrl,
+          tipo: isDiscordCDN ? 'Discord CDN' : isFirebaseStorage ? 'Firebase Storage' : isDataURI ? 'Data URI' : 'URL Externa',
           error: error
         });
         setHasError(true);
@@ -80,9 +102,13 @@ const SafeImage = ({
         if (onError) onError(error);
       };
 
-      // NÃO configurar CORS para URLs do Firebase Storage (causa conflito com tokens)
-      // Apenas para URLs externas que realmente precisam
-      if (!isFirebaseStorage && !src.startsWith('data:')) {
+      // CORS config:
+      // NÃO usar crossOrigin para:
+      // - Firebase Storage (conflita com tokens)
+      // - Discord CDN (pode causar CORS errors)
+      // - Data URIs (não aplicável)
+      // Apenas para outras URLs externas que realmente precisam
+      if (!isFirebaseStorage && !isDiscordCDN && !isDataURI) {
         img.crossOrigin = 'anonymous';
       }
       
