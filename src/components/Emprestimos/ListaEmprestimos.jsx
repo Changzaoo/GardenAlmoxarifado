@@ -9,6 +9,7 @@ import { formatarDataHora } from '../../utils/formatters';
 import DevolucaoFerramentasModal from './DevolucaoFerramentasModal';
 import DevolucaoAnimation from './DevolucaoAnimation';
 import DevolucaoParticleAnimation from './DevolucaoParticleAnimation';
+import DevolucaoMassaAnimation from './DevolucaoMassaAnimation';
 import TransferenciaFerramentasModal from './TransferenciaFerramentasModal';
 import TransferenciaAnimation from './TransferenciaAnimation';
 import EditarEmprestimoModal from './EditarEmprestimoModal';
@@ -93,6 +94,15 @@ const ListaEmprestimos = ({
   // Estados para modal de comprovante
   const [showComprovanteModal, setShowComprovanteModal] = useState(false);
   const [emprestimoParaComprovante, setEmprestimoParaComprovante] = useState(null);
+  
+  // Estados para devolução em massa
+  const [showConfirmacaoDevolucaoTodos, setShowConfirmacaoDevolucaoTodos] = useState(false);
+  const [funcionarioParaDevolucaoTodos, setFuncionarioParaDevolucaoTodos] = useState(null);
+  const [processandoDevolucaoTodos, setProcessandoDevolucaoTodos] = useState(false);
+  
+  // Estados para animação de devolução em massa
+  const [showDevolucaoMassaAnimation, setShowDevolucaoMassaAnimation] = useState(false);
+  const [dadosDevolucaoMassa, setDadosDevolucaoMassa] = useState(null);
   
   const { usuario } = useAuth();
   
@@ -525,6 +535,110 @@ const ListaEmprestimos = ({
   const cancelarExclusao = () => {
     setShowConfirmacaoExclusao(false);
     setEmprestimoParaExcluir(null);
+  };
+
+  // Função para devolver TODOS os empréstimos ativos de um funcionário
+  const handleDevolverTodosEmprestimos = (funcionario, emprestimosDoFuncionario) => {
+    console.log('🎯 Iniciando devolução de todos os empréstimos de:', funcionario);
+    setFuncionarioParaDevolucaoTodos({ nome: funcionario, emprestimos: emprestimosDoFuncionario });
+    setShowConfirmacaoDevolucaoTodos(true);
+  };
+
+  const confirmarDevolucaoTodos = async () => {
+    if (!funcionarioParaDevolucaoTodos) return;
+
+    // Fecha o modal de confirmação
+    setShowConfirmacaoDevolucaoTodos(false);
+    setProcessandoDevolucaoTodos(true);
+    
+    // Filtra apenas empréstimos ativos
+    const emprestimosAtivos = funcionarioParaDevolucaoTodos.emprestimos.filter(
+      emp => emp.status === 'emprestado'
+    );
+
+    if (emprestimosAtivos.length === 0) {
+      alert('Não há empréstimos ativos para devolver.');
+      setProcessandoDevolucaoTodos(false);
+      return;
+    }
+
+    // Calcula total de ferramentas
+    const totalFerramentas = emprestimosAtivos.reduce(
+      (acc, emp) => acc + (emp.ferramentas?.length || 0), 
+      0
+    );
+
+    // Inicia a animação
+    setDadosDevolucaoMassa({
+      funcionario: funcionarioParaDevolucaoTodos.nome,
+      totalDevolvido: emprestimosAtivos.length,
+      totalFerramentas: totalFerramentas
+    });
+    setShowDevolucaoMassaAnimation(true);
+
+    console.log('🚀 Processando devolução em massa para:', funcionarioParaDevolucaoTodos.nome);
+    console.log(`📦 Total de empréstimos ativos: ${emprestimosAtivos.length}`);
+
+    try {
+      // Processa cada empréstimo
+      let sucessos = 0;
+      let falhas = 0;
+
+      for (const emprestimo of emprestimosAtivos) {
+        try {
+          console.log(`🔄 Devolvendo empréstimo ID: ${emprestimo.id}`);
+          
+          // Usa a função existente de devolução
+          if (typeof devolverFerramentas === 'function') {
+            await devolverFerramentas(
+              emprestimo.id,
+              atualizarDisponibilidade,
+              false // não é devolvido por terceiros
+            );
+            sucessos++;
+            console.log(`✅ Empréstimo ${emprestimo.id} devolvido com sucesso`);
+          } else {
+            console.error('❌ Função devolverFerramentas não está disponível');
+            falhas++;
+          }
+        } catch (error) {
+          console.error(`❌ Erro ao devolver empréstimo ${emprestimo.id}:`, error);
+          falhas++;
+        }
+      }
+
+      // Atualiza disponibilidade final
+      await atualizarDisponibilidade();
+
+      // Remove o card do funcionário com animação
+      setEvaporatingCard(funcionarioParaDevolucaoTodos.nome);
+      setTimeout(() => {
+        setEvaporatingCard(null);
+      }, 700);
+
+      // Feedback para o usuário (logs apenas, pois a animação já mostra sucesso)
+      console.log(`📊 Resultado: ${sucessos} sucessos, ${falhas} falhas`);
+      
+      if (falhas > 0) {
+        // Só mostra alert se houve falhas
+        setTimeout(() => {
+          alert(`⚠️ Processo concluído:\n✅ ${sucessos} devolvidos\n❌ ${falhas} falharam`);
+        }, 3000);
+      }
+
+    } catch (error) {
+      console.error('❌ Erro no processo de devolução em massa:', error);
+      setShowDevolucaoMassaAnimation(false);
+      alert('Erro ao processar devoluções. Verifique o console para mais detalhes.');
+    } finally {
+      setFuncionarioParaDevolucaoTodos(null);
+      setProcessandoDevolucaoTodos(false);
+    }
+  };
+
+  const cancelarDevolucaoTodos = () => {
+    setShowConfirmacaoDevolucaoTodos(false);
+    setFuncionarioParaDevolucaoTodos(null);
   };
 
   const handleEditarEmprestimo = (emprestimo) => {
@@ -1014,6 +1128,25 @@ const ListaEmprestimos = ({
                     <span className="text-sm font-bold text-amber-900 dark:text-amber-100">{emprestimos.filter(e => e.status === 'emprestado').length}</span>
                   </div>
                 </div>
+
+                {/* Botão Devolver Todos - Aparece apenas se houver empréstimos ativos */}
+                {emprestimos.filter(e => e.status === 'emprestado').length > 0 && temPermissaoEdicao && (
+                  <div className="mb-3 flex-shrink-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDevolverTodosEmprestimos(funcionario, emprestimos);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl transition-all shadow-md hover:shadow-xl text-sm font-bold transform hover:scale-[1.02] active:scale-95"
+                    >
+                      <CheckCircle className="w-5 h-5" />
+                      <span>Devolver Todos os Empréstimos</span>
+                      <span className="ml-1 bg-white/30 px-2 py-0.5 rounded-full text-xs font-black">
+                        {emprestimos.filter(e => e.status === 'emprestado').length}
+                      </span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Data e Hora do Empréstimo */}
                 {(() => {
@@ -1570,6 +1703,111 @@ const ListaEmprestimos = ({
         </div>
       )}
 
+      {/* Modal de Confirmação - Devolver Todos os Empréstimos */}
+      {showConfirmacaoDevolucaoTodos && funcionarioParaDevolucaoTodos && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-emerald-200 dark:border-emerald-600 max-w-lg w-full overflow-hidden">
+            {/* Cabeçalho com gradiente */}
+            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Devolver Todos</h2>
+                  <p className="text-emerald-100 text-sm">Confirmação de devolução em massa</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Conteúdo */}
+            <div className="p-6 space-y-4">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700 rounded-xl p-4">
+                <p className="text-amber-900 dark:text-amber-100 font-semibold mb-2">
+                  ⚠️ Atenção!
+                </p>
+                <p className="text-amber-800 dark:text-amber-200 text-sm">
+                  Você está prestes a devolver <span className="font-bold">TODOS os empréstimos ativos</span> de:
+                </p>
+              </div>
+
+              <div className="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <CircleUser className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+                  <div>
+                    <p className="font-bold text-lg text-gray-900 dark:text-white">
+                      {funcionarioParaDevolucaoTodos.nome}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {funcionarioParaDevolucaoTodos.emprestimos.filter(e => e.status === 'emprestado').length} empréstimos ativos
+                    </p>
+                  </div>
+                </div>
+
+                {/* Lista de empréstimos */}
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {funcionarioParaDevolucaoTodos.emprestimos
+                    .filter(e => e.status === 'emprestado')
+                    .map((emp, idx) => (
+                      <div key={emp.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+                        <div className="flex items-start gap-2">
+                          <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                              {new Date(emp.dataEmprestimo).toLocaleDateString('pt-BR')}
+                            </p>
+                            <div className="space-y-1">
+                              {emp.ferramentas?.map((f, i) => (
+                                <p key={i} className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                  • {f.nome} {f.quantidade > 1 ? `(x${f.quantidade})` : ''}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                Esta ação não pode ser desfeita. Deseja continuar?
+              </p>
+            </div>
+
+            {/* Rodapé com botões */}
+            <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 flex gap-3">
+              <button
+                onClick={cancelarDevolucaoTodos}
+                disabled={processandoDevolucaoTodos}
+                className="flex-1 px-4 py-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarDevolucaoTodos}
+                disabled={processandoDevolucaoTodos}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl transition-all font-bold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {processandoDevolucaoTodos ? (
+                  <>
+                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Processando...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    <span>Confirmar Devolução</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showTransferenciaModal && emprestimoParaTransferencia && (
         <TransferenciaFerramentasModal 
           emprestimo={emprestimoParaTransferencia}
@@ -1642,6 +1880,21 @@ const ListaEmprestimos = ({
           />
         );
       })()}
+
+      {/* Animação de Devolução em Massa */}
+      {showDevolucaoMassaAnimation && dadosDevolucaoMassa && (
+        <DevolucaoMassaAnimation
+          isOpen={showDevolucaoMassaAnimation}
+          onClose={() => {
+            setShowDevolucaoMassaAnimation(false);
+            setDadosDevolucaoMassa(null);
+          }}
+          funcionario={dadosDevolucaoMassa.funcionario}
+          totalDevolvido={dadosDevolucaoMassa.totalDevolvido}
+          totalFerramentas={dadosDevolucaoMassa.totalFerramentas}
+          duracao={3000}
+        />
+      )}
 
       </div>
     </div>

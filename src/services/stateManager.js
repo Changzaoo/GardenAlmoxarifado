@@ -472,26 +472,56 @@ class StateManager {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open('AppStateDB', 1);
       
-      request.onerror = () => reject(request.error);
-      
-      request.onsuccess = () => {
-        const db = request.result;
-        const transaction = db.transaction(['states'], 'readwrite');
-        const store = transaction.objectStore('states');
-        
-        const saveRequest = store.put({
-          id: 'currentState',
-          ...data
-        });
-        
-        saveRequest.onsuccess = () => resolve();
-        saveRequest.onerror = () => reject(saveRequest.error);
+      request.onerror = () => {
+        console.error('❌ Erro ao abrir IndexedDB:', request.error);
+        reject(request.error);
       };
       
       request.onupgradeneeded = (event) => {
+        console.log('🔧 Criando object store no IndexedDB...');
         const db = event.target.result;
+        
+        // Criar object store se não existir
         if (!db.objectStoreNames.contains('states')) {
           db.createObjectStore('states', { keyPath: 'id' });
+          console.log('✅ Object store "states" criado');
+        }
+      };
+      
+      request.onsuccess = () => {
+        const db = request.result;
+        
+        // Verificar se object store existe
+        if (!db.objectStoreNames.contains('states')) {
+          console.error('❌ Object store "states" não encontrado');
+          db.close();
+          reject(new Error('Object store não encontrado'));
+          return;
+        }
+        
+        try {
+          const transaction = db.transaction(['states'], 'readwrite');
+          const store = transaction.objectStore('states');
+          
+          const saveRequest = store.put({
+            id: 'currentState',
+            ...data
+          });
+          
+          saveRequest.onsuccess = () => {
+            db.close();
+            resolve();
+          };
+          
+          saveRequest.onerror = () => {
+            console.error('❌ Erro ao salvar no IndexedDB:', saveRequest.error);
+            db.close();
+            reject(saveRequest.error);
+          };
+        } catch (error) {
+          console.error('❌ Erro ao criar transação:', error);
+          db.close();
+          reject(error);
         }
       };
     });
@@ -577,37 +607,70 @@ class StateManager {
     return new Promise((resolve) => {
       const request = indexedDB.open('AppStateDB', 1);
       
-      request.onerror = () => resolve(null);
+      request.onerror = () => {
+        console.error('❌ Erro ao abrir IndexedDB para leitura');
+        resolve(null);
+      };
+      
+      request.onupgradeneeded = (event) => {
+        console.log('🔧 Criando object store no IndexedDB (load)...');
+        const db = event.target.result;
+        
+        if (!db.objectStoreNames.contains('states')) {
+          db.createObjectStore('states', { keyPath: 'id' });
+          console.log('✅ Object store "states" criado');
+        }
+      };
       
       request.onsuccess = () => {
         const db = request.result;
-        const transaction = db.transaction(['states'], 'readonly');
-        const store = transaction.objectStore('states');
-        const getRequest = store.get('currentState');
         
-        getRequest.onsuccess = async () => {
-          const data = getRequest.result;
+        // Verificar se object store existe
+        if (!db.objectStoreNames.contains('states')) {
+          console.warn('⚠️ Object store "states" não encontrado, retornando null');
+          db.close();
+          resolve(null);
+          return;
+        }
+        
+        try {
+          const transaction = db.transaction(['states'], 'readonly');
+          const store = transaction.objectStore('states');
+          const getRequest = store.get('currentState');
           
-          if (!data) {
-            resolve(null);
-            return;
-          }
-          
-          // Descomprimir se necessário
-          if (data.compressed) {
-            try {
-              const decompressed = await this.decompressState(data.state);
-              resolve(JSON.parse(decompressed));
-            } catch (error) {
-              console.error('Erro ao descomprimir:', error);
+          getRequest.onsuccess = async () => {
+            const data = getRequest.result;
+            db.close();
+            
+            if (!data) {
               resolve(null);
+              return;
             }
-          } else {
-            resolve(JSON.parse(data.state));
-          }
-        };
-        
-        getRequest.onerror = () => resolve(null);
+            
+            // Descomprimir se necessário
+            if (data.compressed) {
+              try {
+                const decompressed = await this.decompressState(data.state);
+                resolve(JSON.parse(decompressed));
+              } catch (error) {
+                console.error('Erro ao descomprimir:', error);
+                resolve(null);
+              }
+            } else {
+              resolve(JSON.parse(data.state));
+            }
+          };
+          
+          getRequest.onerror = () => {
+            console.error('❌ Erro ao ler do IndexedDB');
+            db.close();
+            resolve(null);
+          };
+        } catch (error) {
+          console.error('❌ Erro ao criar transação de leitura:', error);
+          db.close();
+          resolve(null);
+        }
       };
     });
   }

@@ -9,6 +9,7 @@
 // ====================================================================
 
 // Adicione esta nova aba no array abasMenu:
+/*
 {
   id: 'sincronizacao',
   label: 'Sincronização',
@@ -16,6 +17,7 @@
   nivelMinimo: NIVEIS_PERMISSAO.FUNCIONARIO,
   descricao: 'Gerenciar dados offline e sincronização'
 },
+*/
 
 // ====================================================================
 // 2️⃣ NA SEÇÃO DE RENDERIZAÇÃO DE CONTEÚDO (após outras abas)
