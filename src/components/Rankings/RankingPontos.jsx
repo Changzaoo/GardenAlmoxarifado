@@ -1421,7 +1421,7 @@ const RankingPontos = () => {
                   setShowDetails(true);
                 }}
                 className={`
-                  relative overflow-visible rounded-2xl cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl
+                  relative overflow-hidden rounded-2xl cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl
                   ${isFirst 
                     ? 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 dark:from-yellow-500 dark:via-yellow-600 dark:to-yellow-700 shadow-xl' 
                     : index === 1
@@ -1432,121 +1432,136 @@ const RankingPontos = () => {
                   }
                 `}
                 style={isPodium ? {
-                  animation: `flame-flicker-${index} 2s ease-in-out infinite`,
                   border: `3px solid ${isFirst ? '#FFD700' : index === 1 ? '#C0C0C0' : '#CD7F32'}`,
-                  position: 'relative'
                 } : undefined}
               >
-                {/* Efeito de chama animada para o pódio */}
+                {/* Animação de fogueira percorrendo a borda */}
                 {isPodium && (
                   <>
-                    {/* Animação para 1º lugar - DOURADA */}
+                    {/* Animação estilo fogueira - Ouro */}
                     {isFirst && (
                       <style>{`
-                        @keyframes flame-flicker-0 {
-                          0%, 100% {
-                            box-shadow: 
-                              0 0 20px #FFD700,
-                              0 0 40px #FFA500,
-                              0 0 60px #FF8C00,
-                              inset 0 0 20px rgba(255,215,0,0.4);
+                        @keyframes fire-travel-gold {
+                          0% {
+                            background: conic-gradient(
+                              from 0deg at 0% 0%,
+                              rgba(255, 215, 0, 0) 0%,
+                              rgba(255, 215, 0, 0.9) 5%,
+                              rgba(255, 165, 0, 0.7) 7%,
+                              rgba(255, 140, 0, 0.4) 10%,
+                              rgba(255, 215, 0, 0) 15%,
+                              rgba(255, 215, 0, 0) 100%
+                            );
+                            filter: blur(8px);
                           }
-                          25% {
-                            box-shadow: 
-                              0 0 30px #FFD700,
-                              0 0 50px #FFA500,
-                              0 0 75px #FF8C00,
-                              inset 0 0 25px rgba(255,215,0,0.5);
+                          100% {
+                            background: conic-gradient(
+                              from 360deg at 0% 0%,
+                              rgba(255, 215, 0, 0) 0%,
+                              rgba(255, 215, 0, 0.9) 5%,
+                              rgba(255, 165, 0, 0.7) 7%,
+                              rgba(255, 140, 0, 0.4) 10%,
+                              rgba(255, 215, 0, 0) 15%,
+                              rgba(255, 215, 0, 0) 100%
+                            );
+                            filter: blur(8px);
                           }
-                          50% {
-                            box-shadow: 
-                              0 0 35px #FFD700,
-                              0 0 60px #FFA500,
-                              0 0 90px #FF8C00,
-                              inset 0 0 30px rgba(255,215,0,0.6);
-                          }
-                          75% {
-                            box-shadow: 
-                              0 0 28px #FFD700,
-                              0 0 55px #FFA500,
-                              0 0 80px #FF8C00,
-                              inset 0 0 28px rgba(255,215,0,0.55);
-                          }
+                        }
+                        
+                        @keyframes fire-flicker-gold {
+                          0%, 100% { opacity: 0.9; transform: scale(1); }
+                          25% { opacity: 1; transform: scale(1.05); }
+                          50% { opacity: 0.85; transform: scale(0.98); }
+                          75% { opacity: 0.95; transform: scale(1.02); }
                         }
                       `}</style>
                     )}
                     
-                    {/* Animação para 2º lugar - PRATEADA */}
+                    {/* Animação estilo fogueira - Prata */}
                     {index === 1 && (
                       <style>{`
-                        @keyframes flame-flicker-1 {
-                          0%, 100% {
-                            box-shadow: 
-                              0 0 20px #E8E8E8,
-                              0 0 40px #C0C0C0,
-                              0 0 60px #A8A8A8,
-                              inset 0 0 20px rgba(192,192,192,0.4);
+                        @keyframes fire-travel-silver {
+                          0% {
+                            background: conic-gradient(
+                              from 0deg at 0% 0%,
+                              rgba(230, 230, 230, 0) 0%,
+                              rgba(230, 230, 230, 0.9) 5%,
+                              rgba(192, 192, 192, 0.7) 7%,
+                              rgba(168, 168, 168, 0.4) 10%,
+                              rgba(230, 230, 230, 0) 15%,
+                              rgba(230, 230, 230, 0) 100%
+                            );
+                            filter: blur(8px);
                           }
-                          25% {
-                            box-shadow: 
-                              0 0 30px #E8E8E8,
-                              0 0 50px #C0C0C0,
-                              0 0 75px #A8A8A8,
-                              inset 0 0 25px rgba(192,192,192,0.5);
+                          100% {
+                            background: conic-gradient(
+                              from 360deg at 0% 0%,
+                              rgba(230, 230, 230, 0) 0%,
+                              rgba(230, 230, 230, 0.9) 5%,
+                              rgba(192, 192, 192, 0.7) 7%,
+                              rgba(168, 168, 168, 0.4) 10%,
+                              rgba(230, 230, 230, 0) 15%,
+                              rgba(230, 230, 230, 0) 100%
+                            );
+                            filter: blur(8px);
                           }
-                          50% {
-                            box-shadow: 
-                              0 0 35px #E8E8E8,
-                              0 0 60px #C0C0C0,
-                              0 0 90px #A8A8A8,
-                              inset 0 0 30px rgba(192,192,192,0.6);
-                          }
-                          75% {
-                            box-shadow: 
-                              0 0 28px #E8E8E8,
-                              0 0 55px #C0C0C0,
-                              0 0 80px #A8A8A8,
-                              inset 0 0 28px rgba(192,192,192,0.55);
-                          }
+                        }
+                        
+                        @keyframes fire-flicker-silver {
+                          0%, 100% { opacity: 0.9; transform: scale(1); }
+                          25% { opacity: 1; transform: scale(1.05); }
+                          50% { opacity: 0.85; transform: scale(0.98); }
+                          75% { opacity: 0.95; transform: scale(1.02); }
                         }
                       `}</style>
                     )}
                     
-                    {/* Animação para 3º lugar - BRONZE */}
+                    {/* Animação estilo fogueira - Bronze */}
                     {index === 2 && (
                       <style>{`
-                        @keyframes flame-flicker-2 {
-                          0%, 100% {
-                            box-shadow: 
-                              0 0 20px #CD7F32,
-                              0 0 40px #B8860B,
-                              0 0 60px #8B4513,
-                              inset 0 0 20px rgba(205,127,50,0.4);
+                        @keyframes fire-travel-bronze {
+                          0% {
+                            background: conic-gradient(
+                              from 0deg at 0% 0%,
+                              rgba(205, 127, 50, 0) 0%,
+                              rgba(205, 127, 50, 0.9) 5%,
+                              rgba(184, 134, 11, 0.7) 7%,
+                              rgba(139, 69, 19, 0.4) 10%,
+                              rgba(205, 127, 50, 0) 15%,
+                              rgba(205, 127, 50, 0) 100%
+                            );
+                            filter: blur(8px);
                           }
-                          25% {
-                            box-shadow: 
-                              0 0 30px #CD7F32,
-                              0 0 50px #B8860B,
-                              0 0 75px #8B4513,
-                              inset 0 0 25px rgba(205,127,50,0.5);
+                          100% {
+                            background: conic-gradient(
+                              from 360deg at 0% 0%,
+                              rgba(205, 127, 50, 0) 0%,
+                              rgba(205, 127, 50, 0.9) 5%,
+                              rgba(184, 134, 11, 0.7) 7%,
+                              rgba(139, 69, 19, 0.4) 10%,
+                              rgba(205, 127, 50, 0) 15%,
+                              rgba(205, 127, 50, 0) 100%
+                            );
+                            filter: blur(8px);
                           }
-                          50% {
-                            box-shadow: 
-                              0 0 35px #CD7F32,
-                              0 0 60px #B8860B,
-                              0 0 90px #8B4513,
-                              inset 0 0 30px rgba(205,127,50,0.6);
-                          }
-                          75% {
-                            box-shadow: 
-                              0 0 28px #CD7F32,
-                              0 0 55px #B8860B,
-                              0 0 80px #8B4513,
-                              inset 0 0 28px rgba(205,127,50,0.55);
-                          }
+                        }
+                        
+                        @keyframes fire-flicker-bronze {
+                          0%, 100% { opacity: 0.9; transform: scale(1); }
+                          25% { opacity: 1; transform: scale(1.05); }
+                          50% { opacity: 0.85; transform: scale(0.98); }
+                          75% { opacity: 0.95; transform: scale(1.02); }
                         }
                       `}</style>
                     )}
+                    
+                    {/* Elemento de fogueira que viaja ao redor da borda */}
+                    <div 
+                      className="absolute inset-0 rounded-2xl pointer-events-none"
+                      style={{
+                        animation: `fire-travel-${isFirst ? 'gold' : index === 1 ? 'silver' : 'bronze'} 5s linear infinite, fire-flicker-${isFirst ? 'gold' : index === 1 ? 'silver' : 'bronze'} 0.3s ease-in-out infinite`,
+                      }}
+                    />
                   </>
                 )}
                 

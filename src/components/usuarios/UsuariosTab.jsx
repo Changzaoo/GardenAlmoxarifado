@@ -713,13 +713,13 @@ const UsuariosTab = () => {
 
         {/* Mensagens */}
         {erro && (
-          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm mt-4 p-4 border border-red-500 border-opacity-20 bg-red-500 bg-opacity-10 text-red-500 dark:border-[#F4212E] dark:bg-[#F4212E] dark:text-[#F4212E]`}>
+          <div className="rounded-xl shadow-sm mt-4 p-4 border border-red-500 border-opacity-20 bg-red-500 bg-opacity-10 text-red-500 dark:border-[#F4212E] dark:bg-[#F4212E]/10 dark:text-[#F4212E]">
             {erro}
           </div>
         )}
         
         {sucesso && (
-          <div className={`bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm mt-4 p-4 border border-green-500 border-opacity-20 bg-green-500 bg-opacity-10 text-green-500 dark:border-[#00BA7C] dark:bg-[#00BA7C] dark:text-[#00BA7C]`}>
+          <div className="rounded-xl shadow-sm mt-4 p-4 border border-green-500 border-opacity-20 bg-green-500 bg-opacity-10 text-green-500 dark:border-[#00BA7C] dark:bg-[#00BA7C]/10 dark:text-[#00BA7C]">
             {sucesso}
           </div>
         )}

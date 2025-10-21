@@ -947,13 +947,13 @@ const ListaEmprestimos = ({
               placeholder="Buscar..."
               value={filtroEmprestimos}
               onChange={(e) => setFiltroEmprestimos(e.target.value)}
-              className="h-[36px] w-full px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
+              className="h-[36px] w-full px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
             />
           </div>
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="h-[36px] w-48 inline-flex items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
+            className="h-[36px] w-48 inline-flex items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
           >
             <option value="todos">Todos</option>
             <option value="emprestado">Não devolvidos</option>
@@ -962,7 +962,7 @@ const ListaEmprestimos = ({
           <select
             value={filtroPeriodo}
             onChange={(e) => setFiltroPeriodo(e.target.value)}
-            className="h-[36px] w-44 inline-flex items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
+            className="h-[36px] w-44 inline-flex items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
           >
             <option value="hoje">Hoje</option>
             <option value="semana">Última semana</option>
@@ -974,7 +974,7 @@ const ListaEmprestimos = ({
           <div className="relative">
             <button
               onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="h-[36px] inline-flex items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
+              className="h-[36px] inline-flex items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9BF0]"
             >
               <span>Ordenar por: {SORT_LABELS[sortBy]}</span>
               <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -991,7 +991,7 @@ const ListaEmprestimos = ({
                 />
                 
                 {/* Dropdown menu */}
-                <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-20">
+                <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-20">
                   <div className="py-1">
                     {Object.entries(SORT_LABELS).map(([option, label]) => (
                       <button
@@ -1688,13 +1688,13 @@ const ListaEmprestimos = ({
             <div className="flex justify-end gap-4">
               <button
                 onClick={cancelarExclusao}
-                className="h-[36px] px-4 text-gray-700 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                className="h-[36px] px-4 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmarExclusao}
-                className="h-[36px] px-4 bg-red-600 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 dark:border-gray-300 dark:border-gray-600 rounded-lg hover:bg-red-700 transition-colors duration-200"
+                className="h-[36px] px-4 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors duration-200"
               >
                 Excluir
               </button>

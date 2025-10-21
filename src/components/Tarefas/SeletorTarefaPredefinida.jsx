@@ -107,8 +107,8 @@ const SeletorTarefaPredefinida = ({ onSelect, onClose }) => {
                     onClick={() => onSelect(tarefa)}
                     className={`text-left p-4 bg-[#22303C] rounded-xl border ${
                       tarefa.personalizado 
-                        ? 'border-blue-500 dark:border-[#1D9BF0]/30 hover:border-blue-500 dark:border-[#1D9BF0]' 
-                        : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:border-[#1D9BF0]'
+                        ? 'border-blue-500 dark:border-[#1D9BF0]/30 hover:border-blue-600 dark:hover:border-[#1D9BF0]' 
+                        : 'border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-[#1D9BF0]'
                     } transition-colors`}
                   >
                     <div className="flex justify-between items-start mb-2">
